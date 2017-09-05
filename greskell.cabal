@@ -48,10 +48,13 @@ test-suite spec
   ghc-options:          -Wall -fno-warn-unused-imports "-with-rtsopts=-M512m"
   main-is:              Spec.hs
   -- default-extensions:   
-  -- other-extensions:     
-  other-modules:        Data.GreskellSpec
-  build-depends:        base, greskell,
-                        hspec
+  other-extensions:     OverloadedStrings
+  other-modules:        Data.Greskell.GScriptSpec,
+                        Data.Greskell.GTraversalSpec
+  build-depends:        base, greskell, text,
+                        hspec,
+                        QuickCheck,
+                        hint
 
 source-repository head
   type:                 git
