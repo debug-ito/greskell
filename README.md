@@ -1,5 +1,6 @@
-# greskell
+# greskell - Haskell builder for Gremlin graph query language
 
+TBW.
 
 ## Author
 
