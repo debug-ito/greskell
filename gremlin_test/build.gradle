@@ -1,0 +1,12 @@
+apply plugin: 'groovy'
+
+repositories {
+  mavenCentral()
+}
+
+dependencies {
+  testCompile 'org.codehaus.groovy:groovy-all:2.4.10'
+  testCompile 'junit:junit:4.12'
+  testCompile 'org.apache.tinkerpop:gremlin-core:3.3.0'
+  testCompile 'org.apache.tinkerpop:tinkergraph-gremlin:3.3.0'
+}
