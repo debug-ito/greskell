@@ -11,7 +11,7 @@ module Data.Greskell.GTraversal
          -- ** Gremlin Traversals and Steps
          GStep,
          GTraversal,
-         GScriptLike(..),
+         GreskellLike(..),
          ToGTraversal(..),
          -- ** Step types
          StepType,
@@ -77,7 +77,7 @@ import Data.Monoid ((<>), mconcat)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Void (Void)
-import Data.Greskell.GScript (GScript, gRaw, gMethodCall)
+import Data.Greskell.Greskell (Greskell, raw, methodCall)
 
 
 -- | A Gremlin Step (method call) that takes data @s@ from upstream
@@ -89,7 +89,7 @@ import Data.Greskell.GScript (GScript, gRaw, gMethodCall)
 -- 'GStep' is not an 'Eq', because it's difficult to define true
 -- equality between Gremlin method calls. If we define it naively, it
 -- might have conflict with 'Category' law.
-newtype GStep c s e = GStep { unGStep :: GScript }
+newtype GStep c s e = GStep { unGStep :: Greskell }
                     deriving (Show)
 
 -- | 'id' is 'identity'.
@@ -107,12 +107,12 @@ instance Bifunctor (GStep c) where
 
 -- | Call static method versions of the 'GStep' on @__@ class.
 instance ToGTraversal GStep where
-  toGTraversal step = unsafeGTraversal (gRaw "__" <> toGScript step)
+  toGTraversal step = unsafeGTraversal (raw "__" <> toGreskell step)
   liftType = GStep . unGStep
 
-instance GScriptLike (GStep c s e) where
-  unsafeFromGScript = GStep
-  toGScript = unGStep
+instance GreskellLike (GStep c s e) where
+  unsafeFromGreskell = GStep
+  toGreskell = unGStep
 
 
 -- | GraphTraversal class object of TinkerPop.
@@ -120,7 +120,7 @@ instance GScriptLike (GStep c s e) where
 -- 'GTraversal' is practically the same as 'GStep'. 'GTraversal' is a
 -- Java-object in Gremlin domain, while 'GStep' is a chain of method
 -- calls.
-newtype GTraversal c s e = GTraversal { unGTraversal :: GScript }
+newtype GTraversal c s e = GTraversal { unGTraversal :: Greskell }
                          deriving (Show)
                                   
 -- | 'id' is @__.identity()@. '(.)' compose 'GTraversal's by
@@ -137,14 +137,14 @@ instance Functor (GTraversal c s) where
 instance Bifunctor (GTraversal c) where
   bimap _ _ = GTraversal . unGTraversal
 
--- | Something that is isomorphic to 'GScript'.
-class GScriptLike g where
-  unsafeFromGScript :: GScript -> g
-  toGScript :: g -> GScript
+-- | Something that is isomorphic to 'Greskell'.
+class GreskellLike g where
+  unsafeFromGreskell :: Greskell -> g
+  toGreskell :: g -> Greskell
 
-instance GScriptLike (GTraversal c s e) where
-  unsafeFromGScript = GTraversal
-  toGScript = unGTraversal
+instance GreskellLike (GTraversal c s e) where
+  unsafeFromGreskell = GTraversal
+  toGreskell = unGTraversal
 
 -- | Types that can convert to 'GTraversal'.
 class ToGTraversal g where
@@ -214,7 +214,7 @@ instance (StepType c, StepType p) => Logic (SideEffect c) (SideEffect p)
 
 
 
-unsafeGTraversal :: GScript -> GTraversal c s e
+unsafeGTraversal :: Greskell -> GTraversal c s e
 unsafeGTraversal = GTraversal
 
 -- | TinkerPop traversal to get all vertices.
@@ -223,23 +223,23 @@ allVertices = allVertices'
 
 -- | Polymorphic version of 'allVertices'.
 allVertices' :: Vertex v => GTraversal Transform Void v
-allVertices' = unsafeGTraversal $ gRaw "g.V()"
+allVertices' = unsafeGTraversal $ raw "g.V()"
 
-vertexByID :: GScript
+vertexByID :: Greskell
               -- ^ Gremlin code for vertex ID.
            -> GTraversal Transform Void GVertex
 vertexByID = vertexByID'
 
 -- | Polymorphic version of 'vertexByID'.
-vertexByID' :: Vertex v => GScript -> GTraversal Transform Void v
-vertexByID' vid = unsafeGTraversal (gRaw "g" <> gMethodCall "V" [vid])
+vertexByID' :: Vertex v => Greskell -> GTraversal Transform Void v
+vertexByID' vid = unsafeGTraversal (raw "g" <> methodCall "V" [vid])
 
 infixl 5 @.
 
 -- | Apply the 'GStep' to the 'GTraversal'. In Gremlin, this means
 -- calling a chain of methods on the Traversal object.
 (@.) :: GTraversal c a b -> GStep c b d -> GTraversal c a d
-gt @. gs = unsafeGTraversal (toGScript gt <> toGScript gs)
+gt @. gs = unsafeGTraversal (toGreskell gt <> toGreskell gs)
 
 
 -- | Element interface in a TinkerPop graph.
@@ -269,69 +269,69 @@ data PropertyValue
 -- | ID object type for Elements
 data ElementID
 
-unsafeGStep :: StepType c => GScript -> GStep c s e
+unsafeGStep :: StepType c => Greskell -> GStep c s e
 unsafeGStep = GStep
 
 -- | @.identity@ step.
 gIdentity :: GStep Filter s s
-gIdentity = unsafeGStep $ gMethodCall "identity" []
+gIdentity = unsafeGStep $ methodCall "identity" []
 
 -- | Polymorphic version of 'gIdentity'.
 gIdentity' :: StepType c => GStep c s s
 gIdentity' = liftType $ gIdentity
 
 -- | @.filter@ step with lambda block.
-gFilterL :: GScript
+gFilterL :: Greskell
          -- ^ Gremlin code inside filter's @{}@ block.
          -> GStep Filter s s
-gFilterL block = unsafeGStep (gMethodCall "filter" [gRaw "{" <> block <> gRaw "}"])
+gFilterL block = unsafeGStep (methodCall "filter" [raw "{" <> block <> raw "}"])
 
 -- | Polymorphic version of 'gFilterL'.
-gFilterL' :: (StepType c) => GScript -> GStep c s s
+gFilterL' :: (StepType c) => Greskell -> GStep c s s
 gFilterL' = liftType . gFilterL
 
 -- | @.filter@ step with steps(traversal).
 gFilter :: (ToGTraversal g, StepType c, StepType p, Logic c p) => g c s e -> GStep p s s
-gFilter step = unsafeGStep (gMethodCall "filter" [toGScript $ toGTraversal step])
+gFilter step = unsafeGStep (methodCall "filter" [toGreskell $ toGTraversal step])
 
 -- | @.has@ step.
 gHas :: (Element s)
-     => GScript -- ^ target
-     -> GScript -- ^ expectation
+     => Greskell -- ^ target
+     -> Greskell -- ^ expectation
      -> GStep Filter s s
-gHas target expec = unsafeGStep $ gMethodCall "has" [target, expec]
+gHas target expec = unsafeGStep $ methodCall "has" [target, expec]
 
 -- | Polymorphic version of 'gHas'.
-gHas' :: (Element s, StepType c) => GScript -> GScript -> GStep c s s
+gHas' :: (Element s, StepType c) => Greskell -> Greskell -> GStep c s s
 gHas' t e = liftType $ gHas t e
 
 -- | @.hasLabel@ step
 gHasLabel :: Element s
-          => [GScript] -- ^ expected label names
+          => [Greskell] -- ^ expected label names
           -> GStep Filter s s
-gHasLabel = unsafeGStep . gMethodCall "hasLabel"
+gHasLabel = unsafeGStep . methodCall "hasLabel"
 
 -- | Polymorphic version of 'gHasLabel'.
-gHasLabel' :: (Element s, StepType c) => [GScript] -> GStep c s s
+gHasLabel' :: (Element s, StepType c) => [Greskell] -> GStep c s s
 gHasLabel' = liftType . gHasLabel
 
 -- | @.hasId@ step
 gHasId :: Element s
-       => [GScript] -- ^ expected IDs
+       => [Greskell] -- ^ expected IDs
        -> GStep Filter s s
-gHasId = unsafeGStep . gMethodCall "hasId"
+gHasId = unsafeGStep . methodCall "hasId"
 
 -- | Polymorphic version of 'gHasId'.
-gHasId' :: (Element s, StepType c) => [GScript] -> GStep c s s
+gHasId' :: (Element s, StepType c) => [Greskell] -> GStep c s s
 gHasId' = liftType . gHasId
 
 multiLogic :: (ToGTraversal g, StepType c, StepType p, Logic c p)
            => Text -- ^ method name
            -> [g c s e]
            -> GStep p s s
-multiLogic method_name conds = unsafeGStep (gMethodCall method_name $ map toG conds)
+multiLogic method_name conds = unsafeGStep (methodCall method_name $ map toG conds)
   where
-    toG cond = toGScript $ toGTraversal cond
+    toG cond = toGreskell $ toGTraversal cond
 
 -- | @.and@ step.
 gAnd :: (ToGTraversal g, StepType c, StepType p, Logic c p) => [g c s e] -> GStep p s s
@@ -343,80 +343,80 @@ gOr = multiLogic "or"
 
 -- | @.not@ step.
 gNot :: (ToGTraversal g, StepType c, StepType p, Logic c p) => g c s e -> GStep p s s
-gNot cond = unsafeGStep (gMethodCall "not" [toGScript $ toGTraversal cond])
+gNot cond = unsafeGStep (methodCall "not" [toGreskell $ toGTraversal cond])
 
 -- | @.range@ step.
-gRange :: GScript
+gRange :: Greskell
        -- ^ min
-       -> GScript
+       -> Greskell
        -- ^ max
        -> GStep Transform s s
-gRange min_g max_g = unsafeGStep (gMethodCall "range" [min_g, max_g])
+gRange min_g max_g = unsafeGStep (methodCall "range" [min_g, max_g])
 
 -- | @.order@ and @.by@ steps
 gOrderBy :: (ToGTraversal g)
-         => [(g Transform s e, GScript)]
+         => [(g Transform s e, Greskell)]
          -- ^ (accessor steps, comparator) of each @.by@
          -> GStep Transform s s
-gOrderBy bys = unsafeGStep (gMethodCall "order" [] <> bys_g)
+gOrderBy bys = unsafeGStep (methodCall "order" [] <> bys_g)
   where
     bys_g = mconcat $ map toG bys
     toG (accessor, comparator) =
-      gMethodCall "by" [(toGScript $ toGTraversal accessor), comparator]
+      methodCall "by" [(toGreskell $ toGTraversal accessor), comparator]
 
 -- | @.flatMap@ step
 gFlatMap :: (ToGTraversal g, StepType c) => g c s e -> GStep c s e
-gFlatMap gt = unsafeGStep (gMethodCall "flatMap" [toGScript $ toGTraversal gt])
+gFlatMap gt = unsafeGStep (methodCall "flatMap" [toGreskell $ toGTraversal gt])
 
 -- | @.values@ step.
 gValues :: Element s
-        => [GScript]
+        => [Greskell]
         -- ^ property keys
         -> GStep Transform s PropertyValue
-gValues = unsafeGStep . gMethodCall "values"
+gValues = unsafeGStep . methodCall "values"
 
-genericTraversalStep :: Vertex v => Text -> [GScript] -> GStep Transform v e
+genericTraversalStep :: Vertex v => Text -> [Greskell] -> GStep Transform v e
 genericTraversalStep method_name edge_labels =
-  unsafeGStep (gMethodCall method_name edge_labels)
+  unsafeGStep (methodCall method_name edge_labels)
 
 -- | @.out@ step
 gOut :: (Vertex v)
-     => [GScript] -- ^ edge labels
+     => [Greskell] -- ^ edge labels
      -> GStep Transform v GVertex
 gOut = gOut'
 
 -- | Polymorphic version of 'gOut'.
-gOut' :: (Vertex v1, Vertex v2) => [GScript] -> GStep Transform v1 v2
+gOut' :: (Vertex v1, Vertex v2) => [Greskell] -> GStep Transform v1 v2
 gOut' = genericTraversalStep "out"
 
 -- | @.outE@ step
 gOutE :: (Vertex v)
-      => [GScript] -- ^ edge labels
+      => [Greskell] -- ^ edge labels
       -> GStep Transform v GEdge
 gOutE = gOutE'
 
 -- | Polymorphic version of 'gOutE'
-gOutE' :: (Vertex v, Edge e) => [GScript] -> GStep Transform v e
+gOutE' :: (Vertex v, Edge e) => [Greskell] -> GStep Transform v e
 gOutE' = genericTraversalStep "outE"
 
 -- | @.in@ step
 gIn :: (Vertex v)
-    => [GScript] -- ^ edge labels
+    => [Greskell] -- ^ edge labels
     -> GStep Transform v GVertex
 gIn = gIn'
 
 -- | Polymorphic version of 'gIn'.
-gIn' :: (Vertex v1, Vertex v2) => [GScript] -> GStep Transform v1 v2
+gIn' :: (Vertex v1, Vertex v2) => [Greskell] -> GStep Transform v1 v2
 gIn' = genericTraversalStep "in"
 
 -- | @.inE@ step.
 gInE :: (Vertex v)
-     => [GScript] -- ^ edge labels
+     => [Greskell] -- ^ edge labels
      -> GStep Transform v GEdge
 gInE = gInE
 
 -- | Polymorphic version of 'gInE'.
-gInE' :: (Vertex v, Edge e) => [GScript] -> GStep Transform v e
+gInE' :: (Vertex v, Edge e) => [Greskell] -> GStep Transform v e
 gInE' = genericTraversalStep "inE"
 
 ---- -- probably we can implement .as() step like this. GBuilder generates

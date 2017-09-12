@@ -8,7 +8,6 @@
 module Data.Greskell.GBuilder
        ( -- * Types
          GBuilder,
-         GScript,
          -- * Actions
          newBind,
          -- * Runners
@@ -22,9 +21,9 @@ import Data.Monoid ((<>))
 import qualified Data.HashMap.Strict as HM
 import Data.Text (Text, pack)
 
-import Data.Greskell.GScript
-  ( GScript, gPlaceHolder, toPlaceHolderVariable,
-    PlaceHolderIndex, getGScript
+import Data.Greskell.Greskell
+  ( Greskell, placeHolder, toPlaceHolderVariable,
+    PlaceHolderIndex
   )
 
 -- | A Monad that stores bound variables and values.
@@ -34,11 +33,11 @@ newtype GBuilder a = GBuilder { unGBuilder :: State (PlaceHolderIndex, [Value]) 
 -- | Create a new Gremlin variable bound to the given value.
 newBind :: ToJSON v
         => v -- ^ bound value
-        -> GBuilder GScript -- ^ variable
+        -> GBuilder Greskell -- ^ variable
 newBind val = GBuilder $ do
   (next_index, values) <- State.get
   State.put (succ next_index, values ++ [toJSON val])
-  return $ gPlaceHolder next_index
+  return $ placeHolder next_index
 
 runGBuilder :: GBuilder a -> (a, HM.HashMap Text Value)
 runGBuilder gbuilder = (ret, binding)

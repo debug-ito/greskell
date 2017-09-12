@@ -1,23 +1,23 @@
 {-# LANGUAGE OverloadedStrings, GeneralizedNewtypeDeriving #-}
 -- |
--- Module: Data.Greskell.GScript
+-- Module: Data.Greskell.Greskell
 -- Description: Low-level Gremlin script data type
 -- Maintainer: Toshio Ito <debug.ito@gmail.com>
 --
 -- 
-module Data.Greskell.GScript
+module Data.Greskell.Greskell
        ( -- * Type
-         GScript,
+         Greskell,
          -- * Constructors
-         gRaw,
-         gLiteral,
-         gFunCall,
-         gMethodCall,
+         raw,
+         literal,
+         funCall,
+         methodCall,
          -- * Conversions
-         getGScript,
+         runGreskell,
          -- * Placeholders
          PlaceHolderIndex,
-         gPlaceHolder,
+         placeHolder,
          toPlaceHolderVariable
        ) where
 
@@ -28,12 +28,12 @@ import Data.Text (Text, pack, unpack)
 import qualified Data.Text.Lazy as TL
 
 -- | Gremlin script data.
-newtype GScript = GScript { unGScript :: TL.Text }
+newtype Greskell = Greskell { unGreskell :: TL.Text }
                 deriving (Show,Eq,Ord,Monoid)
 
--- | Same as 'gLiteral' except for the input type.
-instance IsString GScript where
-  fromString = GScript . TL.pack . escapeDQuotes
+-- | Same as 'literal' except for the input type.
+instance IsString Greskell where
+  fromString = Greskell . TL.pack . escapeDQuotes
 
 escapeDQuotes :: String -> String
 escapeDQuotes orig = ('"' : (esc =<< orig)) ++ "\""
@@ -48,42 +48,40 @@ escapeDQuotes orig = ('"' : (esc =<< orig)) ++ "\""
       -- do we have to espace other characters?
 
 -- | Create a raw Gremlin script. It is printed as-is.
-gRaw :: Text -> GScript
-gRaw = GScript . TL.fromStrict
+raw :: Text -> Greskell
+raw = Greskell . TL.fromStrict
 
 -- | Create a string literal in Gremlin script. The content is
 -- automatically escaped.
-gLiteral :: Text -> GScript
-gLiteral = fromString . unpack
+literal :: Text -> Greskell
+literal = fromString . unpack
 
 type PlaceHolderIndex = Int
 
 -- | Create a placeholder variable with the given index.
-gPlaceHolder :: PlaceHolderIndex -> GScript
-gPlaceHolder = GScript . TL.fromStrict . toPlaceHolderVariable
+placeHolder :: PlaceHolderIndex -> Greskell
+placeHolder = Greskell . TL.fromStrict . toPlaceHolderVariable
 
 -- | Create placeholder variable string from the index.
 toPlaceHolderVariable :: PlaceHolderIndex -> Text
 toPlaceHolderVariable i =  pack ("__v" ++ show i)
 
--- | Create a readable Gremlin script from 'GScript'.
-getGScript :: GScript -> Text
-getGScript = TL.toStrict . unGScript
+-- | Create a readable Gremlin script from 'Greskell'.
+runGreskell :: Greskell -> Text
+runGreskell = TL.toStrict . unGreskell
 
--- | Create a 'GScript' that calls the given function with the given
+-- | Create a 'Greskell' that calls the given function with the given
 -- arguments.
-gFunCall :: Text -- ^ function name
-         -> [GScript] -- ^ arguments
-         -> GScript
-gFunCall fun_name args = gRaw fun_name <> gRaw "(" <> args_g <> gRaw ")"
+funCall :: Text -- ^ function name
+        -> [Greskell] -- ^ arguments
+        -> Greskell
+funCall fun_name args = raw fun_name <> raw "(" <> args_g <> raw ")"
   where
-    args_g = mconcat $ intersperse (gRaw ", ") args
+    args_g = mconcat $ intersperse (raw ", ") args
 
--- | Create a 'GScript' that calls the given (object or class) method
+-- | Create a 'Greskell' that calls the given (object or class) method
 -- call with the given arguments.
-gMethodCall :: Text -- ^ method name
-            -> [GScript] -- ^ arguments
-            -> GScript
-gMethodCall method_name args = gRaw "." <> gFunCall method_name args
-
-
+methodCall :: Text -- ^ method name
+           -> [Greskell] -- ^ arguments
+           -> Greskell
+methodCall method_name args = raw "." <> funCall method_name args

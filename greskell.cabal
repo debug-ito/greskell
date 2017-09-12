@@ -21,7 +21,7 @@ library
   other-extensions:     OverloadedStrings, GeneralizedNewtypeDeriving,
                         FlexibleInstances, MultiParamTypeClasses
   exposed-modules:      Data.Greskell,
-                        Data.Greskell.GScript,
+                        Data.Greskell.Greskell,
                         Data.Greskell.GBuilder,
                         Data.Greskell.GTraversal
   -- other-modules:        
@@ -49,7 +49,7 @@ test-suite spec
   main-is:              Spec.hs
   -- default-extensions:   
   other-extensions:     OverloadedStrings
-  other-modules:        Data.Greskell.GScriptSpec,
+  other-modules:        Data.Greskell.GreskellSpec,
                         Data.Greskell.GTraversalSpec
   build-depends:        base, greskell, text,
                         hspec,
