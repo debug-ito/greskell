@@ -11,7 +11,6 @@ module Data.Greskell.GTraversal
          -- ** Gremlin Traversals and Steps
          GStep,
          GTraversal,
-         GreskellLike(..),
          ToGTraversal(..),
          -- ** Step types
          StepType,
@@ -77,7 +76,10 @@ import Data.Monoid ((<>), mconcat)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Void (Void)
-import Data.Greskell.Greskell (Greskell, raw, methodCall)
+import Data.Greskell.Greskell
+  ( Greskell, raw, methodCall,
+    GreskellLike(..)
+  )
 
 
 -- | A Gremlin Step (method call) that takes data @s@ from upstream
@@ -136,11 +138,6 @@ instance Functor (GTraversal c s) where
 -- | Unsafely convert input and output types.
 instance Bifunctor (GTraversal c) where
   bimap _ _ = GTraversal . unGTraversal
-
--- | Something that is isomorphic to 'Greskell'.
-class GreskellLike g where
-  unsafeFromGreskell :: Greskell -> g
-  toGreskell :: g -> Greskell
 
 instance GreskellLike (GTraversal c s e) where
   unsafeFromGreskell = GTraversal

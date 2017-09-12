@@ -8,6 +8,7 @@
 module Data.Greskell.Greskell
        ( -- * Type
          Greskell,
+         GreskellLike(..),
          -- * Constructors
          raw,
          literal,
@@ -46,6 +47,15 @@ escapeDQuotes orig = ('"' : (esc =<< orig)) ++ "\""
       '"'  -> "\\\""
       x    -> [x]
       -- do we have to espace other characters?
+
+-- | Something that is isomorphic to 'Greskell'.
+class GreskellLike g where
+  unsafeFromGreskell :: Greskell -> g
+  toGreskell :: g -> Greskell
+
+instance GreskellLike Greskell where
+  unsafeFromGreskell = id
+  toGreskell = id
 
 -- | Create a raw Gremlin script. It is printed as-is.
 raw :: Text -> Greskell
