@@ -22,7 +22,7 @@ library
                         FlexibleInstances, MultiParamTypeClasses
   exposed-modules:      Data.Greskell,
                         Data.Greskell.Greskell,
-                        Data.Greskell.GBuilder,
+                        Data.Greskell.Binder,
                         Data.Greskell.GTraversal
   -- other-modules:        
   build-depends:        base,

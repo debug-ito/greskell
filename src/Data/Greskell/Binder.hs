@@ -1,22 +1,23 @@
 {-# LANGUAGE OverloadedStrings, GeneralizedNewtypeDeriving #-}
 -- |
--- Module: Data.Greskell.GBuilder
--- Description: GBuilder monad for building Gremlin
+-- Module: Data.Greskell.Binder
+-- Description: Binder monad to make binding between Gremlin variables and JSON values.
 -- Maintainer: Toshio Ito <debug.ito@gmail.com>
 --
 -- 
-module Data.Greskell.GBuilder
+module Data.Greskell.Binder
        ( -- * Types
-         GBuilder,
+         Binder,
+         Binding,
          -- * Actions
          newBind,
          -- * Runners
-         runGBuilder
+         runBinder
        ) where
 
 import Control.Monad.Trans.State (State)
 import qualified Control.Monad.Trans.State as State
-import Data.Aeson (Value, ToJSON(toJSON))
+import Data.Aeson (Value, ToJSON(toJSON), Object)
 import Data.Monoid ((<>))
 import qualified Data.HashMap.Strict as HM
 import Data.Text (Text, pack)
@@ -26,26 +27,30 @@ import Data.Greskell.Greskell
     PlaceHolderIndex
   )
 
--- | A Monad that stores bound variables and values.
-newtype GBuilder a = GBuilder { unGBuilder :: State (PlaceHolderIndex, [Value]) a }
+-- | A Monad that manages a 'Binding' in its context.
+newtype Binder a = Binder { unBinder :: State (PlaceHolderIndex, [Value]) a }
                    deriving (Functor, Applicative, Monad)
+
+-- | Binding between Gremlin variable names and JSON values.
+type Binding = Object
 
 -- | Create a new Gremlin variable bound to the given value.
 newBind :: ToJSON v
         => v -- ^ bound value
-        -> GBuilder Greskell -- ^ variable
-newBind val = GBuilder $ do
+        -> Binder Greskell -- ^ variable
+newBind val = Binder $ do
   (next_index, values) <- State.get
   State.put (succ next_index, values ++ [toJSON val])
   return $ placeHolder next_index
 
-runGBuilder :: GBuilder a -> (a, HM.HashMap Text Value)
-runGBuilder gbuilder = (ret, binding)
+-- | Execute the given 'Binder' monad to obtain 'Binding'.
+runBinder :: Binder a -> (a, Binding)
+runBinder binder = (ret, binding)
   where
-    (ret, (_, values)) = State.runState (unGBuilder gbuilder) (0, [])
+    (ret, (_, values)) = State.runState (unBinder binder) (0, [])
     binding = HM.fromList $ zip (map toPlaceHolderVariable [0 ..]) $ values
 
--- seqGremlin :: [GBuilder Text] -> GBuilder Text
+-- seqGremlin :: [Binder Text] -> Binder Text
 -- seqGremlin = fmap seqSentences . sequence
 --   where
 --     seqSentences = T.intercalate "; "
