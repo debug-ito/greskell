@@ -178,9 +178,8 @@ data Filter
 
 instance StepType Filter
 
--- | StepType for steps that are not filtering steps and without
--- side-effects. This includes transformations, reordring, injections
--- and graph traversal actions.
+-- | StepType for steps without any side-effects. This includes
+-- transformations, reordring, injections and graph traversal actions.
 --
 -- A 'Step' @s@ is 'Transform' type iff:
 --
@@ -191,7 +190,19 @@ data Transform
 
 instance StepType Transform
 
--- | StepType modifier for steps that has side-effects.
+-- | StepType for steps may have side-effects.
+--
+-- A side-effect here means the \"sideEffect\" in Gremlin context
+-- (i.e. a stash of data kept in a Traversal object), as well as
+-- interaction with the world outside the Traversal object.
+--
+-- For example, the following steps (in Gremlin) all have
+-- side-effects.
+--
+-- > .addE('label')
+-- > .aggregate('x')
+-- > .sideEffect(System.out.&println)
+-- > .map { some_variable += 1 }
 data SideEffect t
 
 -- Needs FlexibleInstances extension.
