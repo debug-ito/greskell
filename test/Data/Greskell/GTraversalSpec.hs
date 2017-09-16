@@ -74,9 +74,9 @@ checkLogicCompatible :: String -> String -> Bool -> Spec
 checkLogicCompatible = checkStepTypeRelation makeCode
   where
     makeCode child parent =
-      "let f :: GStep " ++ child ++ " s s -> GStep " ++ parent ++ " s s; "
+      "let f :: Step " ++ child ++ " s s -> Step " ++ parent ++ " s s; "
       ++ "f = gFilter; "
-      ++ "child :: GStep " ++ child ++ " s s; "
+      ++ "child :: Step " ++ child ++ " s s; "
       ++ "child = undefined; "
       ++ "in f child"
 
@@ -84,6 +84,6 @@ checkLiftCompatible :: String -> String -> Bool -> Spec
 checkLiftCompatible = checkStepTypeRelation makeCode
   where
     makeCode child parent =
-      "let f :: GStep " ++ child ++ " s e -> GStep " ++ parent ++ " s e; "
+      "let f :: Step " ++ child ++ " s e -> Step " ++ parent ++ " s e; "
       ++ "f = liftType; "
       ++ "in f"

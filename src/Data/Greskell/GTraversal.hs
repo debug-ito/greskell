@@ -9,7 +9,7 @@
 module Data.Greskell.GTraversal
        ( -- * Types
          -- ** Gremlin Traversals and Steps
-         GStep,
+         Step,
          GTraversal,
          ToGTraversal(..),
          -- ** Step types
@@ -34,8 +34,8 @@ module Data.Greskell.GTraversal
          vertexByID,
          vertexByID',
          unsafeGTraversal,
-         -- * GStep
-         unsafeGStep,
+         -- * Step
+         unsafeStep,
          -- ** Filter step
          gIdentity,
          gIdentity',
@@ -82,46 +82,47 @@ import Data.Greskell.Greskell
   )
 
 
--- | A Gremlin Step (method call) that takes data @s@ from upstream
--- and emits data @e@ to downstream. Type @c@ is a marker to describe
--- the step.
+-- | A Gremlin step that takes data @s@ from upstream and emits data
+-- @e@ to downstream. Type @c@ is a marker to describe the step. This
+-- is NOT the Gremlin's @Step@ class, but it's a method call such as
+-- @.has(x)@ and @.outE()@ .
 --
--- 'GStep' is a 'Category'. Use its methods to compose them.
+-- 'Step' is a 'Category'. Use its methods to compose them.
 --
--- 'GStep' is not an 'Eq', because it's difficult to define true
+-- 'Step' is not an 'Eq', because it's difficult to define true
 -- equality between Gremlin method calls. If we define it naively, it
 -- might have conflict with 'Category' law.
-newtype GStep c s e = GStep { unGStep :: Greskell }
+newtype Step c s e = Step { unStep :: Greskell }
                     deriving (Show)
 
 -- | 'id' is 'gIdentity'.
-instance StepType c => Category (GStep c) where
+instance StepType c => Category (Step c) where
   id = liftType gIdentity
-  bc . ab = unsafeGStep (unGStep ab <> unGStep bc)
+  bc . ab = unsafeStep (unStep ab <> unStep bc)
 
 -- | Unsafely convert output type
-instance Functor (GStep c s) where
-  fmap _ = GStep . unGStep
+instance Functor (Step c s) where
+  fmap _ = Step . unStep
 
 -- | Unsafely convert input and output types.
-instance Bifunctor (GStep c) where
-  bimap _ _ = GStep . unGStep
+instance Bifunctor (Step c) where
+  bimap _ _ = Step . unStep
 
--- | To convert a 'GStep' to 'GTraversal', it calls its static method
+-- | To convert a 'Step' to 'GTraversal', it calls its static method
 -- version on @__@ class.
-instance ToGTraversal GStep where
+instance ToGTraversal Step where
   toGTraversal step = unsafeGTraversal (raw "__" <> toGreskell step)
-  liftType = GStep . unGStep
+  liftType = Step . unStep
 
-instance GreskellLike (GStep c s e) where
-  unsafeFromGreskell = GStep
-  toGreskell = unGStep
+instance GreskellLike (Step c s e) where
+  unsafeFromGreskell = Step
+  toGreskell = unStep
 
 
 -- | GraphTraversal class object of TinkerPop.
 --
--- 'GTraversal' is similar to 'GStep'. 'GTraversal' is a Java-object
--- in Gremlin domain, while 'GStep' is a chain of method calls. As a
+-- 'GTraversal' is similar to 'Step'. 'GTraversal' is a Java-object
+-- in Gremlin domain, while 'Step' is a chain of method calls. As a
 -- Java object, 'GTraversal' keeps some context data in it.
 newtype GTraversal c s e = GTraversal { unGTraversal :: Greskell }
                          deriving (Show)
@@ -166,11 +167,11 @@ class StepType t
 -- traversal actions, or side-effects. Filtering decision must be
 -- solely based on each element.
 --
--- A 'GStep' @s@ is 'Filter' type iff:
+-- A 'Step' @s@ is 'Filter' type iff:
 --
 -- > (gSideEffect s == gIdentity) AND (gFilter s == s)
 --
--- If 'GStep's @s1@ and @s2@ are 'Filter' type, then
+-- If 'Step's @s1@ and @s2@ are 'Filter' type, then
 -- 
 -- > gAnd [s1, s2] == s1 >>> s2 == s2 >>> s1
 data Filter
@@ -181,11 +182,11 @@ instance StepType Filter
 -- side-effects. This includes transformations, reordring, injections
 -- and graph traversal actions.
 --
--- A 'GStep' @s@ is 'Transform' type iff:
+-- A 'Step' @s@ is 'Transform' type iff:
 --
 -- > gSideEffect s == gIdentity
 --
--- Obviously, every 'Filter' type 'GStep's are also 'Transform' type.
+-- Obviously, every 'Filter' type 'Step's are also 'Transform' type.
 data Transform
 
 instance StepType Transform
@@ -242,9 +243,9 @@ vertexByID' vid = unsafeGTraversal (raw "g" <> methodCall "V" [vid])
 
 infixl 5 @.
 
--- | Apply the 'GStep' to the 'GTraversal'. In Gremlin, this means
+-- | Apply the 'Step' to the 'GTraversal'. In Gremlin, this means
 -- calling a chain of methods on the Traversal object.
-(@.) :: GTraversal c a b -> GStep c b d -> GTraversal c a d
+(@.) :: GTraversal c a b -> Step c b d -> GTraversal c a d
 gt @. gs = unsafeGTraversal (toGreskell gt <> toGreskell gs)
 
 
@@ -275,158 +276,158 @@ data PropertyValue
 -- | ID object type for Elements
 data ElementID
 
-unsafeGStep :: StepType c => Greskell -> GStep c s e
-unsafeGStep = GStep
+unsafeStep :: StepType c => Greskell -> Step c s e
+unsafeStep = Step
 
 -- | @.identity@ step.
-gIdentity :: GStep Filter s s
-gIdentity = unsafeGStep $ methodCall "identity" []
+gIdentity :: Step Filter s s
+gIdentity = unsafeStep $ methodCall "identity" []
 
 -- | Polymorphic version of 'gIdentity'.
-gIdentity' :: StepType c => GStep c s s
+gIdentity' :: StepType c => Step c s s
 gIdentity' = liftType $ gIdentity
 
 -- | @.filter@ step with lambda block.
 gFilterL :: Greskell
          -- ^ Gremlin code inside filter's @{}@ block.
-         -> GStep Filter s s
-gFilterL block = unsafeGStep (methodCall "filter" [raw "{" <> block <> raw "}"])
+         -> Step Filter s s
+gFilterL block = unsafeStep (methodCall "filter" [raw "{" <> block <> raw "}"])
 
 -- | Polymorphic version of 'gFilterL'.
-gFilterL' :: (StepType c) => Greskell -> GStep c s s
+gFilterL' :: (StepType c) => Greskell -> Step c s s
 gFilterL' = liftType . gFilterL
 
 -- | @.filter@ step with steps(traversal).
-gFilter :: (ToGTraversal g, StepType c, StepType p, Logic c p) => g c s e -> GStep p s s
-gFilter step = unsafeGStep (methodCall "filter" [toGreskell $ toGTraversal step])
+gFilter :: (ToGTraversal g, StepType c, StepType p, Logic c p) => g c s e -> Step p s s
+gFilter step = unsafeStep (methodCall "filter" [toGreskell $ toGTraversal step])
 
 -- | @.has@ step.
 gHas :: (Element s)
      => Greskell -- ^ target
      -> Greskell -- ^ expectation
-     -> GStep Filter s s
-gHas target expec = unsafeGStep $ methodCall "has" [target, expec]
+     -> Step Filter s s
+gHas target expec = unsafeStep $ methodCall "has" [target, expec]
 
 -- | Polymorphic version of 'gHas'.
-gHas' :: (Element s, StepType c) => Greskell -> Greskell -> GStep c s s
+gHas' :: (Element s, StepType c) => Greskell -> Greskell -> Step c s s
 gHas' t e = liftType $ gHas t e
 
 -- | @.hasLabel@ step
 gHasLabel :: Element s
           => [Greskell] -- ^ expected label names
-          -> GStep Filter s s
-gHasLabel = unsafeGStep . methodCall "hasLabel"
+          -> Step Filter s s
+gHasLabel = unsafeStep . methodCall "hasLabel"
 
 -- | Polymorphic version of 'gHasLabel'.
-gHasLabel' :: (Element s, StepType c) => [Greskell] -> GStep c s s
+gHasLabel' :: (Element s, StepType c) => [Greskell] -> Step c s s
 gHasLabel' = liftType . gHasLabel
 
 -- | @.hasId@ step
 gHasId :: Element s
        => [Greskell] -- ^ expected IDs
-       -> GStep Filter s s
-gHasId = unsafeGStep . methodCall "hasId"
+       -> Step Filter s s
+gHasId = unsafeStep . methodCall "hasId"
 
 -- | Polymorphic version of 'gHasId'.
-gHasId' :: (Element s, StepType c) => [Greskell] -> GStep c s s
+gHasId' :: (Element s, StepType c) => [Greskell] -> Step c s s
 gHasId' = liftType . gHasId
 
 multiLogic :: (ToGTraversal g, StepType c, StepType p, Logic c p)
            => Text -- ^ method name
            -> [g c s e]
-           -> GStep p s s
-multiLogic method_name conds = unsafeGStep (methodCall method_name $ map toG conds)
+           -> Step p s s
+multiLogic method_name conds = unsafeStep (methodCall method_name $ map toG conds)
   where
     toG cond = toGreskell $ toGTraversal cond
 
 -- | @.and@ step.
-gAnd :: (ToGTraversal g, StepType c, StepType p, Logic c p) => [g c s e] -> GStep p s s
+gAnd :: (ToGTraversal g, StepType c, StepType p, Logic c p) => [g c s e] -> Step p s s
 gAnd = multiLogic "and"
 
 -- | @.or@ step.
-gOr :: (ToGTraversal g, StepType c, StepType p, Logic c p) => [g c s e] -> GStep p s s
+gOr :: (ToGTraversal g, StepType c, StepType p, Logic c p) => [g c s e] -> Step p s s
 gOr = multiLogic "or"
 
 -- | @.not@ step.
-gNot :: (ToGTraversal g, StepType c, StepType p, Logic c p) => g c s e -> GStep p s s
-gNot cond = unsafeGStep (methodCall "not" [toGreskell $ toGTraversal cond])
+gNot :: (ToGTraversal g, StepType c, StepType p, Logic c p) => g c s e -> Step p s s
+gNot cond = unsafeStep (methodCall "not" [toGreskell $ toGTraversal cond])
 
 -- | @.range@ step.
 gRange :: Greskell
        -- ^ min
        -> Greskell
        -- ^ max
-       -> GStep Transform s s
-gRange min_g max_g = unsafeGStep (methodCall "range" [min_g, max_g])
+       -> Step Transform s s
+gRange min_g max_g = unsafeStep (methodCall "range" [min_g, max_g])
 
 -- | @.order@ and @.by@ steps
 gOrderBy :: (ToGTraversal g)
          => [(g Transform s e, Greskell)]
          -- ^ (accessor steps, comparator) of each @.by@
-         -> GStep Transform s s
-gOrderBy bys = unsafeGStep (methodCall "order" [] <> bys_g)
+         -> Step Transform s s
+gOrderBy bys = unsafeStep (methodCall "order" [] <> bys_g)
   where
     bys_g = mconcat $ map toG bys
     toG (accessor, comparator) =
       methodCall "by" [(toGreskell $ toGTraversal accessor), comparator]
 
 -- | @.flatMap@ step
-gFlatMap :: (ToGTraversal g, StepType c) => g c s e -> GStep c s e
-gFlatMap gt = unsafeGStep (methodCall "flatMap" [toGreskell $ toGTraversal gt])
+gFlatMap :: (ToGTraversal g, StepType c) => g c s e -> Step c s e
+gFlatMap gt = unsafeStep (methodCall "flatMap" [toGreskell $ toGTraversal gt])
 
 -- | @.values@ step.
 gValues :: Element s
         => [Greskell]
         -- ^ property keys
-        -> GStep Transform s PropertyValue
-gValues = unsafeGStep . methodCall "values"
+        -> Step Transform s PropertyValue
+gValues = unsafeStep . methodCall "values"
 
-genericTraversalStep :: Vertex v => Text -> [Greskell] -> GStep Transform v e
+genericTraversalStep :: Vertex v => Text -> [Greskell] -> Step Transform v e
 genericTraversalStep method_name edge_labels =
-  unsafeGStep (methodCall method_name edge_labels)
+  unsafeStep (methodCall method_name edge_labels)
 
 -- | @.out@ step
 gOut :: (Vertex v)
      => [Greskell] -- ^ edge labels
-     -> GStep Transform v GVertex
+     -> Step Transform v GVertex
 gOut = gOut'
 
 -- | Polymorphic version of 'gOut'.
-gOut' :: (Vertex v1, Vertex v2) => [Greskell] -> GStep Transform v1 v2
+gOut' :: (Vertex v1, Vertex v2) => [Greskell] -> Step Transform v1 v2
 gOut' = genericTraversalStep "out"
 
 -- | @.outE@ step
 gOutE :: (Vertex v)
       => [Greskell] -- ^ edge labels
-      -> GStep Transform v GEdge
+      -> Step Transform v GEdge
 gOutE = gOutE'
 
 -- | Polymorphic version of 'gOutE'
-gOutE' :: (Vertex v, Edge e) => [Greskell] -> GStep Transform v e
+gOutE' :: (Vertex v, Edge e) => [Greskell] -> Step Transform v e
 gOutE' = genericTraversalStep "outE"
 
 -- | @.in@ step
 gIn :: (Vertex v)
     => [Greskell] -- ^ edge labels
-    -> GStep Transform v GVertex
+    -> Step Transform v GVertex
 gIn = gIn'
 
 -- | Polymorphic version of 'gIn'.
-gIn' :: (Vertex v1, Vertex v2) => [Greskell] -> GStep Transform v1 v2
+gIn' :: (Vertex v1, Vertex v2) => [Greskell] -> Step Transform v1 v2
 gIn' = genericTraversalStep "in"
 
 -- | @.inE@ step.
 gInE :: (Vertex v)
      => [Greskell] -- ^ edge labels
-     -> GStep Transform v GEdge
+     -> Step Transform v GEdge
 gInE = gInE
 
 -- | Polymorphic version of 'gInE'.
-gInE' :: (Vertex v, Edge e) => [Greskell] -> GStep Transform v e
+gInE' :: (Vertex v, Edge e) => [Greskell] -> Step Transform v e
 gInE' = genericTraversalStep "inE"
 
 ---- -- probably we can implement .as() step like this. GBuilder generates
 ---- -- some 'Label', which is passed to .as() step and can be passed later
 ---- -- to .select() step etc.
----- gAs :: GBuilder (Label, GStep Filter s s)
+---- gAs :: GBuilder (Label, Step Filter s s)
 ---- gAs = undefined
