@@ -94,7 +94,7 @@ import Data.Greskell.Greskell
 newtype GStep c s e = GStep { unGStep :: Greskell }
                     deriving (Show)
 
--- | 'id' is 'identity'.
+-- | 'id' is 'gIdentity'.
 instance StepType c => Category (GStep c) where
   id = liftType gIdentity
   bc . ab = unsafeGStep (unGStep ab <> unGStep bc)
@@ -107,7 +107,8 @@ instance Functor (GStep c s) where
 instance Bifunctor (GStep c) where
   bimap _ _ = GStep . unGStep
 
--- | Call static method versions of the 'GStep' on @__@ class.
+-- | To convert a 'GStep' to 'GTraversal', it calls its static method
+-- version on @__@ class.
 instance ToGTraversal GStep where
   toGTraversal step = unsafeGTraversal (raw "__" <> toGreskell step)
   liftType = GStep . unGStep
@@ -119,9 +120,9 @@ instance GreskellLike (GStep c s e) where
 
 -- | GraphTraversal class object of TinkerPop.
 --
--- 'GTraversal' is practically the same as 'GStep'. 'GTraversal' is a
--- Java-object in Gremlin domain, while 'GStep' is a chain of method
--- calls.
+-- 'GTraversal' is similar to 'GStep'. 'GTraversal' is a Java-object
+-- in Gremlin domain, while 'GStep' is a chain of method calls. As a
+-- Java object, 'GTraversal' keeps some context data in it.
 newtype GTraversal c s e = GTraversal { unGTraversal :: Greskell }
                          deriving (Show)
                                   
@@ -154,7 +155,7 @@ instance ToGTraversal GTraversal where
   liftType = GTraversal . unGTraversal
 
 
--- | Phantom type markers to describe the feature fo the
+-- | Class of phantom type markers to describe the feature of the
 -- step/traversal.
 class StepType t
 
@@ -165,10 +166,12 @@ class StepType t
 -- traversal actions, or side-effects. Filtering decision must be
 -- solely based on each element.
 --
--- This leads to the following property.
+-- A 'GStep' @s@ is 'Filter' type iff:
 --
--- > s1, s2 :: GStep Filter s s
--- > gFilter s1 == s1
+-- > (gSideEffect s == gIdentity) AND (gFilter s == s)
+--
+-- If 'GStep's @s1@ and @s2@ are 'Filter' type, then
+-- 
 -- > gAnd [s1, s2] == s1 >>> s2 == s2 >>> s1
 data Filter
 
@@ -177,6 +180,12 @@ instance StepType Filter
 -- | StepType for steps that are not filtering steps and without
 -- side-effects. This includes transformations, reordring, injections
 -- and graph traversal actions.
+--
+-- A 'GStep' @s@ is 'Transform' type iff:
+--
+-- > gSideEffect s == gIdentity
+--
+-- Obviously, every 'Filter' type 'GStep's are also 'Transform' type.
 data Transform
 
 instance StepType Transform
