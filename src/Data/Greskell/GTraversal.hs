@@ -192,9 +192,9 @@ instance StepType Transform
 
 -- | StepType for steps may have side-effects.
 --
--- A side-effect here means the \"sideEffect\" in Gremlin context
--- (i.e. a stash of data kept in a Traversal object), as well as
--- interaction with the world outside the Traversal object.
+-- A side-effect here means manipulation of the \"sideEffect\" in
+-- Gremlin context (i.e. a stash of data kept in a Traversal object),
+-- as well as interaction with the world outside the Traversal object.
 --
 -- For example, the following steps (in Gremlin) all have
 -- side-effects.
@@ -203,20 +203,19 @@ instance StepType Transform
 -- > .aggregate('x')
 -- > .sideEffect(System.out.&println)
 -- > .map { some_variable += 1 }
-data SideEffect t
+data SideEffect
 
 -- Needs FlexibleInstances extension.
-instance StepType (SideEffect Filter)
-instance StepType (SideEffect Transform)
+instance StepType SideEffect
 
 -- | Relation of 'StepType's in which one includes the other. @from@
--- can be lifted to @to@, because @to@ is more powerful than @to@.
+-- can be lifted to @to@, because @to@ is more powerful than @from@.
 class Lift from to
 
-instance (StepType t) => Lift Filter t
+instance (StepType c) => Lift Filter c
 instance Lift Transform Transform
-instance Lift Transform (SideEffect Transform)
-instance (Lift f t) => Lift (SideEffect f) (SideEffect t)
+instance Lift Transform SideEffect
+instance Lift SideEffect SideEffect
 
 -- | Relation of 'StepType's in logic step/traversals, e.g., 'gFilter'
 -- and 'gOr'. @c@ is the 'StepType' of logic operands (children), @p@
@@ -227,9 +226,8 @@ instance (StepType p) => Logic Filter p
 instance (StepType p) => Logic Transform p
 -- ^ 'Transform' without any side-effect doesn't restrict the logic
 -- result.
-instance (StepType c, StepType p) => Logic (SideEffect c) (SideEffect p)
+instance Logic SideEffect SideEffect
 -- ^ 'SideEffect' is inherited by the logic result.
-
 
 
 unsafeGTraversal :: Greskell -> GTraversal c s e
