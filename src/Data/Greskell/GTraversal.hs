@@ -82,22 +82,17 @@ import Data.Greskell.Greskell
   )
 
 
--- | GraphTraversal class object of TinkerPop. It takes data @s@ from
--- upstream and emits data @e@ to downstream. Type @c@ is a marker to
--- describe the effect of the traversal.
+-- | @GraphTraversal@ class object of TinkerPop. It takes data @s@
+-- from upstream and emits data @e@ to downstream. Type @c@ is a
+-- marker to describe the effect of the traversal.
 --
--- 'GTraversal' is similar to 'Step'. 'GTraversal' is a Java-object
--- in Gremlin domain, while 'Step' is a chain of method calls. As a
--- Java object, 'GTraversal' keeps some context data in it.
+-- 'GTraversal' is NOT a 'Category'. Because a @GraphTraversal@ object
+-- keeps some context data, the starting (left-most) @GraphTraversal@
+-- object controls most of the behavior of entire composition of
+-- traversals and steps. This violates 'Category' law.
 newtype GTraversal c s e = GTraversal { unGTraversal :: Greskell }
                          deriving (Show)
                                   
--- | 'id' is @__.identity()@. '(.)' compose 'GTraversal's by
--- @.flatMap@ step.
-instance StepType c => Category (GTraversal c) where
-  id = toGTraversal $ liftType gIdentity
-  a . b = b @. gFlatMap a
-
 -- | Unsafely convert output type.
 instance Functor (GTraversal c s) where
   fmap _ = GTraversal . unGTraversal
