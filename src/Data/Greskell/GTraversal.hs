@@ -9,9 +9,9 @@
 module Data.Greskell.GTraversal
        ( -- * Types
          -- ** Gremlin Traversals and Steps
-         Step,
          GTraversal,
          ToGTraversal(..),
+         Step,
          -- ** Step types
          StepType,
          Filter,
@@ -82,44 +82,9 @@ import Data.Greskell.Greskell
   )
 
 
--- | A Gremlin step that takes data @s@ from upstream and emits data
--- @e@ to downstream. Type @c@ is a marker to describe the step. This
--- is NOT the Gremlin's @Step@ class, but it's a method call such as
--- @.has(x)@ and @.outE()@ .
---
--- 'Step' is a 'Category'. Use its methods to compose them.
---
--- 'Step' is not an 'Eq', because it's difficult to define true
--- equality between Gremlin method calls. If we define it naively, it
--- might have conflict with 'Category' law.
-newtype Step c s e = Step { unStep :: Greskell }
-                    deriving (Show)
-
--- | 'id' is 'gIdentity'.
-instance StepType c => Category (Step c) where
-  id = liftType gIdentity
-  bc . ab = unsafeStep (unStep ab <> unStep bc)
-
--- | Unsafely convert output type
-instance Functor (Step c s) where
-  fmap _ = Step . unStep
-
--- | Unsafely convert input and output types.
-instance Bifunctor (Step c) where
-  bimap _ _ = Step . unStep
-
--- | To convert a 'Step' to 'GTraversal', it calls its static method
--- version on @__@ class.
-instance ToGTraversal Step where
-  toGTraversal step = unsafeGTraversal (raw "__" <> toGreskell step)
-  liftType = Step . unStep
-
-instance GreskellLike (Step c s e) where
-  unsafeFromGreskell = Step
-  toGreskell = unStep
-
-
--- | GraphTraversal class object of TinkerPop.
+-- | GraphTraversal class object of TinkerPop. It takes data @s@ from
+-- upstream and emits data @e@ to downstream. Type @c@ is a marker to
+-- describe the effect of the traversal.
 --
 -- 'GTraversal' is similar to 'Step'. 'GTraversal' is a Java-object
 -- in Gremlin domain, while 'Step' is a chain of method calls. As a
@@ -154,6 +119,48 @@ class ToGTraversal g where
 instance ToGTraversal GTraversal where
   toGTraversal = id
   liftType = GTraversal . unGTraversal
+
+
+-- | A Gremlin step. Like 'GTraversal', type @s@ is the input, type
+-- @e@ is the output, and type @c@ is a marker to describe the step.
+--
+-- This is NOT the Gremlin's @Step@ class object, but it's a method
+-- call such as @.has(x)@ and @.outE()@.
+--
+-- 'Step' is a 'Category'. You can use functions from
+-- "Control.Category" to compose 'Step's. This is equivalent to making
+-- a chain of method calls in Gremlin.
+--
+-- 'Step' is not an 'Eq', because it's difficult to define true
+-- equality between Gremlin method calls. If we define it naively, it
+-- might have conflict with 'Category' law.
+newtype Step c s e = Step { unStep :: Greskell }
+                    deriving (Show)
+
+-- | 'id' is 'gIdentity'.
+instance StepType c => Category (Step c) where
+  id = liftType gIdentity
+  bc . ab = unsafeStep (unStep ab <> unStep bc)
+
+-- | Unsafely convert output type
+instance Functor (Step c s) where
+  fmap _ = Step . unStep
+
+-- | Unsafely convert input and output types.
+instance Bifunctor (Step c) where
+  bimap _ _ = Step . unStep
+
+-- | To convert a 'Step' to 'GTraversal', it calls its static method
+-- version on @__@ class.
+instance ToGTraversal Step where
+  toGTraversal step = unsafeGTraversal (raw "__" <> toGreskell step)
+  liftType = Step . unStep
+
+instance GreskellLike (Step c s e) where
+  unsafeFromGreskell = Step
+  toGreskell = unStep
+
+
 
 
 -- | Class of phantom type markers to describe the feature of the
