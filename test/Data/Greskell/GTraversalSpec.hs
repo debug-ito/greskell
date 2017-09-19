@@ -14,8 +14,8 @@ main = hspec spec
 
 spec :: Spec
 spec = do
-  describe "Logic typeclass" $ do
-    let c = checkLogicCompatible
+  describe "Split typeclass" $ do
+    let c = checkSplitCompatible
     c "Filter" "Filter" True
     c "Filter" "Transform" True
     c "Filter" "SideEffect" True
@@ -56,8 +56,8 @@ checkStepTypeRelation makeCode child parent expect_ok = specify label $ doCheck
       setTopLevelModules ["Data.Greskell.GTraversal"]
       typeOf $ makeCode child parent
 
-checkLogicCompatible :: String -> String -> Bool -> Spec
-checkLogicCompatible = checkStepTypeRelation makeCode
+checkSplitCompatible :: String -> String -> Bool -> Spec
+checkSplitCompatible = checkStepTypeRelation makeCode
   where
     makeCode child parent =
       "let f :: Step " ++ child ++ " s s -> Step " ++ parent ++ " s s; "

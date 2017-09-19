@@ -18,7 +18,7 @@ module Data.Greskell.GTraversal
          Transform,
          SideEffect,
          Lift,
-         Logic,
+         Split,
          -- ** Types in Gremlin
          Element,
          Vertex,
@@ -207,11 +207,10 @@ instance StepType Transform
 -- > .map { some_variable += 1 }
 data SideEffect
 
--- Needs FlexibleInstances extension.
 instance StepType SideEffect
 
--- | Relation of 'StepType's in which one includes the other. @from@
--- can be lifted to @to@, because @to@ is more powerful than @from@.
+-- | Relation of 'StepType's where one includes the other. @from@ can
+-- be lifted to @to@, because @to@ is more powerful than @from@.
 class Lift from to
 
 instance (StepType c) => Lift Filter c
@@ -219,17 +218,16 @@ instance Lift Transform Transform
 instance Lift Transform SideEffect
 instance Lift SideEffect SideEffect
 
--- | Relation of 'StepType's in logic step/traversals, e.g., 'gFilter'
--- and 'gOr'. @c@ is the 'StepType' of logic operands (children), @p@
--- is the 'StepType' of the result (parent).
-class Logic c p
+-- | Relation of 'StepType's where the child step @c@ is split from
+-- the parent step @p@.
+class Split c p
 
-instance (StepType p) => Logic Filter p
-instance (StepType p) => Logic Transform p
--- ^ 'Transform' without any side-effect doesn't restrict the logic
--- result.
-instance Logic SideEffect SideEffect
--- ^ 'SideEffect' is inherited by the logic result.
+instance (StepType p) => Split Filter p
+instance (StepType p) => Split Transform p
+-- ^ 'Transform' effect in the child step is rolled back in the parent
+-- step.
+instance Split SideEffect SideEffect
+-- ^ 'SideEffect' in the child step remains in the parent step.
 
 
 unsafeGTraversal :: Greskell -> GTraversal c s e
@@ -309,7 +307,7 @@ gFilterL' :: (StepType c) => Greskell -> Step c s s
 gFilterL' = liftType . gFilterL
 
 -- | @.filter@ step with steps(traversal).
-gFilter :: (ToGTraversal g, StepType c, StepType p, Logic c p) => g c s e -> Step p s s
+gFilter :: (ToGTraversal g, StepType c, StepType p, Split c p) => g c s e -> Step p s s
 gFilter step = unsafeStep (methodCall "filter" [toGreskell $ toGTraversal step])
 
 -- | @.has@ step.
@@ -343,7 +341,7 @@ gHasId = unsafeStep . methodCall "hasId"
 gHasId' :: (Element s, StepType c) => [Greskell] -> Step c s s
 gHasId' = liftType . gHasId
 
-multiLogic :: (ToGTraversal g, StepType c, StepType p, Logic c p)
+multiLogic :: (ToGTraversal g, StepType c, StepType p, Split c p)
            => Text -- ^ method name
            -> [g c s e]
            -> Step p s s
@@ -352,15 +350,15 @@ multiLogic method_name conds = unsafeStep (methodCall method_name $ map toG cond
     toG cond = toGreskell $ toGTraversal cond
 
 -- | @.and@ step.
-gAnd :: (ToGTraversal g, StepType c, StepType p, Logic c p) => [g c s e] -> Step p s s
+gAnd :: (ToGTraversal g, StepType c, StepType p, Split c p) => [g c s e] -> Step p s s
 gAnd = multiLogic "and"
 
 -- | @.or@ step.
-gOr :: (ToGTraversal g, StepType c, StepType p, Logic c p) => [g c s e] -> Step p s s
+gOr :: (ToGTraversal g, StepType c, StepType p, Split c p) => [g c s e] -> Step p s s
 gOr = multiLogic "or"
 
 -- | @.not@ step.
-gNot :: (ToGTraversal g, StepType c, StepType p, Logic c p) => g c s e -> Step p s s
+gNot :: (ToGTraversal g, StepType c, StepType p, Split c p) => g c s e -> Step p s s
 gNot cond = unsafeStep (methodCall "not" [toGreskell $ toGTraversal cond])
 
 -- | @.range@ step.
