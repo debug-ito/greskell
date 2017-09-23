@@ -130,9 +130,9 @@ instance ToGTraversal GTraversal where
 newtype Step c s e = Step { unStep :: Greskell }
                     deriving (Show)
 
--- | 'id' is 'gIdentity'.
+-- | 'id' is 'gIdentity''.
 instance StepType c => Category (Step c) where
-  id = liftType gIdentity
+  id = gIdentity'
   bc . ab = unsafeStep (unStep ab <> unStep bc)
 
 -- | Unsafely convert output type
