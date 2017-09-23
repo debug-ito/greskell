@@ -39,8 +39,6 @@ module Data.Greskell.GTraversal
          -- ** Filter step
          gIdentity,
          gIdentity',
-         gFilterL,
-         gFilterL',
          gFilter,
          gHas,
          gHas',
@@ -295,16 +293,6 @@ gIdentity = unsafeStep $ methodCall "identity" []
 -- | Polymorphic version of 'gIdentity'.
 gIdentity' :: StepType c => Step c s s
 gIdentity' = liftType $ gIdentity
-
--- | @.filter@ step with lambda block.
-gFilterL :: Greskell
-         -- ^ Gremlin code inside filter's @{}@ block.
-         -> Step Filter s s
-gFilterL block = unsafeStep (methodCall "filter" [raw "{" <> block <> raw "}"])
-
--- | Polymorphic version of 'gFilterL'.
-gFilterL' :: (StepType c) => Greskell -> Step c s s
-gFilterL' = liftType . gFilterL
 
 -- | @.filter@ step with steps(traversal).
 gFilter :: (ToGTraversal g, StepType c, StepType p, Split c p) => g c s e -> Step p s s
