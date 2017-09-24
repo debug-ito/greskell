@@ -8,7 +8,7 @@
 -- 
 module Data.Greskell.GTraversal
        ( -- * Types
-         -- ** Gremlin Traversals and Steps
+         -- ** GraphTraversals and Steps
          GTraversal,
          ToGTraversal(..),
          Step,
@@ -19,6 +19,8 @@ module Data.Greskell.GTraversal
          SideEffect,
          Lift,
          Split,
+         -- ** GraphTraversalSource
+         GTraversalSource,
          -- ** Types in Gremlin
          Element,
          Vertex,
@@ -27,12 +29,12 @@ module Data.Greskell.GTraversal
          GEdge,
          PropertyValue,
          ElementID,
+         -- * GraphTraversalSource
+         source,
+         vertices,
+         vertices',
          -- * GTraversal
          (@.),
-         allVertices,
-         allVertices',
-         vertexByID,
-         vertexByID',
          unsafeGTraversal,
          -- * Step
          unsafeStep,
@@ -228,25 +230,38 @@ instance Split SideEffect SideEffect
 -- ^ 'SideEffect' in the child step remains in the parent step.
 
 
+-- | @GraphTraversalSource@ class object of TinkerPop. It is a factory
+-- object of 'GTraversal's.
+newtype GTraversalSource = GTraversalSource { unGTraversalSource :: Greskell }
+                         deriving (Show)
+
+instance GreskellLike GTraversalSource where
+  unsafeFromGreskell = GTraversalSource
+  toGreskell = unGTraversalSource
+
+-- | Create 'GTraversalSource' from a varible name in Gremlin
+source :: Text -- ^ variable name of @GraphTraversalSource@
+       -> GTraversalSource
+source = GTraversalSource . raw
+
+-- | @.V()@ method on @GraphTraversalSource@.
+vertices :: GTraversalSource
+         -> [Greskell] -- ^ vertex IDs
+         -> GTraversal Transform Void GVertex
+vertices src ids = GTraversal (unGTraversalSource src <> methodCall "V" ids)
+
+-- | Polymorphic version of 'vertices'.
+vertices' :: Vertex v
+          => GTraversalSource
+          -> [Greskell]
+          -> GTraversal Transform Void v
+vertices' src ids = GTraversal (unGTraversalSource src <> methodCall "V" ids)
+
+
+
+
 unsafeGTraversal :: Greskell -> GTraversal c s e
 unsafeGTraversal = GTraversal
-
--- | TinkerPop traversal to get all vertices.
-allVertices :: GTraversal Transform Void GVertex
-allVertices = allVertices'
-
--- | Polymorphic version of 'allVertices'.
-allVertices' :: Vertex v => GTraversal Transform Void v
-allVertices' = unsafeGTraversal $ raw "g.V()"
-
-vertexByID :: Greskell
-              -- ^ Gremlin code for vertex ID.
-           -> GTraversal Transform Void GVertex
-vertexByID = vertexByID'
-
--- | Polymorphic version of 'vertexByID'.
-vertexByID' :: Vertex v => Greskell -> GTraversal Transform Void v
-vertexByID' vid = unsafeGTraversal (raw "g" <> methodCall "V" [vid])
 
 infixl 5 @.
 
