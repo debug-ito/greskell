@@ -368,9 +368,21 @@ gOrderBy bys = unsafeStep (methodCall "order" [] <> bys_g)
     toG (accessor, comparator) =
       methodCall "by" [(toGreskell $ toGTraversal accessor), comparator]
 
--- | @.flatMap@ step
-gFlatMap :: (ToGTraversal g, StepType c) => g c s e -> Step c s e
+-- | @.flatMap@ step.
+--
+-- @.flatMap@ step is a 'Transform' step even if the child step is
+-- 'Filter' type. This is because @.flatMap@ step always modifies the
+-- path of the Traverser.
+gFlatMap :: (ToGTraversal g) => g Transform s e -> Step Transform s e
 gFlatMap gt = unsafeStep (methodCall "flatMap" [toGreskell $ toGTraversal gt])
+
+-- -- | Polymorphic version of 'gFlatMap'. The following constraint is
+-- -- accurate and semantic, but it's not allowed even if
+-- -- FlexibleContexts is enabled. Probably it's because the type @m@ is
+-- -- left ambiguous.
+-- gFlatMap' :: (ToGTraversal g, Split c m, Lift Transform p, Lift m p) => g c s e -> Step p s e
+-- gFlatMap = undefined
+
 
 -- | @.values@ step.
 gValues :: Element s
