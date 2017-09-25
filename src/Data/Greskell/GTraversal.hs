@@ -33,6 +33,8 @@ module Data.Greskell.GTraversal
          source,
          vertices,
          vertices',
+         edges,
+         edges',
          -- * GTraversal
          (&.),
          ($.),
@@ -258,11 +260,18 @@ vertices' :: Vertex v
           -> GTraversal Transform Void v
 vertices' ids src = GTraversal (unGTraversalSource src <> methodCall "V" ids)
 
+-- | @.E()@ method on @GraphTraversalSource@.
+edges :: [Greskell] -- ^ edge IDs
+      -> GTraversalSource -> GTraversal Transform Void GEdge
+edges = edges'
+
+-- | Polymorphic version of 'edges'.
+edges' :: Edge e => [Greskell] -> GTraversalSource -> GTraversal Transform Void e
+edges' ids src = GTraversal (unGTraversalSource src <> methodCall "E" ids)
 
 
 unsafeGTraversal :: Greskell -> GTraversal c s e
 unsafeGTraversal = GTraversal
-
 
 infixl 1 &.
 
