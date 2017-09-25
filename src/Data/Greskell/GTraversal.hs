@@ -245,18 +245,17 @@ source :: Text -- ^ variable name of @GraphTraversalSource@
 source = GTraversalSource . raw
 
 -- | @.V()@ method on @GraphTraversalSource@.
-vertices :: GTraversalSource
-         -> [Greskell] -- ^ vertex IDs
+vertices :: [Greskell] -- ^ vertex IDs
+         -> GTraversalSource
          -> GTraversal Transform Void GVertex
-vertices src ids = GTraversal (unGTraversalSource src <> methodCall "V" ids)
+vertices = vertices'
 
 -- | Polymorphic version of 'vertices'.
 vertices' :: Vertex v
-          => GTraversalSource
-          -> [Greskell]
+          => [Greskell]
+          -> GTraversalSource
           -> GTraversal Transform Void v
-vertices' src ids = GTraversal (unGTraversalSource src <> methodCall "V" ids)
-
+vertices' ids src = GTraversal (unGTraversalSource src <> methodCall "V" ids)
 
 
 

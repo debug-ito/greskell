@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 module Data.Greskell.GTraversalSpec (main,spec) where
 
 import Data.Either (isRight)
@@ -9,11 +10,22 @@ import Language.Haskell.Interpreter
 import System.IO (stderr, hPutStrLn)
 import Test.Hspec
 
+import Data.Greskell.Greskell (runGreskell', raw)
+import Data.Greskell.GTraversal
+  ( source, vertices
+  )
+
+
 main :: IO ()
 main = hspec spec
 
 spec :: Spec
 spec = do
+  spec_StepType_classes
+  spec_GTraversalSource
+
+spec_StepType_classes :: Spec
+spec_StepType_classes = do
   describe "Split typeclass" $ do
     let c = checkSplitCompatible
     c "Filter" "Filter" True
@@ -37,7 +49,6 @@ spec = do
     c "SideEffect" "Transform" False
     c "SideEffect" "SideEffect" True
   
-
 toErrString :: Either InterpreterError a -> Either String a
 toErrString (Right a) = Right a
 toErrString (Left e) = Left $ show e
@@ -73,3 +84,10 @@ checkLiftCompatible = checkStepTypeRelation makeCode
       "let f :: Step " ++ child ++ " s e -> Step " ++ parent ++ " s e; "
       ++ "f = liftType; "
       ++ "in f"
+
+spec_GTraversalSource :: Spec
+spec_GTraversalSource = describe "GTraversalSource" $ do
+  specify "g.V()" $ do
+    (runGreskell' $ vertices [] $ source "g") `shouldBe` ("g.V()")
+  specify "g.V(1,2,3)" $ do
+    (runGreskell' $ vertices (map raw ["1","2","3"]) $ source "g") `shouldBe` ("g.V(1,2,3)")
