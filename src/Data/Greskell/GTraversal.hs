@@ -21,14 +21,6 @@ module Data.Greskell.GTraversal
          Split,
          -- ** GraphTraversalSource
          GTraversalSource,
-         -- ** Types in Gremlin
-         Element,
-         Vertex,
-         Edge,
-         GVertex,
-         GEdge,
-         PropertyValue,
-         ElementID,
          -- * GraphTraversalSource
          source,
          vertices,
@@ -79,6 +71,9 @@ import Data.Monoid ((<>), mconcat)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Void (Void)
+import Data.Greskell.Graph
+  ( Element, Vertex, Edge, GVertex, GEdge
+  )
 import Data.Greskell.Greskell
   ( Greskell, raw, methodCall,
     GreskellLike(..)
@@ -286,32 +281,6 @@ infixr 0 $.
 ($.) :: Step c b d -> GTraversal c a b -> GTraversal c a d
 gs $. gt = gt &. gs
 
--- | Element interface in a TinkerPop graph.
-class Element e 
-
--- | Vertex interface in a TinkerPop graph.
-class Element v => Vertex v
-
--- | Edge interface in a TinkerPop graph.
-class Element e => Edge e
-
--- | General vertex type you can use for 'Vertex' class.
-data GVertex
-
-instance Element GVertex
-instance Vertex GVertex
-
--- | General edge type you can use for 'Edge' class.
-data GEdge
-
-instance Element GEdge
-instance Edge GEdge
-
--- | Value object in a TinkerPop graph.
-data PropertyValue
-
--- | ID object type for Elements
-data ElementID
 
 unsafeStep :: StepType c => Greskell -> Step c s e
 unsafeStep = Step
@@ -420,7 +389,7 @@ gFlatMap gt = unsafeStep (methodCall "flatMap" [toGreskell $ toGTraversal gt])
 gValues :: Element s
         => [Greskell]
         -- ^ property keys
-        -> Step Transform s PropertyValue
+        -> Step Transform s e
 gValues = unsafeStep . methodCall "values"
 
 genericTraversalStep :: Vertex v => Text -> [Greskell] -> Step Transform v e

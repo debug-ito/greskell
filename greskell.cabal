@@ -23,6 +23,7 @@ library
   exposed-modules:      Data.Greskell,
                         Data.Greskell.Greskell,
                         Data.Greskell.Binder,
+                        Data.Greskell.Graph,
                         Data.Greskell.GTraversal
   -- other-modules:        
   build-depends:        base,
