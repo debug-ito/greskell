@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Data.Greskell.GTraversalSpec (main,spec) where
 
-import Control.Category ((>>>))
+import Control.Category ((>>>), (<<<))
 import Data.Either (isRight)
 import Data.Function ((&))
 import Language.Haskell.Interpreter
@@ -15,7 +15,7 @@ import Test.Hspec
 import Data.Greskell.Greskell (runGreskell', raw, rawS)
 import Data.Greskell.GTraversal
   ( source, vertices, (&.), ($.),
-    gHas', gOut, gRange, gValues, gNot
+    gHas', gOut, gRange, gValues, gNot, gIn
   )
 
 
@@ -108,3 +108,6 @@ spec_compose_steps = describe "DSL to compose steps" $ do
   specify "($) and ($.)" $ do
     let gt = gRange (raw "20") (raw "30") $. gNot (gOut ["friends_to"]) $. vertices [] $ source "g"
     runGreskell' gt `shouldBe` "g.V().not(__.out(\"friends_to\")).range(20,30)"
+  specify "($) and ($.) and (<<<)" $ do
+    let gt = gHas' "name" "hoge" <<< gIn ["foo", "bar"] <<< gIn [] $. vertices [] $ source "g"
+    runGreskell' gt `shouldBe` "g.V().in().in(\"foo\",\"bar\").has(\"name\",\"hoge\")"
