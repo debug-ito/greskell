@@ -320,9 +320,11 @@ gFilter :: (ToGTraversal g, StepType c, StepType p, Split c p) => g c s e -> Ste
 gFilter step = unsafeStep (methodCall "filter" [toGreskell $ toGTraversal step])
 
 -- | @.has@ step.
+--
+-- TODO: @.has@ step has some overloaded behaviors.
 gHas :: (Element s)
-     => Greskell -- ^ target
-     -> Greskell -- ^ expectation
+     => Greskell -- ^ key
+     -> Greskell -- ^ expectation (value or predicate expression)
      -> Step Filter s s
 gHas target expec = unsafeStep $ methodCall "has" [target, expec]
 
