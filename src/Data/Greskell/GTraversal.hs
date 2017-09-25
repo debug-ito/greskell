@@ -34,7 +34,7 @@ module Data.Greskell.GTraversal
          vertices,
          vertices',
          -- * GTraversal
-         (@.),
+         (&.),
          unsafeGTraversal,
          -- * Step
          unsafeStep,
@@ -262,12 +262,13 @@ vertices' ids src = GTraversal (unGTraversalSource src <> methodCall "V" ids)
 unsafeGTraversal :: Greskell -> GTraversal c s e
 unsafeGTraversal = GTraversal
 
-infixl 5 @.
+
+infixl 1 &.
 
 -- | Apply the 'Step' to the 'GTraversal'. In Gremlin, this means
 -- calling a chain of methods on the Traversal object.
-(@.) :: GTraversal c a b -> Step c b d -> GTraversal c a d
-gt @. gs = unsafeGTraversal (toGreskell gt <> toGreskell gs)
+(&.) :: GTraversal c a b -> Step c b d -> GTraversal c a d
+gt &. gs = unsafeGTraversal (toGreskell gt <> toGreskell gs)
 
 
 -- | Element interface in a TinkerPop graph.

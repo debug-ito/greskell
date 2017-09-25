@@ -2,6 +2,7 @@
 module Data.Greskell.GTraversalSpec (main,spec) where
 
 import Data.Either (isRight)
+import Data.Function ((&))
 import Language.Haskell.Interpreter
   ( loadModules, OptionVal((:=)), set, searchPath,
     setTopLevelModules, runInterpreter, InterpreterError,
@@ -12,7 +13,8 @@ import Test.Hspec
 
 import Data.Greskell.Greskell (runGreskell', raw)
 import Data.Greskell.GTraversal
-  ( source, vertices
+  ( source, vertices, (&.),
+    gHas', gOut, gRange
   )
 
 
@@ -23,6 +25,7 @@ spec :: Spec
 spec = do
   spec_StepType_classes
   spec_GTraversalSource
+  spec_compose_steps
 
 spec_StepType_classes :: Spec
 spec_StepType_classes = do
@@ -91,3 +94,9 @@ spec_GTraversalSource = describe "GTraversalSource" $ do
     (runGreskell' $ vertices [] $ source "g") `shouldBe` ("g.V()")
   specify "g.V(1,2,3)" $ do
     (runGreskell' $ vertices (map raw ["1","2","3"]) $ source "g") `shouldBe` ("g.V(1,2,3)")
+
+spec_compose_steps :: Spec
+spec_compose_steps = describe "DSL to compose steps" $ do
+  specify "(&) and (&.)" $ do
+    let gt = source "g" & vertices [] &. gHas' "x" (raw "100") &. gOut [] &. gRange (raw "0") (raw "100")
+    runGreskell' gt `shouldBe` "g.V().has(\"x\",100).out().range(0,100)"
