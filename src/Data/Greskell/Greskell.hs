@@ -92,7 +92,7 @@ funCall :: Text -- ^ function name
         -> Greskell
 funCall fun_name args = raw fun_name <> raw "(" <> args_g <> raw ")"
   where
-    args_g = mconcat $ intersperse (raw ", ") args
+    args_g = mconcat $ intersperse (raw ",") args
 
 -- | Create a 'Greskell' that calls the given (object or class) method
 -- call with the given arguments.

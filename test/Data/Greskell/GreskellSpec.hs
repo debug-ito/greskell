@@ -32,10 +32,10 @@ spec = do
     specify "escaped" $ checkLiteral "foo 'aaa \n \t \\ \"bar\"" "\"foo 'aaa \\n \\t \\\\ \\\"bar\\\"\""
   describe "funCall" $ do
     it "should make function call" $ do
-      (runGreskell $ funCall "fun" ["foo", raw "bar"]) `shouldBe` "fun(\"foo\", bar)"
+      (runGreskell $ funCall "fun" ["foo", raw "bar"]) `shouldBe` "fun(\"foo\",bar)"
   describe "methodCall" $ do
     it "should make method call" $ do
-      (runGreskell $ methodCall "meth" [raw "hoge", raw "foo", "bar"]) `shouldBe` ".meth(hoge, foo, \"bar\")"
+      (runGreskell $ methodCall "meth" [raw "hoge", raw "foo", "bar"]) `shouldBe` ".meth(hoge,foo,\"bar\")"
 
 
 checkLiteral :: String -> Text -> Expectation
