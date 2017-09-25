@@ -12,7 +12,7 @@ import Language.Haskell.Interpreter
 import System.IO (stderr, hPutStrLn)
 import Test.Hspec
 
-import Data.Greskell.Greskell (runGreskell', raw)
+import Data.Greskell.Greskell (runGreskell', raw, rawS)
 import Data.Greskell.GTraversal
   ( source, vertices, (&.), ($.),
     gHas', gOut, gRange, gValues, gNot
@@ -94,7 +94,8 @@ spec_GTraversalSource = describe "GTraversalSource" $ do
   specify "g.V()" $ do
     (runGreskell' $ vertices [] $ source "g") `shouldBe` ("g.V()")
   specify "g.V(1,2,3)" $ do
-    (runGreskell' $ vertices (map raw ["1","2","3"]) $ source "g") `shouldBe` ("g.V(1,2,3)")
+    let ids = [1,2,3] :: [Int]
+    (runGreskell' $ vertices (map rawS ids) $ source "g") `shouldBe` ("g.V(1,2,3)")
 
 spec_compose_steps :: Spec
 spec_compose_steps = describe "DSL to compose steps" $ do

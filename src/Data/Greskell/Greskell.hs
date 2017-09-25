@@ -11,6 +11,7 @@ module Data.Greskell.Greskell
          GreskellLike(..),
          -- * Constructors
          raw,
+         rawS,
          string,
          funCall,
          methodCall,
@@ -61,6 +62,11 @@ instance GreskellLike Greskell where
 -- | Create a raw Gremlin script. It is printed as-is.
 raw :: Text -> Greskell
 raw = Greskell . TL.fromStrict
+
+-- | Use result of 'show' to get a raw Gremlin script. Useful to
+-- create number literals.
+rawS :: Show a => a -> Greskell
+rawS = Greskell . TL.pack . show
 
 -- | Create a string literal in Gremlin script. The content is
 -- automatically escaped.

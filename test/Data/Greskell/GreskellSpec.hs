@@ -8,7 +8,7 @@ import Test.Hspec
 import Test.QuickCheck (property, Arbitrary(..))
 
 import Data.Greskell.Greskell
-  ( raw, runGreskell, string,
+  ( raw, rawS, runGreskell, string,
     placeHolder, toPlaceHolderVariable,
     funCall, methodCall
   )
@@ -24,6 +24,19 @@ spec :: Spec
 spec = do
   describe "raw" $ it "should be just a raw script text" $ property $ \t ->
     (runGreskell $ raw t) `shouldBe` t
+  describe "rawS" $ do
+    specify "integer" $ do
+      let x :: Int
+          x = 123
+      (runGreskell $ rawS x) `shouldBe` "123"
+    specify "negative integer" $ do
+      let x :: Int
+          x = -56
+      (runGreskell $ rawS x) `shouldBe` "-56"
+    specify "floating" $ do
+      let x :: Double
+          x = 92.12
+      (runGreskell $ rawS x) `shouldBe` "92.12"
   describe "placeHolder" $ it "should create a placeholder variable" $ property $ \i ->
     (runGreskell $ placeHolder i) `shouldBe` toPlaceHolderVariable i
   describe "gLateral and fromString" $ do
