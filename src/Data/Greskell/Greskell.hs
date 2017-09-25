@@ -11,7 +11,7 @@ module Data.Greskell.Greskell
          GreskellLike(..),
          -- * Constructors
          raw,
-         literal,
+         string,
          funCall,
          methodCall,
          -- * Conversions
@@ -33,7 +33,7 @@ import qualified Data.Text.Lazy as TL
 newtype Greskell = Greskell { unGreskell :: TL.Text }
                 deriving (Show,Eq,Ord,Monoid)
 
--- | Same as 'literal' except for the input type.
+-- | Same as 'string' except for the input type.
 instance IsString Greskell where
   fromString = Greskell . TL.pack . escapeDQuotes
 
@@ -64,8 +64,8 @@ raw = Greskell . TL.fromStrict
 
 -- | Create a string literal in Gremlin script. The content is
 -- automatically escaped.
-literal :: Text -> Greskell
-literal = fromString . unpack
+string :: Text -> Greskell
+string = fromString . unpack
 
 type PlaceHolderIndex = Int
 

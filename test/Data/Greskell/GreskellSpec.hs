@@ -8,7 +8,7 @@ import Test.Hspec
 import Test.QuickCheck (property, Arbitrary(..))
 
 import Data.Greskell.Greskell
-  ( raw, runGreskell, literal,
+  ( raw, runGreskell, string,
     placeHolder, toPlaceHolderVariable,
     funCall, methodCall
   )
@@ -41,4 +41,4 @@ spec = do
 checkLiteral :: String -> Text -> Expectation
 checkLiteral input expected = do
   (runGreskell $ fromString input) `shouldBe` expected
-  (runGreskell $ literal $ pack input) `shouldBe` expected
+  (runGreskell $ string $ pack input) `shouldBe` expected
