@@ -16,6 +16,7 @@ module Data.Greskell.Greskell
          methodCall,
          -- * Conversions
          runGreskell,
+         runGreskell',
          -- * Placeholders
          PlaceHolderIndex,
          placeHolder,
@@ -79,6 +80,10 @@ toPlaceHolderVariable i =  pack ("__v" ++ show i)
 -- | Create a readable Gremlin script from 'Greskell'.
 runGreskell :: Greskell -> Text
 runGreskell = TL.toStrict . unGreskell
+
+-- | Polymorphic version of 'runGreskell'.
+runGreskell' :: GreskellLike g => g -> Text
+runGreskell' = runGreskell . toGreskell
 
 -- | Create a 'Greskell' that calls the given function with the given
 -- arguments.
