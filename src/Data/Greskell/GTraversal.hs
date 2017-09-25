@@ -35,6 +35,7 @@ module Data.Greskell.GTraversal
          vertices',
          -- * GTraversal
          (&.),
+         ($.),
          unsafeGTraversal,
          -- * Step
          unsafeStep,
@@ -270,6 +271,11 @@ infixl 1 &.
 (&.) :: GTraversal c a b -> Step c b d -> GTraversal c a d
 gt &. gs = unsafeGTraversal (toGreskell gt <> toGreskell gs)
 
+infixr 0 $.
+
+-- | Same as '(&.)' with arguments flipped.
+($.) :: Step c b d -> GTraversal c a b -> GTraversal c a d
+gs $. gt = gt &. gs
 
 -- | Element interface in a TinkerPop graph.
 class Element e 

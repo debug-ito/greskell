@@ -14,8 +14,8 @@ import Test.Hspec
 
 import Data.Greskell.Greskell (runGreskell', raw)
 import Data.Greskell.GTraversal
-  ( source, vertices, (&.),
-    gHas', gOut, gRange, gValues
+  ( source, vertices, (&.), ($.),
+    gHas', gOut, gRange, gValues, gNot
   )
 
 
@@ -104,3 +104,6 @@ spec_compose_steps = describe "DSL to compose steps" $ do
   specify "(&) and (&.) and (>>>)" $ do
     let gt = source "g" & vertices [raw "200"] &. (gOut [] >>> gOut ["friends_to"] >>> gValues ["name"])
     runGreskell' gt `shouldBe` "g.V(200).out().out(\"friends_to\").values(\"name\")"
+  specify "($) and ($.)" $ do
+    let gt = gRange (raw "20") (raw "30") $. gNot (gOut ["friends_to"]) $. vertices [] $ source "g"
+    runGreskell' gt `shouldBe` "g.V().not(__.out(\"friends_to\")).range(20,30)"
