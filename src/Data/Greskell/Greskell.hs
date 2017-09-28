@@ -8,20 +8,20 @@
 module Data.Greskell.Greskell
        ( -- * Type
          Greskell,
-         GreskellLike(..),
          -- * Constructors
-         raw,
-         rawS,
          string,
-         funCall,
-         methodCall,
+         true,
+         false,
          -- * Conversions
          runGreskell,
-         runGreskell',
-         -- * Placeholders
+         runGreskellLazy,
+         -- * Unsafe operations
+         unsafeGreskell,
+         unsafePlaceHolder,
          PlaceHolderIndex,
-         placeHolder,
-         toPlaceHolderVariable
+         toPlaceHolderVariable,
+         unsafeFunCall,
+         unsafeMethodCall
        ) where
 
 import Data.Monoid (Monoid(..), (<>))
@@ -30,13 +30,21 @@ import Data.List (intersperse)
 import Data.Text (Text, pack, unpack)
 import qualified Data.Text.Lazy as TL
 
--- | Gremlin script data.
-newtype Greskell = Greskell { unGreskell :: TL.Text }
-                deriving (Show,Eq,Ord,Monoid)
+-- | Gremlin expression of type @a@.
+--
+-- 'Greskell' is essentially just a piece of Gremlin script with a
+-- phantom type. The type @a@ represents the type of data the script
+-- evaluates to.
+newtype Greskell a = Greskell { unGreskell :: TL.Text }
+                   deriving (Show,Eq,Ord)
 
 -- | Same as 'string' except for the input type.
-instance IsString Greskell where
+instance IsString a => IsString (Greskell a) where
   fromString = Greskell . TL.pack . escapeDQuotes
+
+-- | Unsafely convert the phantom type.
+instance Functor Greskell where
+  fmap _ = Greskell . unGreskell
 
 escapeDQuotes :: String -> String
 escapeDQuotes orig = ('"' : (esc =<< orig)) ++ "\""
@@ -50,34 +58,32 @@ escapeDQuotes orig = ('"' : (esc =<< orig)) ++ "\""
       x    -> [x]
       -- do we have to espace other characters?
 
--- | Something that is isomorphic to 'Greskell'.
-class GreskellLike g where
-  unsafeFromGreskell :: Greskell -> g
-  toGreskell :: g -> Greskell
 
-instance GreskellLike Greskell where
-  unsafeFromGreskell = id
-  toGreskell = id
+-- | Unsafely create a 'Greskell' of arbitrary type. The given Gremlin
+-- script is printed as-is.
+unsafeGreskell :: Text -- ^ Gremlin script
+               -> Greskell a
+unsafeGreskell = Greskell . TL.fromStrict
 
--- | Create a raw Gremlin script. It is printed as-is.
-raw :: Text -> Greskell
-raw = Greskell . TL.fromStrict
-
--- | Use result of 'show' to get a raw Gremlin script. Useful to
--- create number literals.
-rawS :: Show a => a -> Greskell
-rawS = Greskell . TL.pack . show
-
--- | Create a string literal in Gremlin script. The content is
+-- | Create a String literal in Gremlin script. The content is
 -- automatically escaped.
-string :: Text -> Greskell
+string :: Text -> Greskell Text
 string = fromString . unpack
+
+-- | Boolean @true@ literal.
+true :: Greskell Bool
+true = unsafeGreskell "true"
+
+-- | Boolean @false@ literal.
+false :: Greskell Bool
+false = unsafeGreskell "false"
 
 type PlaceHolderIndex = Int
 
--- | Create a placeholder variable with the given index.
-placeHolder :: PlaceHolderIndex -> Greskell
-placeHolder = Greskell . TL.fromStrict . toPlaceHolderVariable
+-- | Unsafely create a placeholder variable of arbitrary type with the
+-- given index.
+unsafePlaceHolder :: PlaceHolderIndex -> Greskell a
+unsafePlaceHolder = Greskell . TL.fromStrict . toPlaceHolderVariable
 
 -- | Create placeholder variable string from the index.
 toPlaceHolderVariable :: PlaceHolderIndex -> Text
@@ -87,22 +93,26 @@ toPlaceHolderVariable i =  pack ("__v" ++ show i)
 runGreskell :: Greskell -> Text
 runGreskell = TL.toStrict . unGreskell
 
--- | Polymorphic version of 'runGreskell'.
-runGreskell' :: GreskellLike g => g -> Text
-runGreskell' = runGreskell . toGreskell
+-- | Same as 'runGreskell' except that this returns lazy 'TL.Text'.
+runGreskellLazy :: Greskell -> TL.Text
+runGreskellLazy = unGreskell
 
--- | Create a 'Greskell' that calls the given function with the given
--- arguments.
-funCall :: Text -- ^ function name
-        -> [Greskell] -- ^ arguments
-        -> Greskell
-funCall fun_name args = raw fun_name <> raw "(" <> args_g <> raw ")"
+unsafeFunCallText :: Text -> [Text] -> Text
+unsafeFunCallText fun_name args = fun_name <> "(" <> args_g <> ")"
   where
-    args_g = mconcat $ intersperse (raw ",") args
+    args_g = mconcat $ intersperse "," args
 
--- | Create a 'Greskell' that calls the given (object or class) method
--- call with the given arguments.
-methodCall :: Text -- ^ method name
-           -> [Greskell] -- ^ arguments
-           -> Greskell
-methodCall method_name args = raw "." <> funCall method_name args
+-- | Unsafely create a 'Greskell' that calls the given function with
+-- the given arguments.
+unsafeFunCall :: Text -- ^ function name
+              -> [Text] -- ^ arguments
+              -> Greskell a
+unsafeFunCall fun_name args = unsafeGreskell $ unsafeFunCallText fun_name args
+
+-- | Unsafely create a 'Greskell' that calls the given (object or
+-- class) method with the given arguments.
+unsafeMethodCall :: Text -- ^ method name
+                 -> [Text] -- ^ arguments
+                 -> Greskell a
+unsafeMethodCall method_name args =
+  unsafeGreskell $ ("." <>) $ unsafeFunCallText method_name args
