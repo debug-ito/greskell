@@ -1,4 +1,5 @@
-{-# LANGUAGE OverloadedStrings, GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# OPTIONS_GHC -fno-warn-redundant-constraints #-}
 -- |
 -- Module: Data.Greskell.Greskell
 -- Description: Low-level Gremlin script data type
@@ -8,14 +9,14 @@
 module Data.Greskell.Greskell
        ( -- * Type
          Greskell,
-         -- * Constructors
+         -- * Literals
          string,
          true,
          false,
          -- * Conversions
          runGreskell,
          runGreskellLazy,
-         -- * Unsafe operations
+         -- * Unsafe constructors
          unsafeGreskell,
          unsafePlaceHolder,
          PlaceHolderIndex,
@@ -25,6 +26,7 @@ module Data.Greskell.Greskell
        ) where
 
 import Data.Monoid (Monoid(..), (<>))
+import Data.Ratio (numerator, denominator)
 import Data.String (IsString(..))
 import Data.List (intersperse)
 import Data.Text (Text, pack, unpack)
@@ -33,18 +35,49 @@ import qualified Data.Text.Lazy as TL
 -- | Gremlin expression of type @a@.
 --
 -- 'Greskell' is essentially just a piece of Gremlin script with a
--- phantom type. The type @a@ represents the type of data the script
--- evaluates to.
+-- phantom type. The type @a@ represents the type of data that the
+-- script is supposed to evaluate to.
 newtype Greskell a = Greskell { unGreskell :: TL.Text }
                    deriving (Show,Eq,Ord)
 
--- | Same as 'string' except for the input type.
+-- | Same as 'string' except for the input and output type.
 instance IsString a => IsString (Greskell a) where
   fromString = Greskell . TL.pack . escapeDQuotes
 
 -- | Unsafely convert the phantom type.
 instance Functor Greskell where
   fmap _ = Greskell . unGreskell
+
+-- | Integer literals and numeric operation in Gremlin
+instance Num a => Num (Greskell a) where
+  (+) = biOp "+"
+  (-) = biOp "-"
+  (*) = biOp "*"
+  negate (Greskell a) = Greskell ("-" <> paren a)
+  abs (Greskell a) = Greskell ("java.lang.Math.abs" <> paren a)
+  signum (Greskell a) = Greskell ("java.lang.Long.signum" <> paren a)
+  fromInteger val = Greskell (TL.pack $ show val)
+  
+-- | Floating-point number literals and numeric operation in Gremlin
+instance Fractional a => Fractional (Greskell a) where
+  (/) = biOp "/"
+  recip (Greskell a) = Greskell ("1.0/" <> paren a)
+  fromRational rat = Greskell $ paren (scriptOf numerator <> ".0/" <> scriptOf denominator)
+    where
+      scriptOf accessor = TL.pack $ show $ accessor rat
+
+-- | Monoidal operations on 'Greskell' assumes @String@ operations in
+-- Gremlin. 'mempty' is the empty String, and 'mappend' is String
+-- concatenation.
+instance IsString a => Monoid (Greskell a) where
+  mempty = fromString ""
+  mappend = biOp "+"
+
+biOp :: TL.Text -> Greskell a -> Greskell a -> Greskell a
+biOp operator (Greskell a) (Greskell b) = Greskell (paren a <> operator <> paren b)
+
+paren :: TL.Text -> TL.Text
+paren t = "(" <> t <> ")"
 
 escapeDQuotes :: String -> String
 escapeDQuotes orig = ('"' : (esc =<< orig)) ++ "\""
@@ -90,11 +123,11 @@ toPlaceHolderVariable :: PlaceHolderIndex -> Text
 toPlaceHolderVariable i =  pack ("__v" ++ show i)
 
 -- | Create a readable Gremlin script from 'Greskell'.
-runGreskell :: Greskell -> Text
+runGreskell :: Greskell a -> Text
 runGreskell = TL.toStrict . unGreskell
 
 -- | Same as 'runGreskell' except that this returns lazy 'TL.Text'.
-runGreskellLazy :: Greskell -> TL.Text
+runGreskellLazy :: Greskell a -> TL.Text
 runGreskellLazy = unGreskell
 
 unsafeFunCallText :: Text -> [Text] -> Text
