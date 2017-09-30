@@ -20,6 +20,7 @@ module Data.Greskell.Greskell
          false,
          -- * Unsafe constructors
          unsafeGreskell,
+         unsafeGreskellLazy,
          unsafePlaceHolder,
          PlaceHolderIndex,
          toPlaceHolderVariable,
@@ -102,6 +103,11 @@ escapeDQuotes orig = ('"' : (esc =<< orig)) ++ "\""
 unsafeGreskell :: Text -- ^ Gremlin script
                -> Greskell a
 unsafeGreskell = Greskell . TL.fromStrict
+
+-- | Same as 'unsafeGreskell', but it takes lazy 'TL.Text'.
+unsafeGreskellLazy :: TL.Text -- ^ Gremlin script
+                   -> Greskell a
+unsafeGreskellLazy = Greskell
 
 
 -- $literals
