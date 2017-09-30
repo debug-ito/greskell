@@ -27,7 +27,7 @@ spec = do
     (runGreskell $ unsafeGreskell t) `shouldBe` t
   describe "Num" $ do
     specify "integer" $ do
-      let x = 100 :: Greskell Int
+      let x = 123 :: Greskell Int
       runGreskell x `shouldBe` "123"
     specify "negative integer" $ do
       let x = -56 :: Greskell Int
@@ -43,8 +43,8 @@ spec = do
       let x = 92.12 :: Greskell Double
       (runGreskell x) `shouldBe` "(2303.0/25)"
     specify "operations" $ do
-      let x = (100.5 * recip 30 / 20.2) :: Greskell Double
-      runGreskell x `shouldBe` "((201.0/2)*(0.1/(30.0/1)))/((101.0/5))"
+      let x = (100.5 * recip 30.0 / 20.2) :: Greskell Double
+      runGreskell x `shouldBe` "(((201.0/2))*(1.0/((30.0/1))))/((101.0/5))"
   describe "Monoid" $ do
     specify "mempty" $ do
       let got = mempty :: Greskell Text
