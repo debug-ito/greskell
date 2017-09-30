@@ -9,13 +9,15 @@
 module Data.Greskell.Greskell
        ( -- * Type
          Greskell,
-         -- * Literals
-         string,
-         true,
-         false,
          -- * Conversions
          runGreskell,
          runGreskellLazy,
+         -- * Literals
+         --
+         -- $literals
+         string,
+         true,
+         false,
          -- * Unsafe constructors
          unsafeGreskell,
          unsafePlaceHolder,
@@ -37,6 +39,9 @@ import qualified Data.Text.Lazy as TL
 -- 'Greskell' is essentially just a piece of Gremlin script with a
 -- phantom type. The type @a@ represents the type of data that the
 -- script is supposed to evaluate to.
+--
+-- 'Eq' and 'Ord' instances compare Gremlin scripts, NOT the values
+-- they evaluate to.
 newtype Greskell a = Greskell { unGreskell :: TL.Text }
                    deriving (Show,Eq,Ord)
 
@@ -97,6 +102,13 @@ escapeDQuotes orig = ('"' : (esc =<< orig)) ++ "\""
 unsafeGreskell :: Text -- ^ Gremlin script
                -> Greskell a
 unsafeGreskell = Greskell . TL.fromStrict
+
+
+-- $literals
+--
+-- Functions to create literals in Gremlin script. Use 'fromInteger'
+-- to create integer literals. Use 'fromRational' to create
+-- floating-point data literals.
 
 -- | Create a String literal in Gremlin script. The content is
 -- automatically escaped.
