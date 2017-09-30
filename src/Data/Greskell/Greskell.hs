@@ -10,8 +10,8 @@ module Data.Greskell.Greskell
        ( -- * Type
          Greskell,
          -- * Conversions
-         runGreskell,
-         runGreskellLazy,
+         toGremlin,
+         toGremlinLazy,
          -- * Literals
          --
          -- $literals
@@ -135,12 +135,12 @@ toPlaceHolderVariable :: PlaceHolderIndex -> Text
 toPlaceHolderVariable i =  pack ("__v" ++ show i)
 
 -- | Create a readable Gremlin script from 'Greskell'.
-runGreskell :: Greskell a -> Text
-runGreskell = TL.toStrict . unGreskell
+toGremlin :: Greskell a -> Text
+toGremlin = TL.toStrict . unGreskell
 
--- | Same as 'runGreskell' except that this returns lazy 'TL.Text'.
-runGreskellLazy :: Greskell a -> TL.Text
-runGreskellLazy = unGreskell
+-- | Same as 'toGremlin' except that this returns lazy 'TL.Text'.
+toGremlinLazy :: Greskell a -> TL.Text
+toGremlinLazy = unGreskell
 
 unsafeFunCallText :: Text -> [Text] -> Text
 unsafeFunCallText fun_name args = fun_name <> "(" <> args_g <> ")"

@@ -8,7 +8,7 @@ import Test.Hspec
 import Test.QuickCheck (property, Arbitrary(..))
 
 import Data.Greskell.Greskell
-  ( unsafeGreskell, runGreskell, string,
+  ( unsafeGreskell, toGremlin, string,
     unsafePlaceHolder, toPlaceHolderVariable,
     unsafeFunCall, unsafeMethodCall,
     Greskell
@@ -24,50 +24,50 @@ main = hspec spec
 spec :: Spec
 spec = do
   describe "unsafeGreskell" $ it "should be just a raw script text" $ property $ \t ->
-    (runGreskell $ unsafeGreskell t) `shouldBe` t
+    (toGremlin $ unsafeGreskell t) `shouldBe` t
   describe "Num" $ do
     specify "integer" $ do
       let x = 123 :: Greskell Int
-      runGreskell x `shouldBe` "123"
+      toGremlin x `shouldBe` "123"
     specify "negative integer" $ do
       let x = -56 :: Greskell Int
-      runGreskell x `shouldBe` "-(56)"
+      toGremlin x `shouldBe` "-(56)"
     specify "operations" $ do
       let x = (30 + 15 * 20 - 10) :: Greskell Int
-      runGreskell x `shouldBe` "((30)+((15)*(20)))-(10)"
+      toGremlin x `shouldBe` "((30)+((15)*(20)))-(10)"
     specify "abs, signum" $ do
       let x = (signum $ abs (-100)) :: Greskell Int
-      runGreskell x  `shouldBe` "java.lang.Long.signum(java.lang.Math.abs(-(100)))"
+      toGremlin x  `shouldBe` "java.lang.Long.signum(java.lang.Math.abs(-(100)))"
   describe "Fractional" $ do
     specify "floating point literal" $ do
       let x = 92.12 :: Greskell Double
-      (runGreskell x) `shouldBe` "(2303.0/25)"
+      (toGremlin x) `shouldBe` "(2303.0/25)"
     specify "operations" $ do
       let x = (100.5 * recip 30.0 / 20.2) :: Greskell Double
-      runGreskell x `shouldBe` "(((201.0/2))*(1.0/((30.0/1))))/((101.0/5))"
+      toGremlin x `shouldBe` "(((201.0/2))*(1.0/((30.0/1))))/((101.0/5))"
   describe "Monoid" $ do
     specify "mempty" $ do
       let got = mempty :: Greskell Text
-      runGreskell got `shouldBe` "\"\""
+      toGremlin got `shouldBe` "\"\""
     specify "mappend" $ do
       let got = (mappend "foo" "bar") :: Greskell Text
-      runGreskell got `shouldBe` "(\"foo\")+(\"bar\")"
+      toGremlin got `shouldBe` "(\"foo\")+(\"bar\")"
   describe "placeHolder" $ it "should create a placeholder variable" $ property $ \i ->
-    (runGreskell $ unsafePlaceHolder i) `shouldBe` toPlaceHolderVariable i
+    (toGremlin $ unsafePlaceHolder i) `shouldBe` toPlaceHolderVariable i
   describe "string and fromString" $ do
     specify "empty" $ checkStringLiteral "" "\"\""
     specify "words" $ checkStringLiteral "hoge foo bar"  "\"hoge foo bar\""
     specify "escaped" $ checkStringLiteral "foo 'aaa \n \t \\ \"bar\"" "\"foo 'aaa \\n \\t \\\\ \\\"bar\\\"\""
   describe "unsafeFunCall" $ do
     it "should make function call" $ do
-      (runGreskell $ unsafeFunCall "fun" ["foo", "bar"]) `shouldBe` "fun(foo,bar)"
+      (toGremlin $ unsafeFunCall "fun" ["foo", "bar"]) `shouldBe` "fun(foo,bar)"
   describe "unsafeMethodCall" $ do
     it "should make method call" $ do
-      (runGreskell $ unsafeMethodCall "meth" ["hoge", "foo", "bar"]) `shouldBe` ".meth(hoge,foo,bar)"
+      (toGremlin $ unsafeMethodCall "meth" ["hoge", "foo", "bar"]) `shouldBe` ".meth(hoge,foo,bar)"
 
 
 checkStringLiteral :: String -> Text -> Expectation
 checkStringLiteral input expected = do
   let input' = fromString input :: Greskell Text
-  (runGreskell $ input') `shouldBe` expected
-  (runGreskell $ string $ pack input) `shouldBe` expected
+  (toGremlin $ input') `shouldBe` expected
+  (toGremlin $ string $ pack input) `shouldBe` expected
