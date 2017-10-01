@@ -46,13 +46,13 @@ module Data.Greskell.GTraversal
          gOr,
          gAnd,
          gNot,
-         -- ** Size limitation step
+         -- ** Size limitation steps
          -- gOrderBy,
          gRange,
-         -- ** Transformation step
+         -- ** Transformation steps
          gFlatMap,
          gValues,
-         -- ** Graph traversal step
+         -- ** Graph traversal steps
          gOut,
          gOut',
          gOutE,
@@ -247,8 +247,8 @@ data GraphTraversalSource = GraphTraversalSource
                           deriving (Show)
 
 
--- | Create 'GTraversalSource' from a varible name in Gremlin
-source :: Text -- ^ variable name of @GraphTraversalSource@
+-- | Create 'GraphTraversalSource' from a varible name in Gremlin
+source :: Text -- ^ variable name of 'GraphTraversalSource'
        -> Greskell GraphTraversalSource
 source = unsafeGreskell
 
@@ -256,7 +256,7 @@ sourceMethod :: Text -> [Greskell a] -> Greskell GraphTraversalSource -> Greskel
 sourceMethod method_name args src =
   unsafeGreskellLazy $ (toGremlinLazy src <> methodCallText method_name (map toGremlin args))
 
--- | @.V()@ method on @GraphTraversalSource@.
+-- | @.V()@ method on 'GraphTraversalSource'.
 vertices :: [Greskell Value] -- ^ vertex IDs
          -> Greskell GraphTraversalSource
          -> GTraversal Transform Void AesonVertex
@@ -269,7 +269,7 @@ vertices' :: Vertex v
           -> GTraversal Transform Void v
 vertices' ids src = GTraversal $ sourceMethod "V" ids src
 
--- | @.E()@ method on @GraphTraversalSource@.
+-- | @.E()@ method on 'GraphTraversalSource'.
 edges :: [Greskell Value] -- ^ edge IDs
       -> Greskell GraphTraversalSource
       -> GTraversal Transform Void AesonEdge

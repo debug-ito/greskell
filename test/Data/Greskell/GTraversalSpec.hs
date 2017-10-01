@@ -28,7 +28,7 @@ main = hspec spec
 spec :: Spec
 spec = do
   spec_WalkType_classes
-  spec_GTraversalSource
+  spec_GraphTraversalSource
   spec_compose_steps
 
 spec_WalkType_classes :: Spec
@@ -92,8 +92,8 @@ checkLiftCompatible = checkWalkTypeRelation makeCode
       ++ "f = liftType; "
       ++ "in f"
 
-spec_GTraversalSource :: Spec
-spec_GTraversalSource = describe "GTraversalSource" $ do
+spec_GraphTraversalSource :: Spec
+spec_GraphTraversalSource = describe "GraphTraversalSource" $ do
   specify "g.V()" $ do
     (toGremlin $ vertices [] $ source "g") `shouldBe` ("g.V()")
   specify "g.V(1,2,3)" $ do
