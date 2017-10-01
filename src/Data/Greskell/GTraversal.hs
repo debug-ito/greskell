@@ -9,7 +9,7 @@
 module Data.Greskell.GTraversal
        ( -- * Types
          -- ** GraphTraversals and Steps
-         GTraversal,
+         GTraversal(..),
          GraphTraversal,
          ToGTraversal(..),
          Step,
@@ -81,8 +81,17 @@ import Data.Greskell.Greskell
   )
 
 
--- | 'Greskell' of TinkerPop 'GraphTraversal'.
-type GTraversal c s e = Greskell (GraphTraversal c s e)
+-- | newtype wrapper of 'Greskell' 'GraphTraversal'.
+newtype GTraversal c s e = GTraversal { unGTraversal :: Greskell (GraphTraversal c s e) }
+                         deriving (Show)
+
+-- | Unsafely convert output type.
+instance Functor (GTraversal c s) where
+  fmap f (GTraversal g) = GTraversal $ fmap (fmap f) g
+
+-- | Unsafely convert input and output types.
+instance Bifunctor (GTraversal c) where
+  bimap f1 f2 (GTraversal g) = GTraversal $ fmap (bimap f1 f2) g
 
 -- | @GraphTraversal@ class object of TinkerPop. It takes data @s@
 -- from upstream and emits data @e@ to downstream. Type @c@ is a
@@ -97,11 +106,11 @@ data GraphTraversal c s e = GraphTraversal
                                   
 -- | Unsafely convert output type.
 instance Functor (GraphTraversal c s) where
-  fmap _ = GraphTraversal
+  fmap _ GraphTraversal = GraphTraversal
 
 -- | Unsafely convert input and output types.
 instance Bifunctor (GraphTraversal c) where
-  bimap _ _ = GraphTraversal
+  bimap _ _ GraphTraversal = GraphTraversal
 
 -- | Types that can convert to 'GTraversal'.
 class ToGTraversal g where
@@ -111,7 +120,7 @@ class ToGTraversal g where
 
 instance ToGTraversal GTraversal where
   toGTraversal = id
-  liftType = unsafeGreskellLazy . toGremlinLazy
+  liftType (GTraversal g) = GTraversal $ unsafeGreskellLazy $ toGremlinLazy g
 
 
 -- | A Gremlin step. Like 'GTraversal', type @s@ is the input, type
@@ -127,13 +136,13 @@ instance ToGTraversal GTraversal where
 -- 'Step' is not an 'Eq', because it's difficult to define true
 -- equality between Gremlin method calls. If we define it naively, it
 -- might have conflict with 'Category' law.
-newtype Step c s e = Step { unStep :: TL.Text }
+newtype Step c s e = Step TL.Text
                     deriving (Show)
 
 -- | 'id' is 'gIdentity''.
 instance StepType c => Category (Step c) where
   id = gIdentity'
-  (Step bc) . (Step ab) = unsafeStep (ab <> bc)
+  (Step bc) . (Step ab) = Step (ab <> bc)
 
 -- | Unsafely convert output type
 instance Functor (Step c s) where
@@ -146,7 +155,7 @@ instance Bifunctor (Step c) where
 -- | To convert a 'Step' to 'GTraversal', it calls its static method
 -- version on @__@ class.
 instance ToGTraversal Step where
-  toGTraversal (Step t) = unsafeGreskellLazy ("__" <> t)
+  toGTraversal (Step t) = GTraversal $ unsafeGreskellLazy ("__" <> t)
   liftType (Step t) = Step t
 
 
@@ -259,14 +268,14 @@ source = unsafeGreskell
 -- edges' ids src = GTraversal (unGTraversalSource src <> methodCall "E" ids)
 
 unsafeGTraversal :: Text -> GTraversal c s e
-unsafeGTraversal = unsafeGreskell
+unsafeGTraversal = GTraversal . unsafeGreskell
 
 infixl 1 &.
 
 -- | Apply the 'Step' to the 'GTraversal'. In Gremlin, this means
 -- calling a chain of methods on the Traversal object.
 (&.) :: GTraversal c a b -> Step c b d -> GTraversal c a d
-gt &. (Step tstep) = unsafeGreskellLazy (toGremlinLazy gt <> tstep)
+(GTraversal gt) &. (Step tstep) = GTraversal $ unsafeGreskellLazy (toGremlinLazy gt <> tstep)
 
 infixr 0 $.
 
@@ -290,7 +299,7 @@ gIdentity' :: StepType c => Step c s s
 gIdentity' = liftType $ gIdentity
 
 travToG :: (ToGTraversal g, StepType c) => g c s e -> Text
-travToG = toGremlin . toGTraversal
+travToG = toGremlin . unGTraversal . toGTraversal
 
 -- | @.filter@ step with steps(traversal).
 gFilter :: (ToGTraversal g, StepType c, StepType p, Split c p) => g c s e -> Step p s s
