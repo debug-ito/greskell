@@ -10,7 +10,7 @@ import Test.QuickCheck (property, Arbitrary(..))
 import Data.Greskell.Greskell
   ( unsafeGreskell, toGremlin, string,
     unsafePlaceHolder, toPlaceHolderVariable,
-    unsafeFunCall, unsafeMethodCall,
+    unsafeFunCall,
     Greskell
   )
 
@@ -61,10 +61,6 @@ spec = do
   describe "unsafeFunCall" $ do
     it "should make function call" $ do
       (toGremlin $ unsafeFunCall "fun" ["foo", "bar"]) `shouldBe` "fun(foo,bar)"
-  describe "unsafeMethodCall" $ do
-    it "should make method call" $ do
-      (toGremlin $ unsafeMethodCall "meth" ["hoge", "foo", "bar"]) `shouldBe` ".meth(hoge,foo,bar)"
-
 
 checkStringLiteral :: String -> Text -> Expectation
 checkStringLiteral input expected = do
