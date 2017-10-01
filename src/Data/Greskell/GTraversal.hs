@@ -23,10 +23,10 @@ module Data.Greskell.GTraversal
          Split,
          -- * GraphTraversalSource
          source,
-         -- vertices,
-         -- vertices',
-         -- edges,
-         -- edges',
+         vertices,
+         vertices',
+         edges,
+         edges',
          -- * GTraversal
          (&.),
          ($.),
@@ -41,8 +41,8 @@ module Data.Greskell.GTraversal
          -- gHas',
          gHasLabel,
          gHasLabel',
-         -- gHasId,
-         -- gHasId',
+         gHasId,
+         gHasId',
          gOr,
          gAnd,
          gNot,
@@ -67,6 +67,7 @@ import Prelude hiding (or, filter, not)
 import Control.Category (Category)
 -- (below) to import Category methods without conflict with Prelude
 import qualified Control.Category as Category
+import Data.Aeson (Value)
 import Data.Bifunctor (Bifunctor(bimap))
 import Data.Monoid ((<>), mconcat)
 import Data.Text (Text)
@@ -251,29 +252,35 @@ source :: Text -- ^ variable name of @GraphTraversalSource@
        -> Greskell GraphTraversalSource
 source = unsafeGreskell
 
--- TODO: IDの型を制約しないといけない。
+sourceMethod :: Text -> [Greskell a] -> Greskell GraphTraversalSource -> Greskell b
+sourceMethod method_name args src =
+  unsafeGreskellLazy $ (toGremlinLazy src <> methodCallText method_name (map toGremlin args))
 
--- -- | @.V()@ method on @GraphTraversalSource@.
--- vertices :: [Greskell] -- ^ vertex IDs
---          -> GTraversalSource
---          -> GTraversal Transform Void AesonVertex
--- vertices = vertices'
--- 
--- -- | Polymorphic version of 'vertices'.
--- vertices' :: Vertex v
---           => [Greskell]
---           -> GTraversalSource
---           -> GTraversal Transform Void v
--- vertices' ids src = GTraversal (unGTraversalSource src <> methodCall "V" ids)
--- 
--- -- | @.E()@ method on @GraphTraversalSource@.
--- edges :: [Greskell] -- ^ edge IDs
---       -> GTraversalSource -> GTraversal Transform Void AesonEdge
--- edges = edges'
--- 
--- -- | Polymorphic version of 'edges'.
--- edges' :: Edge e => [Greskell] -> GTraversalSource -> GTraversal Transform Void e
--- edges' ids src = GTraversal (unGTraversalSource src <> methodCall "E" ids)
+-- | @.V()@ method on @GraphTraversalSource@.
+vertices :: [Greskell Value] -- ^ vertex IDs
+         -> Greskell GraphTraversalSource
+         -> GTraversal Transform Void AesonVertex
+vertices = vertices'
+
+-- | Polymorphic version of 'vertices'.
+vertices' :: Vertex v
+          => [Greskell (ElementID v)]
+          -> Greskell GraphTraversalSource
+          -> GTraversal Transform Void v
+vertices' ids src = GTraversal $ sourceMethod "V" ids src
+
+-- | @.E()@ method on @GraphTraversalSource@.
+edges :: [Greskell Value] -- ^ edge IDs
+      -> Greskell GraphTraversalSource
+      -> GTraversal Transform Void AesonEdge
+edges = edges'
+
+-- | Polymorphic version of 'edges'.
+edges' :: Edge e
+       => [Greskell (ElementID e)]
+       -> Greskell GraphTraversalSource
+       -> GTraversal Transform Void e
+edges' ids src = GTraversal $ sourceMethod "E" ids src
 
 unsafeGTraversal :: Text -> GTraversal c s e
 unsafeGTraversal = GTraversal . unsafeGreskell
@@ -291,13 +298,18 @@ infixr 0 $.
 ($.) :: Walk c b d -> GTraversal c a b -> GTraversal c a d
 gs $. gt = gt &. gs
 
+methodCallText :: Text -- ^ method name
+               -> [Text] -- ^ args
+               -> TL.Text
+methodCallText name args = ("." <>) $ toGremlinLazy $ unsafeFunCall name args
+
 -- | Unsafely create a 'Walk' that represents a single method call on
 -- a @GraphTraversal@.
 unsafeWalk :: WalkType c
            => Text -- ^ step method name (e.g. "outE")
            -> [Text] -- ^ step method arguments
            -> Walk c s e
-unsafeWalk name args = Walk $ ("." <>) $ toGremlinLazy $ unsafeFunCall name args
+unsafeWalk name args = Walk $ methodCallText name args
 
 -- | @.identity@ step.
 gIdentity :: Walk Filter s s
@@ -339,17 +351,15 @@ gHasLabel = unsafeWalk "hasLabel" . map toGremlin
 gHasLabel' :: (Element s, WalkType c) => [Greskell Text] -> Walk c s s
 gHasLabel' = liftType . gHasLabel
 
--- TODO: ID type
+-- | @.hasId@ step
+gHasId :: Element s
+       => [Greskell (ElementID s)] -- ^ expected IDs
+       -> Walk Filter s s
+gHasId = unsafeWalk "hasId" . map toGremlin
 
--- -- | @.hasId@ step
--- gHasId :: Element s
---        => [Greskell] -- ^ expected IDs
---        -> Walk Filter s s
--- gHasId = unsafeWalk . methodCall "hasId"
-
--- -- | Polymorphic version of 'gHasId'.
--- gHasId' :: (Element s, WalkType c) => [Greskell] -> Walk c s s
--- gHasId' = liftType . gHasId
+-- | Polymorphic version of 'gHasId'.
+gHasId' :: (Element s, WalkType c) => [Greskell (ElementID s)] -> Walk c s s
+gHasId' = liftType . gHasId
 
 multiLogic :: (ToGTraversal g, WalkType c, WalkType p, Split c p)
            => Text -- ^ method name

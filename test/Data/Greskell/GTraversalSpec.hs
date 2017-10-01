@@ -2,6 +2,7 @@
 module Data.Greskell.GTraversalSpec (main,spec) where
 
 import Control.Category ((>>>), (<<<))
+import Data.Aeson (ToJSON(..))
 import Data.Either (isRight)
 import Data.Function ((&))
 import Language.Haskell.Interpreter
@@ -13,11 +14,12 @@ import System.IO (stderr, hPutStrLn)
 
 import Test.Hspec
 
--- import Data.Greskell.Greskell (runGreskell', raw, rawS)
--- import Data.Greskell.GTraversal
---   ( source, vertices, (&.), ($.),
---     gHas', gOut, gRange, gValues, gNot, gIn
---   )
+import Data.Greskell.Greskell (toGremlin, Greskell)
+import Data.Greskell.GTraversal
+  ( source, vertices, (&.), ($.),
+    -- gHas',
+    gOut, gRange, gValues, gNot, gIn
+  )
 
 
 main :: IO ()
@@ -92,12 +94,11 @@ checkLiftCompatible = checkWalkTypeRelation makeCode
 
 spec_GTraversalSource :: Spec
 spec_GTraversalSource = describe "GTraversalSource" $ do
-  specify "todo" $ True `shouldBe` False
---   specify "g.V()" $ do
---     (runGreskell' $ vertices [] $ source "g") `shouldBe` ("g.V()")
---   specify "g.V(1,2,3)" $ do
---     let ids = [1,2,3] :: [Int]
---     (runGreskell' $ vertices (map rawS ids) $ source "g") `shouldBe` ("g.V(1,2,3)")
+  specify "g.V()" $ do
+    (toGremlin $ vertices [] $ source "g") `shouldBe` ("g.V()")
+  specify "g.V(1,2,3)" $ do
+    let ids = [1,2,3] :: [Greskell Int]
+    (toGremlin $ vertices (map (fmap toJSON) ids) $ source "g") `shouldBe` ("g.V(1,2,3)")
 
 spec_compose_steps :: Spec
 spec_compose_steps = describe "DSL to compose steps" $ do
