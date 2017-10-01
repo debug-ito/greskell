@@ -74,7 +74,7 @@ import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
 import Data.Void (Void)
 import Data.Greskell.Graph
-  ( Element, Vertex, Edge, GVertex, GEdge
+  ( Element(..), Vertex, Edge, AesonVertex, AesonEdge
   )
 import Data.Greskell.Greskell
   ( Greskell, ToGreskell(..), unsafeGreskellLazy, unsafeGreskell, unsafeFunCall,
@@ -256,7 +256,7 @@ source = unsafeGreskell
 -- -- | @.V()@ method on @GraphTraversalSource@.
 -- vertices :: [Greskell] -- ^ vertex IDs
 --          -> GTraversalSource
---          -> GTraversal Transform Void GVertex
+--          -> GTraversal Transform Void AesonVertex
 -- vertices = vertices'
 -- 
 -- -- | Polymorphic version of 'vertices'.
@@ -268,7 +268,7 @@ source = unsafeGreskell
 -- 
 -- -- | @.E()@ method on @GraphTraversalSource@.
 -- edges :: [Greskell] -- ^ edge IDs
---       -> GTraversalSource -> GTraversal Transform Void GEdge
+--       -> GTraversalSource -> GTraversal Transform Void AesonEdge
 -- edges = edges'
 -- 
 -- -- | Polymorphic version of 'edges'.
@@ -419,7 +419,7 @@ genericTraversalWalk method_name = unsafeWalk method_name . map toGremlin
 -- | @.out@ step
 gOut :: (Vertex v)
      => [Greskell Text] -- ^ edge labels
-     -> Walk Transform v GVertex
+     -> Walk Transform v AesonVertex
 gOut = gOut'
 
 -- | Polymorphic version of 'gOut'.
@@ -429,7 +429,7 @@ gOut' = genericTraversalWalk "out"
 -- | @.outE@ step
 gOutE :: (Vertex v)
       => [Greskell Text] -- ^ edge labels
-      -> Walk Transform v GEdge
+      -> Walk Transform v AesonEdge
 gOutE = gOutE'
 
 -- | Polymorphic version of 'gOutE'
@@ -439,7 +439,7 @@ gOutE' = genericTraversalWalk "outE"
 -- | @.in@ step
 gIn :: (Vertex v)
     => [Greskell Text] -- ^ edge labels
-    -> Walk Transform v GVertex
+    -> Walk Transform v AesonVertex
 gIn = gIn'
 
 -- | Polymorphic version of 'gIn'.
@@ -449,7 +449,7 @@ gIn' = genericTraversalWalk "in"
 -- | @.inE@ step.
 gInE :: (Vertex v)
      => [Greskell Text] -- ^ edge labels
-     -> Walk Transform v GEdge
+     -> Walk Transform v AesonEdge
 gInE = gInE
 
 -- | Polymorphic version of 'gInE'.

@@ -1,3 +1,4 @@
+{-# LANGUAGE TypeFamilies #-}
 -- |
 -- Module: Data.Greskell.Graph
 -- Description: Haskell counterpart of Gremlin graph structure data types.
@@ -5,23 +6,23 @@
 --
 -- 
 module Data.Greskell.Graph
-       ( ElementID,
-         Element,
+       ( -- * TinkerPop graph structure API
+         Element(..),
          Vertex,
          Edge,
-         GVertex,
-         GEdge
+         -- * Concrete data types
+         AesonVertex,
+         AesonEdge
        ) where
 
 import Control.Applicative (empty)
-import Data.Aeson (FromJSON(..))
+import Data.Aeson (FromJSON(..), Value)
 import Data.Text (Text)
-
-type ElementID = Integer
 
 -- | @Element@ interface in a TinkerPop graph.
 class Element e where
-  elementId :: e -> ElementID
+  type ElementID e
+  elementId :: e -> ElementID e
   elementLabel :: e -> Text
 
 -- | @Vertex@ interface in a TinkerPop graph.
@@ -30,31 +31,34 @@ class (Element v, FromJSON v) => Vertex v
 -- | @Edge@ interface in a TinkerPop graph.
 class (Element e, FromJSON e) => Edge e
 
--- | General vertex type you can use for 'Vertex' class.
-data GVertex
+-- | General vertex type you can use for 'Vertex' class, based on
+-- aeson data types.
+data AesonVertex
 
 -- | TODO: 'Element' methods are not implemented yet.
-instance Element GVertex where
+instance Element AesonVertex where
+  type ElementID AesonVertex = Value
   elementId = undefined
   elementLabel = undefined
 
 -- | TODO: 'FromJSON' methods are not implemented yet.
-instance FromJSON GVertex where
+instance FromJSON AesonVertex where
   parseJSON _ = empty
 
-instance Vertex GVertex
+instance Vertex AesonVertex
 
--- | General edge type you can use for 'Edge' class.
-data GEdge
+-- | General edge type you can use for 'Edge' class, based on aeson
+-- data types.
+data AesonEdge
 
 -- | TODO: 'Element' methods are not implemented yet.
-instance Element GEdge where
+instance Element AesonEdge where
+  type ElementID AesonEdge = Value
   elementId = undefined
   elementLabel = undefined
 
 -- | TODO: 'FromJSON' methods are not implemented yet.
-instance FromJSON GEdge where
+instance FromJSON AesonEdge where
   parseJSON _ = empty
 
-instance Edge GEdge
-
+instance Edge AesonEdge
