@@ -89,7 +89,7 @@ checkLiftCompatible = checkWalkTypeRelation makeCode
   where
     makeCode child parent =
       "let f :: Walk " ++ child ++ " s e -> Walk " ++ parent ++ " s e; "
-      ++ "f = liftType; "
+      ++ "f = liftWalk; "
       ++ "in f"
 
 spec_GraphTraversalSource :: Spec

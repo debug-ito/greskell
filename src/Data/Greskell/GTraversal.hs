@@ -122,12 +122,12 @@ instance Bifunctor (GraphTraversal c) where
 -- | Types that can convert to 'GTraversal'.
 class ToGTraversal g where
   toGTraversal :: WalkType c => g c s e -> GTraversal c s e
-  liftType :: (WalkType from, WalkType to, Lift from to) => g from s e -> g to s e
+  liftWalk :: (WalkType from, WalkType to, Lift from to) => g from s e -> g to s e
   -- ^ Lift 'WalkType' @from@ to @to@. Use this for type matching.
 
 instance ToGTraversal GTraversal where
   toGTraversal = id
-  liftType (GTraversal g) = GTraversal $ unsafeGreskellLazy $ toGremlinLazy g
+  liftWalk (GTraversal g) = GTraversal $ unsafeGreskellLazy $ toGremlinLazy g
 
 
 -- | A chain of one or more Gremlin steps. Like 'GTraversal', type @s@
@@ -165,7 +165,7 @@ instance Bifunctor (Walk c) where
 -- version on @__@ class.
 instance ToGTraversal Walk where
   toGTraversal (Walk t) = GTraversal $ unsafeGreskellLazy ("__" <> t)
-  liftType (Walk t) = Walk t
+  liftWalk (Walk t) = Walk t
 
 
 
@@ -317,7 +317,7 @@ gIdentity = unsafeWalk "identity" []
 
 -- | Polymorphic version of 'gIdentity'.
 gIdentity' :: WalkType c => Walk c s s
-gIdentity' = liftType $ gIdentity
+gIdentity' = liftWalk $ gIdentity
 
 travToG :: (ToGTraversal g, WalkType c) => g c s e -> Text
 travToG = toGremlin . unGTraversal . toGTraversal
@@ -339,7 +339,7 @@ gFilter walk = unsafeWalk "filter" [travToG walk]
 
 -- -- | Polymorphic version of 'gHas'.
 -- gHas' :: (Element s, WalkType c) => Greskell -> Greskell -> Walk c s s
--- gHas' t e = liftType $ gHas t e
+-- gHas' t e = liftWalk $ gHas t e
 
 -- | @.hasLabel@ step
 gHasLabel :: Element s
@@ -349,7 +349,7 @@ gHasLabel = unsafeWalk "hasLabel" . map toGremlin
 
 -- | Polymorphic version of 'gHasLabel'.
 gHasLabel' :: (Element s, WalkType c) => [Greskell Text] -> Walk c s s
-gHasLabel' = liftType . gHasLabel
+gHasLabel' = liftWalk . gHasLabel
 
 -- | @.hasId@ step
 gHasId :: Element s
@@ -359,7 +359,7 @@ gHasId = unsafeWalk "hasId" . map toGremlin
 
 -- | Polymorphic version of 'gHasId'.
 gHasId' :: (Element s, WalkType c) => [Greskell (ElementID s)] -> Walk c s s
-gHasId' = liftType . gHasId
+gHasId' = liftWalk . gHasId
 
 multiLogic :: (ToGTraversal g, WalkType c, WalkType p, Split c p)
            => Text -- ^ method name
