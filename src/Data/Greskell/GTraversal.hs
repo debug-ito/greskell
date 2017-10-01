@@ -8,14 +8,14 @@
 -- 
 module Data.Greskell.GTraversal
        ( -- * Types
-         -- ** GraphTraversals and Steps
+         -- ** GraphTraversal and others
          GTraversal(..),
          GraphTraversal,
          ToGTraversal(..),
-         Step,
+         Walk,
          GraphTraversalSource,
-         -- ** Step types
-         StepType,
+         -- ** Walk types
+         WalkType,
          Filter,
          Transform,
          SideEffect,
@@ -31,9 +31,9 @@ module Data.Greskell.GTraversal
          (&.),
          ($.),
          unsafeGTraversal,
-         -- * Step
-         unsafeStep,
-         -- ** Filter step
+         -- * Walk/Steps
+         unsafeWalk,
+         -- ** Filter steps
          gIdentity,
          gIdentity',
          gFilter,
@@ -46,9 +46,10 @@ module Data.Greskell.GTraversal
          gOr,
          gAnd,
          gNot,
-         -- ** Transformation step
+         -- ** Size limitation step
          -- gOrderBy,
          gRange,
+         -- ** Transformation step
          gFlatMap,
          gValues,
          -- ** Graph traversal step
@@ -119,87 +120,89 @@ instance Bifunctor (GraphTraversal c) where
 
 -- | Types that can convert to 'GTraversal'.
 class ToGTraversal g where
-  toGTraversal :: StepType c => g c s e -> GTraversal c s e
-  liftType :: (StepType from, StepType to, Lift from to) => g from s e -> g to s e
-  -- ^ Lift 'StepType' @from@ to @to@. Use this for type matching.
+  toGTraversal :: WalkType c => g c s e -> GTraversal c s e
+  liftType :: (WalkType from, WalkType to, Lift from to) => g from s e -> g to s e
+  -- ^ Lift 'WalkType' @from@ to @to@. Use this for type matching.
 
 instance ToGTraversal GTraversal where
   toGTraversal = id
   liftType (GTraversal g) = GTraversal $ unsafeGreskellLazy $ toGremlinLazy g
 
 
--- | A Gremlin step. Like 'GTraversal', type @s@ is the input, type
--- @e@ is the output, and type @c@ is a marker to describe the step.
+-- | A chain of one or more Gremlin steps. Like 'GTraversal', type @s@
+-- is the input, type @e@ is the output, and type @c@ is a marker to
+-- describe the step.
 --
--- This is NOT the Gremlin's @Step@ class object, but it's a method
--- call such as @.has(x)@ and @.outE()@.
+-- 'Walk' represents a chain of method calls such as
+-- @.has(x).outE()@. Because this is not a Gremlin (Groovy)
+-- expression, 'Walk' is not a 'Greskell'.
 --
--- 'Step' is a 'Category'. You can use functions from
--- "Control.Category" to compose 'Step's. This is equivalent to making
+-- 'Walk' is a 'Category'. You can use functions from
+-- "Control.Category" to compose 'Walk's. This is equivalent to making
 -- a chain of method calls in Gremlin.
 --
--- 'Step' is not an 'Eq', because it's difficult to define true
+-- 'Walk' is not an 'Eq', because it's difficult to define true
 -- equality between Gremlin method calls. If we define it naively, it
 -- might have conflict with 'Category' law.
-newtype Step c s e = Step TL.Text
+newtype Walk c s e = Walk TL.Text
                     deriving (Show)
 
 -- | 'id' is 'gIdentity''.
-instance StepType c => Category (Step c) where
+instance WalkType c => Category (Walk c) where
   id = gIdentity'
-  (Step bc) . (Step ab) = Step (ab <> bc)
+  (Walk bc) . (Walk ab) = Walk (ab <> bc)
 
 -- | Unsafely convert output type
-instance Functor (Step c s) where
-  fmap _ (Step t) = Step t
+instance Functor (Walk c s) where
+  fmap _ (Walk t) = Walk t
 
 -- | Unsafely convert input and output types.
-instance Bifunctor (Step c) where
-  bimap _ _ (Step t) = Step t
+instance Bifunctor (Walk c) where
+  bimap _ _ (Walk t) = Walk t
 
--- | To convert a 'Step' to 'GTraversal', it calls its static method
+-- | To convert a 'Walk' to 'GTraversal', it calls its static method
 -- version on @__@ class.
-instance ToGTraversal Step where
-  toGTraversal (Step t) = GTraversal $ unsafeGreskellLazy ("__" <> t)
-  liftType (Step t) = Step t
+instance ToGTraversal Walk where
+  toGTraversal (Walk t) = GTraversal $ unsafeGreskellLazy ("__" <> t)
+  liftType (Walk t) = Walk t
 
 
 
 -- | Class of phantom type markers to describe the feature of the
--- step/traversal.
-class StepType t
+-- walk/traversals.
+class WalkType t
 
--- | StepType for filtering steps.
+-- | WalkType for filtering steps.
 --
 -- A filtering step is a step that does filtering only. It takes input
 -- and outputs some of them without any modification, reordering,
 -- traversal actions, or side-effects. Filtering decision must be
 -- solely based on each element.
 --
--- A 'Step' @s@ is 'Filter' type iff:
+-- A 'Walk' @s@ is 'Filter' type iff:
 --
 -- > (gSideEffect s == gIdentity) AND (gFilter s == s)
 --
--- If 'Step's @s1@ and @s2@ are 'Filter' type, then
+-- If 'Walk's @s1@ and @s2@ are 'Filter' type, then
 -- 
 -- > gAnd [s1, s2] == s1 >>> s2 == s2 >>> s1
 data Filter
 
-instance StepType Filter
+instance WalkType Filter
 
--- | StepType for steps without any side-effects. This includes
+-- | WalkType for steps without any side-effects. This includes
 -- transformations, reordring, injections and graph traversal actions.
 --
--- A 'Step' @s@ is 'Transform' type iff:
+-- A 'Walk' @s@ is 'Transform' type iff:
 --
 -- > gSideEffect s == gIdentity
 --
--- Obviously, every 'Filter' type 'Step's are also 'Transform' type.
+-- Obviously, every 'Filter' type 'Walk's are also 'Transform' type.
 data Transform
 
-instance StepType Transform
+instance WalkType Transform
 
--- | StepType for steps may have side-effects.
+-- | WalkType for steps may have side-effects.
 --
 -- A side-effect here means manipulation of the \"sideEffect\" in
 -- Gremlin context (i.e. a stash of data kept in a Traversal object),
@@ -214,27 +217,27 @@ instance StepType Transform
 -- > .map { some_variable += 1 }
 data SideEffect
 
-instance StepType SideEffect
+instance WalkType SideEffect
 
--- | Relation of 'StepType's where one includes the other. @from@ can
+-- | Relation of 'WalkType's where one includes the other. @from@ can
 -- be lifted to @to@, because @to@ is more powerful than @from@.
 class Lift from to
 
-instance (StepType c) => Lift Filter c
+instance (WalkType c) => Lift Filter c
 instance Lift Transform Transform
 instance Lift Transform SideEffect
 instance Lift SideEffect SideEffect
 
--- | Relation of 'StepType's where the child step @c@ is split from
--- the parent step @p@.
+-- | Relation of 'WalkType's where the child walk @c@ is split from
+-- the parent walk @p@.
 class Split c p
 
-instance (StepType p) => Split Filter p
-instance (StepType p) => Split Transform p
--- ^ 'Transform' effect in the child step is rolled back in the parent
--- step.
+instance (WalkType p) => Split Filter p
+instance (WalkType p) => Split Transform p
+-- ^ 'Transform' effect in the child walk is rolled back in the parent
+-- walk.
 instance Split SideEffect SideEffect
--- ^ 'SideEffect' in the child step remains in the parent step.
+-- ^ 'SideEffect' in the child walk remains in the parent walk.
 
 
 -- | @GraphTraversalSource@ class object of TinkerPop. It is a factory
@@ -277,38 +280,39 @@ unsafeGTraversal = GTraversal . unsafeGreskell
 
 infixl 1 &.
 
--- | Apply the 'Step' to the 'GTraversal'. In Gremlin, this means
+-- | Apply the 'Walk' to the 'GTraversal'. In Gremlin, this means
 -- calling a chain of methods on the Traversal object.
-(&.) :: GTraversal c a b -> Step c b d -> GTraversal c a d
-(GTraversal gt) &. (Step tstep) = GTraversal $ unsafeGreskellLazy (toGremlinLazy gt <> tstep)
+(&.) :: GTraversal c a b -> Walk c b d -> GTraversal c a d
+(GTraversal gt) &. (Walk twalk) = GTraversal $ unsafeGreskellLazy (toGremlinLazy gt <> twalk)
 
 infixr 0 $.
 
 -- | Same as '(&.)' with arguments flipped.
-($.) :: Step c b d -> GTraversal c a b -> GTraversal c a d
+($.) :: Walk c b d -> GTraversal c a b -> GTraversal c a d
 gs $. gt = gt &. gs
 
--- | Unsafely create a step.
-unsafeStep :: StepType c
+-- | Unsafely create a 'Walk' that represents a single method call on
+-- a @GraphTraversal@.
+unsafeWalk :: WalkType c
            => Text -- ^ step method name (e.g. "outE")
            -> [Text] -- ^ step method arguments
-           -> Step c s e
-unsafeStep name args = Step $ ("." <>) $ toGremlinLazy $ unsafeFunCall name args
+           -> Walk c s e
+unsafeWalk name args = Walk $ ("." <>) $ toGremlinLazy $ unsafeFunCall name args
 
 -- | @.identity@ step.
-gIdentity :: Step Filter s s
-gIdentity = unsafeStep "identity" []
+gIdentity :: Walk Filter s s
+gIdentity = unsafeWalk "identity" []
 
 -- | Polymorphic version of 'gIdentity'.
-gIdentity' :: StepType c => Step c s s
+gIdentity' :: WalkType c => Walk c s s
 gIdentity' = liftType $ gIdentity
 
-travToG :: (ToGTraversal g, StepType c) => g c s e -> Text
+travToG :: (ToGTraversal g, WalkType c) => g c s e -> Text
 travToG = toGremlin . unGTraversal . toGTraversal
 
 -- | @.filter@ step with steps(traversal).
-gFilter :: (ToGTraversal g, StepType c, StepType p, Split c p) => g c s e -> Step p s s
-gFilter step = unsafeStep "filter" [travToG step]
+gFilter :: (ToGTraversal g, WalkType c, WalkType p, Split c p) => g c s e -> Walk p s s
+gFilter walk = unsafeWalk "filter" [travToG walk]
 
 -- TODO: ElementID typeとPredicateをなんとか考えるべき。
 
@@ -318,21 +322,21 @@ gFilter step = unsafeStep "filter" [travToG step]
 -- gHas :: (Element s)
 --      => Greskell -- ^ key
 --      -> Greskell -- ^ expectation (value or predicate expression)
---      -> Step Filter s s
--- gHas target expec = unsafeStep "has" [target, expec]
+--      -> Walk Filter s s
+-- gHas target expec = unsafeWalk "has" [target, expec]
 
 -- -- | Polymorphic version of 'gHas'.
--- gHas' :: (Element s, StepType c) => Greskell -> Greskell -> Step c s s
+-- gHas' :: (Element s, WalkType c) => Greskell -> Greskell -> Walk c s s
 -- gHas' t e = liftType $ gHas t e
 
 -- | @.hasLabel@ step
 gHasLabel :: Element s
           => [Greskell Text] -- ^ expected label names
-          -> Step Filter s s
-gHasLabel = unsafeStep "hasLabel" . map toGremlin
+          -> Walk Filter s s
+gHasLabel = unsafeWalk "hasLabel" . map toGremlin
 
 -- | Polymorphic version of 'gHasLabel'.
-gHasLabel' :: (Element s, StepType c) => [Greskell Text] -> Step c s s
+gHasLabel' :: (Element s, WalkType c) => [Greskell Text] -> Walk c s s
 gHasLabel' = liftType . gHasLabel
 
 -- TODO: ID type
@@ -340,38 +344,38 @@ gHasLabel' = liftType . gHasLabel
 -- -- | @.hasId@ step
 -- gHasId :: Element s
 --        => [Greskell] -- ^ expected IDs
---        -> Step Filter s s
--- gHasId = unsafeStep . methodCall "hasId"
+--        -> Walk Filter s s
+-- gHasId = unsafeWalk . methodCall "hasId"
 
 -- -- | Polymorphic version of 'gHasId'.
--- gHasId' :: (Element s, StepType c) => [Greskell] -> Step c s s
+-- gHasId' :: (Element s, WalkType c) => [Greskell] -> Walk c s s
 -- gHasId' = liftType . gHasId
 
-multiLogic :: (ToGTraversal g, StepType c, StepType p, Split c p)
+multiLogic :: (ToGTraversal g, WalkType c, WalkType p, Split c p)
            => Text -- ^ method name
            -> [g c s e]
-           -> Step p s s
-multiLogic method_name = unsafeStep method_name . map travToG
+           -> Walk p s s
+multiLogic method_name = unsafeWalk method_name . map travToG
 
 -- | @.and@ step.
-gAnd :: (ToGTraversal g, StepType c, StepType p, Split c p) => [g c s e] -> Step p s s
+gAnd :: (ToGTraversal g, WalkType c, WalkType p, Split c p) => [g c s e] -> Walk p s s
 gAnd = multiLogic "and"
 
 -- | @.or@ step.
-gOr :: (ToGTraversal g, StepType c, StepType p, Split c p) => [g c s e] -> Step p s s
+gOr :: (ToGTraversal g, WalkType c, WalkType p, Split c p) => [g c s e] -> Walk p s s
 gOr = multiLogic "or"
 
 -- | @.not@ step.
-gNot :: (ToGTraversal g, StepType c, StepType p, Split c p) => g c s e -> Step p s s
-gNot cond = unsafeStep "not" [travToG cond]
+gNot :: (ToGTraversal g, WalkType c, WalkType p, Split c p) => g c s e -> Walk p s s
+gNot cond = unsafeWalk "not" [travToG cond]
 
 -- | @.range@ step.
 gRange :: Greskell Int
        -- ^ min
        -> Greskell Int
        -- ^ max
-       -> Step Transform s s
-gRange min_g max_g = unsafeStep "range" $ map toGremlin [min_g, max_g]
+       -> Walk Transform s s
+gRange min_g max_g = unsafeWalk "range" $ map toGremlin [min_g, max_g]
 
 -- TODO: Comparator type
 
@@ -379,8 +383,8 @@ gRange min_g max_g = unsafeStep "range" $ map toGremlin [min_g, max_g]
 -- gOrderBy :: (ToGTraversal g)
 --          => [(g Transform s e, Greskell)]
 --          -- ^ (accessor steps, comparator) of each @.by@
---          -> Step Transform s s
--- gOrderBy bys = unsafeStep (methodCall "order" [] <> bys_g)
+--          -> Walk Transform s s
+-- gOrderBy bys = unsafeWalk (methodCall "order" [] <> bys_g)
 --   where
 --     bys_g = mconcat $ map toG bys
 --     toG (accessor, comparator) =
@@ -388,17 +392,17 @@ gRange min_g max_g = unsafeStep "range" $ map toGremlin [min_g, max_g]
 
 -- | @.flatMap@ step.
 --
--- @.flatMap@ step is a 'Transform' step even if the child step is
+-- @.flatMap@ step is a 'Transform' step even if the child walk is
 -- 'Filter' type. This is because @.flatMap@ step always modifies the
 -- path of the Traverser.
-gFlatMap :: (ToGTraversal g) => g Transform s e -> Step Transform s e
-gFlatMap gt = unsafeStep "flatMap" [travToG gt]
+gFlatMap :: (ToGTraversal g) => g Transform s e -> Walk Transform s e
+gFlatMap gt = unsafeWalk "flatMap" [travToG gt]
 
 -- -- | Polymorphic version of 'gFlatMap'. The following constraint is
 -- -- accurate and semantic, but it's not allowed even if
 -- -- FlexibleContexts is enabled. Probably it's because the type @m@ is
 -- -- left ambiguous.
--- gFlatMap' :: (ToGTraversal g, Split c m, Lift Transform p, Lift m p) => g c s e -> Step p s e
+-- gFlatMap' :: (ToGTraversal g, Split c m, Lift Transform p, Lift m p) => g c s e -> Walk p s e
 -- gFlatMap = undefined
 
 
@@ -406,54 +410,54 @@ gFlatMap gt = unsafeStep "flatMap" [travToG gt]
 gValues :: Element s
         => [Greskell Text]
         -- ^ property keys
-        -> Step Transform s e
-gValues = unsafeStep "values" . map toGremlin
+        -> Walk Transform s e
+gValues = unsafeWalk "values" . map toGremlin
 
-genericTraversalStep :: Vertex v => Text -> [Greskell Text] -> Step Transform v e
-genericTraversalStep method_name = unsafeStep method_name . map toGremlin
+genericTraversalWalk :: Vertex v => Text -> [Greskell Text] -> Walk Transform v e
+genericTraversalWalk method_name = unsafeWalk method_name . map toGremlin
 
 -- | @.out@ step
 gOut :: (Vertex v)
      => [Greskell Text] -- ^ edge labels
-     -> Step Transform v GVertex
+     -> Walk Transform v GVertex
 gOut = gOut'
 
 -- | Polymorphic version of 'gOut'.
-gOut' :: (Vertex v1, Vertex v2) => [Greskell Text] -> Step Transform v1 v2
-gOut' = genericTraversalStep "out"
+gOut' :: (Vertex v1, Vertex v2) => [Greskell Text] -> Walk Transform v1 v2
+gOut' = genericTraversalWalk "out"
 
 -- | @.outE@ step
 gOutE :: (Vertex v)
       => [Greskell Text] -- ^ edge labels
-      -> Step Transform v GEdge
+      -> Walk Transform v GEdge
 gOutE = gOutE'
 
 -- | Polymorphic version of 'gOutE'
-gOutE' :: (Vertex v, Edge e) => [Greskell Text] -> Step Transform v e
-gOutE' = genericTraversalStep "outE"
+gOutE' :: (Vertex v, Edge e) => [Greskell Text] -> Walk Transform v e
+gOutE' = genericTraversalWalk "outE"
 
 -- | @.in@ step
 gIn :: (Vertex v)
     => [Greskell Text] -- ^ edge labels
-    -> Step Transform v GVertex
+    -> Walk Transform v GVertex
 gIn = gIn'
 
 -- | Polymorphic version of 'gIn'.
-gIn' :: (Vertex v1, Vertex v2) => [Greskell Text] -> Step Transform v1 v2
-gIn' = genericTraversalStep "in"
+gIn' :: (Vertex v1, Vertex v2) => [Greskell Text] -> Walk Transform v1 v2
+gIn' = genericTraversalWalk "in"
 
 -- | @.inE@ step.
 gInE :: (Vertex v)
      => [Greskell Text] -- ^ edge labels
-     -> Step Transform v GEdge
+     -> Walk Transform v GEdge
 gInE = gInE
 
 -- | Polymorphic version of 'gInE'.
-gInE' :: (Vertex v, Edge e) => [Greskell Text] -> Step Transform v e
-gInE' = genericTraversalStep "inE"
+gInE' :: (Vertex v, Edge e) => [Greskell Text] -> Walk Transform v e
+gInE' = genericTraversalWalk "inE"
 
 ---- -- probably we can implement .as() step like this. GBuilder generates
 ---- -- some 'Label', which is passed to .as() step and can be passed later
 ---- -- to .select() step etc.
----- gAs :: GBuilder (Label, Step Filter s s)
+---- gAs :: GBuilder (Label, Walk Filter s s)
 ---- gAs = undefined

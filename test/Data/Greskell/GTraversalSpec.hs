@@ -25,12 +25,12 @@ main = hspec spec
 
 spec :: Spec
 spec = do
-  spec_StepType_classes
+  spec_WalkType_classes
   spec_GTraversalSource
   spec_compose_steps
 
-spec_StepType_classes :: Spec
-spec_StepType_classes = do
+spec_WalkType_classes :: Spec
+spec_WalkType_classes = do
   describe "Split typeclass" $ do
     let c = checkSplitCompatible
     c "Filter" "Filter" True
@@ -58,8 +58,8 @@ toErrString :: Either InterpreterError a -> Either String a
 toErrString (Right a) = Right a
 toErrString (Left e) = Left $ show e
 
-checkStepTypeRelation :: (String -> String -> String) -> String -> String -> Bool -> Spec
-checkStepTypeRelation makeCode child parent expect_ok = specify label $ doCheck
+checkWalkTypeRelation :: (String -> String -> String) -> String -> String -> Bool -> Spec
+checkWalkTypeRelation makeCode child parent expect_ok = specify label $ doCheck
   where
     label = child ++ " -> " ++ parent
     doCheck = do
@@ -73,20 +73,20 @@ checkStepTypeRelation makeCode child parent expect_ok = specify label $ doCheck
       typeOf $ makeCode child parent
 
 checkSplitCompatible :: String -> String -> Bool -> Spec
-checkSplitCompatible = checkStepTypeRelation makeCode
+checkSplitCompatible = checkWalkTypeRelation makeCode
   where
     makeCode child parent =
-      "let f :: Step " ++ child ++ " s s -> Step " ++ parent ++ " s s; "
+      "let f :: Walk " ++ child ++ " s s -> Walk " ++ parent ++ " s s; "
       ++ "f = gFilter; "
-      ++ "child :: Step " ++ child ++ " s s; "
+      ++ "child :: Walk " ++ child ++ " s s; "
       ++ "child = undefined; "
       ++ "in f child"
 
 checkLiftCompatible :: String -> String -> Bool -> Spec
-checkLiftCompatible = checkStepTypeRelation makeCode
+checkLiftCompatible = checkWalkTypeRelation makeCode
   where
     makeCode child parent =
-      "let f :: Step " ++ child ++ " s e -> Step " ++ parent ++ " s e; "
+      "let f :: Walk " ++ child ++ " s e -> Walk " ++ parent ++ " s e; "
       ++ "f = liftType; "
       ++ "in f"
 
