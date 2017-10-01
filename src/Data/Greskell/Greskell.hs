@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings, TypeFamilies #-}
 {-# OPTIONS_GHC -fno-warn-redundant-constraints #-}
 -- |
 -- Module: Data.Greskell.Greskell
@@ -9,6 +9,7 @@
 module Data.Greskell.Greskell
        ( -- * Type
          Greskell,
+         ToGreskell(..),
          -- * Conversions
          toGremlin,
          toGremlinLazy,
@@ -78,6 +79,18 @@ instance IsString a => Monoid (Greskell a) where
   mempty = fromString ""
   mappend = biOp "+"
 
+-- | Something that can convert to 'Greskell'.
+class ToGreskell a where
+  type GreskellReturn a
+  -- ^ type of return value by Greskell.
+  toGreskell :: a -> Greskell (GreskellReturn a)
+
+-- | It's just 'id'.
+instance ToGreskell (Greskell a) where
+  type GreskellReturn (Greskell a) = a
+  toGreskell = id
+
+
 biOp :: TL.Text -> Greskell a -> Greskell a -> Greskell a
 biOp operator (Greskell a) (Greskell b) = Greskell (paren a <> operator <> paren b)
 
@@ -140,12 +153,12 @@ toPlaceHolderVariable :: PlaceHolderIndex -> Text
 toPlaceHolderVariable i =  pack ("__v" ++ show i)
 
 -- | Create a readable Gremlin script from 'Greskell'.
-toGremlin :: Greskell a -> Text
-toGremlin = TL.toStrict . unGreskell
+toGremlin :: ToGreskell a => a -> Text
+toGremlin = TL.toStrict . unGreskell . toGreskell
 
 -- | Same as 'toGremlin' except that this returns lazy 'TL.Text'.
-toGremlinLazy :: Greskell a -> TL.Text
-toGremlinLazy = unGreskell
+toGremlinLazy :: ToGreskell a => a -> TL.Text
+toGremlinLazy = unGreskell . toGreskell
 
 unsafeFunCallText :: Text -> [Text] -> Text
 unsafeFunCallText fun_name args = fun_name <> "(" <> args_g <> ")"

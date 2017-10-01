@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, FlexibleInstances, MultiParamTypeClasses #-}
+{-# LANGUAGE OverloadedStrings, FlexibleInstances, MultiParamTypeClasses, TypeFamilies #-}
 {-# OPTIONS_GHC -fno-warn-redundant-constraints #-}
 -- |
 -- Module: Data.Greskell.GTraversal
@@ -76,7 +76,7 @@ import Data.Greskell.Graph
   ( Element, Vertex, Edge, GVertex, GEdge
   )
 import Data.Greskell.Greskell
-  ( Greskell, unsafeGreskellLazy, unsafeGreskell, unsafeFunCall,
+  ( Greskell, ToGreskell(..), unsafeGreskellLazy, unsafeGreskell, unsafeFunCall,
     toGremlinLazy, toGremlin
   )
 
@@ -92,6 +92,11 @@ instance Functor (GTraversal c s) where
 -- | Unsafely convert input and output types.
 instance Bifunctor (GTraversal c) where
   bimap f1 f2 (GTraversal g) = GTraversal $ fmap (bimap f1 f2) g
+
+-- | Unwrap 'GTraversal' data constructor.
+instance ToGreskell (GTraversal c s e) where
+  type GreskellReturn (GTraversal c s e) = GraphTraversal c s e
+  toGreskell = unGTraversal
 
 -- | @GraphTraversal@ class object of TinkerPop. It takes data @s@
 -- from upstream and emits data @e@ to downstream. Type @c@ is a
