@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, FlexibleInstances, MultiParamTypeClasses, TypeFamilies #-}
+{-# LANGUAGE OverloadedStrings, FlexibleInstances, MultiParamTypeClasses, TypeFamilies, GADTs #-}
 {-# OPTIONS_GHC -fno-warn-redundant-constraints #-}
 -- |
 -- Module: Data.Greskell.GTraversal
@@ -60,7 +60,12 @@ module Data.Greskell.GTraversal
          gIn,
          gIn',
          gInE,
-         gInE'
+         gInE',
+         -- * Types for @.by@ step
+         ByProjection,
+         pjValue,
+         pjValue',
+         ByComparator(ByComp)
        ) where
 
 import Prelude hiding (or, filter, not)
@@ -77,6 +82,7 @@ import Data.Void (Void)
 import Data.Greskell.Graph
   ( Element(..), Vertex, Edge, AesonVertex, AesonEdge
   )
+import Data.Greskell.Gremlin (Comparator)
 import Data.Greskell.Greskell
   ( Greskell, ToGreskell(..), unsafeGreskellLazy, unsafeGreskell, unsafeFunCall,
     toGremlinLazy, toGremlin
@@ -387,12 +393,30 @@ gRange :: Greskell Int
        -> Walk Transform s s
 gRange min_g max_g = unsafeWalk "range" $ map toGremlin [min_g, max_g]
 
--- TODO: Comparator type
+
+-- | TBW.
+data ByProjection s e where
+  BPEmpty :: ByProjection s s
+  BPTraversal :: (ToGTraversal g) => g Transform s e -> ByProjection s e
+  BPValue :: (Element e) => Greskell Text -> ByProjection e a
+  BPFunction :: Greskell (a -> b) -> ByProjection a b
+
+pjValue :: (Element e) => Greskell Text -> ByProjection e Value
+pjValue = BPValue
+
+pjValue' :: (Element e) => Greskell Text -> ByProjection e a
+pjValue' = BPValue
+
+-- | TBW.
+data ByComparator s where
+  ByComp :: ByProjection s e -> Greskell (Comparator e) -> ByComparator s
+
+
 
 -- -- | @.order@ and @.by@ steps
 -- gOrderBy :: (ToGTraversal g)
 --          => [(g Transform s e, Greskell)]
---          -- ^ (accessor steps, comparator) of each @.by@
+--          -- ^ (accessor step, comparator) of each @.by@ step
 --          -> Walk Transform s s
 -- gOrderBy bys = unsafeWalk (methodCall "order" [] <> bys_g)
 --   where
