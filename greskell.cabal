@@ -19,8 +19,10 @@ library
   ghc-options:          -Wall -fno-warn-unused-imports
   -- default-extensions:   
   other-extensions:     OverloadedStrings, GeneralizedNewtypeDeriving,
-                        FlexibleInstances, MultiParamTypeClasses, TypeFamilies
+                        FlexibleInstances, MultiParamTypeClasses, TypeFamilies,
+                        GADTs
   exposed-modules:      Data.Greskell,
+                        Data.Greskell.Gremlin,
                         Data.Greskell.Greskell,
                         Data.Greskell.Binder,
                         Data.Greskell.Graph,
