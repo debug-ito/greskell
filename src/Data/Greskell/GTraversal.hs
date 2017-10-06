@@ -78,7 +78,7 @@ import Control.Category (Category)
 import qualified Control.Category as Category
 import Data.Aeson (Value)
 import Data.Bifunctor (Bifunctor(bimap))
-import Data.Monoid ((<>), mconcat)
+import Data.Monoid ((<>), mconcat, Monoid(..))
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
@@ -163,10 +163,10 @@ instance WalkType c => Category (Walk c) where
   id = gIdentity
   (Walk bc) . (Walk ab) = Walk (ab <> bc)
 
--- | 'Monoid' based on 'Category'.
+-- | 'Monoid' based on 'Category'. 'mappend' is '(Category.>>>)'.
 instance WalkType c => Monoid (Walk c s s) where
   mempty = Category.id
-  mappend = (Category..)
+  mappend = (Category.>>>)
 
 -- | Unsafely convert output type
 instance Functor (Walk c s) where
