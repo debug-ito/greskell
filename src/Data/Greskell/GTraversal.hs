@@ -46,8 +46,9 @@ module Data.Greskell.GTraversal
          gOr,
          gAnd,
          gNot,
+         -- ** Sorting steps
+         gOrderBy,
          -- ** Size limitation steps
-         -- gOrderBy,
          gRange,
          -- ** Transformation steps
          gFlatMap,
@@ -64,8 +65,10 @@ module Data.Greskell.GTraversal
          -- * Types for @.by@ step
          ByProjection,
          pjEmpty,
+         pjTraversal,
          pjValue,
          pjValue',
+         pjFunction,
          ByComparator(ByComp)
        ) where
 
@@ -418,6 +421,10 @@ data ByProjection s e where
 pjEmpty :: ByProjection s s
 pjEmpty = BPEmpty
 
+-- | Projection by transforming traversal.
+pjTraversal :: (ToGTraversal g) => g Transform s e -> ByProjection s e
+pjTraversal = BPTraversal
+
 -- | A projection to get a property value from an Element.
 pjValue :: (Element e)
         => Greskell Text -- ^ property key
@@ -430,6 +437,9 @@ pjValue' :: (Element e)
          -> ByProjection e Value
 pjValue' = BPValue
 
+-- | Projection by function.
+pjFunction :: Greskell (a -> b) -> ByProjection a b
+pjFunction = BPFunction
 
 -- | Comparator of type @s@ used in @.by@ step.
 --
@@ -438,18 +448,20 @@ pjValue' = BPValue
 data ByComparator s where
   ByComp :: ByProjection s e -> Greskell (Comparator e) -> ByComparator s
 
-
-
--- -- | @.order@ and @.by@ steps
--- gOrderBy :: (ToGTraversal g)
---          => [(g Transform s e, Greskell)]
---          -- ^ (accessor step, comparator) of each @.by@ step
---          -> Walk Transform s s
--- gOrderBy bys = unsafeWalk (methodCall "order" [] <> bys_g)
---   where
---     bys_g = mconcat $ map toG bys
---     toG (accessor, comparator) =
---       methodCall "by" [(toGreskell $ toGTraversal accessor), comparator]
+-- | @.order@ and @.by@ steps
+gOrderBy :: [ByComparator s] -- ^ comparators for each @.by@ step
+         -> Walk Transform s s
+gOrderBy bys = order_step <> mconcat by_steps
+  where
+    order_step = unsafeWalk "order" []
+    by_steps = map (unsafeWalk "by" . toByArgs) bys
+    toByArgs (ByComp proj comp) = case proj of
+      BPEmpty -> [comp_text]
+      BPTraversal gt -> [toGremlin $ toGTraversal gt, comp_text]
+      BPValue key -> [toGremlin key, comp_text]
+      BPFunction fun -> [toGremlin fun, comp_text]
+      where
+        comp_text = toGremlin comp
 
 -- | @.flatMap@ step.
 --
