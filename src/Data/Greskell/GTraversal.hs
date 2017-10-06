@@ -63,6 +63,7 @@ module Data.Greskell.GTraversal
          gInE',
          -- * Types for @.by@ step
          ByProjection,
+         pjEmpty,
          pjValue,
          pjValue',
          ByComparator(ByComp)
@@ -394,20 +395,32 @@ gRange :: Greskell Int
 gRange min_g max_g = unsafeWalk "range" $ map toGremlin [min_g, max_g]
 
 
--- | TBW.
+-- | Projection from type @s@ to type @e@ used in @.by@ step.
 data ByProjection s e where
   BPEmpty :: ByProjection s s
   BPTraversal :: (ToGTraversal g) => g Transform s e -> ByProjection s e
   BPValue :: (Element e) => Greskell Text -> ByProjection e a
   BPFunction :: Greskell (a -> b) -> ByProjection a b
 
-pjValue :: (Element e) => Greskell Text -> ByProjection e Value
+-- | A special 'ByProjection' that means omitting the projection
+-- altogether. In this case, the projection does nothing (i.e. it's
+-- the identity projection.)
+pjEmpty :: ByProjection s s
+pjEmpty = BPEmpty
+
+-- | A projection to get a property value from an Element.
+pjValue :: (Element e)
+        => Greskell Text -- ^ property key
+        -> ByProjection e Value
 pjValue = BPValue
 
 pjValue' :: (Element e) => Greskell Text -> ByProjection e a
 pjValue' = BPValue
 
--- | TBW.
+-- | Comparator of type @s@ used in @.by@ step.
+--
+-- The input of type @s@ is first projected to type @e@, and compared
+-- by the given comparator.
 data ByComparator s where
   ByComp :: ByProjection s e -> Greskell (Comparator e) -> ByComparator s
 
