@@ -73,12 +73,15 @@ module Data.Greskell.GTraversal
        ) where
 
 import Prelude hiding (or, filter, not)
-import Control.Category (Category)
+import Control.Category (Category, (>>>))
 -- (below) to import Category methods without conflict with Prelude
 import qualified Control.Category as Category
 import Data.Aeson (Value)
 import Data.Bifunctor (Bifunctor(bimap))
+import Data.List.NonEmpty (NonEmpty(..))
 import Data.Monoid ((<>), mconcat, Monoid(..))
+import Data.Semigroup (Semigroup, sconcat)
+import qualified Data.Semigroup as Semigroup
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
@@ -163,10 +166,14 @@ instance WalkType c => Category (Walk c) where
   id = gIdentity
   (Walk bc) . (Walk ab) = Walk (ab <> bc)
 
--- | 'Monoid' based on 'Category'. 'mappend' is '(Category.>>>)'.
+-- | Based on 'Category'. '(Semigroup.<>)' is '(Category.>>>)'.
+instance WalkType c => Semigroup (Walk c s s) where
+  (<>) = (Category.>>>)
+
+-- | Based on 'Category' and 'Semigroup'. 'mempty' is 'Category.id'.
 instance WalkType c => Monoid (Walk c s s) where
   mempty = Category.id
-  mappend = (Category.>>>)
+  mappend = (Semigroup.<>)
 
 -- | Unsafely convert output type
 instance Functor (Walk c s) where
@@ -448,10 +455,14 @@ pjFunction = BPFunction
 data ByComparator s where
   ByComp :: ByProjection s e -> Greskell (Comparator e) -> ByComparator s
 
+modulateWith :: (WalkType c) => Walk c s e -> [Walk c e e] -> Walk c s e
+modulateWith w [] = w
+modulateWith w (m:rest) = w >>> sconcat (m :| rest)
+
 -- | @.order@ and @.by@ steps
 gOrderBy :: [ByComparator s] -- ^ comparators for each @.by@ step
          -> Walk Transform s s
-gOrderBy bys = order_step <> mconcat by_steps
+gOrderBy bys = modulateWith order_step by_steps
   where
     order_step = unsafeWalk "order" []
     by_steps = map (unsafeWalk "by" . toByArgs) bys

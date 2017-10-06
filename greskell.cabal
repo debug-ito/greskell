@@ -32,7 +32,8 @@ library
                         text,
                         transformers,
                         aeson,
-                        unordered-containers
+                        unordered-containers,
+                        semigroups
 
 -- executable greskell
 --   default-language:     Haskell2010
