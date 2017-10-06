@@ -1,4 +1,5 @@
-{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeFamilies, OverloadedStrings #-}
+{-# OPTIONS_GHC -fno-warn-redundant-constraints #-}
 -- |
 -- Module: Data.Greskell.Graph
 -- Description: Haskell counterpart of Gremlin graph structure data types.
@@ -7,9 +8,13 @@
 -- 
 module Data.Greskell.Graph
        ( -- * TinkerPop graph structure API
+         -- ** Types
          Element(..),
          Vertex,
          Edge,
+         -- ** Enum org.apache.tinkerpop.gremlin.structure.T
+         tId,
+         tLabel,
          -- * Concrete data types
          AesonVertex,
          AesonEdge
@@ -18,6 +23,8 @@ module Data.Greskell.Graph
 import Control.Applicative (empty)
 import Data.Aeson (FromJSON(..), Value)
 import Data.Text (Text)
+
+import Data.Greskell.Greskell (Greskell, unsafeGreskellLazy)
 
 -- | @Element@ interface in a TinkerPop graph.
 class Element e where
@@ -30,6 +37,18 @@ class (Element v, FromJSON v) => Vertex v
 
 -- | @Edge@ interface in a TinkerPop graph.
 class (Element e, FromJSON e) => Edge e
+
+-- | @T.id@ Function object.
+tId :: Element e => Greskell (e -> (ElementID e))
+tId = unsafeGreskellLazy "id"
+
+-- | @T.label@ Function object.
+tLabel :: Element e => Greskell (e -> Text)
+tLabel = unsafeGreskellLazy "label"
+
+-- TODO: we need Property type-class to define the following functions.
+-- tKey
+-- tValue
 
 -- | General vertex type you can use for 'Vertex' class, based on
 -- aeson data types.
