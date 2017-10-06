@@ -16,7 +16,7 @@ import Test.Hspec
 
 import Data.Greskell.Greskell (toGremlin, Greskell)
 import Data.Greskell.GTraversal
-  ( source, vertices, (&.), ($.),
+  ( source, vertices', (&.), ($.),
     -- gHas',
     gOut, gRange, gValues, gNot, gIn
   )
@@ -95,10 +95,10 @@ checkLiftCompatible = checkWalkTypeRelation makeCode
 spec_GraphTraversalSource :: Spec
 spec_GraphTraversalSource = describe "GraphTraversalSource" $ do
   specify "g.V()" $ do
-    (toGremlin $ vertices [] $ source "g") `shouldBe` ("g.V()")
+    (toGremlin $ vertices' [] $ source "g") `shouldBe` ("g.V()")
   specify "g.V(1,2,3)" $ do
     let ids = [1,2,3] :: [Greskell Int]
-    (toGremlin $ vertices (map (fmap toJSON) ids) $ source "g") `shouldBe` ("g.V(1,2,3)")
+    (toGremlin $ vertices' (map (fmap toJSON) ids) $ source "g") `shouldBe` ("g.V(1,2,3)")
 
 spec_compose_steps :: Spec
 spec_compose_steps = describe "DSL to compose steps" $ do

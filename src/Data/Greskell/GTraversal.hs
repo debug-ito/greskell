@@ -155,9 +155,9 @@ instance ToGTraversal GTraversal where
 newtype Walk c s e = Walk TL.Text
                     deriving (Show)
 
--- | 'id' is 'gIdentity''.
+-- | 'id' is 'gIdentity'.
 instance WalkType c => Category (Walk c) where
-  id = gIdentity'
+  id = gIdentity
   (Walk bc) . (Walk ab) = Walk (ab <> bc)
 
 -- | Unsafely convert output type
@@ -187,13 +187,13 @@ class WalkType t
 -- traversal actions, or side-effects. Filtering decision must be
 -- solely based on each element.
 --
--- A 'Walk' @s@ is 'Filter' type iff:
+-- A 'Walk' @w@ is 'Filter' type iff:
 --
--- > (gSideEffect s == gIdentity) AND (gFilter s == s)
+-- > (gSideEffect w == gIdentity) AND (gFilter w == w)
 --
--- If 'Walk's @s1@ and @s2@ are 'Filter' type, then
+-- If 'Walk's @w1@ and @w2@ are 'Filter' type, then
 -- 
--- > gAnd [s1, s2] == s1 >>> s2 == s2 >>> s1
+-- > gAnd [w1, w2] == w1 >>> w2 == w2 >>> w1
 data Filter
 
 instance WalkType Filter
@@ -201,20 +201,21 @@ instance WalkType Filter
 -- | WalkType for steps without any side-effects. This includes
 -- transformations, reordring, injections and graph traversal actions.
 --
--- A 'Walk' @s@ is 'Transform' type iff:
+-- A 'Walk' @w@ is 'Transform' type iff:
 --
--- > gSideEffect s == gIdentity
+-- > gSideEffect w == gIdentity
 --
 -- Obviously, every 'Filter' type 'Walk's are also 'Transform' type.
 data Transform
 
 instance WalkType Transform
 
--- | WalkType for steps may have side-effects.
+-- | WalkType for steps that may have side-effects.
 --
 -- A side-effect here means manipulation of the \"sideEffect\" in
--- Gremlin context (i.e. a stash of data kept in a Traversal object),
--- as well as interaction with the world outside the Traversal object.
+-- Gremlin context (i.e. the stash of data kept in a Traversal
+-- object), as well as interaction with the world outside the
+-- Traversal object.
 --
 -- For example, the following steps (in Gremlin) all have
 -- side-effects.
@@ -264,30 +265,30 @@ sourceMethod method_name args src =
   unsafeGreskellLazy $ (toGremlinLazy src <> methodCallText method_name (map toGremlin args))
 
 -- | @.V()@ method on 'GraphTraversalSource'.
-vertices :: [Greskell Value] -- ^ vertex IDs
+vertices :: Vertex v
+         => [Greskell (ElementID v)] -- ^ vertex IDs
          -> Greskell GraphTraversalSource
-         -> GTraversal Transform Void AesonVertex
-vertices = vertices'
+         -> GTraversal Transform Void v
+vertices ids src = GTraversal $ sourceMethod "V" ids src
 
--- | Polymorphic version of 'vertices'.
-vertices' :: Vertex v
-          => [Greskell (ElementID v)]
+-- | Monomorphic version of 'vertices'.
+vertices' :: [Greskell Value]
           -> Greskell GraphTraversalSource
-          -> GTraversal Transform Void v
-vertices' ids src = GTraversal $ sourceMethod "V" ids src
+          -> GTraversal Transform Void AesonVertex
+vertices' = vertices
 
 -- | @.E()@ method on 'GraphTraversalSource'.
-edges :: [Greskell Value] -- ^ edge IDs
+edges :: Edge e
+      => [Greskell (ElementID e)] -- ^ edge IDs
       -> Greskell GraphTraversalSource
-      -> GTraversal Transform Void AesonEdge
-edges = edges'
+      -> GTraversal Transform Void e
+edges ids src = GTraversal $ sourceMethod "E" ids src
 
--- | Polymorphic version of 'edges'.
-edges' :: Edge e
-       => [Greskell (ElementID e)]
+-- | Monomorphic version of 'edges'.
+edges' :: [Greskell Value]
        -> Greskell GraphTraversalSource
-       -> GTraversal Transform Void e
-edges' ids src = GTraversal $ sourceMethod "E" ids src
+       -> GTraversal Transform Void AesonEdge
+edges' = edges
 
 unsafeGTraversal :: Text -> GTraversal c s e
 unsafeGTraversal = GTraversal . unsafeGreskell
@@ -319,17 +320,17 @@ unsafeWalk :: WalkType c
 unsafeWalk name args = Walk $ methodCallText name args
 
 -- | @.identity@ step.
-gIdentity :: Walk Filter s s
-gIdentity = unsafeWalk "identity" []
+gIdentity :: WalkType c => Walk c s s
+gIdentity = liftWalk $ gIdentity'
 
--- | Polymorphic version of 'gIdentity'.
-gIdentity' :: WalkType c => Walk c s s
-gIdentity' = liftWalk $ gIdentity
+-- | Monomorphic version of 'gIdentity'.
+gIdentity' :: Walk Filter s s
+gIdentity' = unsafeWalk "identity" []
 
 travToG :: (ToGTraversal g, WalkType c) => g c s e -> Text
 travToG = toGremlin . unGTraversal . toGTraversal
 
--- | @.filter@ step with steps(traversal).
+-- | @.filter@ step that take a traversal.
 gFilter :: (ToGTraversal g, WalkType c, WalkType p, Split c p) => g c s e -> Walk p s s
 gFilter walk = unsafeWalk "filter" [travToG walk]
 
@@ -349,24 +350,28 @@ gFilter walk = unsafeWalk "filter" [travToG walk]
 -- gHas' t e = liftWalk $ gHas t e
 
 -- | @.hasLabel@ step
-gHasLabel :: Element s
-          => [Greskell Text] -- ^ expected label names
-          -> Walk Filter s s
-gHasLabel = unsafeWalk "hasLabel" . map toGremlin
+gHasLabel :: (Element s, WalkType c)
+          => [Greskell Text]  -- ^ expected label names
+          -> Walk c s s
+gHasLabel = liftWalk . gHasLabel'
 
--- | Polymorphic version of 'gHasLabel'.
-gHasLabel' :: (Element s, WalkType c) => [Greskell Text] -> Walk c s s
-gHasLabel' = liftWalk . gHasLabel
+-- | Monomorphic version of 'gHasLabel'.
+gHasLabel' :: Element s
+          => [Greskell Text]
+          -> Walk Filter s s
+gHasLabel' = unsafeWalk "hasLabel" . map toGremlin
 
 -- | @.hasId@ step
-gHasId :: Element s
+gHasId :: (Element s, WalkType c)
        => [Greskell (ElementID s)] -- ^ expected IDs
-       -> Walk Filter s s
-gHasId = unsafeWalk "hasId" . map toGremlin
+       -> Walk c s s
+gHasId = liftWalk . gHasId'
 
--- | Polymorphic version of 'gHasId'.
-gHasId' :: (Element s, WalkType c) => [Greskell (ElementID s)] -> Walk c s s
-gHasId' = liftWalk . gHasId
+-- | Monomorphic version of 'gHasId'.
+gHasId' :: Element s
+        => [Greskell (ElementID s)]
+        -> Walk Filter s s
+gHasId' = unsafeWalk "hasId" . map toGremlin
 
 multiLogic :: (ToGTraversal g, WalkType c, WalkType p, Split c p)
            => Text -- ^ method name
@@ -411,11 +416,15 @@ pjEmpty = BPEmpty
 -- | A projection to get a property value from an Element.
 pjValue :: (Element e)
         => Greskell Text -- ^ property key
-        -> ByProjection e Value
+        -> ByProjection e a
 pjValue = BPValue
 
-pjValue' :: (Element e) => Greskell Text -> ByProjection e a
+-- | Monomorphic version of 'pjValue'.
+pjValue' :: (Element e)
+         => Greskell Text
+         -> ByProjection e Value
 pjValue' = BPValue
+
 
 -- | Comparator of type @s@ used in @.by@ step.
 --
@@ -464,44 +473,52 @@ genericTraversalWalk :: Vertex v => Text -> [Greskell Text] -> Walk Transform v 
 genericTraversalWalk method_name = unsafeWalk method_name . map toGremlin
 
 -- | @.out@ step
-gOut :: (Vertex v)
+gOut :: (Vertex v1, Vertex v2)
      => [Greskell Text] -- ^ edge labels
-     -> Walk Transform v AesonVertex
-gOut = gOut'
+     -> Walk Transform v1 v2
+gOut = genericTraversalWalk "out"
 
--- | Polymorphic version of 'gOut'.
-gOut' :: (Vertex v1, Vertex v2) => [Greskell Text] -> Walk Transform v1 v2
-gOut' = genericTraversalWalk "out"
+-- | Monomorphic version of 'gOut'.
+gOut' :: (Vertex v)
+      => [Greskell Text]
+      -> Walk Transform v AesonVertex
+gOut' = gOut
 
 -- | @.outE@ step
-gOutE :: (Vertex v)
+gOutE :: (Vertex v, Edge e)
       => [Greskell Text] -- ^ edge labels
-      -> Walk Transform v AesonEdge
-gOutE = gOutE'
+      -> Walk Transform v e
+gOutE = genericTraversalWalk "outE"
 
--- | Polymorphic version of 'gOutE'
-gOutE' :: (Vertex v, Edge e) => [Greskell Text] -> Walk Transform v e
-gOutE' = genericTraversalWalk "outE"
+-- | Monomorphic version of 'gOutE'
+gOutE' :: (Vertex v)
+       => [Greskell Text]
+       -> Walk Transform v AesonEdge
+gOutE' = gOutE
 
 -- | @.in@ step
-gIn :: (Vertex v)
+gIn :: (Vertex v1, Vertex v2)
     => [Greskell Text] -- ^ edge labels
-    -> Walk Transform v AesonVertex
-gIn = gIn'
+    -> Walk Transform v1 v2
+gIn = genericTraversalWalk "in"
 
--- | Polymorphic version of 'gIn'.
-gIn' :: (Vertex v1, Vertex v2) => [Greskell Text] -> Walk Transform v1 v2
-gIn' = genericTraversalWalk "in"
+-- | Monomorphic version of 'gIn'.
+gIn' :: (Vertex v)
+     => [Greskell Text]
+     -> Walk Transform v AesonVertex
+gIn' = gIn
 
 -- | @.inE@ step.
-gInE :: (Vertex v)
+gInE :: (Vertex v, Edge e)
      => [Greskell Text] -- ^ edge labels
-     -> Walk Transform v AesonEdge
-gInE = gInE
+     -> Walk Transform v e
+gInE = genericTraversalWalk "inE"
 
--- | Polymorphic version of 'gInE'.
-gInE' :: (Vertex v, Edge e) => [Greskell Text] -> Walk Transform v e
-gInE' = genericTraversalWalk "inE"
+-- | Monomorphic version of 'gInE'.
+gInE' :: (Vertex v)
+      => [Greskell Text] -- ^ edge labels
+      -> Walk Transform v AesonEdge
+gInE' = gInE
 
 ---- -- probably we can implement .as() step like this. GBuilder generates
 ---- -- some 'Label', which is passed to .as() step and can be passed later
