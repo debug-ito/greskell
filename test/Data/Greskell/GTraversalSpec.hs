@@ -5,6 +5,7 @@ import Control.Category ((>>>), (<<<))
 import Data.Aeson (ToJSON(..))
 import Data.Either (isRight)
 import Data.Function ((&))
+import Data.Text (Text)
 import Language.Haskell.Interpreter
   ( loadModules, OptionVal((:=)), set, searchPath,
     setTopLevelModules, runInterpreter, InterpreterError,
@@ -14,11 +15,16 @@ import System.IO (stderr, hPutStrLn)
 
 import Test.Hspec
 
+import Data.Greskell.Gremlin (oIncr, oDecr, oShuffle)
+import Data.Greskell.Graph (Element, tLabel, tId)
 import Data.Greskell.Greskell (toGremlin, Greskell)
 import Data.Greskell.GTraversal
-  ( source, vertices', (&.), ($.),
+  ( Walk, Transform,
+    source, vertices', (&.), ($.),
     -- gHas',
-    gOut, gRange, gValues, gNot, gIn
+    gOut, gOut', gRange, gValues, gNot, gIn, gIn',
+    gOrderBy, ByComparator(ByComp), ByProjection,
+    pjEmpty, pjValue, pjTraversal, pjFunction
   )
 
 
@@ -29,6 +35,7 @@ spec :: Spec
 spec = do
   spec_WalkType_classes
   spec_GraphTraversalSource
+  spec_order_by
   spec_compose_steps
 
 spec_WalkType_classes :: Spec
@@ -99,6 +106,28 @@ spec_GraphTraversalSource = describe "GraphTraversalSource" $ do
   specify "g.V(1,2,3)" $ do
     let ids = [1,2,3] :: [Greskell Int]
     (toGremlin $ vertices' (map (fmap toJSON) ids) $ source "g") `shouldBe` ("g.V(1,2,3)")
+
+spec_order_by :: Spec
+spec_order_by = describe "gOrderBy" $ do
+  let gv = source "g" & vertices' []
+  specify "no arg" $ do
+    toGremlin (gv &. gOrderBy []) `shouldBe` "g.V().order()"
+  specify "empty projection" $ do
+    toGremlin (gv &. gOrderBy [ByComp pjEmpty oIncr]) `shouldBe` "g.V().order().by(incr)"
+  specify "traversal projection" $ do
+    toGremlin (gv &. gOrderBy [ByComp (pjTraversal $ gOut' ["foo"] >>> gIn' ["bar"]) oShuffle])
+      `shouldBe` "g.V().order().by(__.out(\"foo\").in(\"bar\"),shuffle)"
+  specify "value projection" $ do
+    let getName :: Element e => ByProjection e Text
+        getName = pjValue "name"
+    toGremlin (gv &. gOrderBy [ByComp getName oDecr]) `shouldBe` "g.V().order().by(\"name\",decr)"
+  specify "function projection" $ do
+    toGremlin (gv &. gOrderBy [ByComp (pjFunction tLabel) oIncr]) `shouldBe` "g.V().order().by(label,incr)"
+  specify "two by steps of different comparison types" $ do
+    let getAge :: Element e => ByProjection e Int
+        getAge = pjValue "age"
+    toGremlin (gv &. gOrderBy [ByComp getAge oDecr, ByComp (pjFunction tId) oIncr])
+      `shouldBe` "g.V().order().by(\"age\",decr).by(id,incr)"
 
 spec_compose_steps :: Spec
 spec_compose_steps = describe "DSL to compose steps" $ do
