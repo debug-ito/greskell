@@ -33,6 +33,7 @@ module Data.Greskell.GTraversal
          unsafeGTraversal,
          -- * Walk/Steps
          unsafeWalk,
+         modulateWith,
          -- ** Filter steps
          gIdentity,
          gIdentity',
@@ -334,6 +335,14 @@ unsafeWalk :: WalkType c
            -> Walk c s e
 unsafeWalk name args = Walk $ methodCallText name args
 
+-- | Optionally modulate the main 'Walk' with some modulating 'Walk's.
+modulateWith :: (WalkType c)
+             => Walk c s e -- ^ the main 'Walk'
+             -> [Walk c e e] -- ^ the modulating 'Walk's
+             -> Walk c s e
+modulateWith w [] = w
+modulateWith w (m:rest) = w >>> sconcat (m :| rest)
+
 -- | @.identity@ step.
 gIdentity :: WalkType c => Walk c s s
 gIdentity = liftWalk $ gIdentity'
@@ -454,10 +463,6 @@ pjFunction = BPFunction
 -- by the given comparator.
 data ByComparator s where
   ByComp :: ByProjection s e -> Greskell (Comparator e) -> ByComparator s
-
-modulateWith :: (WalkType c) => Walk c s e -> [Walk c e e] -> Walk c s e
-modulateWith w [] = w
-modulateWith w (m:rest) = w >>> sconcat (m :| rest)
 
 -- | @.order@ and @.by@ steps
 gOrderBy :: [ByComparator s] -- ^ comparators for each @.by@ step
