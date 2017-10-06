@@ -160,6 +160,11 @@ instance WalkType c => Category (Walk c) where
   id = gIdentity
   (Walk bc) . (Walk ab) = Walk (ab <> bc)
 
+-- | 'Monoid' based on 'Category'.
+instance WalkType c => Monoid (Walk c s s) where
+  mempty = Category.id
+  mappend = (Category..)
+
 -- | Unsafely convert output type
 instance Functor (Walk c s) where
   fmap _ (Walk t) = Walk t
