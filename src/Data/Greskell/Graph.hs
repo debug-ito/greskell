@@ -12,6 +12,8 @@ module Data.Greskell.Graph
          Element(..),
          Vertex,
          Edge,
+         Property(..),
+         VertexProperty,
          -- ** Enum org.apache.tinkerpop.gremlin.structure.T
          tId,
          tLabel,
@@ -37,6 +39,15 @@ class (Element v, FromJSON v) => Vertex v
 
 -- | @Edge@ interface in a TinkerPop graph.
 class (Element e, FromJSON e) => Edge e
+
+-- | @Property@ interface in a TinkerPop graph.
+class Property p where
+  type PropertyValue p
+  propertyKey :: p -> Text
+  propertyValue :: p -> PropertyValue p
+
+-- | @VertexProperty@ interface in a TinkerPop graph.
+class (Element p, Property p) => VertexProperty p
 
 -- | @T.id@ Function object.
 tId :: Element e => Greskell (e -> (ElementID e))
