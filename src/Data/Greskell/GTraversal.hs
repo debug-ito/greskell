@@ -368,7 +368,7 @@ gFilter :: (ToGTraversal g, WalkType c, WalkType p, Split c p) => g c s e -> Wal
 gFilter walk = unsafeWalk "filter" [travToG walk]
 
 
--- | TBW
+-- | TODO
 data Token a b where
   TPropValue :: Element a => Greskell Text -> Token a b
   TId :: Element a => Token a (ElementID a)
@@ -376,27 +376,27 @@ data Token a b where
   TLabel :: Element a => Token a Text
   TValue :: VertexProperty a => Token a (PropertyValue a)
 
--- | TBW
+-- | TODO
 instance Element a => IsString (Token a b) where
   fromString = TPropValue . fromString
 
--- | TBW
+-- | TODO
 tPropValue :: Element a => Greskell Text -> Token a b
 tPropValue = TPropValue
 
--- | TBW
+-- | TODO
 tId :: Element a => Token a (ElementID a)
 tId = TId
 
--- | TBW
+-- | TODO
 tLabel :: Element a => Token a Text
 tLabel = TLabel
 
--- | TBW
+-- | TODO
 tKey :: VertexProperty a => Token a Text
 tKey = TKey
 
--- | TBW
+-- | TODO
 tValue :: VertexProperty a => Token a (PropertyValue a)
 tValue = TValue
 
@@ -407,7 +407,7 @@ tokenGreskell TLabel = unsafeGreskellLazy "label"
 tokenGreskell TKey = unsafeGreskellLazy "key"
 tokenGreskell TValue = unsafeGreskellLazy "value"
 
--- | TBW
+-- | TODO
 tokenString :: Token a b -> Greskell Text
 tokenString (TPropValue key) = key
 tokenString token = unsafeGreskellLazy ((toGremlinLazy $ tokenGreskell token) <> ".getAccessor()")
@@ -488,6 +488,10 @@ data ByProjection s e where
   BPTraversal :: (ToGTraversal g) => g Transform s e -> ByProjection s e
   BPToken :: Token s e -> ByProjection s e
   BPFunction :: Greskell (a -> b) -> ByProjection a b
+
+-- | 'pjToken' by 'tPropValue'.
+instance Element s => IsString (ByProjection s e) where
+  fromString = pjToken . fromString
 
 -- | A special 'ByProjection' that means omitting the projection
 -- altogether. In this case, the projection does nothing (i.e. it's
