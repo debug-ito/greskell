@@ -360,6 +360,8 @@ gFilter walk = unsafeWalk "filter" [travToG walk]
 
 -- TODO: ElementID typeとPredicateをなんとか考えるべき。
 
+-- 次はこれかな。
+
 -- -- | @.has@ step.
 -- --
 -- -- TODO: @.has@ step has some overloaded behaviors.
@@ -375,27 +377,31 @@ gFilter walk = unsafeWalk "filter" [travToG walk]
 
 -- | @.hasLabel@ step
 gHasLabel :: (Element s, WalkType c)
-          => [Greskell Text]  -- ^ expected label names
+          => Greskell Text -- ^ expected label name
+          -> [Greskell Text] -- ^ other expected label names
           -> Walk c s s
-gHasLabel = liftWalk . gHasLabel'
+gHasLabel l ls = liftWalk $ gHasLabel' l ls
 
 -- | Monomorphic version of 'gHasLabel'.
 gHasLabel' :: Element s
-          => [Greskell Text]
-          -> Walk Filter s s
-gHasLabel' = unsafeWalk "hasLabel" . map toGremlin
+           => Greskell Text
+           -> [Greskell Text]
+           -> Walk Filter s s
+gHasLabel' l ls = unsafeWalk "hasLabel" $ map toGremlin (l : ls)
 
 -- | @.hasId@ step
 gHasId :: (Element s, WalkType c)
-       => [Greskell (ElementID s)] -- ^ expected IDs
+       => Greskell (ElementID s) -- ^ expected ID
+       -> [Greskell (ElementID s)] -- ^ other expected IDs
        -> Walk c s s
-gHasId = liftWalk . gHasId'
+gHasId i is = liftWalk $ gHasId' i is
 
 -- | Monomorphic version of 'gHasId'.
 gHasId' :: Element s
-        => [Greskell (ElementID s)]
+        => Greskell (ElementID s)
+        -> [Greskell (ElementID s)]
         -> Walk Filter s s
-gHasId' = unsafeWalk "hasId" . map toGremlin
+gHasId' i is = unsafeWalk "hasId" $ map toGremlin (i : is)
 
 multiLogic :: (ToGTraversal g, WalkType c, WalkType p, Split c p)
            => Text -- ^ method name
