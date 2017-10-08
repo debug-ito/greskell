@@ -14,9 +14,6 @@ module Data.Greskell.Graph
          Edge,
          Property(..),
          VertexProperty,
-         -- ** Enum org.apache.tinkerpop.gremlin.structure.T
-         tId,
-         tLabel,
          -- * Concrete data types
          AesonVertex,
          AesonEdge
@@ -48,18 +45,6 @@ class Property p where
 
 -- | @VertexProperty@ interface in a TinkerPop graph.
 class (Element p, Property p) => VertexProperty p
-
--- | @T.id@ Function object.
-tId :: Element e => Greskell (e -> (ElementID e))
-tId = unsafeGreskellLazy "id"
-
--- | @T.label@ Function object.
-tLabel :: Element e => Greskell (e -> Text)
-tLabel = unsafeGreskellLazy "label"
-
--- TODO: we need Property type-class to define the following functions.
--- tKey
--- tValue
 
 -- | General vertex type you can use for 'Vertex' class, based on
 -- aeson data types.

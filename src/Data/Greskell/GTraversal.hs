@@ -63,6 +63,14 @@ module Data.Greskell.GTraversal
          gIn',
          gInE,
          gInE',
+         -- * Tokens
+         Token,
+         tPropValue,
+         tId,
+         tLabel,
+         tKey,
+         tValue,
+         tokenString,
          -- * Types for @.by@ step
          ByProjection,
          pjEmpty,
@@ -83,12 +91,14 @@ import Data.List.NonEmpty (NonEmpty(..))
 import Data.Monoid ((<>), mconcat, Monoid(..))
 import Data.Semigroup (Semigroup, sconcat)
 import qualified Data.Semigroup as Semigroup
+import Data.String (IsString(..))
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
 import Data.Void (Void)
 import Data.Greskell.Graph
-  ( Element(..), Vertex, Edge, AesonVertex, AesonEdge
+  ( Element(..), Vertex, Edge, VertexProperty, Property(..),
+    AesonVertex, AesonEdge
   )
 import Data.Greskell.Gremlin (Comparator)
 import Data.Greskell.Greskell
@@ -358,7 +368,48 @@ travToG = toGremlin . unGTraversal . toGTraversal
 gFilter :: (ToGTraversal g, WalkType c, WalkType p, Split c p) => g c s e -> Walk p s s
 gFilter walk = unsafeWalk "filter" [travToG walk]
 
--- TODO: ElementID typeとPredicateをなんとか考えるべき。
+
+-- | TBW
+data Token a b where
+  TPropValue :: Element a => Greskell Text -> Token a b
+  TId :: Element a => Token a (ElementID a)
+  TKey :: VertexProperty a => Token a Text
+  TLabel :: Element a => Token a Text
+  TValue :: VertexProperty a => Token a (PropertyValue a)
+
+instance Element a => IsString (Token a b) where
+  fromString = TPropValue . fromString
+
+-- | TBW
+tPropValue :: Element a => Greskell Text -> Token a b
+tPropValue = TPropValue
+
+-- | TBW
+tId :: Element a => Token a (ElementID a)
+tId = TId
+
+-- | TBW
+tLabel :: Element a => Token a Text
+tLabel = TLabel
+
+-- | TBW
+tKey :: VertexProperty a => Token a Text
+tKey = TKey
+
+-- | TBW
+tValue :: VertexProperty a => Token a (PropertyValue a)
+tValue = TValue
+
+tokenGreskell :: Token a b -> Greskell ()
+tokenGreskell (TPropValue key) = fmap (const ()) key
+tokenGreskell TId = unsafeGreskellLazy "id"
+tokenGreskell TLabel = unsafeGreskellLazy "label"
+tokenGreskell TKey = unsafeGreskellLazy "key"
+tokenGreskell TValue = unsafeGreskellLazy "value"
+
+tokenString :: Token a b -> Greskell Text
+tokenString (TPropValue key) = key
+tokenString token = unsafeGreskellLazy ((toGremlinLazy $ tokenGreskell token) <> ".getAccessor()")
 
 -- 次はこれかな。
 
