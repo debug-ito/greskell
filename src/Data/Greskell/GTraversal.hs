@@ -75,8 +75,7 @@ module Data.Greskell.GTraversal
          ByProjection,
          pjEmpty,
          pjTraversal,
-         pjValue,
-         pjValue',
+         pjToken,
          pjFunction,
          ByComparator(ByComp)
        ) where
@@ -377,6 +376,7 @@ data Token a b where
   TLabel :: Element a => Token a Text
   TValue :: VertexProperty a => Token a (PropertyValue a)
 
+-- | TBW
 instance Element a => IsString (Token a b) where
   fromString = TPropValue . fromString
 
@@ -407,6 +407,7 @@ tokenGreskell TLabel = unsafeGreskellLazy "label"
 tokenGreskell TKey = unsafeGreskellLazy "key"
 tokenGreskell TValue = unsafeGreskellLazy "value"
 
+-- | TBW
 tokenString :: Token a b -> Greskell Text
 tokenString (TPropValue key) = key
 tokenString token = unsafeGreskellLazy ((toGremlinLazy $ tokenGreskell token) <> ".getAccessor()")
@@ -485,7 +486,7 @@ gRange min_g max_g = unsafeWalk "range" $ map toGremlin [min_g, max_g]
 data ByProjection s e where
   BPEmpty :: ByProjection s s
   BPTraversal :: (ToGTraversal g) => g Transform s e -> ByProjection s e
-  BPValue :: (Element e) => Greskell Text -> ByProjection e a
+  BPToken :: Token s e -> ByProjection s e
   BPFunction :: Greskell (a -> b) -> ByProjection a b
 
 -- | A special 'ByProjection' that means omitting the projection
@@ -498,17 +499,9 @@ pjEmpty = BPEmpty
 pjTraversal :: (ToGTraversal g) => g Transform s e -> ByProjection s e
 pjTraversal = BPTraversal
 
--- | A projection to get a property value from an Element.
-pjValue :: (Element e)
-        => Greskell Text -- ^ property key
-        -> ByProjection e a
-pjValue = BPValue
-
--- | Monomorphic version of 'pjValue'.
-pjValue' :: (Element e)
-         => Greskell Text
-         -> ByProjection e Value
-pjValue' = BPValue
+-- | A projection to get a property value from an Element by 'Token'.
+pjToken :: Token s e -> ByProjection s e
+pjToken = BPToken
 
 -- | Projection by function.
 pjFunction :: Greskell (a -> b) -> ByProjection a b
@@ -531,7 +524,7 @@ gOrderBy bys = modulateWith order_step by_steps
     toByArgs (ByComp proj comp) = case proj of
       BPEmpty -> [comp_text]
       BPTraversal gt -> [toGremlin $ toGTraversal gt, comp_text]
-      BPValue key -> [toGremlin key, comp_text]
+      BPToken token -> [toGremlin $ tokenGreskell token, comp_text]
       BPFunction fun -> [toGremlin fun, comp_text]
       where
         comp_text = toGremlin comp

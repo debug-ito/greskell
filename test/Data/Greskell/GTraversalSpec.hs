@@ -16,7 +16,7 @@ import System.IO (stderr, hPutStrLn)
 import Test.Hspec
 
 import Data.Greskell.Gremlin (oIncr, oDecr, oShuffle)
-import Data.Greskell.Graph (Element, tLabel, tId)
+import Data.Greskell.Graph (Element)
 import Data.Greskell.Greskell (toGremlin, Greskell)
 import Data.Greskell.GTraversal
   ( Walk, Transform,
@@ -24,7 +24,8 @@ import Data.Greskell.GTraversal
     -- gHas',
     gOut, gOut', gRange, gValues, gNot, gIn, gIn',
     gOrderBy, ByComparator(ByComp), ByProjection,
-    pjEmpty, pjValue, pjTraversal, pjFunction
+    pjEmpty, pjToken, pjTraversal, pjFunction,
+    Token, tPropValue, tLabel, tId
   )
 
 
@@ -118,15 +119,17 @@ spec_order_by = describe "gOrderBy" $ do
     toGremlin (gv &. gOrderBy [ByComp (pjTraversal $ gOut' ["foo"] >>> gIn' ["bar"]) oShuffle])
       `shouldBe` "g.V().order().by(__.out(\"foo\").in(\"bar\"),shuffle)"
   specify "value projection" $ do
-    let getName :: Element e => ByProjection e Text
-        getName = pjValue "name"
-    toGremlin (gv &. gOrderBy [ByComp getName oDecr]) `shouldBe` "g.V().order().by(\"name\",decr)"
-  specify "function projection" $ do
-    toGremlin (gv &. gOrderBy [ByComp (pjFunction tLabel) oIncr]) `shouldBe` "g.V().order().by(label,incr)"
+    let nameToken :: Element e => Token e Text
+        nameToken = tPropValue "name"
+    toGremlin (gv &. gOrderBy [ByComp (pjToken nameToken) oDecr]) `shouldBe` "g.V().order().by(\"name\",decr)"
+  specify "TODO: function projection" $ do
+    True `shouldBe` False
+  specify "T token projection" $ do
+    toGremlin (gv &. gOrderBy [ByComp (pjToken tLabel) oIncr]) `shouldBe` "g.V().order().by(label,incr)"
   specify "two by steps of different comparison types" $ do
-    let getAge :: Element e => ByProjection e Int
-        getAge = pjValue "age"
-    toGremlin (gv &. gOrderBy [ByComp getAge oDecr, ByComp (pjFunction tId) oIncr])
+    let ageToken :: Element e => Token e Int
+        ageToken = tPropValue "age"
+    toGremlin (gv &. gOrderBy [ByComp (pjToken ageToken) oDecr, ByComp (pjToken tId) oIncr])
       `shouldBe` "g.V().order().by(\"age\",decr).by(id,incr)"
 
 spec_compose_steps :: Spec
