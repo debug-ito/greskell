@@ -99,7 +99,7 @@ import Data.Greskell.Graph
   ( Element(..), Vertex, Edge, VertexProperty, Property(..),
     AesonVertex, AesonEdge
   )
-import Data.Greskell.Gremlin (Comparator)
+import Data.Greskell.Gremlin (Comparator(..))
 import Data.Greskell.Greskell
   ( Greskell, ToGreskell(..), unsafeGreskellLazy, unsafeGreskell, unsafeFunCall,
     toGremlinLazy, toGremlin
@@ -516,7 +516,7 @@ pjFunction = BPFunction
 -- The input of type @s@ is first projected to type @e@, and compared
 -- by the given comparator.
 data ByComparator s where
-  ByComp :: ByProjection s e -> Greskell (Comparator e) -> ByComparator s
+  ByComp :: Comparator c => ByProjection s (CompareArg c) -> Greskell c -> ByComparator s
 
 -- | @.order@ and @.by@ steps
 gOrderBy :: [ByComparator s] -- ^ comparators for each @.by@ step
