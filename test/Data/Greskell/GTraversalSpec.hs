@@ -15,7 +15,7 @@ import System.IO (stderr, hPutStrLn)
 
 import Test.Hspec
 
-import Data.Greskell.Gremlin (oIncr, oDecr, oShuffle)
+import Data.Greskell.Gremlin (oIncr, oIncr', oDecr, oShuffle)
 import Data.Greskell.Graph (Element)
 import Data.Greskell.Greskell (toGremlin, Greskell)
 import Data.Greskell.GTraversal
@@ -122,8 +122,6 @@ spec_order_by = describe "gOrderBy" $ do
     let nameToken :: Element e => Token e Text
         nameToken = tPropValue "name"
     toGremlin (gv &. gOrderBy [ByComp (pjToken nameToken) oDecr]) `shouldBe` "g.V().order().by(\"name\",decr)"
-  specify "TODO: function projection" $ do
-    True `shouldBe` False
   specify "T token projection" $ do
     toGremlin (gv &. gOrderBy [ByComp (pjToken tLabel) oIncr]) `shouldBe` "g.V().order().by(label,incr)"
   specify "two by steps of different comparison types" $ do
@@ -131,6 +129,10 @@ spec_order_by = describe "gOrderBy" $ do
         ageToken = tPropValue "age"
     toGremlin (gv &. gOrderBy [ByComp (pjToken ageToken) oDecr, ByComp (pjToken tId) oIncr])
       `shouldBe` "g.V().order().by(\"age\",decr).by(id,incr)"
+  specify "IsString instance of ByProjection" $ do
+    toGremlin (gv &. gOrderBy [ByComp "name" oIncr'])
+      `shouldBe` "g.V().order().by(\"name\",incr)"
+    
 
 spec_compose_steps :: Spec
 spec_compose_steps = describe "DSL to compose steps" $ do
