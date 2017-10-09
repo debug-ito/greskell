@@ -11,17 +11,19 @@ module Data.Greskell.Gremlin
          -- ** org.apache.tinkerpop.gremlin.process.traversal.Order
          Order,
          oDecr,
+         oDecr',
          oIncr,
-         oShuffle
+         oIncr',
+         oShuffle,
+         oShuffle'
        ) where
 
+import Data.Aeson (Value)
 import Data.Monoid ((<>))
 import Data.Greskell.Greskell
   ( Greskell, unsafeGreskellLazy,
     toGremlinLazy
   )
-
--- TODO: Orderの関数はmonomorphicバージョンもあるといい。
 
 -- | @java.util.Comparator@ interface.
 class Comparator c where
@@ -42,10 +44,22 @@ instance Comparator (Order a) where
 oDecr :: Greskell (Order a)
 oDecr = unsafeGreskellLazy "decr"
 
+-- | Monomorphic version of 'oDecr'.
+oDecr' :: Greskell (Order Value)
+oDecr' = oDecr
+
 -- | @incr@ order.
 oIncr :: Greskell (Order a)
 oIncr = unsafeGreskellLazy "incr"
 
+-- | Monomorphic version of 'oIncr'
+oIncr' :: Greskell (Order Value)
+oIncr' = oIncr
+
 -- | @shuffle@ order.
 oShuffle :: Greskell (Order a)
 oShuffle = unsafeGreskellLazy "shuffle"
+
+-- | Monomorphic version of 'oShuffle''
+oShuffle' :: Greskell (Order Value)
+oShuffle' = oShuffle
