@@ -20,8 +20,8 @@ module Data.Greskell.Graph
          tValue,
          -- * Extended API
          Key,
-         keyOf,
-         keyAsText,
+         keyFromText,
+         keyToText,
          -- * Concrete data types
          AesonVertex,
          AesonEdge
@@ -83,15 +83,15 @@ tValue = unsafeGreskellLazy "value"
 newtype Key a b = Key Text
                 deriving (Show,Eq)
 
--- | Create a 'Key' from a String literal.
-keyOf :: Element a
-      => Text -- ^ property key string
-      -> Greskell (Key a b)
-keyOf = fmap Key . string
+-- | Treat the String expression as a 'Key'.
+keyFromText :: Element a
+            => Greskell Text -- ^ property key string
+            -> Greskell (Key a b)
+keyFromText = fmap Key
 
 -- | Treat the 'Key' as just a String.
-keyAsText :: Greskell (Key a b) -> Greskell Text
-keyAsText = fmap (\(Key t) -> t)
+keyToText :: Greskell (Key a b) -> Greskell Text
+keyToText = fmap (\(Key t) -> t)
 
 -- | Unsafely convert the value type @b@.
 instance Functor (Key a) where
