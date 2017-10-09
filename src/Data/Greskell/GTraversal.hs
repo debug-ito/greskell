@@ -46,8 +46,12 @@ module Data.Greskell.GTraversal
          gHasLabel',
          gHasId,
          gHasId',
-         gOr,
+         gHasKey,
+         gHasKey',
+         gHasValue,
+         gHasValue',
          gAnd,
+         gOr,
          gNot,
          -- ** Sorting steps
          gOrderBy,
@@ -399,7 +403,7 @@ gHas2' key p = unsafeWalk "has" [toGremlin key, toGremlin p]
 gHasLabel :: (Element s, WalkType c)
           => Greskell (P Text) -- ^ predicate on Element label.
           -> Walk c s s
-gHasLabel p = liftWalk $ gHasLabel' p
+gHasLabel = liftWalk . gHasLabel'
 
 -- | Monomorphic version of 'gHasLabel'.
 gHasLabel' :: Element s
@@ -411,13 +415,33 @@ gHasLabel' p = unsafeWalk "hasLabel" [toGremlin p]
 gHasId :: (Element s, WalkType c)
        => Greskell (P (ElementID s))
        -> Walk c s s
-gHasId p = liftWalk $ gHasId' p
+gHasId = liftWalk . gHasId'
 
 -- | Monomorphic version of 'gHasId'.
 gHasId' :: Element s
         => Greskell (P (ElementID s))
         -> Walk Filter s s
 gHasId' p = unsafeWalk "hasId" [toGremlin p]
+
+-- | @.hasKey@ step.
+gHasKey :: (VertexProperty s, WalkType c)
+        => Greskell (P Text) -- ^ predicate on the VertexProperty's key.
+        -> Walk c s s
+gHasKey = liftWalk . gHasKey'
+
+-- | Monomorphic version of 'gHasKey'.
+gHasKey' :: (VertexProperty s) => Greskell (P Text) -> Walk Filter s s
+gHasKey' p = unsafeWalk "hasKey" [toGremlin p]
+
+-- | @.hasValue@ step.
+gHasValue :: (VertexProperty s, WalkType c)
+          => Greskell (P (PropertyValue s)) -- ^ predicate on the VertexProperty's value
+          -> Walk c s s
+gHasValue = liftWalk . gHasValue'
+
+-- | Monomorphic version of 'gHasValue'.
+gHasValue' :: (VertexProperty s) => Greskell (P (PropertyValue s)) -> Walk Filter s s
+gHasValue' p = unsafeWalk "hasValue" [toGremlin p]
 
 multiLogic :: (ToGTraversal g, WalkType c, WalkType p, Split c p)
            => Text -- ^ method name
