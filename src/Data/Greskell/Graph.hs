@@ -20,7 +20,7 @@ module Data.Greskell.Graph
        ) where
 
 import Control.Applicative (empty)
-import Data.Aeson (FromJSON(..), Value)
+import Data.Aeson (Value)
 import Data.Text (Text)
 
 import Data.Greskell.Greskell (Greskell, unsafeGreskellLazy)
@@ -32,10 +32,10 @@ class Element e where
   elementLabel :: e -> Text
 
 -- | @Vertex@ interface in a TinkerPop graph.
-class (Element v, FromJSON v) => Vertex v
+class (Element v) => Vertex v
 
 -- | @Edge@ interface in a TinkerPop graph.
-class (Element e, FromJSON e) => Edge e
+class (Element e) => Edge e
 
 -- | @Property@ interface in a TinkerPop graph.
 class Property p where
@@ -56,10 +56,6 @@ instance Element AesonVertex where
   elementId = undefined
   elementLabel = undefined
 
--- | TODO: 'FromJSON' methods are not implemented yet.
-instance FromJSON AesonVertex where
-  parseJSON _ = empty
-
 instance Vertex AesonVertex
 
 -- | General edge type you can use for 'Edge' class, based on aeson
@@ -71,9 +67,5 @@ instance Element AesonEdge where
   type ElementID AesonEdge = Value
   elementId = undefined
   elementLabel = undefined
-
--- | TODO: 'FromJSON' methods are not implemented yet.
-instance FromJSON AesonEdge where
-  parseJSON _ = empty
 
 instance Edge AesonEdge
