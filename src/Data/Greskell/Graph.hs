@@ -19,7 +19,7 @@ module Data.Greskell.Graph
          tLabel,
          tValue,
          -- * Extended API
-         Key,
+         Key(..),
          keyFromText,
          keyToText,
          -- * Concrete data types

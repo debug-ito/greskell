@@ -63,19 +63,12 @@ module Data.Greskell.GTraversal
          gIn',
          gInE,
          gInE',
-         -- * Tokens
-         Token,
-         tPropValue,
-         tId,
-         tLabel,
-         tKey,
-         tValue,
-         tokenString,
          -- * Types for @.by@ step
          ByProjection,
          pjEmpty,
          pjTraversal,
-         pjToken,
+         pjT,
+         pjKey,
          pjFunction,
          ByComparator(ByComp)
        ) where
@@ -97,7 +90,8 @@ import qualified Data.Text.Lazy as TL
 import Data.Void (Void)
 import Data.Greskell.Graph
   ( Element(..), Vertex, Edge, VertexProperty, Property(..),
-    AesonVertex, AesonEdge
+    AesonVertex, AesonEdge,
+    T, Key
   )
 import Data.Greskell.Gremlin (Comparator(..))
 import Data.Greskell.Greskell
@@ -368,49 +362,13 @@ gFilter :: (ToGTraversal g, WalkType c, WalkType p, Split c p) => g c s e -> Wal
 gFilter walk = unsafeWalk "filter" [travToG walk]
 
 
--- | TODO
-data Token a b where
-  TPropValue :: Element a => Greskell Text -> Token a b
-  TId :: Element a => Token a (ElementID a)
-  TKey :: VertexProperty a => Token a Text
-  TLabel :: Element a => Token a Text
-  TValue :: VertexProperty a => Token a (PropertyValue a)
+-- TODO: TokenはKey a bとT a bに分割すべき。なぜならKeyはsetterとしても使えるから。
+-- .values, .valueMap, .property, .propertiesあたりでKeyは使える。
+-- has(T,...)ステップはhasIdとかで代用可能。
+-- ていうか、propertyステップはかなり独特。
+-- keyValues...に与えるとこれはVertexPropertyのPropertyとしてセットされる。
+-- valueにTraversalを与えることもできる？？
 
--- | TODO
-instance Element a => IsString (Token a b) where
-  fromString = TPropValue . fromString
-
--- | TODO
-tPropValue :: Element a => Greskell Text -> Token a b
-tPropValue = TPropValue
-
--- | TODO
-tId :: Element a => Token a (ElementID a)
-tId = TId
-
--- | TODO
-tLabel :: Element a => Token a Text
-tLabel = TLabel
-
--- | TODO
-tKey :: VertexProperty a => Token a Text
-tKey = TKey
-
--- | TODO
-tValue :: VertexProperty a => Token a (PropertyValue a)
-tValue = TValue
-
-tokenGreskell :: Token a b -> Greskell ()
-tokenGreskell (TPropValue key) = fmap (const ()) key
-tokenGreskell TId = unsafeGreskellLazy "id"
-tokenGreskell TLabel = unsafeGreskellLazy "label"
-tokenGreskell TKey = unsafeGreskellLazy "key"
-tokenGreskell TValue = unsafeGreskellLazy "value"
-
--- | TODO
-tokenString :: Token a b -> Greskell Text
-tokenString (TPropValue key) = key
-tokenString token = unsafeGreskellLazy ((toGremlinLazy $ tokenGreskell token) <> ".getAccessor()")
 
 -- 次はこれかな。
 
@@ -426,6 +384,9 @@ tokenString token = unsafeGreskellLazy ((toGremlinLazy $ tokenGreskell token) <>
 -- -- | Polymorphic version of 'gHas'.
 -- gHas' :: (Element s, WalkType c) => Greskell -> Greskell -> Walk c s s
 -- gHas' t e = liftWalk $ gHas t e
+
+
+-- TODO: これもPを取るバージョンだけでいい。
 
 -- | @.hasLabel@ step
 gHasLabel :: (Element s, WalkType c)
@@ -486,12 +447,13 @@ gRange min_g max_g = unsafeWalk "range" $ map toGremlin [min_g, max_g]
 data ByProjection s e where
   BPEmpty :: ByProjection s s
   BPTraversal :: (ToGTraversal g) => g Transform s e -> ByProjection s e
-  BPToken :: Token s e -> ByProjection s e
+  BPT :: Greskell (T s e) -> ByProjection s e
+  BPKey :: Greskell (Key s e) -> ByProjection s e
   BPFunction :: Greskell (a -> b) -> ByProjection a b
 
--- | 'pjToken' by 'tPropValue'.
+-- | Use 'pjKey' with the literal property key.
 instance Element s => IsString (ByProjection s e) where
-  fromString = pjToken . fromString
+  fromString = pjKey . fromString
 
 -- | A special 'ByProjection' that means omitting the projection
 -- altogether. In this case, the projection does nothing (i.e. it's
@@ -503,9 +465,14 @@ pjEmpty = BPEmpty
 pjTraversal :: (ToGTraversal g) => g Transform s e -> ByProjection s e
 pjTraversal = BPTraversal
 
--- | A projection to get a property value from an Element by 'Token'.
-pjToken :: Token s e -> ByProjection s e
-pjToken = BPToken
+-- | A projection to get a property value from an Element by 'T'.
+pjT :: Greskell (T s e) -> ByProjection s e
+pjT = BPT
+
+-- | A projection to get a property value from an Element by property
+-- 'Key'.
+pjKey :: Greskell (Key s e) -> ByProjection s e
+pjKey = BPKey
 
 -- | Projection by function.
 pjFunction :: Greskell (a -> b) -> ByProjection a b
@@ -528,7 +495,8 @@ gOrderBy bys = modulateWith order_step by_steps
     toByArgs (ByComp proj comp) = case proj of
       BPEmpty -> [comp_text]
       BPTraversal gt -> [toGremlin $ toGTraversal gt, comp_text]
-      BPToken token -> [toGremlin $ tokenGreskell token, comp_text]
+      BPT t -> [toGremlin t, comp_text]
+      BPKey k -> [toGremlin k, comp_text]
       BPFunction fun -> [toGremlin fun, comp_text]
       where
         comp_text = toGremlin comp

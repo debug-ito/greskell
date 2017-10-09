@@ -16,7 +16,7 @@ import System.IO (stderr, hPutStrLn)
 import Test.Hspec
 
 import Data.Greskell.Gremlin (oIncr, oIncr', oDecr, oShuffle)
-import Data.Greskell.Graph (Element)
+import Data.Greskell.Graph (Element, Key, keyFromText, tLabel, tId)
 import Data.Greskell.Greskell (toGremlin, Greskell)
 import Data.Greskell.GTraversal
   ( Walk, Transform,
@@ -24,8 +24,7 @@ import Data.Greskell.GTraversal
     -- gHas',
     gOut, gOut', gRange, gValues, gNot, gIn, gIn',
     gOrderBy, ByComparator(ByComp), ByProjection,
-    pjEmpty, pjToken, pjTraversal, pjFunction,
-    Token, tPropValue, tLabel, tId
+    pjEmpty, pjT, pjTraversal, pjKey
   )
 
 
@@ -119,15 +118,15 @@ spec_order_by = describe "gOrderBy" $ do
     toGremlin (gv &. gOrderBy [ByComp (pjTraversal $ gOut' ["foo"] >>> gIn' ["bar"]) oShuffle])
       `shouldBe` "g.V().order().by(__.out(\"foo\").in(\"bar\"),shuffle)"
   specify "value projection" $ do
-    let nameToken :: Element e => Token e Text
-        nameToken = tPropValue "name"
-    toGremlin (gv &. gOrderBy [ByComp (pjToken nameToken) oDecr]) `shouldBe` "g.V().order().by(\"name\",decr)"
+    let nameKey :: Element e => Greskell (Key e Text)
+        nameKey = keyFromText "name"
+    toGremlin (gv &. gOrderBy [ByComp (pjKey nameKey) oDecr]) `shouldBe` "g.V().order().by(\"name\",decr)"
   specify "T token projection" $ do
-    toGremlin (gv &. gOrderBy [ByComp (pjToken tLabel) oIncr]) `shouldBe` "g.V().order().by(label,incr)"
+    toGremlin (gv &. gOrderBy [ByComp (pjT tLabel) oIncr]) `shouldBe` "g.V().order().by(label,incr)"
   specify "two by steps of different comparison types" $ do
-    let ageToken :: Element e => Token e Int
-        ageToken = tPropValue "age"
-    toGremlin (gv &. gOrderBy [ByComp (pjToken ageToken) oDecr, ByComp (pjToken tId) oDecr])
+    let ageKey :: Element e => Greskell (Key e Int)
+        ageKey = keyFromText "age"
+    toGremlin (gv &. gOrderBy [ByComp (pjKey ageKey) oDecr, ByComp (pjT tId) oDecr])
       `shouldBe` "g.V().order().by(\"age\",decr).by(id,decr)"
   specify "IsString instance of ByProjection" $ do
     toGremlin (gv &. gOrderBy [ByComp "name" oIncr'])
