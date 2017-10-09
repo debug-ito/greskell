@@ -25,7 +25,8 @@ module Data.Greskell.Greskell
          unsafePlaceHolder,
          PlaceHolderIndex,
          toPlaceHolderVariable,
-         unsafeFunCall
+         unsafeFunCall,
+         unsafeMethodCall
        ) where
 
 import Data.Monoid (Monoid(..), (<>))
@@ -172,3 +173,10 @@ unsafeFunCall :: Text -- ^ function name
               -> Greskell a -- ^ return value of the function call
 unsafeFunCall fun_name args = unsafeGreskell $ unsafeFunCallText fun_name args
 
+-- | Unsafely create a 'Greskell' that calls the given object method
+-- call with the given target and arguments.
+unsafeMethodCall :: Greskell a -- ^ target object
+                 -> Text -- ^ method name
+                 -> [Text] -- ^ arguments
+                 -> Greskell b -- ^ return value of the method call
+unsafeMethodCall target name args = unsafeGreskell ("(" <> toGremlin target <> ")." <> unsafeFunCallText name args)
