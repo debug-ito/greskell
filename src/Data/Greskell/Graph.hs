@@ -8,12 +8,20 @@
 -- 
 module Data.Greskell.Graph
        ( -- * TinkerPop graph structure API
-         -- ** Types
          Element(..),
          Vertex,
          Edge,
          Property(..),
          VertexProperty,
+         T,
+         tId,
+         tKey,
+         tLabel,
+         tValue,
+         -- * Extended API
+         Key,
+         keyOf,
+         keyAsText,
          -- * Concrete data types
          AesonVertex,
          AesonEdge
@@ -21,9 +29,10 @@ module Data.Greskell.Graph
 
 import Control.Applicative (empty)
 import Data.Aeson (Value)
+import Data.String (IsString(..))
 import Data.Text (Text)
 
-import Data.Greskell.Greskell (Greskell, unsafeGreskellLazy)
+import Data.Greskell.Greskell (Greskell, unsafeGreskellLazy, string)
 
 -- | @Element@ interface in a TinkerPop graph.
 class Element e where
@@ -45,6 +54,52 @@ class Property p where
 
 -- | @VertexProperty@ interface in a TinkerPop graph.
 class (Element p, Property p) => VertexProperty p
+
+
+-- | @org.apache.tinkerpop.gremlin.structure.T@ enum.
+--
+-- 'T' is a token to get data @b@ from an Element @a@.
+data T a b
+
+-- | @T.id@ token.
+tId :: Element a => Greskell (T a (ElementID a))
+tId = unsafeGreskellLazy "id"
+
+-- | @T.key@ token.
+tKey :: VertexProperty a => Greskell (T a Text)
+tKey = unsafeGreskellLazy "key"
+
+-- | @T.label@ token.
+tLabel :: Element a => Greskell (T a Text)
+tLabel = unsafeGreskellLazy "label"
+
+-- | @T.value@ token.
+tValue :: VertexProperty a => Greskell (T a (PropertyValue a))
+tValue = unsafeGreskellLazy "value"
+
+
+-- | A property key accessing value @b@ in an Element @a@. In Gremlin,
+-- it's just a String type.
+newtype Key a b = Key Text
+                deriving (Show,Eq)
+
+-- | Create a 'Key' from a String literal.
+keyOf :: Element a
+      => Text -- ^ property key string
+      -> Greskell (Key a b)
+keyOf = fmap Key . string
+
+-- | Treat the 'Key' as just a String.
+keyAsText :: Greskell (Key a b) -> Greskell Text
+keyAsText = fmap (\(Key t) -> t)
+
+-- | Unsafely convert the value type @b@.
+instance Functor (Key a) where
+  fmap _ (Key t) = Key t
+
+instance Element a => IsString (Key a b) where
+  fromString = Key . fromString
+
 
 -- | General vertex type you can use for 'Vertex' class, based on
 -- aeson data types.
