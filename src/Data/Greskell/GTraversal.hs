@@ -38,8 +38,10 @@ module Data.Greskell.GTraversal
          gIdentity,
          gIdentity',
          gFilter,
-         -- gHas,
-         -- gHas',
+         gHas1,
+         gHas1',
+         gHas2,
+         gHas2',
          gHasLabel,
          gHasLabel',
          gHasId,
@@ -93,7 +95,10 @@ import Data.Greskell.Graph
     AesonVertex, AesonEdge,
     T, Key
   )
-import Data.Greskell.Gremlin (Comparator(..))
+import Data.Greskell.Gremlin
+  ( Comparator(..),
+    P
+  )
 import Data.Greskell.Greskell
   ( Greskell, ToGreskell(..), unsafeGreskellLazy, unsafeGreskell, unsafeFunCall,
     toGremlinLazy, toGremlin
@@ -362,31 +367,33 @@ gFilter :: (ToGTraversal g, WalkType c, WalkType p, Split c p) => g c s e -> Wal
 gFilter walk = unsafeWalk "filter" [travToG walk]
 
 
--- TODO: TokenはKey a bとT a bに分割すべき。なぜならKeyはsetterとしても使えるから。
--- .values, .valueMap, .property, .propertiesあたりでKeyは使える。
--- has(T,...)ステップはhasIdとかで代用可能。
--- ていうか、propertyステップはかなり独特。
--- keyValues...に与えるとこれはVertexPropertyのPropertyとしてセットされる。
--- valueにTraversalを与えることもできる？？
+-- TODO
+-- gValues, gValueMap, gProperty, gProperties etc. should use Key type as an argument.
+-- Note that .property step is very tricky. Read the doc carefully.
+-- 
 
+-- | @.has@ step with one argument.
+gHas1 :: (WalkType c, Element s)
+      => Greskell (Key s v) -- ^ property key
+      -> Walk c s s
+gHas1 = liftWalk . gHas1'
 
--- 次はこれかな。
+-- | Monomorphic version of 'gHas1'.
+gHas1' :: (Element s) => Greskell (Key s v) -> Walk Filter s s
+gHas1' key = unsafeWalk "has" [toGremlin key]
 
--- -- | @.has@ step.
--- --
--- -- TODO: @.has@ step has some overloaded behaviors.
--- gHas :: (Element s)
---      => Greskell -- ^ key
---      -> Greskell -- ^ expectation (value or predicate expression)
---      -> Walk Filter s s
--- gHas target expec = unsafeWalk "has" [target, expec]
+-- | @.has@ step with two arguments.
+gHas2 :: (WalkType c, Element s)
+      => Greskell (Key s v) -- ^ property key
+      -> Greskell (P v) -- ^ predicate
+      -> Walk c s s
+gHas2 k p = liftWalk $ gHas2' k p
 
--- -- | Polymorphic version of 'gHas'.
--- gHas' :: (Element s, WalkType c) => Greskell -> Greskell -> Walk c s s
--- gHas' t e = liftWalk $ gHas t e
+-- | Monomorphic version of 'gHas2'.
+gHas2' :: (Element s) => Greskell (Key s v) -> Greskell (P v) -> Walk Filter s s
+gHas2' key p = unsafeWalk "has" [toGremlin key, toGremlin p]
 
-
--- TODO: これもPを取るバージョンだけでいい。
+-- TODO: has(Key,Traversal), has(Label,Key,P)
 
 -- | @.hasLabel@ step
 gHasLabel :: (Element s, WalkType c)
