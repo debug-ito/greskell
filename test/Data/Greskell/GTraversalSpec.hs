@@ -127,8 +127,8 @@ spec_order_by = describe "gOrderBy" $ do
   specify "two by steps of different comparison types" $ do
     let ageToken :: Element e => Token e Int
         ageToken = tPropValue "age"
-    toGremlin (gv &. gOrderBy [ByComp (pjToken ageToken) oDecr, ByComp (pjToken tId) oIncr])
-      `shouldBe` "g.V().order().by(\"age\",decr).by(id,incr)"
+    toGremlin (gv &. gOrderBy [ByComp (pjToken ageToken) oDecr, ByComp (pjToken tId) oDecr])
+      `shouldBe` "g.V().order().by(\"age\",decr).by(id,decr)"
   specify "IsString instance of ByProjection" $ do
     toGremlin (gv &. gOrderBy [ByComp "name" oIncr'])
       `shouldBe` "g.V().order().by(\"name\",incr)"
