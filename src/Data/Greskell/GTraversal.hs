@@ -385,7 +385,7 @@ gHas1' key = unsafeWalk "has" [toGremlin key]
 -- | @.has@ step with two arguments.
 gHas2 :: (WalkType c, Element s)
       => Greskell (Key s v) -- ^ property key
-      -> Greskell (P v) -- ^ predicate
+      -> Greskell (P v) -- ^ predicate on the property value
       -> Walk c s s
 gHas2 k p = liftWalk $ gHas2' k p
 
@@ -397,31 +397,27 @@ gHas2' key p = unsafeWalk "has" [toGremlin key, toGremlin p]
 
 -- | @.hasLabel@ step
 gHasLabel :: (Element s, WalkType c)
-          => Greskell Text -- ^ expected label name
-          -> [Greskell Text] -- ^ other expected label names
+          => Greskell (P Text) -- ^ predicate on Element label.
           -> Walk c s s
-gHasLabel l ls = liftWalk $ gHasLabel' l ls
+gHasLabel p = liftWalk $ gHasLabel' p
 
 -- | Monomorphic version of 'gHasLabel'.
 gHasLabel' :: Element s
-           => Greskell Text
-           -> [Greskell Text]
+           => Greskell (P Text)
            -> Walk Filter s s
-gHasLabel' l ls = unsafeWalk "hasLabel" $ map toGremlin (l : ls)
+gHasLabel' p = unsafeWalk "hasLabel" [toGremlin p]
 
 -- | @.hasId@ step
 gHasId :: (Element s, WalkType c)
-       => Greskell (ElementID s) -- ^ expected ID
-       -> [Greskell (ElementID s)] -- ^ other expected IDs
+       => Greskell (P (ElementID s))
        -> Walk c s s
-gHasId i is = liftWalk $ gHasId' i is
+gHasId p = liftWalk $ gHasId' p
 
 -- | Monomorphic version of 'gHasId'.
 gHasId' :: Element s
-        => Greskell (ElementID s)
-        -> [Greskell (ElementID s)]
+        => Greskell (P (ElementID s))
         -> Walk Filter s s
-gHasId' i is = unsafeWalk "hasId" $ map toGremlin (i : is)
+gHasId' p = unsafeWalk "hasId" [toGremlin p]
 
 multiLogic :: (ToGTraversal g, WalkType c, WalkType p, Split c p)
            => Text -- ^ method name
