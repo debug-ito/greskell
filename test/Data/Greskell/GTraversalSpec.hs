@@ -15,14 +15,21 @@ import System.IO (stderr, hPutStrLn)
 
 import Test.Hspec
 
-import Data.Greskell.Gremlin (oIncr, oIncr', oDecr, oShuffle)
-import Data.Greskell.Graph (Element, Key, keyFromText, tLabel, tId)
-import Data.Greskell.Greskell (toGremlin, Greskell)
+import Data.Greskell.Gremlin
+  ( oIncr, oIncr', oDecr, oShuffle,
+    pEq
+  )
+import Data.Greskell.Graph
+  ( Element,
+    Key, keyAny, keyInt, keyText,
+    tLabel, tId
+  )
+import Data.Greskell.Greskell (toGremlin, Greskell, unsafeGreskell)
 import Data.Greskell.GTraversal
   ( Walk, Transform,
     source, vertices', (&.), ($.),
-    -- gHas',
-    gOut, gOut', gRange, gValues, gNot, gIn, gIn',
+    gHas2,
+    gOut', gRange, gValues, gNot, gIn',
     gOrderBy, ByComparator(ByComp), ByProjection,
     pjEmpty, pjT, pjTraversal, pjKey
   )
@@ -119,13 +126,13 @@ spec_order_by = describe "gOrderBy" $ do
       `shouldBe` "g.V().order().by(__.out(\"foo\").in(\"bar\"),shuffle)"
   specify "value projection" $ do
     let nameKey :: Element e => Greskell (Key e Text)
-        nameKey = keyFromText "name"
+        nameKey = "name"
     toGremlin (gv &. gOrderBy [ByComp (pjKey nameKey) oDecr]) `shouldBe` "g.V().order().by(\"name\",decr)"
   specify "T token projection" $ do
     toGremlin (gv &. gOrderBy [ByComp (pjT tLabel) oIncr]) `shouldBe` "g.V().order().by(label,incr)"
   specify "two by steps of different comparison types" $ do
     let ageKey :: Element e => Greskell (Key e Int)
-        ageKey = keyFromText "age"
+        ageKey = "age"
     toGremlin (gv &. gOrderBy [ByComp (pjKey ageKey) oDecr, ByComp (pjT tId) oDecr])
       `shouldBe` "g.V().order().by(\"age\",decr).by(id,decr)"
   specify "IsString instance of ByProjection" $ do
@@ -135,16 +142,19 @@ spec_order_by = describe "gOrderBy" $ do
 
 spec_compose_steps :: Spec
 spec_compose_steps = describe "DSL to compose steps" $ do
-  specify "todo" $ True `shouldBe` False
---   specify "(&) and (&.)" $ do
---     let gt = source "g" & vertices [] &. gHas' "x" (raw "100") &. gOut [] &. gRange (raw "0") (raw "100")
---     runGreskell' gt `shouldBe` "g.V().has(\"x\",100).out().range(0,100)"
---   specify "(&) and (&.) and (>>>)" $ do
---     let gt = source "g" & vertices [raw "200"] &. (gOut [] >>> gOut ["friends_to"] >>> gValues ["name"])
---     runGreskell' gt `shouldBe` "g.V(200).out().out(\"friends_to\").values(\"name\")"
---   specify "($) and ($.)" $ do
---     let gt = gRange (raw "20") (raw "30") $. gNot (gOut ["friends_to"]) $. vertices [] $ source "g"
---     runGreskell' gt `shouldBe` "g.V().not(__.out(\"friends_to\")).range(20,30)"
---   specify "($) and ($.) and (<<<)" $ do
---     let gt = gHas' "name" "hoge" <<< gIn ["foo", "bar"] <<< gIn [] $. vertices [] $ source "g"
---     runGreskell' gt `shouldBe` "g.V().in().in(\"foo\",\"bar\").has(\"name\",\"hoge\")"
+  specify "(&) and (&.)" $ do
+    let gt = source "g" & vertices' [] &. gHas2 (keyInt "x") (pEq 100) &. gOut' [] &. gRange 0 100
+    toGremlin gt `shouldBe` "g.V().has(\"x\",eq(100)).out().range(0,100)"
+  specify "(&) and (&.) and (>>>)" $ do
+    let gt = source "g" & vertices' [unsafeGreskell "200"] &. (gOut' [] >>> gOut' ["friends_to"] >>> gValues [keyText "name"])
+    toGremlin gt `shouldBe` "g.V(200).out().out(\"friends_to\").values(\"name\")"
+  specify "($) and ($.)" $ do
+    let gt = gRange 20 30 $. gNot (gOut' ["friends_to"]) $. vertices' [] $ source "g"
+    toGremlin gt `shouldBe` "g.V().not(__.out(\"friends_to\")).range(20,30)"
+  specify "($) and ($.) and (<<<)" $ do
+    let gt = gHas2 (keyText "name") (pEq "hoge") <<< gIn' ["foo", "bar"] <<< gIn' [] $. vertices' [] $ source "g"
+    toGremlin gt `shouldBe` "g.V().in().in(\"foo\",\"bar\").has(\"name\",eq(\"hoge\"))"
+
+-- TODO:
+-- hasLabelとか、has1, has2のユニットテストもほしい。
+-- あとはPとPredicateメソッドのテストも。
