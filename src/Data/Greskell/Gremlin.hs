@@ -9,6 +9,7 @@ module Data.Greskell.Gremlin
        ( -- * Predicate
          Predicate(..),
          P,
+         pEq,
          -- * Comparator
          Comparator(..),
          -- ** org.apache.tinkerpop.gremlin.process.traversal.Order
