@@ -20,7 +20,11 @@ module Data.Greskell.Graph
          tValue,
          -- * Extended API
          Key(..),
-         keyFromText,
+         keyAny,
+         keyInt,
+         keyDouble,
+         keyText,
+         keyBool,
          keyToText,
          -- * Concrete data types
          AesonVertex,
@@ -83,11 +87,27 @@ tValue = unsafeGreskellLazy "value"
 newtype Key a b = Key Text
                 deriving (Show,Eq)
 
--- | Treat the String expression as a 'Key'.
-keyFromText :: Element a
-            => Greskell Text -- ^ property key string
-            -> Greskell (Key a b)
-keyFromText = fmap Key
+-- | Treat the String expression as a 'Key' for any type of property.
+keyAny :: Element a
+       => Greskell Text -- ^ property key string
+       -> Greskell (Key a b)
+keyAny = fmap Key
+
+-- | 'Key' for int property.
+keyInt :: Element a => Greskell Text -> Greskell (Key a Int)
+keyInt = keyAny
+
+-- | 'Key' for double property.
+keyDouble :: Element a => Greskell Text -> Greskell (Key a Double)
+keyDouble = keyAny
+
+-- | 'Key' for Text (String) property.
+keyText :: Element a => Greskell Text -> Greskell (Key a Text)
+keyText = keyAny
+
+-- | 'Key' for boolean property.
+keyBool :: Element a => Greskell Text -> Greskell (Key a Bool)
+keyBool = keyAny
 
 -- | Treat the 'Key' as just a String.
 keyToText :: Greskell (Key a b) -> Greskell Text
