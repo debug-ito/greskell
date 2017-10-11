@@ -372,7 +372,7 @@ gFilter walk = unsafeWalk "filter" [travToG walk]
 
 
 -- TODO
--- gValues, gValueMap, gProperty, gProperties etc. should use Key type as an argument.
+-- gValueMap, gProperty, gProperties etc. should use Key type as an argument.
 -- Note that .property step is very tricky. Read the doc carefully.
 -- 
 
@@ -546,7 +546,7 @@ gFlatMap gt = unsafeWalk "flatMap" [travToG gt]
 
 -- | @.values@ step.
 gValues :: Element s
-        => [Greskell Text]
+        => [Greskell (Key s e)]
         -- ^ property keys
         -> Walk Transform s e
 gValues = unsafeWalk "values" . map toGremlin
