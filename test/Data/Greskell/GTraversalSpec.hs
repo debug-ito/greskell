@@ -16,7 +16,7 @@ import System.IO (stderr, hPutStrLn)
 import Test.Hspec
 
 import Data.Greskell.Gremlin
-  ( oIncr, oIncr', oDecr, oShuffle,
+  ( oIncr, oDecr, oShuffle,
     pEq
   )
 import Data.Greskell.Graph
@@ -136,9 +136,8 @@ spec_order_by = describe "gOrderBy" $ do
     toGremlin (gv &. gOrderBy [ByComp (pjKey ageKey) oDecr, ByComp (pjT tId) oDecr])
       `shouldBe` "g.V().order().by(\"age\",decr).by(id,decr)"
   specify "IsString instance of ByProjection" $ do
-    toGremlin (gv &. gOrderBy [ByComp "name" oIncr'])
+    toGremlin (gv &. gOrderBy [ByComp "name" oIncr])
       `shouldBe` "g.V().order().by(\"name\",incr)"
-    
 
 spec_compose_steps :: Spec
 spec_compose_steps = describe "DSL to compose steps" $ do

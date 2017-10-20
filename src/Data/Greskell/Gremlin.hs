@@ -15,11 +15,8 @@ module Data.Greskell.Gremlin
          -- ** org.apache.tinkerpop.gremlin.process.traversal.Order
          Order,
          oDecr,
-         oDecr',
          oIncr,
-         oIncr',
          oShuffle,
-         oShuffle'
        ) where
 
 import Data.Aeson (Value)
@@ -65,6 +62,7 @@ class Comparator c where
 -- | org.apache.tinkerpop.gremlin.process.traversal.Order enum.
 data Order a
 
+-- | @Order a@ compares the type @a@.
 instance Comparator (Order a) where
   type CompareArg (Order a) = a
 
@@ -72,22 +70,10 @@ instance Comparator (Order a) where
 oDecr :: Greskell (Order a)
 oDecr = unsafeGreskellLazy "decr"
 
--- | Monomorphic version of 'oDecr'.
-oDecr' :: Greskell (Order Value)
-oDecr' = oDecr
-
 -- | @incr@ order.
 oIncr :: Greskell (Order a)
 oIncr = unsafeGreskellLazy "incr"
 
--- | Monomorphic version of 'oIncr'
-oIncr' :: Greskell (Order Value)
-oIncr' = oIncr
-
 -- | @shuffle@ order.
 oShuffle :: Greskell (Order a)
 oShuffle = unsafeGreskellLazy "shuffle"
-
--- | Monomorphic version of 'oShuffle''
-oShuffle' :: Greskell (Order Value)
-oShuffle' = oShuffle
