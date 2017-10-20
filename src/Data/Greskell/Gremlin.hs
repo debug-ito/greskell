@@ -9,7 +9,18 @@ module Data.Greskell.Gremlin
        ( -- * Predicate
          Predicate(..),
          P,
+         pNot,
          pEq,
+         pNeq,
+         pLt,
+         pLte,
+         pGt,
+         pGte,
+         pInside,
+         pOutside,
+         pBetween,
+         pWithin,
+         pWithout,
          -- * Comparator
          Comparator(..),
          -- ** org.apache.tinkerpop.gremlin.process.traversal.Order
@@ -47,11 +58,53 @@ data P a
 instance Predicate (P a) where
   type PredicateArg (P a) = a
 
+-- | @P.not@ static method.
+pNot :: Greskell (P a) -> Greskell (P a)
+pNot a = unsafeFunCall "not" [toGremlin a]
+
 -- | @P.eq@ static method.
 pEq :: Greskell a -> Greskell (P a)
 pEq arg = unsafeFunCall "eq" [toGremlin arg]
 
--- TODO: other P methods.
+-- | @P.neq@ static method.
+pNeq :: Greskell a -> Greskell (P a)
+pNeq arg = unsafeFunCall "neq" [toGremlin arg]
+
+-- | @P.lt@ static method.
+pLt :: Greskell a -> Greskell (P a)
+pLt arg = unsafeFunCall "lt" [toGremlin arg]
+
+-- | @P.lte@ static method.
+pLte :: Greskell a -> Greskell (P a)
+pLte arg = unsafeFunCall "lte" [toGremlin arg]
+
+-- | @P.gt@ static method.
+pGt :: Greskell a -> Greskell (P a)
+pGt arg = unsafeFunCall "gt" [toGremlin arg]
+
+-- | @P.gte@ static method.
+pGte :: Greskell a -> Greskell (P a)
+pGte arg = unsafeFunCall "gte" [toGremlin arg]
+
+-- | @P.inside@ static method.
+pInside :: Greskell a -> Greskell a -> Greskell (P a)
+pInside a b = unsafeFunCall "inside" $ map toGremlin [a, b]
+
+-- | @P.outside@ static method.
+pOutside :: Greskell a -> Greskell a -> Greskell (P a)
+pOutside a b = unsafeFunCall "outside" $ map toGremlin [a, b]
+
+-- | @P.between@ static method.
+pBetween :: Greskell a -> Greskell a -> Greskell (P a)
+pBetween a b = unsafeFunCall "between" $ map toGremlin [a, b]
+
+-- | @P.within@ static method.
+pWithin :: [Greskell a] -> Greskell (P a)
+pWithin = unsafeFunCall "within" . map toGremlin
+
+-- | @P.without@ static method.
+pWithout :: [Greskell a] -> Greskell (P a)
+pWithout = unsafeFunCall "without" . map toGremlin
 
 -- | @java.util.Comparator@ interface.
 class Comparator c where
