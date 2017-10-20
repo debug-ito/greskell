@@ -378,23 +378,23 @@ gFilter walk = unsafeWalk "filter" [travToG walk]
 
 -- | @.has@ step with one argument.
 gHas1 :: (WalkType c, Element s)
-      => Greskell (Key s v) -- ^ property key
+      => Key s v -- ^ property key
       -> Walk c s s
 gHas1 = liftWalk . gHas1'
 
 -- | Monomorphic version of 'gHas1'.
-gHas1' :: (Element s) => Greskell (Key s v) -> Walk Filter s s
+gHas1' :: (Element s) => Key s v -> Walk Filter s s
 gHas1' key = unsafeWalk "has" [toGremlin key]
 
 -- | @.has@ step with two arguments.
 gHas2 :: (WalkType c, Element s)
-      => Greskell (Key s v) -- ^ property key
+      => Key s v -- ^ property key
       -> Greskell (P v) -- ^ predicate on the property value
       -> Walk c s s
 gHas2 k p = liftWalk $ gHas2' k p
 
 -- | Monomorphic version of 'gHas2'.
-gHas2' :: (Element s) => Greskell (Key s v) -> Greskell (P v) -> Walk Filter s s
+gHas2' :: (Element s) => Key s v -> Greskell (P v) -> Walk Filter s s
 gHas2' key p = unsafeWalk "has" [toGremlin key, toGremlin p]
 
 -- TODO: has(Key,Traversal), has(Label,Key,P)
@@ -475,11 +475,11 @@ data ByProjection s e where
   BPEmpty :: ByProjection s s
   BPTraversal :: (ToGTraversal g) => g Transform s e -> ByProjection s e
   BPT :: Greskell (T s e) -> ByProjection s e
-  BPKey :: Greskell (Key s e) -> ByProjection s e
+  BPKey :: Key s e -> ByProjection s e
   BPFunction :: Greskell (a -> b) -> ByProjection a b
 
 -- | Use 'pjKey' with the literal property key.
-instance Element s => IsString (ByProjection s e) where
+instance IsString (ByProjection s e) where
   fromString = pjKey . fromString
 
 -- | A special 'ByProjection' that means omitting the projection
@@ -498,7 +498,7 @@ pjT = BPT
 
 -- | A projection to get a property value from an Element by property
 -- 'Key'.
-pjKey :: Greskell (Key s e) -> ByProjection s e
+pjKey :: Key s e -> ByProjection s e
 pjKey = BPKey
 
 -- | Projection by function.
@@ -546,7 +546,7 @@ gFlatMap gt = unsafeWalk "flatMap" [travToG gt]
 
 -- | @.values@ step.
 gValues :: Element s
-        => [Greskell (Key s e)]
+        => [Key s e]
         -- ^ property keys
         -> Walk Transform s e
 gValues = unsafeWalk "values" . map toGremlin

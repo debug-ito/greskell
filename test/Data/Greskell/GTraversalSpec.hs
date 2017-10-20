@@ -21,7 +21,7 @@ import Data.Greskell.Gremlin
   )
 import Data.Greskell.Graph
   ( Element,
-    Key, keyAny, keyInt, keyText,
+    Key,
     tLabel, tId
   )
 import Data.Greskell.Greskell (toGremlin, Greskell, unsafeGreskell)
@@ -125,13 +125,13 @@ spec_order_by = describe "gOrderBy" $ do
     toGremlin (gv &. gOrderBy [ByComp (pjTraversal $ gOut' ["foo"] >>> gIn' ["bar"]) oShuffle])
       `shouldBe` "g.V().order().by(__.out(\"foo\").in(\"bar\"),shuffle)"
   specify "value projection" $ do
-    let nameKey :: Element e => Greskell (Key e Text)
+    let nameKey :: Key e Text
         nameKey = "name"
     toGremlin (gv &. gOrderBy [ByComp (pjKey nameKey) oDecr]) `shouldBe` "g.V().order().by(\"name\",decr)"
   specify "T token projection" $ do
     toGremlin (gv &. gOrderBy [ByComp (pjT tLabel) oIncr]) `shouldBe` "g.V().order().by(label,incr)"
   specify "two by steps of different comparison types" $ do
-    let ageKey :: Element e => Greskell (Key e Int)
+    let ageKey :: Key e Int
         ageKey = "age"
     toGremlin (gv &. gOrderBy [ByComp (pjKey ageKey) oDecr, ByComp (pjT tId) oDecr])
       `shouldBe` "g.V().order().by(\"age\",decr).by(id,decr)"
@@ -143,16 +143,16 @@ spec_order_by = describe "gOrderBy" $ do
 spec_compose_steps :: Spec
 spec_compose_steps = describe "DSL to compose steps" $ do
   specify "(&) and (&.)" $ do
-    let gt = source "g" & vertices' [] &. gHas2 (keyInt "x") (pEq 100) &. gOut' [] &. gRange 0 100
+    let gt = source "g" & vertices' [] &. gHas2 ("x" :: Key e Int) (pEq 100) &. gOut' [] &. gRange 0 100
     toGremlin gt `shouldBe` "g.V().has(\"x\",eq(100)).out().range(0,100)"
   specify "(&) and (&.) and (>>>)" $ do
-    let gt = source "g" & vertices' [unsafeGreskell "200"] &. (gOut' [] >>> gOut' ["friends_to"] >>> gValues [keyText "name"])
+    let gt = source "g" & vertices' [unsafeGreskell "200"] &. (gOut' [] >>> gOut' ["friends_to"] >>> gValues [("name" :: Key e Text)])
     toGremlin gt `shouldBe` "g.V(200).out().out(\"friends_to\").values(\"name\")"
   specify "($) and ($.)" $ do
     let gt = gRange 20 30 $. gNot (gOut' ["friends_to"]) $. vertices' [] $ source "g"
     toGremlin gt `shouldBe` "g.V().not(__.out(\"friends_to\")).range(20,30)"
   specify "($) and ($.) and (<<<)" $ do
-    let gt = gHas2 (keyText "name") (pEq "hoge") <<< gIn' ["foo", "bar"] <<< gIn' [] $. vertices' [] $ source "g"
+    let gt = gHas2 ("name" :: Key e Text) (pEq "hoge") <<< gIn' ["foo", "bar"] <<< gIn' [] $. vertices' [] $ source "g"
     toGremlin gt `shouldBe` "g.V().in().in(\"foo\",\"bar\").has(\"name\",eq(\"hoge\"))"
 
 -- TODO:

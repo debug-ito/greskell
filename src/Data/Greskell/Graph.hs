@@ -20,12 +20,6 @@ module Data.Greskell.Graph
          tValue,
          -- * Extended API
          Key(..),
-         keyAny,
-         keyInt,
-         keyDouble,
-         keyText,
-         keyBool,
-         keyToText,
          -- * Concrete data types
          AesonVertex,
          AesonEdge
@@ -36,7 +30,10 @@ import Data.Aeson (Value)
 import Data.String (IsString(..))
 import Data.Text (Text)
 
-import Data.Greskell.Greskell (Greskell, unsafeGreskellLazy, string)
+import Data.Greskell.Greskell
+  ( Greskell, unsafeGreskellLazy, string,
+    ToGreskell(..)
+  )
 
 -- | @Element@ interface in a TinkerPop graph.
 class Element e where
@@ -84,42 +81,20 @@ tValue = unsafeGreskellLazy "value"
 
 -- | A property key accessing value @b@ in an Element @a@. In Gremlin,
 -- it's just a String type.
-newtype Key a b = Key Text
+newtype Key a b = Key { unKey :: Greskell Text }
                 deriving (Show,Eq)
-
--- | Treat the String expression as a 'Key' for any type of property.
-keyAny :: Element a
-       => Greskell Text -- ^ property key string
-       -> Greskell (Key a b)
-keyAny = fmap Key
-
--- | 'Key' for int property.
-keyInt :: Element a => Greskell Text -> Greskell (Key a Int)
-keyInt = keyAny
-
--- | 'Key' for double property.
-keyDouble :: Element a => Greskell Text -> Greskell (Key a Double)
-keyDouble = keyAny
-
--- | 'Key' for Text (String) property.
-keyText :: Element a => Greskell Text -> Greskell (Key a Text)
-keyText = keyAny
-
--- | 'Key' for boolean property.
-keyBool :: Element a => Greskell Text -> Greskell (Key a Bool)
-keyBool = keyAny
-
--- | Treat the 'Key' as just a String.
-keyToText :: Greskell (Key a b) -> Greskell Text
-keyToText = fmap (\(Key t) -> t)
 
 -- | Unsafely convert the value type @b@.
 instance Functor (Key a) where
   fmap _ (Key t) = Key t
 
-instance Element a => IsString (Key a b) where
+-- | Gremlin String literal as a 'Key'.
+instance IsString (Key a b) where
   fromString = Key . fromString
 
+instance ToGreskell (Key a b) where
+  type GreskellReturn (Key a b) = Text
+  toGreskell = unKey
 
 -- | General vertex type you can use for 'Vertex' class, based on
 -- aeson data types.
