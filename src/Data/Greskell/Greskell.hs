@@ -19,6 +19,7 @@ module Data.Greskell.Greskell
          string,
          true,
          false,
+         list,
          -- * Unsafe constructors
          unsafeGreskell,
          unsafeGreskellLazy,
@@ -141,6 +142,13 @@ true = unsafeGreskell "true"
 -- | Boolean @false@ literal.
 false :: Greskell Bool
 false = unsafeGreskell "false"
+
+-- | List literal.
+list :: [Greskell a] -> Greskell [a]
+list gs = unsafeGreskellLazy $ ("[" <> TL.intercalate "," gs_txt <> "]")
+  where
+    gs_txt = map toGremlinLazy gs
+
 
 type PlaceHolderIndex = Int
 

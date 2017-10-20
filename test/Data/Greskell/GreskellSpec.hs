@@ -8,7 +8,7 @@ import Test.Hspec
 import Test.QuickCheck (property, Arbitrary(..))
 
 import Data.Greskell.Greskell
-  ( unsafeGreskell, toGremlin, string,
+  ( unsafeGreskell, toGremlin, string, list,
     unsafePlaceHolder, toPlaceHolderVariable,
     unsafeFunCall,
     Greskell
@@ -61,6 +61,14 @@ spec = do
   describe "unsafeFunCall" $ do
     it "should make function call" $ do
       (toGremlin $ unsafeFunCall "fun" ["foo", "bar"]) `shouldBe` "fun(foo,bar)"
+  describe "list" $ do
+    specify "empty" $ do
+      toGremlin (list []) `shouldBe` "[]"
+    specify "num" $ do
+      toGremlin (list $ [(10 :: Greskell Int), 20, 30]) `shouldBe` "[10,20,30]"
+    specify "list of lists" $ do
+      toGremlin (list $ map list $ [[("" :: Greskell Text)], ["foo", "bar"], ["buzz"]])
+        `shouldBe` "[[\"\"],[\"foo\",\"bar\"],[\"buzz\"]]"
 
 checkStringLiteral :: String -> Text -> Expectation
 checkStringLiteral input expected = do
