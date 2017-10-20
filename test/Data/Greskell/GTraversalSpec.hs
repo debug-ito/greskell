@@ -145,7 +145,7 @@ spec_compose_steps = describe "DSL to compose steps" $ do
     let gt = source "g" & vertices' [] &. gHas2 ("x" :: Key e Int) (pEq 100) &. gOut' [] &. gRange 0 100
     toGremlin gt `shouldBe` "g.V().has(\"x\",eq(100)).out().range(0,100)"
   specify "(&) and (&.) and (>>>)" $ do
-    let gt = source "g" & vertices' [unsafeGreskell "200"] &. (gOut' [] >>> gOut' ["friends_to"] >>> gValues [("name" :: Key e Text)])
+    let gt = source "g" & vertices' [unsafeGreskell "200"] &. (gOut' [] >>> gOut' ["friends_to"] >>> gValues ["name"])
     toGremlin gt `shouldBe` "g.V(200).out().out(\"friends_to\").values(\"name\")"
   specify "($) and ($.)" $ do
     let gt = gRange 20 30 $. gNot (gOut' ["friends_to"]) $. vertices' [] $ source "g"
