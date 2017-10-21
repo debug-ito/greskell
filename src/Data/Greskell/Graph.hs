@@ -92,6 +92,7 @@ instance Functor (Key a) where
 instance IsString (Key a b) where
   fromString = Key . fromString
 
+-- | Unwrap 'Key' constructor.
 instance ToGreskell (Key a b) where
   type GreskellReturn (Key a b) = Text
   toGreskell = unKey
