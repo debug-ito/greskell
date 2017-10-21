@@ -17,7 +17,7 @@ import Test.Hspec
 
 import Data.Greskell.Gremlin
   ( oIncr, oDecr, oShuffle,
-    pEq
+    pEq, pNeq, pInside
   )
 import Data.Greskell.Graph
   ( Element,
@@ -27,8 +27,8 @@ import Data.Greskell.Graph
 import Data.Greskell.Greskell (toGremlin, Greskell, unsafeGreskell)
 import Data.Greskell.GTraversal
   ( Walk, Transform,
-    source, vertices', (&.), ($.),
-    gHas2,
+    source, vertices', edges', (&.), ($.),
+    gHas1, gHas2, gHasLabel, gHasId,
     gOut', gRange, gValues, gNot, gIn',
     gOrderBy, ByComparator(ByComp), ByProjection,
     pjEmpty, pjT, pjTraversal, pjKey
@@ -44,6 +44,7 @@ spec = do
   spec_GraphTraversalSource
   spec_order_by
   spec_compose_steps
+  spec_has
 
 spec_WalkType_classes :: Spec
 spec_WalkType_classes = do
@@ -154,6 +155,25 @@ spec_compose_steps = describe "DSL to compose steps" $ do
     let gt = gHas2 ("name" :: Key e Text) (pEq "hoge") <<< gIn' ["foo", "bar"] <<< gIn' [] $. vertices' [] $ source "g"
     toGremlin gt `shouldBe` "g.V().in().in(\"foo\",\"bar\").has(\"name\",eq(\"hoge\"))"
 
+spec_has :: Spec
+spec_has = do
+  describe "gHas1" $ do
+    specify "IsString Key" $ do
+      toGremlin (source "g" & vertices' [] &. gHas1 "foo") `shouldBe` "g.V().has(\"foo\")"
+  describe "gHas2" $ do
+    specify "IsString Key and P" $ do
+      toGremlin (source "g" & vertices' [] &. gHas2 ("name" :: Key e Text) (pNeq "hoge"))
+        `shouldBe` "g.V().has(\"name\",neq(\"hoge\"))"
+  describe "gHasLabel" $ do
+    specify "P" $ do
+      toGremlin (source "g" & edges' [] &. gHasLabel (pNeq "friends_to"))
+        `shouldBe` "g.E().hasLabel(neq(\"friends_to\"))"
+  describe "gHasId" $ do
+    specify "P" $ do
+      toGremlin (source "g" & vertices' [] &. gHasId (pInside (unsafeGreskell "10") (unsafeGreskell "20")))
+        `shouldBe` "g.V().hasId(inside(10,20))"
+
 -- TODO:
 -- hasLabelとか、has1, has2のユニットテストもほしい。
 -- あとはPとPredicateメソッドのテストも。
+
