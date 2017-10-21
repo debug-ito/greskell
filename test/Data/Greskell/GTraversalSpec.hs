@@ -172,8 +172,13 @@ spec_has = do
     specify "P" $ do
       toGremlin (source "g" & vertices' [] &. gHasId (pInside (unsafeGreskell "10") (unsafeGreskell "20")))
         `shouldBe` "g.V().hasId(inside(10,20))"
+  describe "gHasKey" $ do
+    specify "P" $ do
+      pendingWith "TODO: we need .property step to test .hasKey step."
+  describe "gHasValue" $ do
+    specify "P" $ do
+      pendingWith "TODO: we need .property step to test .hasValue step."
 
 -- TODO:
--- hasLabelとか、has1, has2のユニットテストもほしい。
 -- あとはPとPredicateメソッドのテストも。
 
