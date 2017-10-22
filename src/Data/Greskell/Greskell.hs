@@ -20,6 +20,7 @@ module Data.Greskell.Greskell
          true,
          false,
          list,
+         value,
          -- * Unsafe constructors
          unsafeGreskell,
          unsafeGreskellLazy,
@@ -30,8 +31,14 @@ module Data.Greskell.Greskell
          unsafeMethodCall
        ) where
 
+import Data.Aeson (Value)
+import qualified Data.Aeson as Aeson
+import Data.Bifunctor (bimap)
+import Data.Foldable (toList)
+import qualified Data.HashMap.Lazy as HM
 import Data.Monoid (Monoid(..), (<>))
-import Data.Ratio (numerator, denominator)
+import Data.Ratio (numerator, denominator, Rational)
+import Data.Scientific (floatingOrInteger)
 import Data.String (IsString(..))
 import Data.List (intersperse)
 import Data.Text (Text, pack, unpack)
@@ -149,6 +156,27 @@ list gs = unsafeGreskellLazy $ ("[" <> TL.intercalate "," gs_txt <> "]")
   where
     gs_txt = map toGremlinLazy gs
 
+-- | Aeson 'Value' literal.
+value :: Value -> Greskell Value
+value Aeson.Null = unsafeGreskellLazy "null"
+value (Aeson.Bool b) = unsafeToValue (if b then true else false)
+value (Aeson.Number sci) = let num :: Either Double Integer
+                               num = floatingOrInteger sci
+                               gnum :: Either (Greskell Rational) (Greskell Integer)
+                               gnum = bimap realToFrac fromInteger num
+                           in either unsafeToValue unsafeToValue gnum
+value (Aeson.String s) = unsafeToValue $ string s
+value (Aeson.Array v) = unsafeToValue $ list $ map value $ toList v
+value (Aeson.Object obj)
+  | HM.null obj = unsafeGreskellLazy "[:]"
+  | otherwise = unsafeGreskellLazy $ toGroovyMap $ HM.toList obj
+  where
+    toGroovyMap pairs = "[" <> TL.intercalate "," (map toPairText pairs) <> "]"
+    toPairText (key, val) = (toGremlinLazy $ string key) <> ":" <> (toGremlinLazy $ value val)
+
+
+unsafeToValue :: Greskell a -> Greskell Value
+unsafeToValue = fmap (const Aeson.Null)
 
 type PlaceHolderIndex = Int
 

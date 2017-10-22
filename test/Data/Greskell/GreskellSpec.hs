@@ -2,15 +2,17 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 module Data.Greskell.GreskellSpec (main,spec) where
 
+import qualified Data.Aeson as Aeson
 import Data.String (fromString)
 import Data.Text (Text, pack)
 import Test.Hspec
 import Test.QuickCheck (property, Arbitrary(..))
 
 import Data.Greskell.Greskell
-  ( unsafeGreskell, toGremlin, string, list,
+  ( unsafeGreskell, toGremlin,
     unsafePlaceHolder, toPlaceHolderVariable,
     unsafeFunCall,
+    string, list, true, false, value,
     Greskell
   )
 
@@ -23,6 +25,11 @@ main = hspec spec
 
 spec :: Spec
 spec = do
+  spec_literals
+  spec_other
+
+spec_other :: Spec
+spec_other = do
   describe "unsafeGreskell" $ it "should be just a raw script text" $ property $ \t ->
     (toGremlin $ unsafeGreskell t) `shouldBe` t
   describe "Num" $ do
@@ -54,13 +61,16 @@ spec = do
       toGremlin got `shouldBe` "(\"foo\")+(\"bar\")"
   describe "placeHolder" $ it "should create a placeholder variable" $ property $ \i ->
     (toGremlin $ unsafePlaceHolder i) `shouldBe` toPlaceHolderVariable i
+  describe "unsafeFunCall" $ do
+    it "should make function call" $ do
+      (toGremlin $ unsafeFunCall "fun" ["foo", "bar"]) `shouldBe` "fun(foo,bar)"
+
+spec_literals :: Spec
+spec_literals = do
   describe "string and fromString" $ do
     specify "empty" $ checkStringLiteral "" "\"\""
     specify "words" $ checkStringLiteral "hoge foo bar"  "\"hoge foo bar\""
     specify "escaped" $ checkStringLiteral "foo 'aaa \n \t \\ \"bar\"" "\"foo 'aaa \\n \\t \\\\ \\\"bar\\\"\""
-  describe "unsafeFunCall" $ do
-    it "should make function call" $ do
-      (toGremlin $ unsafeFunCall "fun" ["foo", "bar"]) `shouldBe` "fun(foo,bar)"
   describe "list" $ do
     specify "empty" $ do
       toGremlin (list []) `shouldBe` "[]"
@@ -69,6 +79,35 @@ spec = do
     specify "list of lists" $ do
       toGremlin (list $ map list $ [[("" :: Greskell Text)], ["foo", "bar"], ["buzz"]])
         `shouldBe` "[[\"\"],[\"foo\",\"bar\"],[\"buzz\"]]"
+  describe "boolean" $ do
+    specify "true" $ do
+      toGremlin true `shouldBe` "true"
+    specify "false" $ do
+      toGremlin false `shouldBe` "false"
+  describe "value" $ do
+    specify "null" $ do
+      toGremlin (value Aeson.Null) `shouldBe` "null"
+    specify "bool" $ do
+      toGremlin (value $ Aeson.Bool False) `shouldBe` "false"
+    specify "integer" $ do
+      toGremlin (value $ Aeson.Number 100) `shouldBe` "100"
+    specify "floating-point number" $ do
+      toGremlin (value $ Aeson.Number 10.23) `shouldBe` "10.23"
+    specify "String" $ do
+      toGremlin (value $ Aeson.String "foobar") `shouldBe` "\"foobar\""
+    specify "empty Array" $ do
+      toGremlin (value $ Aeson.toJSON ([] :: [Int])) `shouldBe` "[]"
+    specify "non-empty Array" $ do
+      toGremlin (value $ Aeson.toJSON [(5 :: Int), 6, 7]) `shouldBe` "[5,6,7]"
+    specify "empty Object" $ do
+      toGremlin (value $ Aeson.object []) `shouldBe` "[:]"
+    specify "non-empty Object" $ do
+      toGremlin (value $ Aeson.object [("foo", Aeson.String "hoge"), ("bar", Aeson.Number 20)])
+        `shouldBe` "[\"foo\":\"hoge\",\"bar\":20]"
+    specify "Object of Arrays" $ do
+      toGremlin (value $ Aeson.object [("foo", Aeson.toJSON [(3 :: Int), 2, 1]), ("hoge", Aeson.toJSON [("a" :: Text), "b", "c"])])
+        `shouldBe` "[\"foo\":[3,2,1],\"hoge\":[\"a\",\"b\",\"c\"]]"
+  
 
 checkStringLiteral :: String -> Text -> Expectation
 checkStringLiteral input expected = do
