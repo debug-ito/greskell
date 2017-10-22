@@ -20,6 +20,7 @@ module Data.Greskell.Greskell
          true,
          false,
          list,
+         number,
          value,
          -- * Unsafe constructors
          unsafeGreskell,
@@ -38,7 +39,7 @@ import Data.Foldable (toList)
 import qualified Data.HashMap.Lazy as HM
 import Data.Monoid (Monoid(..), (<>))
 import Data.Ratio (numerator, denominator, Rational)
-import Data.Scientific (floatingOrInteger)
+import Data.Scientific (Scientific, coefficient, base10Exponent)
 import Data.String (IsString(..))
 import Data.List (intersperse)
 import Data.Text (Text, pack, unpack)
@@ -156,15 +157,15 @@ list gs = unsafeGreskellLazy $ ("[" <> TL.intercalate "," gs_txt <> "]")
   where
     gs_txt = map toGremlinLazy gs
 
+-- | Arbitrary precision number literal, like \"123e8\".
+number :: Scientific -> Greskell Scientific
+number = unsafeGreskell . pack . show
+
 -- | Aeson 'Value' literal.
 value :: Value -> Greskell Value
 value Aeson.Null = unsafeGreskellLazy "null"
 value (Aeson.Bool b) = unsafeToValue (if b then true else false)
-value (Aeson.Number sci) = let num :: Either Double Integer
-                               num = floatingOrInteger sci
-                               gnum :: Either (Greskell Rational) (Greskell Integer)
-                               gnum = bimap realToFrac fromInteger num
-                           in either unsafeToValue unsafeToValue gnum
+value (Aeson.Number sci) = unsafeToValue $ number sci
 value (Aeson.String s) = unsafeToValue $ string s
 value (Aeson.Array v) = unsafeToValue $ list $ map value $ toList v
 value (Aeson.Object obj)

@@ -12,7 +12,7 @@ import Data.Greskell.Greskell
   ( unsafeGreskell, toGremlin,
     unsafePlaceHolder, toPlaceHolderVariable,
     unsafeFunCall,
-    string, list, true, false, value,
+    string, list, true, false, number, value,
     Greskell
   )
 
@@ -84,13 +84,26 @@ spec_literals = do
       toGremlin true `shouldBe` "true"
     specify "false" $ do
       toGremlin false `shouldBe` "false"
+  describe "number" $ do
+    specify "zero" $ do
+      toGremlin (number 0) `shouldBe` "0.0"
+    specify "positive integer" $ do
+      toGremlin (number 1234) `shouldBe` "1234.0"
+    specify "negative integer" $ do
+      toGremlin (number (-292)) `shouldBe` "-292.0"
+    specify "positive floating" $ do
+      toGremlin (number 32.123) `shouldBe` "32.123"
+    specify "negative floating" $ do
+      toGremlin (number (-0.0943)) `shouldBe` "-9.43e-2"
+    specify "big positive integer" $ do
+      toGremlin (number 3.23e9) `shouldBe` "3.23e9"
   describe "value" $ do
     specify "null" $ do
       toGremlin (value Aeson.Null) `shouldBe` "null"
     specify "bool" $ do
       toGremlin (value $ Aeson.Bool False) `shouldBe` "false"
     specify "integer" $ do
-      toGremlin (value $ Aeson.Number 100) `shouldBe` "100"
+      toGremlin (value $ Aeson.Number 100) `shouldBe` "100.0"
     specify "floating-point number" $ do
       toGremlin (value $ Aeson.Number 10.23) `shouldBe` "10.23"
     specify "String" $ do
@@ -98,7 +111,7 @@ spec_literals = do
     specify "empty Array" $ do
       toGremlin (value $ Aeson.toJSON ([] :: [Int])) `shouldBe` "[]"
     specify "non-empty Array" $ do
-      toGremlin (value $ Aeson.toJSON [(5 :: Int), 6, 7]) `shouldBe` "[5,6,7]"
+      toGremlin (value $ Aeson.toJSON [(5 :: Int), 6, 7]) `shouldBe` "[5.0,6.0,7.0]"
     specify "empty Object" $ do
       toGremlin (value $ Aeson.object []) `shouldBe` "[:]"
     -- TODO: Do this test with the real Gremlin Server. String representation cannot preserve the order of pairs.
