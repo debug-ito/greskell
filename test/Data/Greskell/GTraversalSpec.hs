@@ -2,7 +2,7 @@
 module Data.Greskell.GTraversalSpec (main,spec) where
 
 import Control.Category ((>>>), (<<<))
-import Data.Aeson (ToJSON(..))
+import Data.Aeson (ToJSON(..), Value(Number))
 import Data.Either (isRight)
 import Data.Function ((&))
 import Data.Text (Text)
@@ -24,7 +24,8 @@ import Data.Greskell.Graph
     Key,
     tLabel, tId
   )
-import Data.Greskell.Greskell (toGremlin, Greskell, unsafeGreskell)
+import Data.Greskell.Greskell
+  ( toGremlin, Greskell, value)
 import Data.Greskell.GTraversal
   ( Walk, Transform,
     source, vertices', edges', (&.), ($.),
@@ -146,8 +147,8 @@ spec_compose_steps = describe "DSL to compose steps" $ do
     let gt = source "g" & vertices' [] &. gHas2 ("x" :: Key e Int) (pEq 100) &. gOut' [] &. gRange 0 100
     toGremlin gt `shouldBe` "g.V().has(\"x\",eq(100)).out().range(0,100)"
   specify "(&) and (&.) and (>>>)" $ do
-    let gt = source "g" & vertices' [unsafeGreskell "200"] &. (gOut' [] >>> gOut' ["friends_to"] >>> gValues ["name"])
-    toGremlin gt `shouldBe` "g.V(200).out().out(\"friends_to\").values(\"name\")"
+    let gt = source "g" & vertices' [value $ Number 200] &. (gOut' [] >>> gOut' ["friends_to"] >>> gValues ["name"])
+    toGremlin gt `shouldBe` "g.V(200.0).out().out(\"friends_to\").values(\"name\")"
   specify "($) and ($.)" $ do
     let gt = gRange 20 30 $. gNot (gOut' ["friends_to"]) $. vertices' [] $ source "g"
     toGremlin gt `shouldBe` "g.V().not(__.out(\"friends_to\")).range(20,30)"
@@ -170,8 +171,8 @@ spec_has = do
         `shouldBe` "g.E().hasLabel(neq(\"friends_to\"))"
   describe "gHasId" $ do
     specify "P" $ do
-      toGremlin (source "g" & vertices' [] &. gHasId (pInside (unsafeGreskell "10") (unsafeGreskell "20")))
-        `shouldBe` "g.V().hasId(inside(10,20))"
+      toGremlin (source "g" & vertices' [] &. gHasId (pInside (value $ Number 10) (value $ Number 20)))
+        `shouldBe` "g.V().hasId(inside(10.0,20.0))"
   describe "gHasKey" $ do
     specify "P" $ do
       pendingWith "TODO: we need .property step to test .hasKey step."
@@ -181,4 +182,5 @@ spec_has = do
 
 -- TODO:
 -- あとはPとPredicateメソッドのテストも。
+
 
