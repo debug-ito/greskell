@@ -20,6 +20,7 @@ module Data.Greskell.Greskell
          true,
          false,
          list,
+         singleton,
          number,
          value,
          -- * Unsafe constructors
@@ -157,6 +158,11 @@ list :: [Greskell a] -> Greskell [a]
 list gs = unsafeGreskellLazy $ ("[" <> TL.intercalate "," gs_txt <> "]")
   where
     gs_txt = map toGremlinLazy gs
+
+-- | Make a list with a single object. Useful to prevent the Gremlin
+-- Server from automatically iterating the result object.
+singleton :: Greskell a -> Greskell [a]
+singleton g = list [g]
 
 -- | Arbitrary precision number literal, like \"123e8\".
 number :: Scientific -> Greskell Scientific
