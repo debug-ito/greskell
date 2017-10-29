@@ -1,8 +1,10 @@
+{-# LANGUAGE OverloadedStrings #-}
 module Main (main,spec) where
 
 import qualified Data.Aeson as Aeson
+import Data.Monoid (mempty, (<>))
 import Data.Scientific (Scientific)
-import Data.Text (unpack)
+import Data.Text (unpack, Text)
 import qualified Database.TinkerPop as TP
 import qualified Database.TinkerPop.Types as TP (Connection)
 import System.Environment (lookupEnv)
@@ -16,7 +18,7 @@ main = hspec spec
 spec :: Spec
 spec = withEnv $ do
   ---- Note: Currently these tests do not support GraphSON 2.0 or
-  ---- lator. Use it with GraphSON 1.0 serializer.
+  ---- later. Try them with GraphSON 1.0 serializer.
   describe "Num" $ do
     let checkInt :: Greskell Int -> Int -> SpecWith (String,Int)
         checkInt = checkOne
@@ -35,6 +37,12 @@ spec = withEnv $ do
     checkFrac (20.123) (20.123)
     checkFrac (32.25 / 2.5) (32.25 / 2.5)
     checkFrac (19.2 * recip 12.5) (19.2 * recip 12.5)
+  describe "Monoid" $ do
+    let checkT :: Greskell Text -> Text -> SpecWith (String,Int)
+        checkT = checkOne
+    checkT mempty mempty
+    checkT ("hello, " <> "world!") ("hello, " <> "world!")
+    checkT ("!\"#$%&'()=~\\|><+*;:@{}[]/?_\r\n\t  ") ("!\"#$%&'()=~\\|><+*;:@{}[]/?_\r\n\t  ")
 
 checkOne :: Aeson.ToJSON a => Greskell a -> a -> SpecWith (String, Int)
 checkOne input expected = specify label $ withConn $ \conn -> do
