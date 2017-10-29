@@ -10,6 +10,9 @@ import qualified Database.TinkerPop.Types as TP (Connection)
 import System.Environment (lookupEnv)
 import Test.Hspec
 
+import Data.Greskell.Gremlin
+  ( oIncr, cCompare, Order
+  )
 import Data.Greskell.Greskell
   ( toGremlin, Greskell,
     true, false, list, value, singleton
@@ -20,6 +23,12 @@ main = hspec spec
 
 spec :: Spec
 spec = withEnv $ do
+  spec_basics
+  spec_comparator
+
+
+spec_basics :: SpecWith (String,Int)
+spec_basics = do
   ---- Note: Currently these tests do not support GraphSON 2.0 or
   ---- later. Try them with GraphSON 1.0 serializer.
   describe "Num" $ do
@@ -93,3 +102,10 @@ withEnv = before $ do
 withConn :: (TP.Connection -> IO ()) -> (String, Int) -> IO ()
 withConn act (host, port) = TP.run host port act
 
+spec_comparator :: SpecWith (String,Int)
+spec_comparator = do
+  let oIncr' :: Greskell (Order Int)
+      oIncr' = oIncr
+  checkOne (cCompare oIncr' 20 20) 0
+  checkOne (cCompare oIncr' 10 20) (-1)
+  checkOne (cCompare oIncr' 20 10) 1
