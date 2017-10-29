@@ -12,7 +12,7 @@ import Test.Hspec
 
 import Data.Greskell.Greskell
   ( toGremlin, Greskell,
-    true, false
+    true, false, list
   )
 
 main :: IO ()
@@ -51,12 +51,21 @@ spec = withEnv $ do
         checkB = checkOne
     checkB true True
     checkB false False
+  describe "list" $ do
+    let checkL :: Greskell [Int] -> [Int] -> SpecWith (String,Int)
+        checkL = checkRaw
+    checkL (list []) []
+    checkL (list [20,30,20,10]) [20,30,20,10]
 
-checkOne :: Aeson.ToJSON a => Greskell a -> a -> SpecWith (String, Int)
-checkOne input expected = specify label $ withConn $ \conn -> do
-  TP.submit conn (toGremlin input) Nothing `shouldReturn` Right [Aeson.toJSON expected]
+
+checkRaw :: Aeson.ToJSON b => Greskell a -> [b] -> SpecWith (String, Int)
+checkRaw  input expected = specify label $ withConn $ \conn -> do
+  TP.submit conn (toGremlin input) Nothing `shouldReturn` Right (map Aeson.toJSON expected)
   where
     label = unpack $ toGremlin input
+
+checkOne :: Aeson.ToJSON a => Greskell a -> a -> SpecWith (String, Int)
+checkOne input expected = checkRaw input [expected]
 
 requireEnv :: String -> IO String
 requireEnv env_key = maybe bail return =<< lookupEnv env_key
