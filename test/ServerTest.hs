@@ -10,7 +10,10 @@ import qualified Database.TinkerPop.Types as TP (Connection)
 import System.Environment (lookupEnv)
 import Test.Hspec
 
-import Data.Greskell.Greskell (toGremlin, Greskell)
+import Data.Greskell.Greskell
+  ( toGremlin, Greskell,
+    true, false
+  )
 
 main :: IO ()
 main = hspec spec
@@ -43,6 +46,11 @@ spec = withEnv $ do
     checkT mempty mempty
     checkT ("hello, " <> "world!") ("hello, " <> "world!")
     checkT ("!\"#$%&'()=~\\|><+*;:@{}[]/?_\r\n\t  ") ("!\"#$%&'()=~\\|><+*;:@{}[]/?_\r\n\t  ")
+  describe "Bool" $ do
+    let checkB :: Greskell Bool -> Bool -> SpecWith (String,Int)
+        checkB = checkOne
+    checkB true True
+    checkB false False
 
 checkOne :: Aeson.ToJSON a => Greskell a -> a -> SpecWith (String, Int)
 checkOne input expected = specify label $ withConn $ \conn -> do
