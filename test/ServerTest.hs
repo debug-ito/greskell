@@ -1,6 +1,7 @@
 module Main (main,spec) where
 
 import qualified Data.Aeson as Aeson
+import Data.Scientific (Scientific)
 import Data.Text (unpack)
 import qualified Database.TinkerPop as TP
 import qualified Database.TinkerPop.Types as TP (Connection)
@@ -27,6 +28,13 @@ spec = withEnv $ do
     checkInt (signum 0) (signum 0)
     checkInt (signum 99) (signum 99)
     checkInt (signum (-12)) (signum (-12))
+  describe "Fractional" $ do
+    let checkFrac :: Greskell Scientific -> Scientific -> SpecWith (String,Int)
+        checkFrac = checkOne
+    checkFrac (20.5) (20.5)
+    checkFrac (20.123) (20.123)
+    checkFrac (32.25 / 2.5) (32.25 / 2.5)
+    checkFrac (19.2 * recip 12.5) (19.2 * recip 12.5)
 
 checkOne :: Aeson.ToJSON a => Greskell a -> a -> SpecWith (String, Int)
 checkOne input expected = specify label $ withConn $ \conn -> do

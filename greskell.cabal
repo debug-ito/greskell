@@ -77,7 +77,7 @@ test-suite server-test-suite
   -- default-extensions:   
   other-extensions:     OverloadedStrings
   -- other-modules:        
-  build-depends:        base, greskell, aeson, hspec, text,
+  build-depends:        base, greskell, aeson, hspec, text, scientific,
                         gremlin-haskell
 
 
