@@ -116,6 +116,7 @@ escapeDQuotes orig = ('"' : (esc =<< orig)) ++ "\""
       '\t' -> "\\t"
       '\\' -> "\\\\"
       '"'  -> "\\\""
+      '$'  -> "\\$"
       x    -> [x]
       -- do we have to espace other characters?
 
