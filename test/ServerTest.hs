@@ -1,6 +1,7 @@
 module Main (main,spec) where
 
 import qualified Data.Aeson as Aeson
+import Data.Text (unpack)
 import qualified Database.TinkerPop as TP
 import qualified Database.TinkerPop.Types as TP (Connection)
 import System.Environment (lookupEnv)
@@ -13,9 +14,25 @@ main = hspec spec
 
 spec :: Spec
 spec = withEnv $ do
-  specify "sample" $ withConn $ \conn -> do
-    let g = toGremlin (100 :: Greskell Int)
-    TP.submit conn g Nothing `shouldReturn` Right [Aeson.Number 100]
+  ---- Note: Currently these tests do not support GraphSON 2.0 or
+  ---- lator. Use it with GraphSON 1.0 serializer.
+  describe "Num" $ do
+    let checkInt :: Greskell Int -> Int -> SpecWith (String,Int)
+        checkInt = checkOne
+    checkInt 100 100
+    checkInt (20 + 30) (20 + 30)
+    checkInt (10 - 3 * 6) (10 - 3 * 6)
+    checkInt (-99) (-99)
+    checkInt (abs (-53)) (abs (-53))
+    checkInt (signum 0) (signum 0)
+    checkInt (signum 99) (signum 99)
+    checkInt (signum (-12)) (signum (-12))
+
+checkOne :: Aeson.ToJSON a => Greskell a -> a -> SpecWith (String, Int)
+checkOne input expected = specify label $ withConn $ \conn -> do
+  TP.submit conn (toGremlin input) Nothing `shouldReturn` Right [Aeson.toJSON expected]
+  where
+    label = unpack $ toGremlin input
 
 requireEnv :: String -> IO String
 requireEnv env_key = maybe bail return =<< lookupEnv env_key
