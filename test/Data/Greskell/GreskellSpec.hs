@@ -114,14 +114,6 @@ spec_literals = do
       toGremlin (value $ Aeson.toJSON [(5 :: Int), 6, 7]) `shouldBe` "[5.0,6.0,7.0]"
     specify "empty Object" $ do
       toGremlin (value $ Aeson.object []) `shouldBe` "[:]"
-    specify "non-empty Object" $ do
-      pendingWith "TODO: Do this test with the real Gremlin Server. String representation cannot preserve the order of pairs."
-    -- specify "non-empty Object" $ do
-    --   toGremlin (value $ Aeson.object [("foo", Aeson.String "hoge"), ("bar", Aeson.Number 20)])
-    --     `shouldBe` "[\"foo\":\"hoge\",\"bar\":20]"
-    -- specify "Object of Arrays" $ do
-    --   toGremlin (value $ Aeson.object [("foo", Aeson.toJSON [(3 :: Int), 2, 1]), ("hoge", Aeson.toJSON [("a" :: Text), "b", "c"])])
-    --     `shouldBe` "[\"foo\":[3,2,1],\"hoge\":[\"a\",\"b\",\"c\"]]"
   
 
 checkStringLiteral :: String -> Text -> Expectation

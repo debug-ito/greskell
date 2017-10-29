@@ -12,7 +12,7 @@ import Test.Hspec
 
 import Data.Greskell.Greskell
   ( toGremlin, Greskell,
-    true, false, list
+    true, false, list, value, singleton
   )
 
 main :: IO ()
@@ -56,6 +56,16 @@ spec = withEnv $ do
         checkL = checkRaw
     checkL (list []) []
     checkL (list [20,30,20,10]) [20,30,20,10]
+  describe "value (object)" $ do
+    let checkV :: Greskell Aeson.Value -> Aeson.Value -> SpecWith (String,Int)
+        checkV i e = checkRaw (singleton i) [e]
+    checkV (value $ Aeson.object []) (Aeson.object [])
+    
+    let simple_nonempty = Aeson.object [("foo", Aeson.String "hoge"), ("bar", Aeson.Number 20)]
+    checkV (value simple_nonempty) simple_nonempty
+    
+    let array_in_obj = Aeson.object [("foo", Aeson.toJSON [(3 :: Int), 2, 1]), ("hoge", Aeson.toJSON [("a" :: Text), "b", "c"])]
+    checkV (value array_in_obj) array_in_obj
 
 
 checkRaw :: Aeson.ToJSON b => Greskell a -> [b] -> SpecWith (String, Int)
