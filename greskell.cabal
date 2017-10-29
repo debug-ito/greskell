@@ -56,7 +56,8 @@ test-suite spec
   other-extensions:     OverloadedStrings
   other-modules:        Data.Greskell.GreskellSpec,
                         Data.Greskell.BinderSpec,
-                        Data.Greskell.GTraversalSpec
+                        Data.Greskell.GTraversalSpec,
+                        Data.Greskell.GremlinSpec
   build-depends:        base, greskell, text, aeson, unordered-containers,
                         hspec,
                         QuickCheck,
