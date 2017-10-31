@@ -11,7 +11,8 @@ import System.Environment (lookupEnv)
 import Test.Hspec
 
 import Data.Greskell.Gremlin
-  ( oIncr, cCompare, Order
+  ( oIncr, cCompare, Order,
+    Predicate(..), pLt, pAnd, pGte
   )
 import Data.Greskell.Greskell
   ( toGremlin, Greskell,
@@ -25,6 +26,7 @@ spec :: Spec
 spec = withEnv $ do
   spec_basics
   spec_comparator
+  spec_predicate
 
 
 spec_basics :: SpecWith (String,Int)
@@ -109,3 +111,11 @@ spec_comparator = do
   checkOne (cCompare oIncr' 20 20) 0
   checkOne (cCompare oIncr' 10 20) (-1)
   checkOne (cCompare oIncr' 20 10) 1
+
+spec_predicate :: SpecWith (String,Int)
+spec_predicate = do
+  checkOne (pTest (pLt 20 `pAnd` pGte 10) (5 :: Greskell Int)) False
+  checkOne (pTest (pLt 20 `pAnd` pGte 10) (10 :: Greskell Int)) True
+  checkOne (pTest (pLt 20 `pAnd` pGte 10) (15 :: Greskell Int)) True
+  checkOne (pTest (pLt 20 `pAnd` pGte 10) (20 :: Greskell Int)) False
+
