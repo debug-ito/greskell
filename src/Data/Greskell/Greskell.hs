@@ -79,7 +79,7 @@ instance Num a => Num (Greskell a) where
 instance Fractional a => Fractional (Greskell a) where
   (/) = biOp "/"
   recip (Greskell a) = Greskell ("1.0/" <> paren a)
-  fromRational rat = Greskell $ paren (scriptOf numerator <> ".0/" <> scriptOf denominator)
+  fromRational rat = Greskell $ scriptOf numerator <> ".0/" <> scriptOf denominator
     where
       scriptOf accessor = TL.pack $ show $ accessor rat
 

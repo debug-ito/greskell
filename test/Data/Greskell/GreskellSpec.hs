@@ -48,10 +48,10 @@ spec_other = do
   describe "Fractional" $ do
     specify "floating point literal" $ do
       let x = 92.12 :: Greskell Double
-      (toGremlin x) `shouldBe` "(2303.0/25)"
+      (toGremlin x) `shouldBe` "2303.0/25"
     specify "operations" $ do
       let x = (100.5 * recip 30.0 / 20.2) :: Greskell Double
-      toGremlin x `shouldBe` "(((201.0/2))*(1.0/((30.0/1))))/((101.0/5))"
+      toGremlin x `shouldBe` "((201.0/2)*(1.0/(30.0/1)))/(101.0/5)"
   describe "Monoid" $ do
     specify "mempty" $ do
       let got = mempty :: Greskell Text
