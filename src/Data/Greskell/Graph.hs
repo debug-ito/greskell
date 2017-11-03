@@ -12,7 +12,6 @@ module Data.Greskell.Graph
          Vertex,
          Edge,
          Property(..),
-         VertexProperty,
          T,
          tId,
          tKey,
@@ -40,7 +39,10 @@ import Data.Greskell.Greskell
 -- | @Element@ interface in a TinkerPop graph.
 class Element e where
   type ElementID e
-  type ElementProperty e
+  -- ^ ID type of the 'Element'
+  type ElementProperty e :: * -> *
+  -- ^ Property type of the 'Element'. It should be of 'Property'
+  -- class.
   elementId :: e -> ElementID e
   elementLabel :: e -> Text
 
@@ -52,13 +54,8 @@ class (Element e) => Edge e
 
 -- | @Property@ interface in a TinkerPop graph.
 class Property p where
-  type PropertyValue p
-  propertyKey :: p -> Text
-  propertyValue :: p -> PropertyValue p
-
--- | @VertexProperty@ interface in a TinkerPop graph.
-class (Element p, Property p) => VertexProperty p
-
+  propertyKey :: p v -> Text
+  propertyValue :: p v -> v
 
 -- | @org.apache.tinkerpop.gremlin.structure.T@ enum.
 --
@@ -70,7 +67,7 @@ tId :: Element a => Greskell (T a (ElementID a))
 tId = unsafeGreskellLazy "id"
 
 -- | @T.key@ token.
-tKey :: VertexProperty a => Greskell (T a Text)
+tKey :: (Element (p v), Property p) => Greskell (T (p v) Text)
 tKey = unsafeGreskellLazy "key"
 
 -- | @T.label@ token.
@@ -78,7 +75,7 @@ tLabel :: Element a => Greskell (T a Text)
 tLabel = unsafeGreskellLazy "label"
 
 -- | @T.value@ token.
-tValue :: VertexProperty a => Greskell (T a (PropertyValue a))
+tValue :: (Element (p v), Property p) => Greskell (T (p v) v)
 tValue = unsafeGreskellLazy "value"
 
 
@@ -128,30 +125,32 @@ instance Edge AesonEdge
 
 -- | General simple property type you can use for 'Property' class,
 -- based on aeson data types.
-data AesonProperty
+data AesonProperty v
 
 -- | TODO: 'Property' methods are not implemented yet.
 instance Property AesonProperty where
-  type PropertyValue AesonProperty = Value
   propertyKey = undefined
   propertyValue = undefined
 
 
--- | General vertex property type you can use for 'VertexProperty'
--- class, based on aeson data types.
-data AesonVertexProperty
+-- | General vertex property type you can use for VertexProperty,
+-- based on aeson data types.
+data AesonVertexProperty v
 
 -- | TODO: 'Element' methods are not implemented yet.
-instance Element AesonVertexProperty where
-  type ElementID AesonVertexProperty = Value
-  type ElementProperty AesonVertexProperty = AesonProperty
+instance Element (AesonVertexProperty v) where
+  type ElementID (AesonVertexProperty v) = Value
+  type ElementProperty (AesonVertexProperty v) = AesonProperty
   elementId = undefined
   elementLabel = undefined
 
 -- | TODO: 'Property' methods are not implemented yet.
 instance Property AesonVertexProperty where
-  type PropertyValue AesonVertexProperty = Value
   propertyKey = undefined
   propertyValue = undefined
 
-instance VertexProperty AesonVertexProperty
+
+-- -- We could define the following constraint synonym with
+-- -- ConstraintKinds extension, although its semantics is not exactly
+-- -- correct..
+-- type VertexProperty p v = (Element (p v), Property p)

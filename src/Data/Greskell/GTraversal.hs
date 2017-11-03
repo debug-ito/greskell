@@ -60,6 +60,7 @@ module Data.Greskell.GTraversal
          -- ** Transformation steps
          gFlatMap,
          gValues,
+         gProperties,
          -- ** Graph traversal steps
          gOut,
          gOut',
@@ -95,7 +96,7 @@ import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
 import Data.Void (Void)
 import Data.Greskell.Graph
-  ( Element(..), Vertex, Edge, VertexProperty, Property(..),
+  ( Element(..), Vertex, Edge, Property(..),
     AesonVertex, AesonEdge,
     T, Key
   )
@@ -424,23 +425,23 @@ gHasId' :: Element s
 gHasId' p = unsafeWalk "hasId" [toGremlin p]
 
 -- | @.hasKey@ step.
-gHasKey :: (VertexProperty s, WalkType c)
+gHasKey :: (Element (p v), Property p, WalkType c)
         => Greskell (P Text) -- ^ predicate on the VertexProperty's key.
-        -> Walk c s s
+        -> Walk c (p v) (p v)
 gHasKey = liftWalk . gHasKey'
 
 -- | Monomorphic version of 'gHasKey'.
-gHasKey' :: (VertexProperty s) => Greskell (P Text) -> Walk Filter s s
+gHasKey' :: (Element (p v), Property p) => Greskell (P Text) -> Walk Filter (p v) (p v)
 gHasKey' p = unsafeWalk "hasKey" [toGremlin p]
 
 -- | @.hasValue@ step.
-gHasValue :: (VertexProperty s, WalkType c)
-          => Greskell (P (PropertyValue s)) -- ^ predicate on the VertexProperty's value
-          -> Walk c s s
+gHasValue :: (Element (p v), Property p, WalkType c)
+          => Greskell (P v) -- ^ predicate on the VertexProperty's value
+          -> Walk c (p v) (p v)
 gHasValue = liftWalk . gHasValue'
 
 -- | Monomorphic version of 'gHasValue'.
-gHasValue' :: (VertexProperty s) => Greskell (P (PropertyValue s)) -> Walk Filter s s
+gHasValue' :: (Element (p v), Property p) => Greskell (P v) -> Walk Filter (p v) (p v)
 gHasValue' p = unsafeWalk "hasValue" [toGremlin p]
 
 multiLogic :: (ToGTraversal g, WalkType c, WalkType p, Split c p)
@@ -550,6 +551,12 @@ gValues :: Element s
         -- ^ property keys
         -> Walk Transform s e
 gValues = unsafeWalk "values" . map toGremlin
+
+-- | @.properties@ step.
+gProperties :: (Element s, Property p, ElementProperty s ~ p)
+            => [Key s v]
+            -> Walk Transform s (p v)
+gProperties = unsafeWalk "properties" . map toGremlin
 
 genericTraversalWalk :: Vertex v => Text -> [Greskell Text] -> Walk Transform v e
 genericTraversalWalk method_name = unsafeWalk method_name . map toGremlin
