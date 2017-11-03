@@ -38,6 +38,7 @@ import Data.Greskell.Greskell
 -- | @Element@ interface in a TinkerPop graph.
 class Element e where
   type ElementID e
+  type ElementProperty e
   elementId :: e -> ElementID e
   elementLabel :: e -> Text
 
@@ -104,6 +105,7 @@ data AesonVertex
 -- | TODO: 'Element' methods are not implemented yet.
 instance Element AesonVertex where
   type ElementID AesonVertex = Value
+  type ElementProperty AesonVertex = AesonVertexProperty
   elementId = undefined
   elementLabel = undefined
 
@@ -116,7 +118,38 @@ data AesonEdge
 -- | TODO: 'Element' methods are not implemented yet.
 instance Element AesonEdge where
   type ElementID AesonEdge = Value
+  type ElementProperty AesonEdge = AesonProperty
   elementId = undefined
   elementLabel = undefined
 
 instance Edge AesonEdge
+
+-- | General simple property type you can use for 'Property' class,
+-- based on aeson data types.
+data AesonProperty
+
+-- | TODO: 'Property' methods are not implemented yet.
+instance Property AesonProperty where
+  type PropertyValue AesonProperty = Value
+  propertyKey = undefined
+  propertyValue = undefined
+
+
+-- | General vertex property type you can use for 'VertexProperty'
+-- class, based on aeson data types.
+data AesonVertexProperty
+
+-- | TODO: 'Element' methods are not implemented yet.
+instance Element AesonVertexProperty where
+  type ElementID AesonVertexProperty = Value
+  type ElementProperty AesonVertexProperty = AesonProperty
+  elementId = undefined
+  elementLabel = undefined
+
+-- | TODO: 'Property' methods are not implemented yet.
+instance Property AesonVertexProperty where
+  type PropertyValue AesonVertexProperty = Value
+  propertyKey = undefined
+  propertyValue = undefined
+
+instance VertexProperty AesonVertexProperty
