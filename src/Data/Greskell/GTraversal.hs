@@ -180,7 +180,7 @@ instance WalkType c => Category (Walk c) where
   id = gIdentity
   (Walk bc) . (Walk ab) = Walk (ab <> bc)
 
--- | Based on 'Category'. '(Semigroup.<>)' is '(Category.>>>)'.
+-- | Based on 'Category'. 'Semigroup.<>' is 'Category.>>>'.
 instance WalkType c => Semigroup (Walk c s s) where
   (<>) = (Category.>>>)
 
@@ -212,7 +212,7 @@ class WalkType t
 -- | WalkType for filtering steps.
 --
 -- A filtering step is a step that does filtering only. It takes input
--- and outputs some of them without any modification, reordering,
+-- and emits some of them without any modification, reordering,
 -- traversal actions, or side-effects. Filtering decision must be
 -- solely based on each element.
 --
@@ -319,6 +319,7 @@ edges' :: [Greskell Value]
        -> GTraversal Transform Void AesonEdge
 edges' = edges
 
+-- | Unsafely create 'GTraversal' from the given raw Gremlin script.
 unsafeGTraversal :: Text -> GTraversal c s e
 unsafeGTraversal = GTraversal . unsafeGreskell
 
@@ -331,7 +332,7 @@ infixl 1 &.
 
 infixr 0 $.
 
--- | Same as '(&.)' with arguments flipped.
+-- | Same as '&.' with arguments flipped.
 ($.) :: Walk c b d -> GTraversal c a b -> GTraversal c a d
 gs $. gt = gt &. gs
 
@@ -367,7 +368,7 @@ gIdentity' = unsafeWalk "identity" []
 travToG :: (ToGTraversal g, WalkType c) => g c s e -> Text
 travToG = toGremlin . unGTraversal . toGTraversal
 
--- | @.filter@ step that take a traversal.
+-- | @.filter@ step that takes a traversal.
 gFilter :: (ToGTraversal g, WalkType c, WalkType p, Split c p) => g c s e -> Walk p s s
 gFilter walk = unsafeWalk "filter" [travToG walk]
 
@@ -424,7 +425,7 @@ gHasId' :: Element s
         -> Walk Filter s s
 gHasId' p = unsafeWalk "hasId" [toGremlin p]
 
--- | @.hasKey@ step.
+-- | @.hasKey@ step. The input type should be a VertexProperty.
 gHasKey :: (Element (p v), Property p, WalkType c)
         => Greskell (P Text) -- ^ predicate on the VertexProperty's key.
         -> Walk c (p v) (p v)
@@ -434,7 +435,7 @@ gHasKey = liftWalk . gHasKey'
 gHasKey' :: (Element (p v), Property p) => Greskell (P Text) -> Walk Filter (p v) (p v)
 gHasKey' p = unsafeWalk "hasKey" [toGremlin p]
 
--- | @.hasValue@ step.
+-- | @.hasValue@ step. The input type should be a VertexProperty.
 gHasValue :: (Element (p v), Property p, WalkType c)
           => Greskell (P v) -- ^ predicate on the VertexProperty's value
           -> Walk c (p v) (p v)

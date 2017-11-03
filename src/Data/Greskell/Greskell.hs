@@ -137,8 +137,8 @@ unsafeGreskellLazy = Greskell
 -- $literals
 --
 -- Functions to create literals in Gremlin script. Use 'fromInteger'
--- to create integer literals. Use 'fromRational' to create
--- floating-point data literals.
+-- to create integer literals. Use 'fromRational' or 'number' to
+-- create floating-point data literals.
 
 -- | Create a String literal in Gremlin script. The content is
 -- automatically escaped.
