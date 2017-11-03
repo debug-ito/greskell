@@ -22,7 +22,9 @@ module Data.Greskell.Graph
          Key(..),
          -- * Concrete data types
          AesonVertex,
-         AesonEdge
+         AesonEdge,
+         AesonProperty,
+         AesonVertexProperty
        ) where
 
 import Control.Applicative (empty)
