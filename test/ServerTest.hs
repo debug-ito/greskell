@@ -16,7 +16,7 @@ import Data.Greskell.Gremlin
   )
 import Data.Greskell.Greskell
   ( toGremlin, Greskell,
-    true, false, list, value, singleton
+    true, false, list, value, singleton, number
   )
 
 main :: IO ()
@@ -67,6 +67,12 @@ spec_basics = do
         checkL = checkRaw
     checkL (list []) []
     checkL (list [20,30,20,10]) [20,30,20,10]
+  describe "number" $ do
+    let checkN :: Greskell Scientific -> Scientific -> SpecWith (String,Int)
+        checkN = checkOne
+    checkN (number 3.1415) (3.1415)
+    checkN (number 2.31e12) (2.31e12)
+    checkN (number (-434.23e-19)) (-434.23e-19)
   describe "value (object)" $ do
     let checkV :: Greskell Aeson.Value -> Aeson.Value -> SpecWith (String,Int)
         checkV i e = checkRaw (singleton i) [e]
