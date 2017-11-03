@@ -11,7 +11,7 @@ import Test.Hspec
 
 import Data.Greskell.Gremlin
   ( oIncr, oDecr, oShuffle,
-    pEq, pNeq, pInside
+    pEq, pNeq, pInside, pGte
   )
 import Data.Greskell.Graph
   ( Element,
@@ -26,7 +26,8 @@ import Data.Greskell.GTraversal
     gHas1, gHas2, gHasLabel, gHasId,
     gOut', gRange, gValues, gNot, gIn',
     gOrderBy, ByComparator(ByComp), ByProjection,
-    pjEmpty, pjT, pjTraversal, pjKey
+    pjEmpty, pjT, pjTraversal, pjKey,
+    gProperties, gHasKey, gHasValue
   )
 
 
@@ -106,12 +107,11 @@ spec_has = do
     specify "P" $ do
       toGremlin (source "g" & vertices' [] &. gHasId (pInside (value $ Number 10) (value $ Number 20)))
         `shouldBe` "g.V().hasId(inside(10.0,20.0))"
-  describe "gHasKey" $ do
+  describe "gHasKey, gProperties" $ do
     specify "P" $ do
-      pendingWith "TODO: we need .property step to test .hasKey step."
-  describe "gHasValue" $ do
+      toGremlin (source "g" & vertices' [] &. gProperties [] &. gHasKey (pEq "hoge"))
+        `shouldBe` "g.V().properties().hasKey(eq(\"hoge\"))"
+  describe "gHasValue, gProperties" $ do
     specify "P" $ do
-      pendingWith "TODO: we need .property step to test .hasValue step."
-
-
--- TODO: .property stepを作る。
+      toGremlin (source "g" & vertices' [] &. gProperties ["age" :: Key e Int] &. gHasValue (pGte 20))
+        `shouldBe` "g.V().properties(\"age\").hasValue(gte(20))"
