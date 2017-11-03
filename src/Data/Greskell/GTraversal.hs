@@ -70,6 +70,8 @@ module Data.Greskell.GTraversal
          gIn',
          gInE,
          gInE',
+         -- ** Side-effect steps
+         gSideEffect,
          -- * Types for @.by@ step
          ByProjection,
          pjEmpty,
@@ -609,6 +611,10 @@ gInE' :: (Vertex v)
       => [Greskell Text] -- ^ edge labels
       -> Walk Transform v AesonEdge
 gInE' = gInE
+
+-- | @.sideEffect@ step that takes a traversal.
+gSideEffect :: (ToGTraversal g, WalkType c, WalkType p, Split c p) => g c s e -> Walk p s s
+gSideEffect walk = unsafeWalk "sideEffect" [travToG walk]
 
 ---- -- probably we can implement .as() step like this. GBuilder generates
 ---- -- some 'Label', which is passed to .as() step and can be passed later
