@@ -374,7 +374,7 @@ gFilter walk = unsafeWalk "filter" [travToG walk]
 
 
 -- TODO
--- gValueMap, gProperty, gProperties etc. should use Key type as an argument.
+-- gValueMap, gProperty etc. should use Key type as an argument.
 -- Note that .property step is very tricky. Read the doc carefully.
 -- 
 
