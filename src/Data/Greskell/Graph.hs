@@ -26,8 +26,8 @@ module Data.Greskell.Graph
          AesonVertexProperty
        ) where
 
-import Control.Applicative (empty)
-import Data.Aeson (Value)
+import Control.Applicative (empty, (<$>), (<*>))
+import Data.Aeson (Value(..), FromJSON(..), (.:))
 import Data.String (IsString(..))
 import Data.Text (Text)
 
@@ -125,12 +125,22 @@ instance Edge AesonEdge
 
 -- | General simple property type you can use for 'Property' class,
 -- based on aeson data types.
-data AesonProperty v
+data AesonProperty v =
+  AesonProperty
+  { aPropertyKey :: Text,
+    aPropertyValue :: v
+  }
+  deriving (Show,Eq,Ord)
 
--- | TODO: 'Property' methods are not implemented yet.
+-- | Parse Property of GraphSON 1.0.
+instance FromJSON v => FromJSON (AesonProperty v) where
+  parseJSON (Object o) =
+    AesonProperty <$> (o .: "key") <*> (o .: "value")
+  parseJSON _ = empty
+
 instance Property AesonProperty where
-  propertyKey = undefined
-  propertyValue = undefined
+  propertyKey = aPropertyKey
+  propertyValue = aPropertyValue
 
 
 -- | General vertex property type you can use for VertexProperty,
