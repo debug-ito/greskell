@@ -1,4 +1,4 @@
-{-# LANGUAGE TypeFamilies, OverloadedStrings #-}
+{-# LANGUAGE TypeFamilies, OverloadedStrings, FlexibleInstances #-}
 {-# OPTIONS_GHC -fno-warn-redundant-constraints #-}
 -- |
 -- Module: Data.Greskell.Graph
@@ -28,6 +28,9 @@ module Data.Greskell.Graph
 
 import Control.Applicative (empty, (<$>), (<*>))
 import Data.Aeson (Value(..), FromJSON(..), (.:))
+import Data.Functor.Identity (Identity(..))
+import qualified Data.HashMap.Lazy as HM
+import Data.Maybe (listToMaybe)
 import Data.String (IsString(..))
 import Data.Text (Text)
 
@@ -159,8 +162,33 @@ instance Property AesonVertexProperty where
   propertyKey = undefined
   propertyValue = undefined
 
-
 -- -- We could define the following constraint synonym with
 -- -- ConstraintKinds extension, although its semantics is not exactly
 -- -- correct..
 -- type VertexProperty p v = (Element (p v), Property p)
+
+
+class PropertyMap m where
+  lookupOne :: Text -> m p v -> Maybe (p v)
+  lookupOne key m = listToMaybe $ lookupList key m
+  lookupList :: Text -> m p v -> [p v]
+  putProperty :: Property p => p v -> m p v -> m p v
+
+newtype PropertyMapGeneric t p v = PropertyMapGeneric { unPropertyMapGeneric :: HM.HashMap Text (t (p v)) }
+                                 deriving (Show,Eq)
+
+instance PropertyMap (PropertyMapGeneric Identity) where
+  lookupOne key (PropertyMapGeneric hm) = fmap runIdentity $ HM.lookup key hm
+  lookupList key m = maybe [] return $ lookupOne key m
+  putProperty prop (PropertyMapGeneric hm) =
+    PropertyMapGeneric $ HM.insert (propertyKey prop) (Identity prop) hm
+
+type PropertyMapSingle = PropertyMapGeneric Identity
+
+
+
+
+-- ElementのもつpropertiesはMapのキーとPropertyのキーを一致させる必要
+-- があるので、独自のコンテナを作るべきか？あと、Property Mapは中身の
+-- 型がバラバラになりうる。AesonPropertyもpolymorphic typeだし。どうコ
+-- ンテナクラスを実装するべき？Valueでごまかすか？
