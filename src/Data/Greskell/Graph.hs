@@ -33,13 +33,13 @@ module Data.Greskell.Graph
 
 import Control.Applicative (empty, (<$>), (<*>))
 import Data.Aeson (Value(..), FromJSON(..), (.:))
-import Data.Functor.Identity (Identity(..))
 import qualified Data.HashMap.Lazy as HM
 import Data.List.NonEmpty (NonEmpty)
 import qualified Data.List.NonEmpty as NL
 import Data.Maybe (listToMaybe)
 import Data.Monoid (Monoid)
-import Data.Semigroup ((<>))
+import Data.Semigroup ((<>), Semigroup)
+import qualified Data.Semigroup as Semigroup
 import Data.String (IsString(..))
 import Data.Text (Text)
 
@@ -191,26 +191,27 @@ class PropertyMap m where
 newtype PropertyMapGeneric t p v = PropertyMapGeneric (HM.HashMap Text (t (p v)))
                                  deriving (Show,Eq,Monoid)
 
+putPropertyGeneric :: (Semigroup (t (p v)), Applicative t, Property p) => p v -> PropertyMapGeneric t p v -> PropertyMapGeneric t p v
+putPropertyGeneric prop (PropertyMapGeneric hm) =
+  PropertyMapGeneric $ HM.insertWith (<>) (propertyKey prop) (pure prop) hm
+
 removePropertyGeneric :: Text -> PropertyMapGeneric t p v -> PropertyMapGeneric t p v
 removePropertyGeneric key (PropertyMapGeneric hm) = PropertyMapGeneric $ HM.delete key hm
 
 -- | A 'PropertyMap' that has a single value per key.
-type PropertyMapSingle = PropertyMapGeneric Identity
+type PropertyMapSingle = PropertyMapGeneric Semigroup.First
 
-instance PropertyMap (PropertyMapGeneric Identity) where
-  lookupOne key (PropertyMapGeneric hm) = fmap runIdentity $ HM.lookup key hm
+instance PropertyMap (PropertyMapGeneric Semigroup.First) where
+  lookupOne key (PropertyMapGeneric hm) = fmap Semigroup.getFirst $ HM.lookup key hm
   lookupList key m = maybe [] return $ lookupOne key m
-  putProperty prop (PropertyMapGeneric hm) =
-    PropertyMapGeneric $ HM.insert (propertyKey prop) (return prop) hm
-  removeProperty key = removePropertyGeneric key
+  putProperty = putPropertyGeneric
+  removeProperty = removePropertyGeneric
 
 -- | A 'PropertyMap' that can keep more than one values per key.
 type PropertyMapList = PropertyMapGeneric NonEmpty
 
 instance PropertyMap (PropertyMapGeneric NonEmpty) where
   lookupList key (PropertyMapGeneric hm) = maybe [] NL.toList $ HM.lookup key hm
-  putProperty prop (PropertyMapGeneric hm) = PropertyMapGeneric $ HM.insertWith merger (propertyKey prop) (return prop) hm
-    where
-      merger new old = new <> old
-  removeProperty key = removePropertyGeneric key
+  putProperty = putPropertyGeneric
+  removeProperty = removePropertyGeneric
 
