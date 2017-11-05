@@ -23,14 +23,22 @@ module Data.Greskell.Graph
          AesonVertex,
          AesonEdge,
          AesonProperty,
-         AesonVertexProperty
+         AesonVertexProperty,
+         -- ** PropertyMap
+         PropertyMap(..),
+         PropertyMapGeneric,
+         PropertyMapSingle,
+         PropertyMapList
        ) where
 
 import Control.Applicative (empty, (<$>), (<*>))
 import Data.Aeson (Value(..), FromJSON(..), (.:))
 import Data.Functor.Identity (Identity(..))
 import qualified Data.HashMap.Lazy as HM
+import Data.List.NonEmpty (NonEmpty)
+import qualified Data.List.NonEmpty as NL
 import Data.Maybe (listToMaybe)
+import Data.Semigroup ((<>))
 import Data.String (IsString(..))
 import Data.Text (Text)
 
@@ -168,14 +176,21 @@ instance Property AesonVertexProperty where
 -- type VertexProperty p v = (Element (p v), Property p)
 
 
+-- | Common basic operations supported by maps of properties.
 class PropertyMap m where
   lookupOne :: Text -> m p v -> Maybe (p v)
   lookupOne key m = listToMaybe $ lookupList key m
   lookupList :: Text -> m p v -> [p v]
   putProperty :: Property p => p v -> m p v -> m p v
 
-newtype PropertyMapGeneric t p v = PropertyMapGeneric { unPropertyMapGeneric :: HM.HashMap Text (t (p v)) }
+-- | Generic implementation of 'PropertyMap'. @t@ is the type of
+-- cardinality, @p@ is the type of 'Property' class and @v@ is the
+-- type of the property value.
+newtype PropertyMapGeneric t p v = PropertyMapGeneric (HM.HashMap Text (t (p v)))
                                  deriving (Show,Eq)
+
+-- | A 'PropertyMap' that has a single value per key.
+type PropertyMapSingle = PropertyMapGeneric Identity
 
 instance PropertyMap (PropertyMapGeneric Identity) where
   lookupOne key (PropertyMapGeneric hm) = fmap runIdentity $ HM.lookup key hm
@@ -183,10 +198,17 @@ instance PropertyMap (PropertyMapGeneric Identity) where
   putProperty prop (PropertyMapGeneric hm) =
     PropertyMapGeneric $ HM.insert (propertyKey prop) (Identity prop) hm
 
-type PropertyMapSingle = PropertyMapGeneric Identity
+-- | A 'PropertyMap' that can keep more than one values per key.
+type PropertyMapList = PropertyMapGeneric NonEmpty
+
+instance PropertyMap (PropertyMapGeneric NonEmpty) where
+  lookupList key (PropertyMapGeneric hm) = maybe [] NL.toList $ HM.lookup key hm
+  putProperty prop (PropertyMapGeneric hm) = PropertyMapGeneric $ HM.insertWith merger (propertyKey prop) (return prop) hm
+    where
+      merger new old = old <> new
 
 
-
+-- TODO: PropertyMapList = PropertyMapGeneric NonEmpty を実装する。
 
 -- ElementのもつpropertiesはMapのキーとPropertyのキーを一致させる必要
 -- があるので、独自のコンテナを作るべきか？あと、Property Mapは中身の
