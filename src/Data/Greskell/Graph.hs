@@ -193,11 +193,12 @@ class PropertyMap m where
 -- cardinality, @p@ is the type of 'Property' class and @v@ is the
 -- type of the property value.
 newtype PropertyMapGeneric t p v = PropertyMapGeneric (HM.HashMap Text (t (p v)))
-                                 deriving (Show,Eq,Monoid)
+                                 deriving (Show,Eq)
 
--- TODO: MonoidはtをSemigroupにして連結させるように実装するといいので
--- は。そうするとPropertyMapListはvalue overrideじゃなくてList連結にな
--- る。
+instance Semigroup (t (p v)) => Monoid (PropertyMapGeneric t p v) where
+  mempty = PropertyMapGeneric mempty
+  mappend (PropertyMapGeneric a) (PropertyMapGeneric b) =
+    PropertyMapGeneric $ HM.unionWith (<>) a b
 
 -- TODO: PropertyMapをベースにvalueを取り出す関数とか作る。
 
