@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Data.Greskell.GraphSpec (main,spec) where
 
-import Data.Monoid (Monoid(..))
+import Data.Monoid (Monoid(..), (<>))
 import Test.Hspec
 
 import Data.Greskell.Graph
@@ -44,11 +44,17 @@ spec_PropertyMap = do
     specify "removeProperty" $ do
       let pm2 = removeProperty "HOGE" $ removeProperty "bar" pm
       lookupList "bar" pm2 `shouldBe` []
-    -- specify "mappend overrides" $ do
-    --   let pm2 = putProperty (SimpleProperty "hoge" 600)
-    --             $ putProperty (SimpleProperty "bar" 500) mempty
-    --       pm3 = pm <> pm2
-    --   lookupList "foo" pm3 `shouldBe` [SimpleProperty "foo" 100]
+    specify "mappend overrides" $ do
+      let pm2 :: PropertyMapSingle SimpleProperty Int
+          pm2 = putProperty (SimpleProperty "hoge" 600)
+                $ putProperty (SimpleProperty "bar" 500) mempty
+          pm3 = pm <> pm2
+      allProperties pm3 `shouldMatchList`
+        [ SimpleProperty "buzz" 300,
+          SimpleProperty "bar" 500,
+          SimpleProperty "foo" 100,
+          SimpleProperty "hoge" 600
+        ]
   describe "PropertyMapList" $ do
     let pm :: PropertyMapList SimpleProperty Int
         pm = putProperty (SimpleProperty "foo" 100)
@@ -78,5 +84,22 @@ spec_PropertyMap = do
       let pm2 = removeProperty "foo" $ removeProperty "HOGE" pm
       lookupOne "foo" pm2 `shouldBe` Nothing
       lookupList "foo" pm2 `shouldBe` []
+    specify "mappend appends" $ do
+      let pm2 :: PropertyMapList SimpleProperty Int
+          pm2 = putProperty (SimpleProperty "bar" 500)
+                $ putProperty (SimpleProperty "buzz" 600)
+                $ putProperty (SimpleProperty "foo" 700) mempty
+          pm3 = pm <> pm2
+      lookupList "foo" pm3 `shouldBe` map (SimpleProperty "foo") [100,200,400,700]
+      lookupList "bar" pm3 `shouldBe` map (SimpleProperty "bar") [300,500]
+      allProperties pm3 `shouldMatchList`
+        [ SimpleProperty "foo" 100,
+          SimpleProperty "foo" 200,
+          SimpleProperty "foo" 400,
+          SimpleProperty "foo" 700,
+          SimpleProperty "bar" 300,
+          SimpleProperty "bar" 500,
+          SimpleProperty "buzz" 600
+        ]
 
   
