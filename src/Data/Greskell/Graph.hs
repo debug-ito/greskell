@@ -1,4 +1,4 @@
-{-# LANGUAGE TypeFamilies, OverloadedStrings, FlexibleInstances #-}
+{-# LANGUAGE TypeFamilies, OverloadedStrings, FlexibleInstances, GeneralizedNewtypeDeriving #-}
 {-# OPTIONS_GHC -fno-warn-redundant-constraints #-}
 -- |
 -- Module: Data.Greskell.Graph
@@ -38,6 +38,7 @@ import qualified Data.HashMap.Lazy as HM
 import Data.List.NonEmpty (NonEmpty)
 import qualified Data.List.NonEmpty as NL
 import Data.Maybe (listToMaybe)
+import Data.Monoid (Monoid)
 import Data.Semigroup ((<>))
 import Data.String (IsString(..))
 import Data.Text (Text)
@@ -188,7 +189,7 @@ class PropertyMap m where
 -- cardinality, @p@ is the type of 'Property' class and @v@ is the
 -- type of the property value.
 newtype PropertyMapGeneric t p v = PropertyMapGeneric (HM.HashMap Text (t (p v)))
-                                 deriving (Show,Eq)
+                                 deriving (Show,Eq,Monoid)
 
 removePropertyGeneric :: Text -> PropertyMapGeneric t p v -> PropertyMapGeneric t p v
 removePropertyGeneric key (PropertyMapGeneric hm) = PropertyMapGeneric $ HM.delete key hm
