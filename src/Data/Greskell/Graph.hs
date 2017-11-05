@@ -22,7 +22,7 @@ module Data.Greskell.Graph
          -- * Concrete data types
          AesonVertex,
          AesonEdge,
-         AesonProperty,
+         AesonProperty(..),
          AesonVertexProperty,
          -- ** PropertyMap
          PropertyMap(..),
@@ -201,7 +201,7 @@ instance PropertyMap (PropertyMapGeneric Identity) where
   lookupOne key (PropertyMapGeneric hm) = fmap runIdentity $ HM.lookup key hm
   lookupList key m = maybe [] return $ lookupOne key m
   putProperty prop (PropertyMapGeneric hm) =
-    PropertyMapGeneric $ HM.insert (propertyKey prop) (Identity prop) hm
+    PropertyMapGeneric $ HM.insert (propertyKey prop) (return prop) hm
   removeProperty key = removePropertyGeneric key
 
 -- | A 'PropertyMap' that can keep more than one values per key.
@@ -211,13 +211,6 @@ instance PropertyMap (PropertyMapGeneric NonEmpty) where
   lookupList key (PropertyMapGeneric hm) = maybe [] NL.toList $ HM.lookup key hm
   putProperty prop (PropertyMapGeneric hm) = PropertyMapGeneric $ HM.insertWith merger (propertyKey prop) (return prop) hm
     where
-      merger new old = old <> new
+      merger new old = new <> old
   removeProperty key = removePropertyGeneric key
 
-
--- TODO: PropertyMapList = PropertyMapGeneric NonEmpty を実装する。
-
--- ElementのもつpropertiesはMapのキーとPropertyのキーを一致させる必要
--- があるので、独自のコンテナを作るべきか？あと、Property Mapは中身の
--- 型がバラバラになりうる。AesonPropertyもpolymorphic typeだし。どうコ
--- ンテナクラスを実装するべき？Valueでごまかすか？
