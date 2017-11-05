@@ -182,12 +182,16 @@ class PropertyMap m where
   lookupOne key m = listToMaybe $ lookupList key m
   lookupList :: Text -> m p v -> [p v]
   putProperty :: Property p => p v -> m p v -> m p v
+  removeProperty :: Text -> m p v -> m p v
 
 -- | Generic implementation of 'PropertyMap'. @t@ is the type of
 -- cardinality, @p@ is the type of 'Property' class and @v@ is the
 -- type of the property value.
 newtype PropertyMapGeneric t p v = PropertyMapGeneric (HM.HashMap Text (t (p v)))
                                  deriving (Show,Eq)
+
+removePropertyGeneric :: Text -> PropertyMapGeneric t p v -> PropertyMapGeneric t p v
+removePropertyGeneric key (PropertyMapGeneric hm) = PropertyMapGeneric $ HM.delete key hm
 
 -- | A 'PropertyMap' that has a single value per key.
 type PropertyMapSingle = PropertyMapGeneric Identity
@@ -197,6 +201,7 @@ instance PropertyMap (PropertyMapGeneric Identity) where
   lookupList key m = maybe [] return $ lookupOne key m
   putProperty prop (PropertyMapGeneric hm) =
     PropertyMapGeneric $ HM.insert (propertyKey prop) (Identity prop) hm
+  removeProperty key = removePropertyGeneric key
 
 -- | A 'PropertyMap' that can keep more than one values per key.
 type PropertyMapList = PropertyMapGeneric NonEmpty
@@ -206,6 +211,7 @@ instance PropertyMap (PropertyMapGeneric NonEmpty) where
   putProperty prop (PropertyMapGeneric hm) = PropertyMapGeneric $ HM.insertWith merger (propertyKey prop) (return prop) hm
     where
       merger new old = old <> new
+  removeProperty key = removePropertyGeneric key
 
 
 -- TODO: PropertyMapList = PropertyMapGeneric NonEmpty を実装する。
