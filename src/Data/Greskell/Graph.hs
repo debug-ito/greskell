@@ -33,6 +33,7 @@ module Data.Greskell.Graph
 
 import Control.Applicative (empty, (<$>), (<*>))
 import Data.Aeson (Value(..), FromJSON(..), (.:))
+import Data.Foldable (toList)
 import qualified Data.HashMap.Lazy as HM
 import Data.List.NonEmpty (NonEmpty)
 import qualified Data.List.NonEmpty as NL
@@ -109,6 +110,9 @@ instance ToGreskell (Key a b) where
   type GreskellReturn (Key a b) = Text
   toGreskell = unKey
 
+-- TODO: AesonVertexなどの実装では、propertiesはPropertyMap t p
+-- (GraphSON Value)という感じでGraphSONラッパをつけるといい。
+
 -- | General vertex type you can use for 'Vertex' class, based on
 -- aeson data types.
 data AesonVertex
@@ -183,6 +187,7 @@ class PropertyMap m where
   lookupList :: Text -> m p v -> [p v]
   putProperty :: Property p => p v -> m p v -> m p v
   removeProperty :: Text -> m p v -> m p v
+  allProperties :: m p v -> [p v]
 
 -- | Generic implementation of 'PropertyMap'. @t@ is the type of
 -- cardinality, @p@ is the type of 'Property' class and @v@ is the
@@ -203,6 +208,9 @@ putPropertyGeneric prop (PropertyMapGeneric hm) =
 removePropertyGeneric :: Text -> PropertyMapGeneric t p v -> PropertyMapGeneric t p v
 removePropertyGeneric key (PropertyMapGeneric hm) = PropertyMapGeneric $ HM.delete key hm
 
+allPropertiesGeneric :: Foldable t => PropertyMapGeneric t p v -> [p v]
+allPropertiesGeneric (PropertyMapGeneric hm) = concat $ map toList $ HM.elems hm
+
 -- | A 'PropertyMap' that has a single value per key.
 type PropertyMapSingle = PropertyMapGeneric Semigroup.First
 
@@ -211,6 +219,7 @@ instance PropertyMap (PropertyMapGeneric Semigroup.First) where
   lookupList key m = maybe [] return $ lookupOne key m
   putProperty = putPropertyGeneric
   removeProperty = removePropertyGeneric
+  allProperties = allPropertiesGeneric
 
 -- | A 'PropertyMap' that can keep more than one values per key.
 type PropertyMapList = PropertyMapGeneric NonEmpty
@@ -219,4 +228,5 @@ instance PropertyMap (PropertyMapGeneric NonEmpty) where
   lookupList key (PropertyMapGeneric hm) = maybe [] NL.toList $ HM.lookup key hm
   putProperty = putPropertyGeneric
   removeProperty = removePropertyGeneric
+  allProperties = allPropertiesGeneric
 

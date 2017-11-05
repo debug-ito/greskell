@@ -23,6 +23,12 @@ spec_PropertyMap = do
         pm = putProperty (SimpleProperty "buzz" 300)
              $ putProperty (SimpleProperty "bar" 200)
              $ putProperty (SimpleProperty "foo" 100) mempty
+    specify "allProperties" $ do
+      allProperties pm `shouldMatchList`
+        [ SimpleProperty "buzz" 300,
+          SimpleProperty "bar" 200,
+          SimpleProperty "foo" 100
+        ]
     specify "lookupOne existing" $ do
       lookupOne "foo" pm `shouldBe` (Just $ SimpleProperty "foo" 100)
     specify "lookupOne non-existing" $ do
@@ -38,12 +44,24 @@ spec_PropertyMap = do
     specify "removeProperty" $ do
       let pm2 = removeProperty "HOGE" $ removeProperty "bar" pm
       lookupList "bar" pm2 `shouldBe` []
+    -- specify "mappend overrides" $ do
+    --   let pm2 = putProperty (SimpleProperty "hoge" 600)
+    --             $ putProperty (SimpleProperty "bar" 500) mempty
+    --       pm3 = pm <> pm2
+    --   lookupList "foo" pm3 `shouldBe` [SimpleProperty "foo" 100]
   describe "PropertyMapList" $ do
     let pm :: PropertyMapList SimpleProperty Int
         pm = putProperty (SimpleProperty "foo" 100)
              $ putProperty (SimpleProperty "foo" 200)
              $ putProperty (SimpleProperty "bar" 300)
              $ putProperty (SimpleProperty "foo" 400) mempty
+    specify "allProperties" $ do
+      allProperties pm `shouldMatchList`
+        [ SimpleProperty "foo" 100,
+          SimpleProperty "foo" 200,
+          SimpleProperty "bar" 300,
+          SimpleProperty "foo" 400
+        ]
     specify "lookupOne existing" $ do
       lookupOne "foo" pm `shouldBe` Just (SimpleProperty "foo" 100)
     specify "lookupOne non-existing" $ do
