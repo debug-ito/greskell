@@ -22,8 +22,8 @@ module Data.Greskell.Graph
          -- * Concrete data types
          AesonVertex,
          AesonEdge,
-         AesonProperty(..),
          AesonVertexProperty,
+         SimpleProperty(..),
          -- ** PropertyMap
          PropertyMap(..),
          PropertyMapGeneric,
@@ -129,30 +129,29 @@ data AesonEdge
 -- | TODO: 'Element' methods are not implemented yet.
 instance Element AesonEdge where
   type ElementID AesonEdge = Value
-  type ElementProperty AesonEdge = AesonProperty
+  type ElementProperty AesonEdge = SimpleProperty
   elementId = undefined
   elementLabel = undefined
 
 instance Edge AesonEdge
 
--- | General simple property type you can use for 'Property' class,
--- based on aeson data types.
-data AesonProperty v =
-  AesonProperty
-  { aPropertyKey :: Text,
-    aPropertyValue :: v
+-- | General simple property type you can use for 'Property' class.
+data SimpleProperty v =
+  SimpleProperty
+  { sPropertyKey :: Text,
+    sPropertyValue :: v
   }
   deriving (Show,Eq,Ord)
 
 -- | Parse Property of GraphSON 1.0.
-instance FromJSON v => FromJSON (AesonProperty v) where
+instance FromJSON v => FromJSON (SimpleProperty v) where
   parseJSON (Object o) =
-    AesonProperty <$> (o .: "key") <*> (o .: "value")
+    SimpleProperty <$> (o .: "key") <*> (o .: "value")
   parseJSON _ = empty
 
-instance Property AesonProperty where
-  propertyKey = aPropertyKey
-  propertyValue = aPropertyValue
+instance Property SimpleProperty where
+  propertyKey = sPropertyKey
+  propertyValue = sPropertyValue
 
 
 -- | General vertex property type you can use for VertexProperty,
@@ -162,7 +161,7 @@ data AesonVertexProperty v
 -- | TODO: 'Element' methods are not implemented yet.
 instance Element (AesonVertexProperty v) where
   type ElementID (AesonVertexProperty v) = Value
-  type ElementProperty (AesonVertexProperty v) = AesonProperty
+  type ElementProperty (AesonVertexProperty v) = SimpleProperty
   elementId = undefined
   elementLabel = undefined
 
@@ -190,6 +189,12 @@ class PropertyMap m where
 -- type of the property value.
 newtype PropertyMapGeneric t p v = PropertyMapGeneric (HM.HashMap Text (t (p v)))
                                  deriving (Show,Eq,Monoid)
+
+-- TODO: MonoidはtをSemigroupにして連結させるように実装するといいので
+-- は。そうするとPropertyMapListはvalue overrideじゃなくてList連結にな
+-- る。
+
+-- TODO: PropertyMapをベースにvalueを取り出す関数とか作る。
 
 putPropertyGeneric :: (Semigroup (t (p v)), Applicative t, Property p) => p v -> PropertyMapGeneric t p v -> PropertyMapGeneric t p v
 putPropertyGeneric prop (PropertyMapGeneric hm) =
