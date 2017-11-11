@@ -35,7 +35,7 @@ module Data.Greskell.Graph
 
 import Control.Applicative (empty, (<$>), (<*>))
 import Data.Aeson (Value(..), FromJSON(..), (.:))
-import Data.Foldable (toList)
+import Data.Foldable (toList, Foldable(foldr))
 import qualified Data.HashMap.Lazy as HM
 import Data.List.NonEmpty (NonEmpty)
 import qualified Data.List.NonEmpty as NL
@@ -45,6 +45,7 @@ import Data.Semigroup ((<>), Semigroup)
 import qualified Data.Semigroup as Semigroup
 import Data.String (IsString(..))
 import Data.Text (Text)
+import Data.Traversable (Traversable(traverse))
 
 import Data.Greskell.Greskell
   ( Greskell, unsafeGreskellLazy, string,
@@ -159,6 +160,14 @@ instance Property SimpleProperty where
   propertyKey = sPropertyKey
   propertyValue = sPropertyValue
 
+instance Functor SimpleProperty where
+  fmap f sp = sp { sPropertyValue = f $ sPropertyValue sp }
+
+instance Foldable SimpleProperty where
+  foldr f start sp = f (sPropertyValue sp) start
+
+instance Traversable SimpleProperty where
+  traverse f sp = fmap (\v -> sp { sPropertyValue = v } ) $ f $ sPropertyValue sp
 
 -- | General vertex property type you can use for VertexProperty,
 -- based on aeson data types.
@@ -175,6 +184,8 @@ instance Element (AesonVertexProperty v) where
 instance Property AesonVertexProperty where
   propertyKey = undefined
   propertyValue = undefined
+
+-- TODO: implement Functor, Foldable, Traversal for AesonVertexProperty
 
 -- -- We could define the following constraint synonym with
 -- -- ConstraintKinds extension, although its semantics is not exactly
@@ -215,6 +226,19 @@ instance Semigroup (t (p v)) => Monoid (PropertyMapGeneric t p v) where
   mempty = PropertyMapGeneric mempty
   mappend (PropertyMapGeneric a) (PropertyMapGeneric b) =
     PropertyMapGeneric $ HM.unionWith (<>) a b
+
+instance (Functor t, Functor p) => Functor (PropertyMapGeneric t p) where
+  fmap f (PropertyMapGeneric hm) = PropertyMapGeneric $ (fmap . fmap . fmap) f hm
+
+instance (Foldable t, Foldable p) => Foldable (PropertyMapGeneric t p) where
+  foldr f start (PropertyMapGeneric hm) = foldr f2 start hm
+    where
+      f2 t start2 = foldr f3 start2 t
+      f3 p start3 = foldr f start3 p
+
+instance (Traversable t, Traversable p) => Traversable (PropertyMapGeneric t p) where
+  traverse f (PropertyMapGeneric hm) = fmap PropertyMapGeneric $ (traverse . traverse . traverse) f hm
+
 
 putPropertyGeneric :: (Semigroup (t (p v)), Applicative t, Property p) => p v -> PropertyMapGeneric t p v -> PropertyMapGeneric t p v
 putPropertyGeneric prop (PropertyMapGeneric hm) =
