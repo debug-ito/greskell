@@ -43,6 +43,7 @@ module Data.Greskell.Graph
 
 import Control.Applicative (empty, (<$>), (<*>))
 import Data.Aeson (Value(..), FromJSON(..), (.:))
+import Data.Aeson.Types (Parser)
 import Data.Foldable (toList, Foldable(foldr))
 import qualified Data.HashMap.Lazy as HM
 import Data.List.NonEmpty (NonEmpty)
@@ -198,6 +199,11 @@ instance Edge AesonEdge where
 instance FromJSON AesonEdge where
   parseJSON = undefined -- TODO
 
+-- | JSON parser with a key given from outside.
+class FromJSONWithKey a where
+  parseJSONWithKey :: Text -> Value -> Parser a
+
+
 -- | General simple property type you can use for 'Property' class.
 data SimpleProperty v =
   SimpleProperty
@@ -211,6 +217,9 @@ instance FromJSON v => FromJSON (SimpleProperty v) where
   parseJSON (Object o) =
     SimpleProperty <$> (o .: "key") <*> (o .: "value")
   parseJSON _ = empty
+
+instance FromJSON v => FromJSONWithKey (SimpleProperty v) where
+  parseJSONWithKey key v = SimpleProperty key <$> parseJSON v
 
 instance Property SimpleProperty where
   propertyKey = sPropertyKey
@@ -239,6 +248,12 @@ data AesonVertexProperty v =
     -- ^ (meta)properties of this vertex property.
   }
   deriving (Show,Eq)
+
+instance FromJSON v => FromJSON (AesonVertexProperty v) where
+  parseJSON = undefined -- TODO
+
+instance FromJSON v => FromJSONWithKey (AesonVertexProperty v) where
+  parseJSONWithKey = undefined -- TODO
 
 instance Element (AesonVertexProperty v) where
   type ElementID (AesonVertexProperty v) = Value
