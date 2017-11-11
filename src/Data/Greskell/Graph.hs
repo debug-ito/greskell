@@ -139,19 +139,19 @@ instance Vertex AesonVertex
 -- data types.
 data AesonEdge =
   AesonEdge
-  { aEdgeId :: Value,
+  { aeId :: Value,
     -- ^ ID of this edge.
-    aEdgeLabel :: Text,
+    aeLabel :: Text,
     -- ^ Label of this edge.
-    aEdgeInVLabel :: Text,
+    aeInVLabel :: Text,
     -- ^ Label of this edge's destination vertex.
-    aEdgeOutVLabel :: Text,
+    aeOutVLabel :: Text,
     -- ^ Label of this edge's source vertex.
-    aEdgeInV :: Value,
+    aeInV :: Value,
     -- ^ ID of this edge's destination vertex.
-    aEdgeOutV :: Value,
+    aeOutV :: Value,
     -- ^ ID of this edge's source vertex.
-    aEdgeProperties :: PropertyMapSingle SimpleProperty Value
+    aeProperties :: PropertyMapSingle SimpleProperty Value
     -- ^ Properties of this edge.
   }
   deriving (Show,Eq)
@@ -159,13 +159,13 @@ data AesonEdge =
 instance Element AesonEdge where
   type ElementID AesonEdge = Value
   type ElementProperty AesonEdge = SimpleProperty
-  elementId = aEdgeId
-  elementLabel = aEdgeLabel
+  elementId = aeId
+  elementLabel = aeLabel
 
 instance Edge AesonEdge where
   type EdgeVertexID AesonEdge = Value
-  edgeInVertexID = aEdgeInV
-  edgeOutVertexID = aEdgeOutV
+  edgeInVertexID = aeInV
+  edgeOutVertexID = aeOutV
 
 -- | General simple property type you can use for 'Property' class.
 data SimpleProperty v =
