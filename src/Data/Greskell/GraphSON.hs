@@ -72,3 +72,7 @@ instance FromJSON v => FromJSON (GraphSON v) where
 parseDirect :: FromJSON v => Value -> Parser (GraphSON v)
 parseDirect v = GraphSON Nothing <$> parseJSON v
 
+
+-- -- Maybe we should define this class.
+-- class GraphSONTyped a where
+--   gsonTypeFor :: a -> Text
