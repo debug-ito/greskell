@@ -20,7 +20,7 @@ module Data.Greskell.Graph
          -- * Extended API
          Key(..),
          -- * Concrete data types
-         AesonVertex,
+         AesonVertex(..),
          AesonEdge(..),
          AesonVertexProperty(..),
          SimpleProperty(..),
@@ -124,14 +124,22 @@ instance ToGreskell (Key a b) where
 
 -- | General vertex type you can use for 'Vertex' class, based on
 -- aeson data types.
-data AesonVertex
+data AesonVertex =
+  AesonVertex
+  { avId :: Value,
+    -- ^ ID of this vertex
+    avLabel :: Text,
+    -- ^ Label of this vertex
+    avProperties :: PropertyMapList AesonVertexProperty Value
+    -- ^ Properties of this vertex.
+  }
+  deriving (Show,Eq)
 
--- | TODO: 'Element' methods are not implemented yet.
 instance Element AesonVertex where
   type ElementID AesonVertex = Value
   type ElementProperty AesonVertex = AesonVertexProperty
-  elementId = undefined
-  elementLabel = undefined
+  elementId = avId
+  elementLabel = avLabel
 
 instance Vertex AesonVertex
 
