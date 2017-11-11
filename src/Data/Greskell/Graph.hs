@@ -219,7 +219,15 @@ instance Property AesonVertexProperty where
   propertyKey = avpLabel
   propertyValue = avpValue
 
--- TODO: implement Functor, Foldable, Traversal for AesonVertexProperty
+instance Functor AesonVertexProperty where
+  fmap f vp = vp { avpValue = f $ avpValue vp }
+
+instance Foldable AesonVertexProperty where
+  foldr f start vp = f (avpValue vp) start
+
+instance Traversable AesonVertexProperty where
+  traverse f vp = fmap (\v -> vp { avpValue = v }) $ f $ avpValue vp
+
 
 -- -- We could define the following constraint synonym with
 -- -- ConstraintKinds extension, although its semantics is not exactly
