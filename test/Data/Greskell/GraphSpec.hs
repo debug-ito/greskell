@@ -44,14 +44,14 @@ spec_PropertyMap = do
     specify "removeProperty" $ do
       let pm2 = removeProperty "HOGE" $ removeProperty "bar" pm
       lookupList "bar" pm2 `shouldBe` []
-    specify "mappend overrides" $ do
+    specify "mappend prefers the left" $ do
       let pm2 :: PropertyMapSingle SimpleProperty Int
           pm2 = putProperty (SimpleProperty "hoge" 600)
                 $ putProperty (SimpleProperty "bar" 500) mempty
           pm3 = pm <> pm2
       allProperties pm3 `shouldMatchList`
         [ SimpleProperty "buzz" 300,
-          SimpleProperty "bar" 500,
+          SimpleProperty "bar" 200,
           SimpleProperty "foo" 100,
           SimpleProperty "hoge" 600
         ]

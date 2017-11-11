@@ -183,11 +183,16 @@ instance Property AesonVertexProperty where
 -- | Common basic operations supported by maps of properties.
 class PropertyMap m where
   lookupOne :: Text -> m p v -> Maybe (p v)
+  -- ^ Look up a property associated with the given key.
   lookupOne key m = listToMaybe $ lookupList key m
   lookupList :: Text -> m p v -> [p v]
+  -- ^ Look up all properties associated with the given key.
   putProperty :: Property p => p v -> m p v -> m p v
+  -- ^ Put a property into the map.
   removeProperty :: Text -> m p v -> m p v
+  -- ^ Remove all properties associated with the given key.
   allProperties :: m p v -> [p v]
+  -- ^ Return all properties in the map.
 
 -- | Generic implementation of 'PropertyMap'. @t@ is the type of
 -- cardinality, @p@ is the type of 'Property' class and @v@ is the
@@ -213,6 +218,12 @@ allPropertiesGeneric :: Foldable t => PropertyMapGeneric t p v -> [p v]
 allPropertiesGeneric (PropertyMapGeneric hm) = concat $ map toList $ HM.elems hm
 
 -- | A 'PropertyMap' that has a single value per key.
+--
+-- 'putProperty' replaces the old property by the given property.
+--
+-- '<>' returns the union of the two given property maps. If the two
+-- property maps share some same keys, the value from the left map
+-- wins.
 type PropertyMapSingle = PropertyMapGeneric Semigroup.First
 
 instance PropertyMap (PropertyMapGeneric Semigroup.First) where
@@ -223,6 +234,15 @@ instance PropertyMap (PropertyMapGeneric Semigroup.First) where
   allProperties = allPropertiesGeneric
 
 -- | A 'PropertyMap' that can keep more than one values per key.
+--
+-- 'lookupOne' returns the first property associated with the given
+-- key.
+--
+-- 'putProperty' prepends the given property to the property list.
+--
+-- '<>' returns the union of the two given property maps. If the two
+-- property maps share some same keys, those property lists are
+-- concatenated.
 type PropertyMapList = PropertyMapGeneric NonEmpty
 
 instance PropertyMap (PropertyMapGeneric NonEmpty) where
