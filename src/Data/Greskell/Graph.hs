@@ -28,9 +28,9 @@ module Data.Greskell.Graph
          PropertyMap(..),
          lookupOneValue,
          lookupListValues,
-         PropertyMapGeneric,
          PropertyMapSingle,
-         PropertyMapList
+         PropertyMapList,
+         PropertyMapGeneric
        ) where
 
 import Control.Applicative (empty, (<$>), (<*>))
