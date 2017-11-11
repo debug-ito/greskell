@@ -12,6 +12,7 @@ module Data.Greskell.Graph
          Vertex,
          Edge(..),
          Property(..),
+         -- * T Enum
          T,
          tId,
          tKey,
@@ -20,9 +21,16 @@ module Data.Greskell.Graph
          -- * Extended API
          Key(..),
          -- * Concrete data types
+         --
+         -- $concrete_types
+         --
+         -- ** Vertex
          AesonVertex(..),
+         -- ** Edge
          AesonEdge(..),
+         -- ** VertexProperty
          AesonVertexProperty(..),
+         -- ** Property
          SimpleProperty(..),
          -- ** PropertyMap
          PropertyMap(..),
@@ -119,6 +127,20 @@ instance IsString (Key a b) where
 instance ToGreskell (Key a b) where
   type GreskellReturn (Key a b) = Text
   toGreskell = unKey
+
+
+-- $concrete_types
+--
+-- Concrete data types based on aeson 'Value's.
+--
+-- Element IDs and property values are all 'Value', because they are
+-- highly polymorphic. They are wrapped with 'GraphSON', so that you
+-- can inspect 'gsonType' field if present. 'ElementID' and
+-- 'EdgeVertexID' are bare 'Value' type for convenience.
+--
+-- As for properties, you can use 'PropertyMap' and other type-classes
+-- to manipulate them.
+
 
 -- | General vertex type you can use for 'Vertex' class, based on
 -- aeson data types.
