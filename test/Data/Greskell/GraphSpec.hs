@@ -1,12 +1,19 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Data.Greskell.GraphSpec (main,spec) where
 
+import Data.Aeson (toJSON)
+import qualified Data.Aeson as Aeson
+import qualified Data.ByteString.Lazy as BSL
 import Data.Monoid (Monoid(..), (<>))
 import Test.Hspec
 
 import Data.Greskell.Graph
   ( SimpleProperty(..), PropertyMapSingle, PropertyMapList,
-    PropertyMap(..)
+    PropertyMap(..),
+    AesonEdge(..)
+  )
+import Data.Greskell.GraphSON
+  ( nonTypedGraphSON
   )
 
 main :: IO ()
@@ -15,6 +22,7 @@ main = hspec spec
 spec :: Spec
 spec = do
   spec_PropertyMap
+  spec_AesonEdge
 
 spec_PropertyMap :: Spec
 spec_PropertyMap = do
@@ -102,4 +110,19 @@ spec_PropertyMap = do
           SimpleProperty "buzz" 600
         ]
 
-  
+spec_AesonEdge :: Spec
+spec_AesonEdge = describe "AesonEdge" $ do
+  it "should parse GraphSON v1" $ do
+    let expected = AesonEdge { aeId = nonTypedGraphSON $ toJSON (13 :: Int),
+                               aeLabel = "develops",
+                               aeInVLabel = "software",
+                               aeOutVLabel = "person",
+                               aeInV = nonTypedGraphSON $ toJSON (10 :: Int),
+                               aeOutV = nonTypedGraphSON $ toJSON (1 :: Int),
+                               aeProperties = putProperty
+                                              (SimpleProperty "since" $ nonTypedGraphSON $ toJSON (2009 :: Int))
+                                              $ mempty
+                             }
+    json <- BSL.readFile "test/graphson/edge.v1.json"
+    Aeson.eitherDecode json `shouldBe` Right expected
+    

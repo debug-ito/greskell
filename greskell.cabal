@@ -9,7 +9,8 @@ synopsis:               Haskell builder for Gremlin graph query language
 -- category:               
 cabal-version:          >= 1.10
 build-type:             Simple
-extra-source-files:     README.md, ChangeLog.md
+extra-source-files:     README.md, ChangeLog.md,
+                        test/graphson/*.json
 -- homepage:               
 -- bug-reports:            
 
@@ -62,7 +63,8 @@ test-suite spec
                         Data.Greskell.GraphSpec
   build-depends:        base, greskell, text, aeson, unordered-containers,
                         hspec,
-                        QuickCheck
+                        QuickCheck,
+                        bytestring
 
 
 flag hint-test

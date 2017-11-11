@@ -195,6 +195,9 @@ instance Edge AesonEdge where
   edgeInVertexID = gsonValue . aeInV
   edgeOutVertexID = gsonValue . aeOutV
 
+instance FromJSON AesonEdge where
+  parseJSON = undefined -- TODO
+
 -- | General simple property type you can use for 'Property' class.
 data SimpleProperty v =
   SimpleProperty
@@ -308,6 +311,9 @@ instance (Foldable t, Foldable p) => Foldable (PropertyMapGeneric t p) where
 
 instance (Traversable t, Traversable p) => Traversable (PropertyMapGeneric t p) where
   traverse f (PropertyMapGeneric hm) = fmap PropertyMapGeneric $ (traverse . traverse . traverse) f hm
+
+instance FromJSON (t (p v)) => FromJSON (PropertyMapGeneric t p v) where
+  parseJSON = undefined -- TODO: これがかなり厄介。keyからvalueのラベルを作らないといけない場合もある。tやpをgeneralizeするのは無理かな？まずテストを書くか。。
 
 
 putPropertyGeneric :: (Semigroup (t (p v)), Applicative t, Property p) => p v -> PropertyMapGeneric t p v -> PropertyMapGeneric t p v
