@@ -21,7 +21,7 @@ module Data.Greskell.Graph
          Key(..),
          -- * Concrete data types
          AesonVertex,
-         AesonEdge,
+         AesonEdge(..),
          AesonVertexProperty,
          SimpleProperty(..),
          -- ** PropertyMap
@@ -137,20 +137,34 @@ instance Vertex AesonVertex
 
 -- | General edge type you can use for 'Edge' class, based on aeson
 -- data types.
-data AesonEdge
+data AesonEdge =
+  AesonEdge { aEdgeId :: Value,
+              -- ^ ID of this edge.
+              aEdgeLabel :: Text,
+              -- ^ Label of this edge.
+              aEdgeInVLabel :: Text,
+              -- ^ Label of this edge's destination vertex.
+              aEdgeOutVLabel :: Text,
+              -- ^ Label of this edge's source vertex.
+              aEdgeInV :: Value,
+              -- ^ ID of this edge's destination vertex.
+              aEdgeOutV :: Value,
+              -- ^ ID of this edge's source vertex.
+              aEdgeProperties :: PropertyMapSingle SimpleProperty Value
+              -- ^ Properties of this edge.
+            }
+  deriving (Show,Eq)
 
--- | TODO: 'Element' methods are not implemented yet.
 instance Element AesonEdge where
   type ElementID AesonEdge = Value
   type ElementProperty AesonEdge = SimpleProperty
-  elementId = undefined
-  elementLabel = undefined
+  elementId = aEdgeId
+  elementLabel = aEdgeLabel
 
--- | TODO: 'Edge' methods are not implemented yet.
 instance Edge AesonEdge where
   type EdgeVertexID AesonEdge = Value
-  edgeInVertexID = undefined
-  edgeOutVertexID = undefined
+  edgeInVertexID = aEdgeInV
+  edgeOutVertexID = aEdgeOutV
 
 -- | General simple property type you can use for 'Property' class.
 data SimpleProperty v =
