@@ -26,6 +26,7 @@ library
                         Data.Greskell.Greskell,
                         Data.Greskell.Binder,
                         Data.Greskell.Graph,
+                        Data.Greskell.GraphSON,
                         Data.Greskell.GTraversal
   -- other-modules:        
   build-depends:        base,
