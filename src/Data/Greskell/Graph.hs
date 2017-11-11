@@ -10,7 +10,7 @@ module Data.Greskell.Graph
        ( -- * TinkerPop graph structure API
          Element(..),
          Vertex,
-         Edge,
+         Edge(..),
          Property(..),
          T,
          tId,
@@ -66,7 +66,13 @@ class Element e where
 class (Element v) => Vertex v
 
 -- | @Edge@ interface in a TinkerPop graph.
-class (Element e) => Edge e
+class (Element e) => Edge e where
+  type EdgeVertexID e
+  -- ^ ID type of the 'Vertex' this edge connects.
+  edgeInVertexID :: e -> EdgeVertexID e
+  -- ^ ID of this edge's destination (target) Vertex.
+  edgeOutVertexID :: e -> EdgeVertexID e
+  -- ^ ID of this edge's source Vertex.
 
 -- | @Property@ interface in a TinkerPop graph.
 class Property p where
@@ -140,7 +146,11 @@ instance Element AesonEdge where
   elementId = undefined
   elementLabel = undefined
 
-instance Edge AesonEdge
+-- | TODO: 'Edge' methods are not implemented yet.
+instance Edge AesonEdge where
+  type EdgeVertexID AesonEdge = Value
+  edgeInVertexID = undefined
+  edgeOutVertexID = undefined
 
 -- | General simple property type you can use for 'Property' class.
 data SimpleProperty v =
