@@ -22,7 +22,7 @@ module Data.Greskell.Graph
          -- * Concrete data types
          AesonVertex,
          AesonEdge(..),
-         AesonVertexProperty,
+         AesonVertexProperty(..),
          SimpleProperty(..),
          -- ** PropertyMap
          PropertyMap(..),
@@ -138,21 +138,22 @@ instance Vertex AesonVertex
 -- | General edge type you can use for 'Edge' class, based on aeson
 -- data types.
 data AesonEdge =
-  AesonEdge { aEdgeId :: Value,
-              -- ^ ID of this edge.
-              aEdgeLabel :: Text,
-              -- ^ Label of this edge.
-              aEdgeInVLabel :: Text,
-              -- ^ Label of this edge's destination vertex.
-              aEdgeOutVLabel :: Text,
-              -- ^ Label of this edge's source vertex.
-              aEdgeInV :: Value,
-              -- ^ ID of this edge's destination vertex.
-              aEdgeOutV :: Value,
-              -- ^ ID of this edge's source vertex.
-              aEdgeProperties :: PropertyMapSingle SimpleProperty Value
-              -- ^ Properties of this edge.
-            }
+  AesonEdge
+  { aEdgeId :: Value,
+    -- ^ ID of this edge.
+    aEdgeLabel :: Text,
+    -- ^ Label of this edge.
+    aEdgeInVLabel :: Text,
+    -- ^ Label of this edge's destination vertex.
+    aEdgeOutVLabel :: Text,
+    -- ^ Label of this edge's source vertex.
+    aEdgeInV :: Value,
+    -- ^ ID of this edge's destination vertex.
+    aEdgeOutV :: Value,
+    -- ^ ID of this edge's source vertex.
+    aEdgeProperties :: PropertyMapSingle SimpleProperty Value
+    -- ^ Properties of this edge.
+  }
   deriving (Show,Eq)
 
 instance Element AesonEdge where
@@ -195,19 +196,28 @@ instance Traversable SimpleProperty where
 
 -- | General vertex property type you can use for VertexProperty,
 -- based on aeson data types.
-data AesonVertexProperty v
+data AesonVertexProperty v =
+  AesonVertexProperty
+  { avpId :: Value,
+    -- ^ ID of this vertex property.
+    avpLabel :: Text,
+    -- ^ Label and key of this vertex property.
+    avpValue :: v,
+    -- ^ Value of this vertex property.
+    avpProperties :: PropertyMapSingle SimpleProperty Value
+    -- ^ (meta)properties of this vertex property.
+  }
+  deriving (Show,Eq)
 
--- | TODO: 'Element' methods are not implemented yet.
 instance Element (AesonVertexProperty v) where
   type ElementID (AesonVertexProperty v) = Value
   type ElementProperty (AesonVertexProperty v) = SimpleProperty
-  elementId = undefined
-  elementLabel = undefined
+  elementId = avpId
+  elementLabel = avpLabel
 
--- | TODO: 'Property' methods are not implemented yet.
 instance Property AesonVertexProperty where
-  propertyKey = undefined
-  propertyValue = undefined
+  propertyKey = avpLabel
+  propertyValue = avpValue
 
 -- TODO: implement Functor, Foldable, Traversal for AesonVertexProperty
 
