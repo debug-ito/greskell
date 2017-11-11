@@ -26,6 +26,8 @@ module Data.Greskell.Graph
          SimpleProperty(..),
          -- ** PropertyMap
          PropertyMap(..),
+         lookupOneValue,
+         lookupListValues,
          PropertyMapGeneric,
          PropertyMapSingle,
          PropertyMapList
@@ -194,6 +196,15 @@ class PropertyMap m where
   allProperties :: m p v -> [p v]
   -- ^ Return all properties in the map.
 
+-- | Lookup a property value from a 'PropertyMap' by key.
+lookupOneValue :: (PropertyMap m, Property p) => Text -> m p v -> Maybe v
+lookupOneValue key = fmap propertyValue . lookupOne key
+
+-- | Lookup property values from a 'PropertyMap' by key.
+lookupListValues :: (PropertyMap m, Property p) => Text -> m p v -> [v]
+lookupListValues key = fmap propertyValue . lookupList key
+
+
 -- | Generic implementation of 'PropertyMap'. @t@ is the type of
 -- cardinality, @p@ is the type of 'Property' class and @v@ is the
 -- type of the property value.
@@ -204,8 +215,6 @@ instance Semigroup (t (p v)) => Monoid (PropertyMapGeneric t p v) where
   mempty = PropertyMapGeneric mempty
   mappend (PropertyMapGeneric a) (PropertyMapGeneric b) =
     PropertyMapGeneric $ HM.unionWith (<>) a b
-
--- TODO: PropertyMapをベースにvalueを取り出す関数とか作る。
 
 putPropertyGeneric :: (Semigroup (t (p v)), Applicative t, Property p) => p v -> PropertyMapGeneric t p v -> PropertyMapGeneric t p v
 putPropertyGeneric prop (PropertyMapGeneric hm) =
