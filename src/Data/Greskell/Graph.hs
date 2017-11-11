@@ -47,7 +47,7 @@ import Data.String (IsString(..))
 import Data.Text (Text)
 import Data.Traversable (Traversable(traverse))
 
-import Data.Greskell.GraphSON (GraphSON)
+import Data.Greskell.GraphSON (GraphSON(..))
 import Data.Greskell.Greskell
   ( Greskell, unsafeGreskellLazy, string,
     ToGreskell(..)
@@ -120,14 +120,11 @@ instance ToGreskell (Key a b) where
   type GreskellReturn (Key a b) = Text
   toGreskell = unKey
 
--- TODO: AesonVertexなどの実装では、propertiesはPropertyMap t p
--- (GraphSON Value)という感じでGraphSONラッパをつけるといい。
-
 -- | General vertex type you can use for 'Vertex' class, based on
 -- aeson data types.
 data AesonVertex =
   AesonVertex
-  { avId :: Value,
+  { avId :: GraphSON Value,
     -- ^ ID of this vertex
     avLabel :: Text,
     -- ^ Label of this vertex
@@ -139,7 +136,7 @@ data AesonVertex =
 instance Element AesonVertex where
   type ElementID AesonVertex = Value
   type ElementProperty AesonVertex = AesonVertexProperty
-  elementId = avId
+  elementId = gsonValue . avId
   elementLabel = avLabel
 
 instance Vertex AesonVertex
@@ -148,7 +145,7 @@ instance Vertex AesonVertex
 -- data types.
 data AesonEdge =
   AesonEdge
-  { aeId :: Value,
+  { aeId :: GraphSON Value,
     -- ^ ID of this edge.
     aeLabel :: Text,
     -- ^ Label of this edge.
@@ -156,9 +153,9 @@ data AesonEdge =
     -- ^ Label of this edge's destination vertex.
     aeOutVLabel :: Text,
     -- ^ Label of this edge's source vertex.
-    aeInV :: Value,
+    aeInV :: GraphSON Value,
     -- ^ ID of this edge's destination vertex.
-    aeOutV :: Value,
+    aeOutV :: GraphSON Value,
     -- ^ ID of this edge's source vertex.
     aeProperties :: PropertyMapSingle SimpleProperty (GraphSON Value)
     -- ^ Properties of this edge.
@@ -168,13 +165,13 @@ data AesonEdge =
 instance Element AesonEdge where
   type ElementID AesonEdge = Value
   type ElementProperty AesonEdge = SimpleProperty
-  elementId = aeId
+  elementId = gsonValue . aeId
   elementLabel = aeLabel
 
 instance Edge AesonEdge where
   type EdgeVertexID AesonEdge = Value
-  edgeInVertexID = aeInV
-  edgeOutVertexID = aeOutV
+  edgeInVertexID = gsonValue . aeInV
+  edgeOutVertexID = gsonValue . aeOutV
 
 -- | General simple property type you can use for 'Property' class.
 data SimpleProperty v =
@@ -207,7 +204,7 @@ instance Traversable SimpleProperty where
 -- based on aeson data types.
 data AesonVertexProperty v =
   AesonVertexProperty
-  { avpId :: Value,
+  { avpId :: GraphSON Value,
     -- ^ ID of this vertex property.
     avpLabel :: Text,
     -- ^ Label and key of this vertex property.
@@ -221,7 +218,7 @@ data AesonVertexProperty v =
 instance Element (AesonVertexProperty v) where
   type ElementID (AesonVertexProperty v) = Value
   type ElementProperty (AesonVertexProperty v) = SimpleProperty
-  elementId = avpId
+  elementId = gsonValue . avpId
   elementLabel = avpLabel
 
 instance Property AesonVertexProperty where
