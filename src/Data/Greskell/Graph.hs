@@ -47,6 +47,7 @@ import Data.String (IsString(..))
 import Data.Text (Text)
 import Data.Traversable (Traversable(traverse))
 
+import Data.Greskell.GraphSON (GraphSON)
 import Data.Greskell.Greskell
   ( Greskell, unsafeGreskellLazy, string,
     ToGreskell(..)
@@ -130,7 +131,7 @@ data AesonVertex =
     -- ^ ID of this vertex
     avLabel :: Text,
     -- ^ Label of this vertex
-    avProperties :: PropertyMapList AesonVertexProperty Value
+    avProperties :: PropertyMapList AesonVertexProperty (GraphSON Value)
     -- ^ Properties of this vertex.
   }
   deriving (Show,Eq)
@@ -159,7 +160,7 @@ data AesonEdge =
     -- ^ ID of this edge's destination vertex.
     aeOutV :: Value,
     -- ^ ID of this edge's source vertex.
-    aeProperties :: PropertyMapSingle SimpleProperty Value
+    aeProperties :: PropertyMapSingle SimpleProperty (GraphSON Value)
     -- ^ Properties of this edge.
   }
   deriving (Show,Eq)
@@ -212,7 +213,7 @@ data AesonVertexProperty v =
     -- ^ Label and key of this vertex property.
     avpValue :: v,
     -- ^ Value of this vertex property.
-    avpProperties :: PropertyMapSingle SimpleProperty Value
+    avpProperties :: PropertyMapSingle SimpleProperty (GraphSON Value)
     -- ^ (meta)properties of this vertex property.
   }
   deriving (Show,Eq)
