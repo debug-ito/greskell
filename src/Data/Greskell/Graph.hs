@@ -355,14 +355,18 @@ allPropertiesGeneric :: Foldable t => PropertyMapGeneric t p v -> [p v]
 allPropertiesGeneric (PropertyMapGeneric hm) = concat $ map toList $ HM.elems hm
 
 parsePropertiesGeneric :: (Property p, PropertyMap m, Monoid (m p v), GraphSONTyped (p v), FromJSON (p v), FromJSONWithKey (p v))
-                       => (Value -> [Value])
+                       => (Value -> Parser [Value])
                        -> Value
                        -> Parser (m p v)
 parsePropertiesGeneric normalizeCardinality (Object obj) = foldlM folder mempty $ HM.toList obj
   where
-    folder pm (key, value) = fmap (foldr putProperty pm) $ traverse (parseProperty key) $ normalizeCardinality value
+    folder pm (key, value) = fmap (foldr putProperty pm) $ traverse (parseProperty key) =<< normalizeCardinality value
     parseProperty key value = (fmap gsonValue $ parseTypedGraphSON value) <|> parseJSONWithKey key value
 parsePropertiesGeneric _ _ = empty
+
+expectAesonArray :: Value -> Parser [Value]
+expectAesonArray (Array a) = return $ toList a
+expectAesonArray _ = empty
 
 -- | A 'PropertyMap' that has a single value per key.
 --
