@@ -41,10 +41,10 @@ module Data.Greskell.Graph
          PropertyMapGeneric
        ) where
 
-import Control.Applicative (empty, (<$>), (<*>))
+import Control.Applicative (empty, (<$>), (<*>), (<|>))
 import Data.Aeson (Value(..), FromJSON(..), (.:))
 import Data.Aeson.Types (Parser)
-import Data.Foldable (toList, Foldable(foldr))
+import Data.Foldable (toList, Foldable(foldr), foldlM)
 import qualified Data.HashMap.Lazy as HM
 import Data.List.NonEmpty (NonEmpty)
 import qualified Data.List.NonEmpty as NL
@@ -56,7 +56,7 @@ import Data.String (IsString(..))
 import Data.Text (Text)
 import Data.Traversable (Traversable(traverse))
 
-import Data.Greskell.GraphSON (GraphSON(..))
+import Data.Greskell.GraphSON (GraphSON(..), GraphSONTyped, parseTypedGraphSON)
 import Data.Greskell.Greskell
   ( Greskell, unsafeGreskellLazy, string,
     ToGreskell(..)
@@ -329,6 +329,7 @@ instance (Traversable t, Traversable p) => Traversable (PropertyMapGeneric t p) 
 
 instance FromJSON (t (p v)) => FromJSON (PropertyMapGeneric t p v) where
   parseJSON = undefined -- TODO: これがかなり厄介。keyからvalueのラベルを作らないといけない場合もある。tやpをgeneralizeするのは無理かな？まずテストを書くか。。
+  -- こいつを実装して、まずはAesonEdgeのテストを通す。GraphSON version 1,2,3全て通す！
 
 
 putPropertyGeneric :: (Semigroup (t (p v)), Applicative t, Property p) => p v -> PropertyMapGeneric t p v -> PropertyMapGeneric t p v
@@ -340,6 +341,16 @@ removePropertyGeneric key (PropertyMapGeneric hm) = PropertyMapGeneric $ HM.dele
 
 allPropertiesGeneric :: Foldable t => PropertyMapGeneric t p v -> [p v]
 allPropertiesGeneric (PropertyMapGeneric hm) = concat $ map toList $ HM.elems hm
+
+parsePropertiesGeneric :: (Property p, PropertyMap m, Monoid (m p v), GraphSONTyped (p v), FromJSON (p v), FromJSONWithKey (p v))
+                       => (Value -> [Value])
+                       -> Value
+                       -> Parser (m p v)
+parsePropertiesGeneric normalizeCardinality (Object obj) = foldlM folder mempty $ HM.toList obj
+  where
+    folder pm (key, value) = fmap (foldr putProperty pm) $ traverse (parseProperty key) $ normalizeCardinality value
+    parseProperty key value = (fmap gsonValue $ parseTypedGraphSON value) <|> parseJSONWithKey key value
+parsePropertiesGeneric _ _ = empty
 
 -- | A 'PropertyMap' that has a single value per key.
 --
