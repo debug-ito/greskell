@@ -42,7 +42,7 @@ module Data.Greskell.Graph
        ) where
 
 import Control.Applicative (empty, (<$>), (<*>), (<|>))
-import Data.Aeson (Value(..), FromJSON(..), (.:))
+import Data.Aeson (Value(..), FromJSON(..), (.:), (.:?))
 import Data.Aeson.Types (Parser)
 import Data.Foldable (toList, Foldable(foldr), foldlM)
 import qualified Data.HashMap.Lazy as HM
@@ -203,7 +203,16 @@ instance GraphSONTyped AesonEdge where
   gsonTypeFor _ = "g:Edge"
 
 instance FromJSON AesonEdge where
-  parseJSON = undefined -- TODO
+  parseJSON (Object o) =
+    AesonEdge
+    <$> (o .: "id")
+    <*> (o .: "label")
+    <*> (o .: "inVLabel")
+    <*> (o .: "outVLabel")
+    <*> (o .: "inV")
+    <*> (o .: "outV")
+    <*> fmap (maybe mempty id) (o .:? "properties")
+  parseJSON _ = empty
 
 -- | JSON parser with a key given from outside.
 class FromJSONWithKey a where
