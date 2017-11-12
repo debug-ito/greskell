@@ -56,7 +56,7 @@ import Data.String (IsString(..))
 import Data.Text (Text)
 import Data.Traversable (Traversable(traverse))
 
-import Data.Greskell.GraphSON (GraphSON(..), GraphSONTyped, parseTypedGraphSON)
+import Data.Greskell.GraphSON (GraphSON(..), GraphSONTyped(..), parseTypedGraphSON)
 import Data.Greskell.Greskell
   ( Greskell, unsafeGreskellLazy, string,
     ToGreskell(..)
@@ -164,6 +164,9 @@ instance Element AesonVertex where
 
 instance Vertex AesonVertex
 
+instance GraphSONTyped AesonVertex where
+  gsonTypeFor _ = "g:Vertex"
+
 -- | General edge type you can use for 'Edge' class, based on aeson
 -- data types.
 data AesonEdge =
@@ -196,6 +199,9 @@ instance Edge AesonEdge where
   edgeInVertexID = gsonValue . aeInV
   edgeOutVertexID = gsonValue . aeOutV
 
+instance GraphSONTyped AesonEdge where
+  gsonTypeFor _ = "g:Edge"
+
 instance FromJSON AesonEdge where
   parseJSON = undefined -- TODO
 
@@ -224,6 +230,9 @@ instance FromJSON v => FromJSONWithKey (SimpleProperty v) where
 instance Property SimpleProperty where
   propertyKey = sPropertyKey
   propertyValue = sPropertyValue
+
+instance GraphSONTyped (SimpleProperty v) where
+  gsonTypeFor _ = "g:Property"
 
 instance Functor SimpleProperty where
   fmap f sp = sp { sPropertyValue = f $ sPropertyValue sp }
@@ -254,6 +263,9 @@ instance FromJSON v => FromJSON (AesonVertexProperty v) where
 
 instance FromJSON v => FromJSONWithKey (AesonVertexProperty v) where
   parseJSONWithKey = undefined -- TODO
+
+instance GraphSONTyped (AesonVertexProperty v) where
+  gsonTypeFor _ = "g:VertexProperty"
 
 instance Element (AesonVertexProperty v) where
   type ElementID (AesonVertexProperty v) = Value

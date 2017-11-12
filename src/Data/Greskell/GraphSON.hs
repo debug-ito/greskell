@@ -9,7 +9,7 @@ module Data.Greskell.GraphSON
        ( GraphSON(..),
          nonTypedGraphSON,
          typedGraphSON,
-         GraphSONTyped,
+         GraphSONTyped(..),
          parseTypedGraphSON
        ) where
 
