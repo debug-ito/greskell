@@ -339,11 +339,6 @@ instance (Foldable t, Foldable p) => Foldable (PropertyMapGeneric t p) where
 instance (Traversable t, Traversable p) => Traversable (PropertyMapGeneric t p) where
   traverse f (PropertyMapGeneric hm) = fmap PropertyMapGeneric $ (traverse . traverse . traverse) f hm
 
-instance FromJSON (t (p v)) => FromJSON (PropertyMapGeneric t p v) where
-  parseJSON = undefined -- TODO: これがかなり厄介。keyからvalueのラベルを作らないといけない場合もある。tやpをgeneralizeするのは無理かな？まずテストを書くか。。
-  -- こいつを実装して、まずはAesonEdgeのテストを通す。GraphSON version 1,2,3全て通す！
-
-
 putPropertyGeneric :: (Semigroup (t (p v)), Applicative t, Property p) => p v -> PropertyMapGeneric t p v -> PropertyMapGeneric t p v
 putPropertyGeneric prop (PropertyMapGeneric hm) =
   PropertyMapGeneric $ HM.insertWith (<>) (propertyKey prop) (pure prop) hm
@@ -384,6 +379,10 @@ instance PropertyMap (PropertyMapGeneric Semigroup.First) where
   removeProperty = removePropertyGeneric
   allProperties = allPropertiesGeneric
 
+instance (Property p, GraphSONTyped (p v), FromJSON (p v), FromJSONWithKey (p v))
+         => FromJSON (PropertyMapGeneric Semigroup.First p v) where
+  parseJSON = parsePropertiesGeneric (return . return)
+
 -- | A 'PropertyMap' that can keep more than one values per key.
 --
 -- 'lookupOne' returns the first property associated with the given
@@ -401,4 +400,8 @@ instance PropertyMap (PropertyMapGeneric NonEmpty) where
   putProperty = putPropertyGeneric
   removeProperty = removePropertyGeneric
   allProperties = allPropertiesGeneric
+
+instance (Property p, GraphSONTyped (p v), FromJSON (p v), FromJSONWithKey (p v))
+         => FromJSON (PropertyMapGeneric NonEmpty p v) where
+  parseJSON = parsePropertiesGeneric expectAesonArray
 
