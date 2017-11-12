@@ -8,10 +8,13 @@
 module Data.Greskell.GraphSON
        ( GraphSON(..),
          nonTypedGraphSON,
-         typedGraphSON
+         typedGraphSON,
+         GraphSONTyped,
+         parseTypedGraphSON
        ) where
 
 import Control.Applicative ((<$>), (<*>))
+import Control.Monad (guard)
 import Data.Aeson (ToJSON(toJSON), FromJSON(parseJSON), object, (.=), Value(Object), (.:?))
 import Data.Aeson.Types (Parser)
 import Data.Foldable (Foldable(foldr))
@@ -73,6 +76,19 @@ parseDirect :: FromJSON v => Value -> Parser (GraphSON v)
 parseDirect v = GraphSON Nothing <$> parseJSON v
 
 
--- -- Maybe we should define this class.
--- class GraphSONTyped a where
---   gsonTypeFor :: a -> Text
+-- | Types that have an intrinsic type label for 'gsonType' field.
+class GraphSONTyped a where
+  gsonTypeFor :: a -> Text
+  -- ^ Type label for 'gsonType'.
+
+-- TODO: define instances for some standard types like Int.
+
+-- | Parse @GraphSON v@, but it checks 'gsonType'. If 'gsonType' is
+-- 'Nothing' or it's not equal to 'gsonTypeFor', the 'Parser' fails.
+parseTypedGraphSON :: (GraphSONTyped v, FromJSON v) => Value -> Parser (GraphSON v)
+parseTypedGraphSON v = checkType =<< parseJSON v
+  where
+    checkType gson = do
+      guard (gsonType gson == Just (gsonTypeFor $ gsonValue gson))
+      return gson
+
