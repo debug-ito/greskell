@@ -37,7 +37,9 @@ module Data.Greskell.Graph
          lookupOneValue,
          lookupListValues,
          PropertyMapSingle,
-         PropertyMapList
+         PropertyMapList,
+         -- * Parser support
+         FromJSONWithKey
        ) where
 
 import Control.Applicative (empty, (<$>), (<*>), (<|>))
@@ -213,7 +215,9 @@ instance FromJSON AesonEdge where
     <*> fmap (maybe mempty id) (o .:? "properties")
   parseJSON _ = empty
 
--- | JSON parser with a key given from outside.
+-- | __This typeclass is for internal use.__
+--
+-- JSON parser with a property key given from outside.
 class FromJSONWithKey a where
   parseJSONWithKey :: Text -> Value -> Parser a
 
