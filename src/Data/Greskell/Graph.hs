@@ -1,4 +1,4 @@
-{-# LANGUAGE TypeFamilies, OverloadedStrings, FlexibleInstances, GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE TypeFamilies, OverloadedStrings, FlexibleInstances, GeneralizedNewtypeDeriving, DeriveTraversable #-}
 {-# OPTIONS_GHC -fno-warn-redundant-constraints #-}
 -- |
 -- Module: Data.Greskell.Graph
@@ -37,8 +37,7 @@ module Data.Greskell.Graph
          lookupOneValue,
          lookupListValues,
          PropertyMapSingle,
-         PropertyMapList,
-         PropertyMapGeneric
+         PropertyMapList
        ) where
 
 import Control.Applicative (empty, (<$>), (<*>), (<|>))
@@ -379,17 +378,18 @@ expectAesonArray _ = empty
 -- '<>' returns the union of the two given property maps. If the two
 -- property maps share some same keys, the value from the left map
 -- wins.
-type PropertyMapSingle = PropertyMapGeneric Semigroup.First
+newtype PropertyMapSingle p v = PropertyMapSingle (PropertyMapGeneric Semigroup.First p v)
+                              deriving (Show,Eq,Monoid,Functor,Foldable,Traversable)
 
-instance PropertyMap (PropertyMapGeneric Semigroup.First) where
-  lookupOne key (PropertyMapGeneric hm) = fmap Semigroup.getFirst $ HM.lookup key hm
+instance PropertyMap PropertyMapSingle where
+  lookupOne key (PropertyMapSingle (PropertyMapGeneric hm)) = fmap Semigroup.getFirst $ HM.lookup key hm
   lookupList key m = maybe [] return $ lookupOne key m
-  putProperty = putPropertyGeneric
-  removeProperty = removePropertyGeneric
-  allProperties = allPropertiesGeneric
+  putProperty p (PropertyMapSingle pg) = PropertyMapSingle $ putPropertyGeneric p pg
+  removeProperty t (PropertyMapSingle pg) = PropertyMapSingle $ removePropertyGeneric t pg
+  allProperties (PropertyMapSingle pg) = allPropertiesGeneric pg
 
 instance (Property p, GraphSONTyped (p v), FromJSON (p v), FromJSONWithKey (p v))
-         => FromJSON (PropertyMapGeneric Semigroup.First p v) where
+         => FromJSON (PropertyMapSingle p v) where
   parseJSON = parsePropertiesGeneric (return . return)
 
 -- | A 'PropertyMap' that can keep more than one values per key.
@@ -402,15 +402,16 @@ instance (Property p, GraphSONTyped (p v), FromJSON (p v), FromJSONWithKey (p v)
 -- '<>' returns the union of the two given property maps. If the two
 -- property maps share some same keys, those property lists are
 -- concatenated.
-type PropertyMapList = PropertyMapGeneric NonEmpty
+newtype PropertyMapList p v = PropertyMapList (PropertyMapGeneric NonEmpty p v)
+                            deriving (Show,Eq,Monoid,Functor,Foldable,Traversable)
 
-instance PropertyMap (PropertyMapGeneric NonEmpty) where
-  lookupList key (PropertyMapGeneric hm) = maybe [] NL.toList $ HM.lookup key hm
-  putProperty = putPropertyGeneric
-  removeProperty = removePropertyGeneric
-  allProperties = allPropertiesGeneric
+instance PropertyMap PropertyMapList where
+  lookupList key (PropertyMapList (PropertyMapGeneric hm)) = maybe [] NL.toList $ HM.lookup key hm
+  putProperty p (PropertyMapList pg) = PropertyMapList $ putPropertyGeneric p pg
+  removeProperty t (PropertyMapList pg) = PropertyMapList $ removePropertyGeneric t pg
+  allProperties (PropertyMapList pg) = allPropertiesGeneric pg
 
 instance (Property p, GraphSONTyped (p v), FromJSON (p v), FromJSONWithKey (p v))
-         => FromJSON (PropertyMapGeneric NonEmpty p v) where
-  parseJSON = parsePropertiesGeneric expectAesonArray
+         => FromJSON (PropertyMapList p v) where
+  parseJSON v = parsePropertiesGeneric expectAesonArray v
 

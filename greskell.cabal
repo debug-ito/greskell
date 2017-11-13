@@ -21,7 +21,7 @@ library
   -- default-extensions:   
   other-extensions:     OverloadedStrings, GeneralizedNewtypeDeriving,
                         FlexibleInstances, MultiParamTypeClasses, TypeFamilies,
-                        GADTs
+                        GADTs, DeriveTraversable
   exposed-modules:      Data.Greskell,
                         Data.Greskell.Gremlin,
                         Data.Greskell.Greskell,
