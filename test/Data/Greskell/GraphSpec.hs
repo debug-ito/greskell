@@ -13,7 +13,7 @@ import Data.Greskell.Graph
     AesonEdge(..)
   )
 import Data.Greskell.GraphSON
-  ( nonTypedGraphSON
+  ( nonTypedGraphSON, typedGraphSON, GraphSON(..)
   )
 
 main :: IO ()
@@ -129,3 +129,18 @@ spec_AesonEdge = describe "AesonEdge" $ do
                                               $ mempty
                              }
     loadGraphSON "edge.v1.json" `shouldReturn` Right expected
+  let expected_v23 = typedGraphSON
+                     AesonEdge{ aeId = GraphSON (Just "g:Int32") $ toJSON (13 :: Int),
+                                aeLabel = "develops",
+                                aeInVLabel = "software",
+                                aeOutVLabel = "person",
+                                aeInV = GraphSON (Just "g:Int32") $ toJSON (10 :: Int),
+                                aeOutV = GraphSON (Just "g:Int32") $ toJSON (1 :: Int),
+                                aeProperties = putProperty
+                                               (SimpleProperty "since" $ GraphSON (Just "g:Int32") $ toJSON (2009 :: Int))
+                                               $ mempty
+                              }
+  it "should parse GraphSON v2" $ do
+    loadGraphSON "edge.v2.json" `shouldReturn` Right expected_v23
+  it "should parse GraphSON v3" $ do
+    loadGraphSON "edge.v3.json" `shouldReturn` Right expected_v23
