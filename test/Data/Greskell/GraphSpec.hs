@@ -5,12 +5,13 @@ import Data.Aeson (toJSON, FromJSON)
 import qualified Data.Aeson as Aeson
 import qualified Data.ByteString.Lazy as BSL
 import Data.Monoid (Monoid(..), (<>))
+import Data.Text (Text)
 import Test.Hspec
 
 import Data.Greskell.Graph
   ( SimpleProperty(..), PropertyMapSingle, PropertyMapList,
     PropertyMap(..),
-    AesonEdge(..)
+    AesonEdge(..), AesonVertexProperty(..)
   )
 import Data.Greskell.GraphSON
   ( nonTypedGraphSON, typedGraphSON, typedGraphSON'
@@ -24,6 +25,7 @@ spec = do
   spec_PropertyMap
   spec_AesonEdge
   spec_SimpleProperty
+  spec_AesonVertexProperty
 
 spec_PropertyMap :: Spec
 spec_PropertyMap = do
@@ -156,3 +158,26 @@ spec_SimpleProperty = describe "SimpleProperty" $ do
     loadGraphSON "property.v2.json" `shouldReturn` Right ex23
   it "should parse GraphSON v3" $ do
     loadGraphSON "property.v3.json" `shouldReturn` Right ex23
+
+spec_AesonVertexProperty :: Spec
+spec_AesonVertexProperty = describe "AesonVertexProperty" $ do
+  it "should parse GraphSON v1" $ do
+    let ex = nonTypedGraphSON $
+             AesonVertexProperty
+             { avpId = nonTypedGraphSON $ toJSON (0 :: Int),
+               avpLabel = "name",
+               avpValue = nonTypedGraphSON $ toJSON ("marko" :: Text),
+               avpProperties = mempty
+             }
+    loadGraphSON "vertex_property.v1.json" `shouldReturn` Right ex
+  let ex23 = nonTypedGraphSON $
+             AesonVertexProperty
+             { avpId = typedGraphSON' "g:Int64" $ toJSON (0 :: Int),
+               avpLabel = "name",
+               avpValue = nonTypedGraphSON $ toJSON ("marko" :: Text),
+               avpProperties = mempty
+             }
+  it "should parse GraphSON v2" $ do
+    loadGraphSON "vertex_property.v2.json" `shouldReturn` Right ex23
+  it "should parse GraphSON v3" $ do
+    loadGraphSON "vertex_property.v3.json" `shouldReturn` Right ex23
