@@ -9,6 +9,7 @@ module Data.Greskell.GraphSON
        ( GraphSON(..),
          nonTypedGraphSON,
          typedGraphSON,
+         typedGraphSON',
          GraphSONTyped(..),
          parseTypedGraphSON
        ) where
@@ -45,9 +46,13 @@ instance Traversable GraphSON where
 nonTypedGraphSON :: v -> GraphSON v
 nonTypedGraphSON = GraphSON Nothing
 
--- | Create a 'GraphSON' with the given 'Text' as 'gsonType'.
-typedGraphSON :: Text -> v -> GraphSON v
-typedGraphSON t = GraphSON (Just t)
+-- | Create a 'GraphSON' with its type label.
+typedGraphSON :: GraphSONTyped v => v -> GraphSON v
+typedGraphSON v = GraphSON (Just $ gsonTypeFor v) v
+
+-- | Create a 'GraphSON' with the given type label.
+typedGraphSON' :: Text -> v -> GraphSON v
+typedGraphSON' t = GraphSON (Just t)
 
 -- | If 'gsonType' is 'Just', the 'GraphSON' is encoded as a typed
 -- JSON object. If 'gsonType' is 'Nothing', the 'gsonValue' is
@@ -69,7 +74,7 @@ instance FromJSON v => FromJSON (GraphSON v) where
       else do
       mtype <- o .:? "@type"
       mvalue <- o .:? "@value"
-      maybe (parseDirect v) return $ typedGraphSON <$> mtype <*> mvalue
+      maybe (parseDirect v) return $ typedGraphSON'  <$> mtype <*> mvalue
   parseJSON v = parseDirect v
     
 parseDirect :: FromJSON v => Value -> Parser (GraphSON v)
