@@ -11,7 +11,7 @@ import Test.Hspec
 import Data.Greskell.Graph
   ( SimpleProperty(..), PropertyMapSingle, PropertyMapList,
     PropertyMap(..),
-    AesonEdge(..), AesonVertexProperty(..)
+    AesonEdge(..), AesonVertexProperty(..), AesonVertex(..)
   )
 import Data.Greskell.GraphSON
   ( nonTypedGraphSON, typedGraphSON, typedGraphSON'
@@ -26,6 +26,7 @@ spec = do
   spec_AesonEdge
   spec_SimpleProperty
   spec_AesonVertexProperty
+  spec_AesonVertex
 
 spec_PropertyMap :: Spec
 spec_PropertyMap = do
@@ -181,3 +182,108 @@ spec_AesonVertexProperty = describe "AesonVertexProperty" $ do
     loadGraphSON "vertex_property.v2.json" `shouldReturn` Right ex23
   it "should parse GraphSON v3" $ do
     loadGraphSON "vertex_property.v3.json" `shouldReturn` Right ex23
+
+spec_AesonVertex :: Spec
+spec_AesonVertex = describe "AesonVertex" $ do
+  it "should parse GraphSON v1" $ do
+    let ex = nonTypedGraphSON $
+             AesonVertex
+             { avId = nonTypedGraphSON $ toJSON (1 :: Int),
+               avLabel = "person",
+               avProperties = foldr putProperty mempty
+                              [ AesonVertexProperty
+                                { avpId = nonTypedGraphSON $ toJSON (0 :: Int),
+                                  avpLabel = "name",
+                                  avpValue = nonTypedGraphSON $ toJSON ("marko" :: Text),
+                                  avpProperties = mempty
+                                },
+                                AesonVertexProperty
+                                { avpId = nonTypedGraphSON $ toJSON (6 :: Int),
+                                  avpLabel = "location",
+                                  avpValue = nonTypedGraphSON $ toJSON ("san diego" :: Text),
+                                  avpProperties = foldr putProperty mempty
+                                                  [ SimpleProperty "startTime" $ nonTypedGraphSON $ toJSON (1997 :: Int),
+                                                    SimpleProperty "endTime" $ nonTypedGraphSON $ toJSON (2001 :: Int)
+                                                  ]
+                                },
+                                AesonVertexProperty
+                                { avpId = nonTypedGraphSON $ toJSON (7 :: Int),
+                                  avpLabel = "location",
+                                  avpValue = nonTypedGraphSON $ toJSON ("santa cruz" :: Text),
+                                  avpProperties = foldr putProperty mempty
+                                                  [ SimpleProperty "startTime" $ nonTypedGraphSON $ toJSON (2001 :: Int),
+                                                    SimpleProperty "endTime" $ nonTypedGraphSON $ toJSON (2004 :: Int)
+                                                  ]
+                                },
+                                AesonVertexProperty
+                                { avpId = nonTypedGraphSON $ toJSON (8 :: Int),
+                                  avpLabel = "location",
+                                  avpValue = nonTypedGraphSON $ toJSON ("brussels" :: Text),
+                                  avpProperties = foldr putProperty mempty
+                                                  [ SimpleProperty "startTime" $ nonTypedGraphSON $ toJSON (2004 :: Int),
+                                                    SimpleProperty "endTime" $ nonTypedGraphSON $ toJSON (2005 :: Int)
+                                                  ]
+                                },
+                                AesonVertexProperty
+                                { avpId = nonTypedGraphSON $ toJSON (9 :: Int),
+                                  avpLabel = "location",
+                                  avpValue = nonTypedGraphSON $ toJSON ("santa fe" :: Text),
+                                  avpProperties = foldr putProperty mempty
+                                                  [ SimpleProperty "startTime" $ nonTypedGraphSON $ toJSON (2005 :: Int)
+                                                  ]
+                                }
+                              ]
+             }
+    loadGraphSON "vertex.v1.json" `shouldReturn` Right ex
+  let ex23 = typedGraphSON $
+             AesonVertex
+             { avId = typedGraphSON' "g:Int32" $ toJSON (1 :: Int),
+               avLabel = "person",
+               avProperties = foldr putProperty mempty
+                              [ AesonVertexProperty
+                                { avpId = typedGraphSON' "g:Int64" $ toJSON (0 :: Int),
+                                  avpLabel = "name",
+                                  avpValue = nonTypedGraphSON $ toJSON ("marko" :: Text),
+                                  avpProperties = mempty
+                                },
+                                AesonVertexProperty
+                                { avpId = typedGraphSON' "g:Int64" $ toJSON (6 :: Int),
+                                  avpLabel = "location",
+                                  avpValue = nonTypedGraphSON $ toJSON ("san diego" :: Text),
+                                  avpProperties = foldr putProperty mempty
+                                                  [ SimpleProperty "startTime" $ typedGraphSON' "g:Int32" $ toJSON (1997 :: Int),
+                                                    SimpleProperty "endTime" $ typedGraphSON' "g:Int32" $ toJSON (2001 :: Int)
+                                                  ]
+                                },
+                                AesonVertexProperty
+                                { avpId = typedGraphSON' "g:Int64" $ toJSON (7 :: Int),
+                                  avpLabel = "location",
+                                  avpValue = nonTypedGraphSON $ toJSON ("santa cruz" :: Text),
+                                  avpProperties = foldr putProperty mempty
+                                                  [ SimpleProperty "startTime" $ typedGraphSON' "g:Int32" $ toJSON (2001 :: Int),
+                                                    SimpleProperty "endTime" $ typedGraphSON' "g:Int32" $ toJSON (2004 :: Int)
+                                                  ]
+                                },
+                                AesonVertexProperty
+                                { avpId = typedGraphSON' "g:Int64" $ toJSON (8 :: Int),
+                                  avpLabel = "location",
+                                  avpValue = nonTypedGraphSON $ toJSON ("brussels" :: Text),
+                                  avpProperties = foldr putProperty mempty
+                                                  [ SimpleProperty "startTime" $ typedGraphSON' "g:Int32" $ toJSON (2004 :: Int),
+                                                    SimpleProperty "endTime" $ typedGraphSON' "g:Int32" $ toJSON (2005 :: Int)
+                                                  ]
+                                },
+                                AesonVertexProperty
+                                { avpId = typedGraphSON' "g:Int64" $ toJSON (9 :: Int),
+                                  avpLabel = "location",
+                                  avpValue = nonTypedGraphSON $ toJSON ("santa fe" :: Text),
+                                  avpProperties = foldr putProperty mempty
+                                                  [ SimpleProperty "startTime" $ typedGraphSON' "g:Int32" $ toJSON (2005 :: Int)
+                                                  ]
+                                }
+                              ]
+             }
+  it "should parse GraphSON v2" $ do
+    loadGraphSON "vertex.v2.json" `shouldReturn` Right ex23
+  it "should parse GraphSON v3" $ do
+    loadGraphSON "vertex.v3.json" `shouldReturn` Right ex23

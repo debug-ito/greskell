@@ -168,6 +168,9 @@ instance Vertex AesonVertex
 instance GraphSONTyped AesonVertex where
   gsonTypeFor _ = "g:Vertex"
 
+instance FromJSON AesonVertex where
+  parseJSON = undefined -- TODO
+
 -- | General edge type you can use for 'Edge' class, based on aeson
 -- data types.
 data AesonEdge =
