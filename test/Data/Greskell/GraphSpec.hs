@@ -13,7 +13,7 @@ import Data.Greskell.Graph
     AesonEdge(..)
   )
 import Data.Greskell.GraphSON
-  ( nonTypedGraphSON, typedGraphSON, GraphSON(..)
+  ( nonTypedGraphSON, typedGraphSON, typedGraphSON'
   )
 
 main :: IO ()
@@ -23,6 +23,7 @@ spec :: Spec
 spec = do
   spec_PropertyMap
   spec_AesonEdge
+  spec_SimpleProperty
 
 spec_PropertyMap :: Spec
 spec_PropertyMap = do
@@ -130,17 +131,28 @@ spec_AesonEdge = describe "AesonEdge" $ do
                              }
     loadGraphSON "edge.v1.json" `shouldReturn` Right expected
   let expected_v23 = typedGraphSON
-                     AesonEdge{ aeId = GraphSON (Just "g:Int32") $ toJSON (13 :: Int),
+                     AesonEdge{ aeId = typedGraphSON' "g:Int32" $ toJSON (13 :: Int),
                                 aeLabel = "develops",
                                 aeInVLabel = "software",
                                 aeOutVLabel = "person",
-                                aeInV = GraphSON (Just "g:Int32") $ toJSON (10 :: Int),
-                                aeOutV = GraphSON (Just "g:Int32") $ toJSON (1 :: Int),
+                                aeInV = typedGraphSON' "g:Int32" $ toJSON (10 :: Int),
+                                aeOutV = typedGraphSON' "g:Int32" $ toJSON (1 :: Int),
                                 aeProperties = putProperty
-                                               (SimpleProperty "since" $ GraphSON (Just "g:Int32") $ toJSON (2009 :: Int))
+                                               (SimpleProperty "since" $ typedGraphSON' "g:Int32" $ toJSON (2009 :: Int))
                                                $ mempty
                               }
   it "should parse GraphSON v2" $ do
     loadGraphSON "edge.v2.json" `shouldReturn` Right expected_v23
   it "should parse GraphSON v3" $ do
     loadGraphSON "edge.v3.json" `shouldReturn` Right expected_v23
+
+spec_SimpleProperty :: Spec
+spec_SimpleProperty = describe "SimpleProperty" $ do
+  it "should parse GraphSON v1" $ do
+    let ex = nonTypedGraphSON $ SimpleProperty "since" $ nonTypedGraphSON (2009 :: Int)
+    loadGraphSON "property.v1.json" `shouldReturn` Right ex
+  let ex23 = typedGraphSON $ SimpleProperty "since" $ typedGraphSON' "g:Int32" (2009 :: Int)
+  it "should parse GraphSON v2" $ do
+    loadGraphSON "property.v2.json" `shouldReturn` Right ex23
+  it "should parse GraphSON v3" $ do
+    loadGraphSON "property.v3.json" `shouldReturn` Right ex23
