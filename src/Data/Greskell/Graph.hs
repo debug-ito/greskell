@@ -43,7 +43,7 @@ module Data.Greskell.Graph
        ) where
 
 import Control.Applicative (empty, (<$>), (<*>), (<|>))
-import Data.Aeson (Value(..), FromJSON(..), (.:), (.:?))
+import Data.Aeson (Value(..), FromJSON(..), (.:), (.:?), Object)
 import Data.Aeson.Types (Parser)
 import Data.Foldable (toList, Foldable(foldr), foldlM)
 import qualified Data.HashMap.Lazy as HM
@@ -215,8 +215,11 @@ instance FromJSON AesonEdge where
     <*> (o .: "outVLabel")
     <*> (o .: "inV")
     <*> (o .: "outV")
-    <*> fmap (maybe mempty id) (o .:? "properties")
+    <*> (o `optionalMonoid` "properties")
   parseJSON _ = empty
+
+optionalMonoid :: (Monoid m, FromJSON m) => Object -> Text -> Parser m
+optionalMonoid obj field_name = fmap (maybe mempty id) (obj .:? field_name)
 
 -- | __This typeclass is for internal use.__
 --
@@ -274,10 +277,19 @@ data AesonVertexProperty v =
   deriving (Show,Eq)
 
 instance FromJSON v => FromJSON (AesonVertexProperty v) where
-  parseJSON = undefined -- TODO
+  parseJSON v@(Object o) = do
+    label <- o .: "label"
+    parseJSONWithKey label v
+  parseJSON _ = empty
 
 instance FromJSON v => FromJSONWithKey (AesonVertexProperty v) where
-  parseJSONWithKey = undefined -- TODO
+  parseJSONWithKey key (Object o) = AesonVertexProperty
+                                    <$> (o .: "id")
+                                    <*> pure key
+                                    <*> (o .: "value")
+                                    <*> (o `optionalMonoid` "properties")
+  parseJSONWithKey _ _ = empty
+
 
 instance GraphSONTyped (AesonVertexProperty v) where
   gsonTypeFor _ = "g:VertexProperty"

@@ -171,7 +171,7 @@ spec_AesonVertexProperty = describe "AesonVertexProperty" $ do
                avpProperties = mempty
              }
     loadGraphSON "vertex_property.v1.json" `shouldReturn` Right ex
-  let ex23 = nonTypedGraphSON $
+  let ex23 = typedGraphSON $
              AesonVertexProperty
              { avpId = typedGraphSON' "g:Int64" $ toJSON (0 :: Int),
                avpLabel = "name",
