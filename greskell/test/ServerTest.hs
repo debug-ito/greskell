@@ -16,7 +16,7 @@ import Data.Greskell.Gremlin
   )
 import Data.Greskell.Greskell
   ( toGremlin, Greskell,
-    true, false, list, value, singleton, number
+    true, false, list, value, single, number
   )
 
 main :: IO ()
@@ -75,7 +75,7 @@ spec_basics = do
     checkN (number (-434.23e-19)) (-434.23e-19)
   describe "value (object)" $ do
     let checkV :: Greskell Aeson.Value -> Aeson.Value -> SpecWith (String,Int)
-        checkV i e = checkRaw (singleton i) [e]
+        checkV i e = checkRaw (single i) [e]
     checkV (value $ Aeson.object []) (Aeson.object [])
     
     let simple_nonempty = Aeson.object [("foo", Aeson.String "hoge"), ("bar", Aeson.Number 20)]
