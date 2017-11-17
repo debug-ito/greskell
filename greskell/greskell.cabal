@@ -4,7 +4,7 @@ author:                 Toshio Ito <debug.ito@gmail.com>
 maintainer:             Toshio Ito <debug.ito@gmail.com>
 license:                BSD3
 license-file:           LICENSE
-synopsis:               Haskell builder for Gremlin graph query language
+synopsis:               Haskell binding for Gremlin graph query language
 -- description:            
 -- category:               
 cabal-version:          >= 1.10
@@ -24,19 +24,17 @@ library
                         GADTs, DeriveTraversable
   exposed-modules:      Data.Greskell,
                         Data.Greskell.Gremlin,
-                        Data.Greskell.Greskell,
                         Data.Greskell.Binder,
                         Data.Greskell.Graph,
-                        Data.Greskell.GraphSON,
                         Data.Greskell.GTraversal
   -- other-modules:        
   build-depends:        base,
+                        greskell-core,
                         text,
                         transformers,
                         aeson,
                         unordered-containers,
-                        semigroups,
-                        scientific
+                        semigroups
 
 -- executable greskell
 --   default-language:     Haskell2010
@@ -56,14 +54,13 @@ test-suite spec
   main-is:              Spec.hs
   -- default-extensions:   
   other-extensions:     OverloadedStrings
-  other-modules:        Data.Greskell.GreskellSpec,
-                        Data.Greskell.BinderSpec,
+  other-modules:        Data.Greskell.BinderSpec,
                         Data.Greskell.GTraversalSpec,
                         Data.Greskell.GremlinSpec,
                         Data.Greskell.GraphSpec
-  build-depends:        base, greskell, text, aeson, unordered-containers,
+  build-depends:        base, greskell, text, aeson,
+                        greskell-core, unordered-containers,
                         hspec,
-                        QuickCheck,
                         bytestring
 
 
@@ -99,7 +96,8 @@ test-suite server-test-suite
   -- default-extensions:   
   other-extensions:     OverloadedStrings
   -- other-modules:        
-  build-depends:        base, greskell, aeson, hspec, text, scientific,
+  build-depends:        base, greskell, aeson, hspec, text, greskell-core,
+                        scientific,
                         gremlin-haskell
 
 

@@ -4,7 +4,7 @@ author:                 Toshio Ito <debug.ito@gmail.com>
 maintainer:             Toshio Ito <debug.ito@gmail.com>
 license:                BSD3
 license-file:           LICENSE
--- synopsis:               
+synopsis:               Haskell binding for Gremlin graph query language - core data types and tools
 -- description:            
 -- category:               
 cabal-version:          >= 1.10
@@ -18,20 +18,15 @@ library
   hs-source-dirs:       src
   ghc-options:          -Wall -fno-warn-unused-imports
   -- default-extensions:   
-  -- other-extensions:     
-  exposed-modules:      Data.Greskell
+  other-extensions:     OverloadedStrings, TypeFamilies
+  exposed-modules:      Data.Greskell.Greskell,
+                        Data.Greskell.GraphSON
   -- other-modules:        
-  build-depends:        base
-
--- executable greskell-core
---   default-language:     Haskell2010
---   hs-source-dirs:       app
---   main-is:              Main.hs
---   ghc-options:          -Wall -fno-warn-unused-imports
---   -- other-modules:        
---   -- default-extensions:   
---   -- other-extensions:     
---   build-depends:        base
+  build-depends:        base,
+                        aeson,
+                        unordered-containers,
+                        scientific,
+                        text
 
 test-suite spec
   type:                 exitcode-stdio-1.0
@@ -40,10 +35,11 @@ test-suite spec
   ghc-options:          -Wall -fno-warn-unused-imports "-with-rtsopts=-M512m"
   main-is:              Spec.hs
   -- default-extensions:   
-  -- other-extensions:     
-  other-modules:        Data.GreskellSpec
-  build-depends:        base, greskell-core,
-                        hspec
+  other-extensions:     OverloadedStrings
+  other-modules:        Data.Greskell.GreskellSpec
+  build-depends:        base, greskell-core, text, aeson,
+                        hspec,
+                        QuickCheck
 
 source-repository head
   type:                 git
