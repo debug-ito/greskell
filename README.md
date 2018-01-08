@@ -10,6 +10,8 @@ Features:
 - Type-safe DSL to construct `GraphTraversal`s.
 - Parser of [GraphSON](http://tinkerpop.apache.org/docs/3.3.1/dev/io/#graphson) data format.
 
+__NOTE: for now greskell doesn't support connecting to a Gremlin server. For that purpose, use [gremlin-haskell](http://hackage.haskell.org/package/gremlin-haskell).__
+
 Contents:
 
 - [The Greskell type](#the-greskell-type)
@@ -18,7 +20,7 @@ Contents:
 
 ## Prelude
 
-Because this README is a test script, first we import common modules.
+Because this README is also a test script, first we import common modules.
 
 ```haskell common
 {-# LANGUAGE OverloadedStrings #-}
