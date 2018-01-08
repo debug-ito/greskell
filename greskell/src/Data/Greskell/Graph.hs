@@ -95,6 +95,9 @@ class Property p where
 -- 'T' is a token to get data @b@ from an Element @a@.
 data T a b
 
+instance GraphSONTyped (T a b) where
+  gsonTypeFor _ = "g:T"
+
 -- | @T.id@ token.
 tId :: Element a => Greskell (T a (ElementID a))
 tId = unsafeGreskellLazy "id"

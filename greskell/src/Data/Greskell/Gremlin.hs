@@ -32,6 +32,7 @@ module Data.Greskell.Gremlin
 
 import Data.Aeson (Value)
 import Data.Monoid ((<>))
+import Data.Greskell.GraphSON (GraphSONTyped(..))
 import Data.Greskell.Greskell
   ( Greskell, unsafeGreskellLazy,
     toGremlin, toGremlinLazy, unsafeMethodCall, unsafeFunCall
@@ -57,6 +58,9 @@ data P a
 
 instance Predicate (P a) where
   type PredicateArg (P a) = a
+
+instance GraphSONTyped (P a) where
+  gsonTypeFor _ = "g:P"
 
 -- | @P.not@ static method.
 pNot :: Greskell (P a) -> Greskell (P a)
@@ -118,6 +122,9 @@ data Order a
 -- | @Order a@ compares the type @a@.
 instance Comparator (Order a) where
   type CompareArg (Order a) = a
+
+instance GraphSONTyped (Order a) where
+  gsonTypeFor _ = "g:Order"
 
 -- | @decr@ order.
 oDecr :: Greskell (Order a)
