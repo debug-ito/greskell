@@ -33,8 +33,8 @@ At the core of greskell is the `Greskell` type. `Greskell a` represents a Gremli
 ```haskell
 import Data.Greskell.Greskell (Greskell, toGremlin)
 
-literalHoge :: Greskell Text
-literalHoge = "foo"
+literalText :: Greskell Text
+literalText = "foo"
 
 literalInt :: Greskell Int
 literalInt = 200
@@ -44,7 +44,7 @@ You can convert `Greskell` into Gremlin `Text` script by `toGremlin` function.
 
 ```haskell
 main = hspec $ describe "Greskell" $ do
-  it "espaces string" $ toGremlin literalHoge `shouldBe` "\"foo\""
+  it "espaces string" $ toGremlin literalText `shouldBe` "\"foo\""
 ```
 
 `Greskell` implements instances of `IsString`, `Num`, `Fractional` etc. so you can use methods of these classes to build `Greskell`.
