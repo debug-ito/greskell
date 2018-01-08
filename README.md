@@ -25,6 +25,8 @@ Because this README is also a test script, first we import common modules.
 ```haskell common
 {-# LANGUAGE OverloadedStrings #-}
 import Data.Text (Text)
+import qualified Data.HashMap.Strict as HM
+import qualified Data.Aeson as A
 import Test.Hspec
 ```
 
@@ -55,8 +57,33 @@ main = hspec $ describe "Greskell" $ do
   it "is a Num" $ toGremlin (literalInt + 30 * 20) `shouldBe` "(200)+((30)*(20))"
 ```
 
-
 ## Build variable binding
+
+Gremlin Server supports [parameterized scripts](http://tinkerpop.apache.org/docs/3.3.1/reference/#parameterized-scripts), where a client can send a Gremlin script and variable binding.
+
+greskell's `Binder` monad is a simple monad that manages bound variables and their values. With `Binder`, you can inject Haskell values into Greskell.
+
+```haskell Binder
+import Data.Greskell.Greskell (Greskell, toGremlin)
+import Data.Greskell.Binder (Binder, newBind, runBinder)
+
+plusTen :: Int -> Binder (Greskell Int)
+plusTen x = do
+  var_x <- newBind x
+  return $ var_x + 100
+```
+
+`newBind` creates a new Gremlin variable unique in the `Binder`'s monadic context, and returns that variable.
+
+```haskell Binder
+main = hspec $ describe "Binder" $ do
+  it "creates parameterized script" $ do
+    let (script, binding) = runBinder $ plusTen 50
+    toGremlin script `shouldBe` "(__v0)+(100)"
+    binding `shouldBe` HM.fromList [("__v0", A.Number 50)]
+```
+
+`runBinder` function returns the `Binder`'s monadic result and the created binding.
 
 ## The GTraversal type
 
