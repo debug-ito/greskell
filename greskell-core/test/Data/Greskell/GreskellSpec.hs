@@ -1,12 +1,11 @@
 {-# LANGUAGE OverloadedStrings #-}
-{-# OPTIONS_GHC -fno-warn-orphans #-}
 module Data.Greskell.GreskellSpec (main,spec) where
 
 import qualified Data.Aeson as Aeson
 import Data.String (fromString)
 import Data.Text (Text, pack)
 import Test.Hspec
-import Test.QuickCheck (property, Arbitrary(..))
+import Test.QuickCheck (property)
 
 import Data.Greskell.Greskell
   ( unsafeGreskell, toGremlin,
@@ -16,9 +15,7 @@ import Data.Greskell.Greskell
     Greskell
   )
 
--- TODO: move this into a single support module.
-instance Arbitrary Text where
-  arbitrary = fmap pack arbitrary
+import Data.Greskell.Test.QuickCheck ()
 
 main :: IO ()
 main = hspec spec
