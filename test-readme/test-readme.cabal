@@ -8,15 +8,12 @@ license:                BSD3
 -- description:            
 -- category:               
 cabal-version:          >= 1.10
-build-type:             Custom
+build-type:             Simple
 -- extra-source-files:     README.md, ChangeLog.md
 -- homepage:               
 -- bug-reports:            
 
 -- library
-
-custom-setup
-  setup-depends:        base, Cabal, raw-strings-qq
 
 test-suite spec
   type:                 exitcode-stdio-1.0
