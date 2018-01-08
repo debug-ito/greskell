@@ -20,7 +20,7 @@ Contents:
 
 Because this README is a test script, first we import common modules.
 
-```haskell.common
+```haskell common
 {-# LANGUAGE OverloadedStrings #-}
 import Data.Text (Text)
 import Test.Hspec
@@ -30,7 +30,7 @@ import Test.Hspec
 
 At the core of greskell is the `Greskell` type. `Greskell a` represents a Gremlin expression that evaluates to the type `a`.
 
-```haskell.Greskell
+```haskell Greskell
 import Data.Greskell.Greskell (Greskell, toGremlin)
 
 literalText :: Greskell Text
@@ -42,14 +42,14 @@ literalInt = 200
 
 You can convert `Greskell` into Gremlin `Text` script by `toGremlin` function.
 
-```haskell.Greskell
+```haskell Greskell
 main = hspec $ describe "Greskell" $ do
   it "espaces string" $ toGremlin literalText `shouldBe` "\"foo\""
 ```
 
 `Greskell` implements instances of `IsString`, `Num`, `Fractional` etc. so you can use methods of these classes to build `Greskell`.
 
-```haskell.Greskell
+```haskell Greskell
   it "is a Num" $ toGremlin (literalInt + 30 * 20) `shouldBe` "(200)+((30)*(20))"
 ```
 
