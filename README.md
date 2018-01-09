@@ -47,14 +47,14 @@ literalInt = 200
 You can convert `Greskell` into Gremlin `Text` script by `toGremlin` function.
 
 ```haskell Greskell
-main = hspec $ describe "Greskell" $ do
-  it "espaces string" $ toGremlin literalText `shouldBe` "\"foo\""
+main = hspec $ specify "Greskell" $ do
+  toGremlin literalText `shouldBe` "\"foo\""
 ```
 
 `Greskell` implements instances of `IsString`, `Num`, `Fractional` etc. so you can use methods of these classes to build `Greskell`.
 
 ```haskell Greskell
-  it "is a Num" $ toGremlin (literalInt + 30 * 20) `shouldBe` "(200)+((30)*(20))"
+  toGremlin (literalInt + 30 * 20) `shouldBe` "(200)+((30)*(20))"
 ```
 
 ## Build variable binding
@@ -76,11 +76,10 @@ plusTen x = do
 `newBind` creates a new Gremlin variable unique in the `Binder`'s monadic context, and returns that variable.
 
 ```haskell Binder
-main = hspec $ describe "Binder" $ do
-  it "creates parameterized script" $ do
-    let (script, binding) = runBinder $ plusTen 50
-    toGremlin script `shouldBe` "(__v0)+(100)"
-    binding `shouldBe` HM.fromList [("__v0", A.Number 50)]
+main = hspec $ specify "Binder" $ do
+  let (script, binding) = runBinder $ plusTen 50
+  toGremlin script `shouldBe` "(__v0)+(100)"
+  binding `shouldBe` HM.fromList [("__v0", A.Number 50)]
 ```
 
 `runBinder` function returns the `Binder`'s monadic result and the created binding.
