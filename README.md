@@ -8,7 +8,7 @@ Features:
 
 - Monadic interface to manage variable bindings.
 - Type-safe DSL to construct `GraphTraversal`s.
-- Parser of [GraphSON](http://tinkerpop.apache.org/docs/3.3.1/dev/io/#graphson) data format.
+- Parser of [GraphSON](http://tinkerpop.apache.org/docs/current/dev/io/#graphson) data format.
 
 __NOTE: for now greskell doesn't support connecting to a Gremlin server. For that purpose, use [gremlin-haskell](http://hackage.haskell.org/package/gremlin-haskell).__
 
@@ -24,9 +24,12 @@ Because this README is also a test script, first we import common modules.
 
 ```haskell common
 {-# LANGUAGE OverloadedStrings #-}
+import Control.Category ((>>>))
 import Data.Text (Text)
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Aeson as A
+import Data.Function ((&))
+import Data.Void (Void)
 import Test.Hspec
 ```
 
@@ -59,7 +62,7 @@ main = hspec $ specify "Greskell" $ do
 
 ## Build variable binding
 
-Gremlin Server supports [parameterized scripts](http://tinkerpop.apache.org/docs/3.3.1/reference/#parameterized-scripts), where a client can send a Gremlin script and variable binding.
+Gremlin Server supports [parameterized scripts](http://tinkerpop.apache.org/docs/current/reference/#parameterized-scripts), where a client can send a Gremlin script and variable binding.
 
 greskell's `Binder` monad is a simple monad that manages bound variables and their values. With `Binder`, you can inject Haskell values into Greskell.
 
@@ -84,7 +87,49 @@ main = hspec $ specify "Binder" $ do
 
 `runBinder` function returns the `Binder`'s monadic result and the created binding.
 
-## The GTraversal type
+## GTraversal and Walk
+
+greskell has a domain-specific language (DSL) for building Gremlin [Traversal](http://tinkerpop.apache.org/docs/current/reference/#traversal) object. Two data types, `GTraversal` and `Walk`, are especially important in this DSL.
+
+`GTraversal` is simple. It's just the Greskell counterpart of [GraphTraversal](http://tinkerpop.apache.org/javadocs/current/full/org/apache/tinkerpop/gremlin/process/traversal/dsl/graph/GraphTraversal.html) class in Gremlin.
+
+`Walk` is a little tricky. It represents a chain of one or more method calls on a GraphTraversal object. In Gremlin, those methods are called "[graph traversal steps](http://tinkerpop.apache.org/docs/current/reference/#graph-traversal-steps)." Greskell defines those traversal steps as functions returning a `Walk` object.
+
+For example:
+
+```haskell GTraversal
+import Data.Greskell.Greskell (toGremlin)
+import Data.Greskell.GTraversal
+  (GTraversal, Transform, Walk, source, vertices, gHasLabel, gHas2, (&.))
+import Data.Greskell.Graph (AesonVertex)
+import Data.Greskell.Gremlin (pEq)
+
+allV :: GTraversal Transform Void AesonVertex
+allV = source "g" & vertices []
+
+isPerson :: Walk Transform AesonVertex AesonVertex
+isPerson = gHasLabel (pEq "person")
+
+isMarko :: Walk Transform AesonVertex AesonVertex
+isMarko = gHas2 "name" (pEq "marko")
+
+main = hspec $ specify "GTraversal" $ do
+  toGremlin (allV &. isPerson &. isMarko) `shouldBe` "g.V().hasLabel(eq(\"person\")).has(\"name\",eq(\"marko\"))"
+```
+
+In the above example, `allV` is the GraphTraversal obtained by `g.V()`. `isPerson` and `isMarko` are method calls of `.hasLabel` and `.has` steps, respectively.
+
+
+TBW: flip by "$"
+
+
+## Type parameters of GTraversal and Walk
+
+## WalkType
+
+## Graph structure types
+
+## GraphSON parser
 
 ## Author
 
