@@ -91,18 +91,20 @@ main = hspec $ specify "Binder" $ do
 
 greskell has a domain-specific language (DSL) for building Gremlin [Traversal](http://tinkerpop.apache.org/docs/current/reference/#traversal) object. Two data types, `GTraversal` and `Walk`, are especially important in this DSL.
 
-`GTraversal` is simple. It's just the Greskell counterpart of [GraphTraversal](http://tinkerpop.apache.org/javadocs/current/full/org/apache/tinkerpop/gremlin/process/traversal/dsl/graph/GraphTraversal.html) class in Gremlin.
+`GTraversal` is simple. It's just the greskell counterpart of [GraphTraversal](http://tinkerpop.apache.org/javadocs/current/full/org/apache/tinkerpop/gremlin/process/traversal/dsl/graph/GraphTraversal.html) class in Gremlin.
 
-`Walk` is a little tricky. It represents a chain of one or more method calls on a GraphTraversal object. In Gremlin, those methods are called "[graph traversal steps](http://tinkerpop.apache.org/docs/current/reference/#graph-traversal-steps)." Greskell defines those traversal steps as functions returning a `Walk` object.
+`Walk` is a little tricky. It represents a chain of one or more method calls on a GraphTraversal object. In Gremlin, those methods are called "[graph traversal steps](http://tinkerpop.apache.org/docs/current/reference/#graph-traversal-steps)." greskell defines those traversal steps as functions returning a `Walk` object.
 
-For example:
+For example,
 
 ```haskell GTraversal
-import Data.Greskell.Greskell (toGremlin)
+import Data.Greskell.Greskell (toGremlin, Greskell)
 import Data.Greskell.GTraversal
-  (GTraversal, Transform, Walk, source, vertices, gHasLabel, gHas2, (&.))
+  ( GTraversal, Transform, Walk, source, vertices,
+    gHasLabel, gHas2, (&.), ($.)
+  )
 import Data.Greskell.Graph (AesonVertex)
-import Data.Greskell.Gremlin (pEq)
+import Data.Greskell.Gremlin (pEq, P)
 
 allV :: GTraversal Transform Void AesonVertex
 allV = source "g" & vertices []
@@ -111,17 +113,23 @@ isPerson :: Walk Transform AesonVertex AesonVertex
 isPerson = gHasLabel (pEq "person")
 
 isMarko :: Walk Transform AesonVertex AesonVertex
-isMarko = gHas2 "name" (pEq "marko")
+isMarko = gHas2 "name" (pEq ("marko" :: Greskell Text))
 
 main = hspec $ specify "GTraversal" $ do
-  toGremlin (allV &. isPerson &. isMarko) `shouldBe` "g.V().hasLabel(eq(\"person\")).has(\"name\",eq(\"marko\"))"
+  toGremlin (allV &. isPerson &. isMarko)
+    `shouldBe`
+    "g.V().hasLabel(eq(\"person\")).has(\"name\",eq(\"marko\"))"
 ```
 
-In the above example, `allV` is the GraphTraversal obtained by `g.V()`. `isPerson` and `isMarko` are method calls of `.hasLabel` and `.has` steps, respectively.
+In the above example, `allV` is the GraphTraversal obtained by `g.V()`. `isPerson` and `isMarko` are method calls of `.hasLabel` and `.has` steps, respectively. `(&.)` operator combines a `GTraversal` and `Walk` to get an expression that the graph traversal steps are executed on the GraphTraversal.
 
+Note that we use `(&)` operator in `allV`. `(&)` operator from [Data.Function](http://hackage.haskell.org/package/base/docs/Data-Function.html) module is just the flip of `($)` operator. Likewise, greskell defines `($.)` operator, so we could also write the above expression as follows.
 
-TBW: flip by "$"
-
+```haskell GTraversal
+  (toGremlin $ isMarko $. isPerson $. vertices [] $ source "g")
+    `shouldBe`
+    "g.V().hasLabel(eq(\"person\")).has(\"name\",eq(\"marko\"))"
+```
 
 ## Type parameters of GTraversal and Walk
 
