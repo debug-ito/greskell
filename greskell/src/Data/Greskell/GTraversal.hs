@@ -40,6 +40,8 @@ module Data.Greskell.GTraversal
          gFilter,
          gHas1,
          gHas1',
+         gHas2,
+         gHas2',
          gHas2P,
          gHas2P',
          gHasLabelP,
@@ -389,6 +391,14 @@ gHas1 = liftWalk . gHas1'
 -- | Monomorphic version of 'gHas1'.
 gHas1' :: (Element s) => Key s v -> Walk Filter s s
 gHas1' key = unsafeWalk "has" [toGremlin key]
+
+-- | @.has@ step with two arguments.
+gHas2 :: (WalkType c, Element s) => Key s v -> Greskell v -> Walk c s s
+gHas2 k v = liftWalk $ gHas2' k v
+
+-- | Monomorphic verson of 'gHas2'.
+gHas2' :: (Element s) => Key s v -> Greskell v -> Walk Filter s s
+gHas2' k v = unsafeWalk "has" [toGremlin k, toGremlin v]
 
 -- | @.has@ step with two arguments and 'P' type.
 gHas2P :: (WalkType c, Element s)

@@ -23,7 +23,7 @@ import Data.Greskell.Greskell
 import Data.Greskell.GTraversal
   ( Walk, Transform,
     source, vertices', edges', (&.), ($.),
-    gHas1, gHas2P, gHasLabelP, gHasIdP,
+    gHas1, gHas2, gHas2P, gHasLabelP, gHasIdP,
     gOut', gRange, gValues, gNot, gIn',
     gOrderBy, ByComparator(ByComp), ByProjection,
     pjEmpty, pjT, pjTraversal, pjKey,
@@ -95,6 +95,10 @@ spec_has = do
   describe "gHas1" $ do
     specify "IsString Key" $ do
       toGremlin (source "g" & vertices' [] &. gHas1 "foo") `shouldBe` "g.V().has(\"foo\")"
+  describe "gHas2" $ do
+    specify "simple equality" $ do
+      toGremlin (source "g" & vertices' [] &. gHas2 "name" "hoge")
+        `shouldBe` "g.V().has(\"name\",\"hoge\")"
   describe "gHas2P" $ do
     specify "IsString Key and P" $ do
       toGremlin (source "g" & vertices' [] &. gHas2P ("name" :: Key e Text) (pNeq "hoge"))
