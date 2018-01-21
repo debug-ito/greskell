@@ -104,33 +104,32 @@ import Data.Greskell.GTraversal
     gHasLabel, gHas2, (&.), ($.)
   )
 import Data.Greskell.Graph (AesonVertex)
-import Data.Greskell.Gremlin (pEq, P)
 
 allV :: GTraversal Transform Void AesonVertex
 allV = source "g" & vertices []
 
 isPerson :: Walk Transform AesonVertex AesonVertex
-isPerson = gHasLabel (pEq "person")
+isPerson = gHasLabel "person"
 
 isMarko :: Walk Transform AesonVertex AesonVertex
-isMarko = gHas2 "name" (pEq ("marko" :: Greskell Text))
+isMarko = gHas2 "name" ("marko" :: Greskell Text)
 
 main = hspec $ specify "GTraversal" $ do
   toGremlin (allV &. isPerson &. isMarko)
     `shouldBe`
-    "g.V().hasLabel(eq(\"person\")).has(\"name\",eq(\"marko\"))"
+    "g.V().hasLabel(\"person\").has(\"name\",\"marko\")"
 ```
 
 In the above example, `allV` is the GraphTraversal obtained by `g.V()`. `isPerson` and `isMarko` are method calls of `.hasLabel` and `.has` steps, respectively. `(&.)` operator combines a `GTraversal` and `Walk` to get an expression that the graph traversal steps are executed on the GraphTraversal.
 
-The above example also uses `AesonVertex` and `P` types. `AesonVertex` is a type for a graph vertex. We will explain it in detail later in [Graph structure types](#graph-structure-types). `P` is Gremlin's [P class](http://tinkerpop.apache.org/javadocs/current/full/org/apache/tinkerpop/gremlin/process/traversal/P.html). [Data.Greskell.Gremlin](http://hackage.haskell.org/package/greskell/docs/Data-Gremlin-Greskell.html) module defines counterparts of some Gremlin classes.
+The above example also uses `AesonVertex` type. `AesonVertex` is a type for a graph vertex. We will explain it in detail later in [Graph structure types](#graph-structure-types).
 
 Note that we use `(&)` operator in the definition of `allV`. `(&)` operator from [Data.Function](http://hackage.haskell.org/package/base/docs/Data-Function.html) module is just the flip of `($)` operator. Likewise, greskell defines `($.)` operator, so we could also write the above expression as follows.
 
 ```haskell GTraversal
   (toGremlin $ isMarko $. isPerson $. vertices [] $ source "g")
     `shouldBe`
-    "g.V().hasLabel(eq(\"person\")).has(\"name\",eq(\"marko\"))"
+    "g.V().hasLabel(\"person\").has(\"name\",\"marko\")"
 ```
 
 
