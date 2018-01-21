@@ -40,16 +40,16 @@ module Data.Greskell.GTraversal
          gFilter,
          gHas1,
          gHas1',
-         gHas2,
-         gHas2',
-         gHasLabel,
-         gHasLabel',
-         gHasId,
-         gHasId',
-         gHasKey,
-         gHasKey',
-         gHasValue,
-         gHasValue',
+         gHas2P,
+         gHas2P',
+         gHasLabelP,
+         gHasLabelP',
+         gHasIdP,
+         gHasIdP',
+         gHasKeyP,
+         gHasKeyP',
+         gHasValueP,
+         gHasValueP',
          gAnd,
          gOr,
          gNot,
@@ -390,62 +390,64 @@ gHas1 = liftWalk . gHas1'
 gHas1' :: (Element s) => Key s v -> Walk Filter s s
 gHas1' key = unsafeWalk "has" [toGremlin key]
 
--- | @.has@ step with two arguments.
-gHas2 :: (WalkType c, Element s)
-      => Key s v -- ^ property key
-      -> Greskell (P v) -- ^ predicate on the property value
-      -> Walk c s s
-gHas2 k p = liftWalk $ gHas2' k p
+-- | @.has@ step with two arguments and 'P' type.
+gHas2P :: (WalkType c, Element s)
+       => Key s v -- ^ property key
+       -> Greskell (P v) -- ^ predicate on the property value
+       -> Walk c s s
+gHas2P k p = liftWalk $ gHas2P' k p
 
--- | Monomorphic version of 'gHas2'.
-gHas2' :: (Element s) => Key s v -> Greskell (P v) -> Walk Filter s s
-gHas2' key p = unsafeWalk "has" [toGremlin key, toGremlin p]
+-- | Monomorphic version of 'gHas2P'.
+gHas2P' :: (Element s) => Key s v -> Greskell (P v) -> Walk Filter s s
+gHas2P' key p = unsafeWalk "has" [toGremlin key, toGremlin p]
 
 -- TODO: has(Key,Traversal), has(Label,Key,P)
 
--- | @.hasLabel@ step
-gHasLabel :: (Element s, WalkType c)
-          => Greskell (P Text) -- ^ predicate on Element label.
-          -> Walk c s s
-gHasLabel = liftWalk . gHasLabel'
+-- | @.hasLabel@ step with 'P' type. Supported since TinkerPop 3.2.7.
+gHasLabelP :: (Element s, WalkType c)
+           => Greskell (P Text) -- ^ predicate on Element label.
+           -> Walk c s s
+gHasLabelP = liftWalk . gHasLabelP'
 
--- | Monomorphic version of 'gHasLabel'.
-gHasLabel' :: Element s
-           => Greskell (P Text)
-           -> Walk Filter s s
-gHasLabel' p = unsafeWalk "hasLabel" [toGremlin p]
+-- | Monomorphic version of 'gHasLabelP'.
+gHasLabelP' :: Element s
+            => Greskell (P Text)
+            -> Walk Filter s s
+gHasLabelP' p = unsafeWalk "hasLabel" [toGremlin p]
 
--- | @.hasId@ step
-gHasId :: (Element s, WalkType c)
-       => Greskell (P (ElementID s))
-       -> Walk c s s
-gHasId = liftWalk . gHasId'
-
--- | Monomorphic version of 'gHasId'.
-gHasId' :: Element s
+-- | @.hasId@ step with 'P' type. Supported since TinkerPop 3.2.7.
+gHasIdP :: (Element s, WalkType c)
         => Greskell (P (ElementID s))
-        -> Walk Filter s s
-gHasId' p = unsafeWalk "hasId" [toGremlin p]
+        -> Walk c s s
+gHasIdP = liftWalk . gHasIdP'
 
--- | @.hasKey@ step. The input type should be a VertexProperty.
-gHasKey :: (Element (p v), Property p, WalkType c)
-        => Greskell (P Text) -- ^ predicate on the VertexProperty's key.
-        -> Walk c (p v) (p v)
-gHasKey = liftWalk . gHasKey'
+-- | Monomorphic version of 'gHasIdP'.
+gHasIdP' :: Element s
+         => Greskell (P (ElementID s))
+         -> Walk Filter s s
+gHasIdP' p = unsafeWalk "hasId" [toGremlin p]
 
--- | Monomorphic version of 'gHasKey'.
-gHasKey' :: (Element (p v), Property p) => Greskell (P Text) -> Walk Filter (p v) (p v)
-gHasKey' p = unsafeWalk "hasKey" [toGremlin p]
+-- | @.hasKey@ step with 'P' type. The input type should be a
+-- VertexProperty. Supported since TinkerPop 3.2.7.
+gHasKeyP :: (Element (p v), Property p, WalkType c)
+         => Greskell (P Text) -- ^ predicate on the VertexProperty's key.
+         -> Walk c (p v) (p v)
+gHasKeyP = liftWalk . gHasKeyP'
 
--- | @.hasValue@ step. The input type should be a VertexProperty.
-gHasValue :: (Element (p v), Property p, WalkType c)
-          => Greskell (P v) -- ^ predicate on the VertexProperty's value
-          -> Walk c (p v) (p v)
-gHasValue = liftWalk . gHasValue'
+-- | Monomorphic version of 'gHasKeyP'.
+gHasKeyP' :: (Element (p v), Property p) => Greskell (P Text) -> Walk Filter (p v) (p v)
+gHasKeyP' p = unsafeWalk "hasKey" [toGremlin p]
 
--- | Monomorphic version of 'gHasValue'.
-gHasValue' :: (Element (p v), Property p) => Greskell (P v) -> Walk Filter (p v) (p v)
-gHasValue' p = unsafeWalk "hasValue" [toGremlin p]
+-- | @.hasValue@ step with 'P' type. The input type should be a
+-- VertexProperty. Supported since TinkerPop 3.2.7.
+gHasValueP :: (Element (p v), Property p, WalkType c)
+           => Greskell (P v) -- ^ predicate on the VertexProperty's value
+           -> Walk c (p v) (p v)
+gHasValueP = liftWalk . gHasValueP'
+
+-- | Monomorphic version of 'gHasValueP'.
+gHasValueP' :: (Element (p v), Property p) => Greskell (P v) -> Walk Filter (p v) (p v)
+gHasValueP' p = unsafeWalk "hasValue" [toGremlin p]
 
 multiLogic :: (ToGTraversal g, WalkType c, WalkType p, Split c p)
            => Text -- ^ method name
