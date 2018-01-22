@@ -69,6 +69,7 @@ greskell's `Binder` monad is a simple monad that manages bound variables and the
 ```haskell Binder
 import Data.Greskell.Greskell (Greskell, toGremlin)
 import Data.Greskell.Binder (Binder, newBind, runBinder)
+import qualified Database.TinkerPop as TP -- from gremlin-haskell
 
 plusTen :: Int -> Binder (Greskell Int)
 plusTen x = do
@@ -86,6 +87,18 @@ main = hspec $ specify "Binder" $ do
 ```
 
 `runBinder` function returns the `Binder`'s monadic result and the created binding.
+
+To execute the script and binding, use [gremlin-haskell](http://hackage.haskell.org/package/gremlin-haskell) package.
+
+```haskell Binder
+executeExample :: IO ()
+executeExample = do
+  let (script, binding) = runBinder $ plusTen 50
+  TP.run "localhost" 8182 $ \connection -> do
+    result <- TP.submit connection (toGremlin script) (Just binding)
+    print result
+```
+
 
 ## GTraversal and Walk
 

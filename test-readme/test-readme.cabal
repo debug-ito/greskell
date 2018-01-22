@@ -31,13 +31,14 @@ test-suite readme-Binder
   type:                 exitcode-stdio-1.0
   default-language:     Haskell2010
   ghc-options:          -Wall -fno-warn-unused-imports "-with-rtsopts=-M512m" -fno-warn-missing-signatures -pgmL markdown-unlit
-                        "-optL=common Binder"
+                        "-optL=common Binder" -fno-warn-unused-top-binds
   main-is:              README.lhs
   build-depends:        base, 
                         hspec,
                         greskell, greskell-core,
                         markdown-unlit,
-                        text, unordered-containers, aeson
+                        text, unordered-containers, aeson,
+                        gremlin-haskell                        
 
 test-suite readme-GTraversal
   type:                 exitcode-stdio-1.0
