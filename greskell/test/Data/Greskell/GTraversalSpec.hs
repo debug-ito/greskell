@@ -97,7 +97,7 @@ spec_has = do
       toGremlin (source "g" & vertices' [] &. gHas1 "foo") `shouldBe` "g.V().has(\"foo\")"
   describe "gHas2" $ do
     specify "simple equality" $ do
-      toGremlin (source "g" & vertices' [] &. gHas2 "name" "hoge")
+      toGremlin (source "g" & vertices' [] &. gHas2 "name" ("hoge" :: Greskell Text))
         `shouldBe` "g.V().has(\"name\",\"hoge\")"
   describe "gHas2P" $ do
     specify "IsString Key and P" $ do
