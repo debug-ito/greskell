@@ -70,8 +70,6 @@ class Element e where
   type ElementProperty e :: * -> *
   -- ^ Property type of the 'Element'. It should be of 'Property'
   -- class.
-  elementId :: e -> ElementID e
-  elementLabel :: e -> Text
 
 -- | @Vertex@ interface in a TinkerPop graph.
 class (Element v) => Vertex v
@@ -80,10 +78,6 @@ class (Element v) => Vertex v
 class (Element e) => Edge e where
   type EdgeVertexID e
   -- ^ ID type of the 'Vertex' this edge connects.
-  edgeInVertexID :: e -> EdgeVertexID e
-  -- ^ ID of this edge's destination (target) Vertex.
-  edgeOutVertexID :: e -> EdgeVertexID e
-  -- ^ ID of this edge's source Vertex.
 
 -- | @Property@ interface in a TinkerPop graph.
 class Property p where
@@ -163,8 +157,6 @@ data AesonVertex =
 instance Element AesonVertex where
   type ElementID AesonVertex = Value
   type ElementProperty AesonVertex = AesonVertexProperty
-  elementId = gsonValue . avId
-  elementLabel = avLabel
 
 instance Vertex AesonVertex
 
@@ -202,13 +194,9 @@ data AesonEdge =
 instance Element AesonEdge where
   type ElementID AesonEdge = Value
   type ElementProperty AesonEdge = SimpleProperty
-  elementId = gsonValue . aeId
-  elementLabel = aeLabel
 
 instance Edge AesonEdge where
   type EdgeVertexID AesonEdge = Value
-  edgeInVertexID = gsonValue . aeInV
-  edgeOutVertexID = gsonValue . aeOutV
 
 instance GraphSONTyped AesonEdge where
   gsonTypeFor _ = "g:Edge"
@@ -304,8 +292,6 @@ instance GraphSONTyped (AesonVertexProperty v) where
 instance Element (AesonVertexProperty v) where
   type ElementID (AesonVertexProperty v) = Value
   type ElementProperty (AesonVertexProperty v) = SimpleProperty
-  elementId = gsonValue . avpId
-  elementLabel = avpLabel
 
 instance Property AesonVertexProperty where
   propertyKey = avpLabel
