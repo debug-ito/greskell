@@ -116,15 +116,15 @@ import Data.Greskell.GTraversal
   ( GTraversal, Transform, Walk, source, vertices,
     gHasLabel, gHas2, (&.), ($.)
   )
-import Data.Greskell.Graph (AesonVertex)
+import Data.Greskell.Graph (AVertex)
 
-allV :: GTraversal Transform Void AesonVertex
+allV :: GTraversal Transform Void AVertex
 allV = source "g" & vertices []
 
-isPerson :: Walk Transform AesonVertex AesonVertex
+isPerson :: Walk Transform AVertex AVertex
 isPerson = gHasLabel "person"
 
-isMarko :: Walk Transform AesonVertex AesonVertex
+isMarko :: Walk Transform AVertex AVertex
 isMarko = gHas2 "name" ("marko" :: Greskell Text)
 
 main = hspec $ specify "GTraversal" $ do
@@ -135,7 +135,7 @@ main = hspec $ specify "GTraversal" $ do
 
 In the above example, `allV` is the GraphTraversal obtained by `g.V()`. `isPerson` and `isMarko` are method calls of `.hasLabel` and `.has` steps, respectively. `(&.)` operator combines a `GTraversal` and `Walk` to get an expression that the graph traversal steps are executed on the GraphTraversal.
 
-The above example also uses `AesonVertex` type. `AesonVertex` is a type for a graph vertex. We will explain it in detail later in [Graph structure types](#graph-structure-types).
+The above example also uses `AVertex` type. `AVertex` is a type for a graph vertex. We will explain it in detail later in [Graph structure types](#graph-structure-types).
 
 Note that we use `(&)` operator in the definition of `allV`. `(&)` operator from [Data.Function](http://hackage.haskell.org/package/base/docs/Data-Function.html) module is just the flip of `($)` operator. Likewise, greskell defines `($.)` operator, so we could also write the above expression as follows.
 

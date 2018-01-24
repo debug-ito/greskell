@@ -25,11 +25,11 @@ module Data.Greskell.Graph
          -- $concrete_types
          --
          -- ** Vertex
-         AesonVertex(..),
+         AVertex(..),
          -- ** Edge
-         AesonEdge(..),
+         AEdge(..),
          -- ** VertexProperty
-         AesonVertexProperty(..),
+         AVertexProperty(..),
          -- ** Property
          SimpleProperty(..),
          -- ** PropertyMap
@@ -143,28 +143,28 @@ instance ToGreskell (Key a b) where
 
 -- | General vertex type you can use for 'Vertex' class, based on
 -- aeson data types.
-data AesonVertex =
-  AesonVertex
+data AVertex =
+  AVertex
   { avId :: GraphSON Value,
     -- ^ ID of this vertex
     avLabel :: Text,
     -- ^ Label of this vertex
-    avProperties :: PropertyMapList AesonVertexProperty (GraphSON Value)
+    avProperties :: PropertyMapList AVertexProperty (GraphSON Value)
     -- ^ Properties of this vertex.
   }
   deriving (Show,Eq)
 
-instance Element AesonVertex where
-  type ElementID AesonVertex = Value
-  type ElementProperty AesonVertex = AesonVertexProperty
+instance Element AVertex where
+  type ElementID AVertex = Value
+  type ElementProperty AVertex = AVertexProperty
 
-instance Vertex AesonVertex
+instance Vertex AVertex
 
-instance GraphSONTyped AesonVertex where
+instance GraphSONTyped AVertex where
   gsonTypeFor _ = "g:Vertex"
 
-instance FromJSON AesonVertex where
-  parseJSON (Object o) = AesonVertex
+instance FromJSON AVertex where
+  parseJSON (Object o) = AVertex
                          <$> (o .: "id")
                          <*> (o .: "label")
                          <*> (o `optionalMonoid` "properties")
@@ -172,8 +172,8 @@ instance FromJSON AesonVertex where
 
 -- | General edge type you can use for 'Edge' class, based on aeson
 -- data types.
-data AesonEdge =
-  AesonEdge
+data AEdge =
+  AEdge
   { aeId :: GraphSON Value,
     -- ^ ID of this edge.
     aeLabel :: Text,
@@ -191,19 +191,19 @@ data AesonEdge =
   }
   deriving (Show,Eq)
 
-instance Element AesonEdge where
-  type ElementID AesonEdge = Value
-  type ElementProperty AesonEdge = SimpleProperty
+instance Element AEdge where
+  type ElementID AEdge = Value
+  type ElementProperty AEdge = SimpleProperty
 
-instance Edge AesonEdge where
-  type EdgeVertexID AesonEdge = Value
+instance Edge AEdge where
+  type EdgeVertexID AEdge = Value
 
-instance GraphSONTyped AesonEdge where
+instance GraphSONTyped AEdge where
   gsonTypeFor _ = "g:Edge"
 
-instance FromJSON AesonEdge where
+instance FromJSON AEdge where
   parseJSON (Object o) =
-    AesonEdge
+    AEdge
     <$> (o .: "id")
     <*> (o .: "label")
     <*> (o .: "inVLabel")
@@ -258,8 +258,8 @@ instance Traversable SimpleProperty where
 
 -- | General vertex property type you can use for VertexProperty,
 -- based on aeson data types.
-data AesonVertexProperty v =
-  AesonVertexProperty
+data AVertexProperty v =
+  AVertexProperty
   { avpId :: GraphSON Value,
     -- ^ ID of this vertex property.
     avpLabel :: Text,
@@ -271,14 +271,14 @@ data AesonVertexProperty v =
   }
   deriving (Show,Eq)
 
-instance FromJSON v => FromJSON (AesonVertexProperty v) where
+instance FromJSON v => FromJSON (AVertexProperty v) where
   parseJSON v@(Object o) = do
     label <- o .: "label"
     parseJSONWithKey label v
   parseJSON _ = empty
 
-instance FromJSON v => FromJSONWithKey (AesonVertexProperty v) where
-  parseJSONWithKey key (Object o) = AesonVertexProperty
+instance FromJSON v => FromJSONWithKey (AVertexProperty v) where
+  parseJSONWithKey key (Object o) = AVertexProperty
                                     <$> (o .: "id")
                                     <*> pure key
                                     <*> (o .: "value")
@@ -286,24 +286,24 @@ instance FromJSON v => FromJSONWithKey (AesonVertexProperty v) where
   parseJSONWithKey _ _ = empty
 
 
-instance GraphSONTyped (AesonVertexProperty v) where
+instance GraphSONTyped (AVertexProperty v) where
   gsonTypeFor _ = "g:VertexProperty"
 
-instance Element (AesonVertexProperty v) where
-  type ElementID (AesonVertexProperty v) = Value
-  type ElementProperty (AesonVertexProperty v) = SimpleProperty
+instance Element (AVertexProperty v) where
+  type ElementID (AVertexProperty v) = Value
+  type ElementProperty (AVertexProperty v) = SimpleProperty
 
-instance Property AesonVertexProperty where
+instance Property AVertexProperty where
   propertyKey = avpLabel
   propertyValue = avpValue
 
-instance Functor AesonVertexProperty where
+instance Functor AVertexProperty where
   fmap f vp = vp { avpValue = f $ avpValue vp }
 
-instance Foldable AesonVertexProperty where
+instance Foldable AVertexProperty where
   foldr f start vp = f (avpValue vp) start
 
-instance Traversable AesonVertexProperty where
+instance Traversable AVertexProperty where
   traverse f vp = fmap (\v -> vp { avpValue = v }) $ f $ avpValue vp
 
 

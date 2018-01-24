@@ -109,7 +109,7 @@ import qualified Data.Text.Lazy as TL
 import Data.Void (Void)
 import Data.Greskell.Graph
   ( Element(..), Vertex, Edge, Property(..),
-    AesonVertex, AesonEdge,
+    AVertex, AEdge,
     T, Key
   )
 import Data.Greskell.Gremlin
@@ -315,7 +315,7 @@ vertices ids src = GTraversal $ sourceMethod "V" ids src
 -- | Monomorphic version of 'vertices'.
 vertices' :: [Greskell Value]
           -> Greskell GraphTraversalSource
-          -> GTraversal Transform Void AesonVertex
+          -> GTraversal Transform Void AVertex
 vertices' = vertices
 
 -- | @.E()@ method on 'GraphTraversalSource'.
@@ -328,7 +328,7 @@ edges ids src = GTraversal $ sourceMethod "E" ids src
 -- | Monomorphic version of 'edges'.
 edges' :: [Greskell Value]
        -> Greskell GraphTraversalSource
-       -> GTraversal Transform Void AesonEdge
+       -> GTraversal Transform Void AEdge
 edges' = edges
 
 -- | Unsafely create 'GTraversal' from the given raw Gremlin script.
@@ -622,7 +622,7 @@ gOut = genericTraversalWalk "out"
 -- | Monomorphic version of 'gOut'.
 gOut' :: (Vertex v)
       => [Greskell Text]
-      -> Walk Transform v AesonVertex
+      -> Walk Transform v AVertex
 gOut' = gOut
 
 -- | @.outE@ step
@@ -634,7 +634,7 @@ gOutE = genericTraversalWalk "outE"
 -- | Monomorphic version of 'gOutE'
 gOutE' :: (Vertex v)
        => [Greskell Text]
-       -> Walk Transform v AesonEdge
+       -> Walk Transform v AEdge
 gOutE' = gOutE
 
 -- | @.in@ step
@@ -646,7 +646,7 @@ gIn = genericTraversalWalk "in"
 -- | Monomorphic version of 'gIn'.
 gIn' :: (Vertex v)
      => [Greskell Text]
-     -> Walk Transform v AesonVertex
+     -> Walk Transform v AVertex
 gIn' = gIn
 
 -- | @.inE@ step.
@@ -658,7 +658,7 @@ gInE = genericTraversalWalk "inE"
 -- | Monomorphic version of 'gInE'.
 gInE' :: (Vertex v)
       => [Greskell Text] -- ^ edge labels
-      -> Walk Transform v AesonEdge
+      -> Walk Transform v AEdge
 gInE' = gInE
 
 -- | @.sideEffect@ step that takes a traversal.
