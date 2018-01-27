@@ -71,6 +71,7 @@ module Data.Greskell.GTraversal
          gFlatMap,
          gValues,
          gProperties,
+         gFold,
          -- ** Graph traversal steps
          gOut,
          gOut',
@@ -609,6 +610,10 @@ gProperties :: (Element s, Property p, ElementProperty s ~ p)
             => [Key s v]
             -> Walk Transform s (p v)
 gProperties = unsafeWalk "properties" . map toGremlin
+
+-- | @.fold@ step.
+gFold :: Walk Transform a [a]
+gFold = unsafeWalk "fold" []
 
 genericTraversalWalk :: Vertex v => Text -> [Greskell Text] -> Walk Transform v e
 genericTraversalWalk method_name = unsafeWalk method_name . map toGremlin
