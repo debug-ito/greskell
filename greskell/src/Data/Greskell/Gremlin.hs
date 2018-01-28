@@ -8,6 +8,8 @@
 module Data.Greskell.Gremlin
        ( -- * Predicate
          Predicate(..),
+         PredicateA(..),
+         -- ** org.apache.tinkerpop.gremlin.process.traversal.P
          P,
          pNot,
          pEq,
@@ -23,6 +25,7 @@ module Data.Greskell.Gremlin
          pWithout,
          -- * Comparator
          Comparator(..),
+         ComparatorA(..),
          -- ** org.apache.tinkerpop.gremlin.process.traversal.Order
          Order,
          oDecr,
@@ -49,6 +52,12 @@ class Predicate p where
   pTest p arg = unsafeMethodCall p "test" [toGremlin arg]
   pNegate :: Greskell p -> Greskell p
   pNegate p = unsafeMethodCall p "negate" []
+
+-- | Type for anonymous class of @Predicate@ interface.
+newtype PredicateA a = PredicateA { unPredicateA :: a -> Bool }
+
+instance Predicate (PredicateA a) where
+  type PredicateArg (PredicateA a) = a
 
 -- | @org.apache.tinkerpop.gremlin.process.traversal.P@ class.
 --
@@ -115,7 +124,13 @@ class Comparator c where
   type CompareArg c
   cCompare :: Greskell c -> Greskell (CompareArg c) -> Greskell (CompareArg c) -> Greskell Int
   cCompare cmp a b = unsafeMethodCall cmp "compare" $ map toGremlin [a, b]
-                     
+
+-- | Type for anonymous class of @Comparator@ interface.
+newtype ComparatorA a = ComparatorA { unComparatorA :: a -> a -> Int }
+
+instance Comparator (ComparatorA a) where
+  type CompareArg (ComparatorA a) = a
+
 -- | org.apache.tinkerpop.gremlin.process.traversal.Order enum.
 data Order a
 
