@@ -145,9 +145,25 @@ Note that we use `(&)` operator in the definition of `allV`. `(&)` operator from
     "g.V().hasLabel(\"person\").has(\"name\",\"marko\")"
 ```
 
-
-
 ## Type parameters of GTraversal and Walk
+
+`GTraversal` and `Walk` both have the same type parameters.
+
+```haskell
+GTraversal walk_type start end
+Walk       walk_type start end
+```
+
+`GTraversal` and `Walk` both take the traversers with data of type `start`, and emit the traversers with data of type `end`. We will explain `walk_type` [later](#walktype).
+
+In essence, `Walk` is very similar to function `(->)`. That is why it is an instance of `Category`, so you can compose `Walk`s together. The example in the last section can also be written as
+
+```haskell GTraversal
+  let composite_walk = isPerson >>> isMarko
+  (toGremlin $ source "g" & vertices [] &. composite_walk )
+    `shouldBe`
+    "g.V().hasLabel(\"person\").has(\"name\",\"marko\")"
+```
 
 ## WalkType
 
