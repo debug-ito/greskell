@@ -156,7 +156,7 @@ Walk       walk_type start end
 
 `GTraversal` and `Walk` both take the traversers with data of type `start`, and emit the traversers with data of type `end`. We will explain `walk_type` [later](#walktype).
 
-In essence, `Walk` is very similar to function `(->)`. That is why it is an instance of `Category`, so you can compose `Walk`s together. The example in the last section can also be written as
+`Walk` is very similar to function `(->)`. That is why it is an instance of `Category`, so you can compose `Walk`s together. The example in the last section can also be written as
 
 ```haskell GTraversal
   let composite_walk = isPerson >>> isMarko
@@ -166,6 +166,19 @@ In essence, `Walk` is very similar to function `(->)`. That is why it is an inst
 ```
 
 ## WalkType
+
+The first type parameter of `GTraversal` and `Walk` is called "walk type". Walk type is a type marker to describe the effect of the graph traversal. There are three walk types, `Filter`, `Transform` and `SideEffect`. All of them are instance of `WalkType` class.
+
+- Walks of `Filter` type do filtering only. It takes input traversers and emits some of them. It does nothing else. Example: `.has` and `.filter` steps.
+- Walks of `Transform` type may transform the input traversers but have no side effects. Example: `.map` and `.out` steps.
+- Walks of `SideEffect` type may alter the "side effect" context of the Traversal object or the state outside the Traversal object. Example: `.aggregate` and `.addE` steps.
+
+
+TBW
+
+- liftWalk.
+- why WalkType is necessary?
+
 
 ## Graph structure types
 
