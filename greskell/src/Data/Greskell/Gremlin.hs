@@ -124,6 +124,10 @@ class Comparator c where
   type CompareArg c
   cCompare :: Greskell c -> Greskell (CompareArg c) -> Greskell (CompareArg c) -> Greskell Int
   cCompare cmp a b = unsafeMethodCall cmp "compare" $ map toGremlin [a, b]
+  cReversed :: Greskell c -> Greskell c
+  cReversed cmp = unsafeMethodCall cmp "reversed" []
+  cThenComparing :: Greskell c -> Greskell c -> Greskell c
+  cThenComparing cmp1 cmp2 = unsafeMethodCall cmp1 "thenComparing" [toGremlin cmp2]
 
 -- | Type for anonymous class of @Comparator@ interface.
 newtype ComparatorA a = ComparatorA { unComparatorA :: a -> a -> Int }
