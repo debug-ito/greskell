@@ -184,6 +184,8 @@ TBW
 
 ## GraphSON parser
 
+## Make your own graph structure types
+
 ## Author
 
 Toshio Ito <debug.ito@gmail.com>
