@@ -52,6 +52,18 @@ test-suite readme-GTraversal
                         markdown-unlit,
                         text, unordered-containers, aeson                        
 
+test-suite readme-WalkType
+  type:                 exitcode-stdio-1.0
+  default-language:     Haskell2010
+  ghc-options:          -Wall -fno-warn-unused-imports "-with-rtsopts=-M512m" -fno-warn-missing-signatures -pgmL markdown-unlit
+                        "-optL=common WalkType"
+  main-is:              README.lhs
+  build-depends:        base, 
+                        hspec,
+                        greskell, greskell-core,
+                        markdown-unlit,
+                        text, unordered-containers, aeson                        
+
 source-repository head
   type:                 git
 --  location:             

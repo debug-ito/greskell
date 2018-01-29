@@ -167,17 +167,46 @@ Walk       walk_type start end
 
 ## WalkType
 
-The first type parameter of `GTraversal` and `Walk` is called "walk type". Walk type is a type marker to describe the effect of the graph traversal. There are three walk types, `Filter`, `Transform` and `SideEffect`. All of them are instance of `WalkType` class.
+The first type parameter of `GTraversal` and `Walk` is called "walk type". Walk type is a type marker to describe effect of the graph traversal. There are three walk types, `Filter`, `Transform` and `SideEffect`. All of them are instance of `WalkType` class.
 
 - Walks of `Filter` type do filtering only. It takes input traversers and emits some of them. It does nothing else. Example: `.has` and `.filter` steps.
 - Walks of `Transform` type may transform the input traversers but have no side effects. Example: `.map` and `.out` steps.
 - Walks of `SideEffect` type may alter the "side effect" context of the Traversal object or the state outside the Traversal object. Example: `.aggregate` and `.addE` steps.
 
+Walk types are hierarchical. `Transform` is more powerful than `Filter`, and `SideEffect` is more powerful than `Transform`. You can "lift" a walk with a certain walk type to one with a more powerful walk type by `liftWalk` function.
+
+```haskell WalkType
+import Data.Greskell.GTraversal
+  ( Walk, Filter, Transform, GTraversal,
+    liftWalk, gHas1, source, vertices, (&.)
+  )
+import Data.Greskell.Graph (AVertex)
+import Data.Greskell.Greskell (toGremlin)
+
+hasAge :: Walk Filter AVertex AVertex
+hasAge = gHas1 "age"
+
+hasAge' :: Walk Transform AVertex AVertex
+hasAge' = liftWalk hasAge
+```
 
 TBW
 
-- liftWalk.
 - why WalkType is necessary?
+
+
+```haskell WalkType
+gV :: GTraversal Transform Void AVertex
+gV = source "g" & vertices []
+
+main = hspec $ specify "liftWalk" $ do
+  -- -- This won't compile
+  -- toGremlin (gV &. hasAge) `shouldBe` "g.V().has(\"age\")"
+
+  -- This compiles
+  toGremlin (gV &. hasAge') `shouldBe` "g.V().has(\"age\")"
+```
+
 
 
 ## Graph structure types
