@@ -83,6 +83,11 @@ module Data.Greskell.GTraversal
          gInE',
          -- ** Side-effect steps
          gSideEffect,
+         -- ** Graph manipulation steps
+         gAddV,
+         gAddV',
+         gDrop,
+         gDropP,
          -- * Types for @.by@ step
          ByProjection,
          pjEmpty,
@@ -675,3 +680,19 @@ gSideEffect walk = unsafeWalk "sideEffect" [travToG walk]
 ---- -- to .select() step etc.
 ---- gAs :: GBuilder (Label, Walk Filter s s)
 ---- gAs = undefined
+
+-- | @.addV@ step with a label.
+gAddV :: Vertex v => Greskell Text -> Walk SideEffect a v
+gAddV label = unsafeWalk "addV" [toGremlin label]
+
+-- | Monomorphic version of 'gAddV'.
+gAddV' :: Greskell Text -> Walk SideEffect AVertex AVertex
+gAddV' = gAddV
+
+-- | @.drop@ step on 'Element'.
+gDrop :: Element e => Walk SideEffect e e
+gDrop = unsafeWalk "drop" []
+
+-- | @.drop@ step on 'Property'.
+gDropP :: Property p => Walk SideEffect (p a) (p a)
+gDropP = unsafeWalk "drop" []
