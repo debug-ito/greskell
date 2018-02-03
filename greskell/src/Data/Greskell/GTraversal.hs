@@ -23,10 +23,10 @@ module Data.Greskell.GTraversal
          Split,
          -- * GraphTraversalSource
          source,
-         vertices,
-         vertices',
-         edges,
-         edges',
+         sV,
+         sV',
+         sE,
+         sE',
          -- * GTraversal
          (&.),
          ($.),
@@ -312,30 +312,30 @@ sourceMethod method_name args src =
   unsafeGreskellLazy $ (toGremlinLazy src <> methodCallText method_name (map toGremlin args))
 
 -- | @.V()@ method on 'GraphTraversalSource'.
-vertices :: Vertex v
-         => [Greskell (ElementID v)] -- ^ vertex IDs
-         -> Greskell GraphTraversalSource
-         -> GTraversal Transform Void v
-vertices ids src = GTraversal $ sourceMethod "V" ids src
+sV :: Vertex v
+   => [Greskell (ElementID v)] -- ^ vertex IDs
+   -> Greskell GraphTraversalSource
+   -> GTraversal Transform Void v
+sV ids src = GTraversal $ sourceMethod "V" ids src
 
--- | Monomorphic version of 'vertices'.
-vertices' :: [Greskell Value]
-          -> Greskell GraphTraversalSource
-          -> GTraversal Transform Void AVertex
-vertices' = vertices
+-- | Monomorphic version of 'sV'.
+sV' :: [Greskell Value]
+    -> Greskell GraphTraversalSource
+    -> GTraversal Transform Void AVertex
+sV' = sV
 
 -- | @.E()@ method on 'GraphTraversalSource'.
-edges :: Edge e
-      => [Greskell (ElementID e)] -- ^ edge IDs
-      -> Greskell GraphTraversalSource
-      -> GTraversal Transform Void e
-edges ids src = GTraversal $ sourceMethod "E" ids src
+sE :: Edge e
+   => [Greskell (ElementID e)] -- ^ edge IDs
+   -> Greskell GraphTraversalSource
+   -> GTraversal Transform Void e
+sE ids src = GTraversal $ sourceMethod "E" ids src
 
--- | Monomorphic version of 'edges'.
-edges' :: [Greskell Value]
+-- | Monomorphic version of 'sE'.
+sE' :: [Greskell Value]
        -> Greskell GraphTraversalSource
        -> GTraversal Transform Void AEdge
-edges' = edges
+sE' = sE
 
 -- | Unsafely create 'GTraversal' from the given raw Gremlin script.
 unsafeGTraversal :: Text -> GTraversal c s e
