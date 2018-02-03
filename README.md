@@ -113,13 +113,13 @@ For example,
 ```haskell GTraversal
 import Data.Greskell.Greskell (toGremlin, Greskell)
 import Data.Greskell.GTraversal
-  ( GTraversal, Transform, Walk, source, vertices,
+  ( GTraversal, Transform, Walk, source, sV,
     gHasLabel, gHas2, (&.), ($.)
   )
 import Data.Greskell.Graph (AVertex)
 
 allV :: GTraversal Transform Void AVertex
-allV = source "g" & vertices []
+allV = source "g" & sV []
 
 isPerson :: Walk Transform AVertex AVertex
 isPerson = gHasLabel "person"
@@ -140,7 +140,7 @@ The above example also uses `AVertex` type. `AVertex` is a type for a graph vert
 Note that we use `(&)` operator in the definition of `allV`. `(&)` operator from [Data.Function](http://hackage.haskell.org/package/base/docs/Data-Function.html) module is just the flip of `($)` operator. Likewise, greskell defines `($.)` operator, so we could also write the above expression as follows.
 
 ```haskell GTraversal
-  (toGremlin $ isMarko $. isPerson $. vertices [] $ source "g")
+  (toGremlin $ isMarko $. isPerson $. sV [] $ source "g")
     `shouldBe`
     "g.V().hasLabel(\"person\").has(\"name\",\"marko\")"
 ```
@@ -160,7 +160,7 @@ Walk       walk_type start end
 
 ```haskell GTraversal
   let composite_walk = isPerson >>> isMarko
-  (toGremlin $ source "g" & vertices [] &. composite_walk )
+  (toGremlin $ source "g" & sV [] &. composite_walk )
     `shouldBe`
     "g.V().hasLabel(\"person\").has(\"name\",\"marko\")"
 ```
@@ -178,7 +178,7 @@ Walk types are hierarchical. `Transform` is more powerful than `Filter`, and `Si
 ```haskell WalkType
 import Data.Greskell.GTraversal
   ( Walk, Filter, Transform, GTraversal,
-    liftWalk, gHas1, source, vertices, (&.)
+    liftWalk, gHas1, source, sV, (&.)
   )
 import Data.Greskell.Graph (AVertex)
 import Data.Greskell.Greskell (toGremlin)
@@ -190,14 +190,23 @@ hasAge' :: Walk Transform AVertex AVertex
 hasAge' = liftWalk hasAge
 ```
 
+Now what are these walk types useful for? Well, it allows you to build graph traversals in a safer way than you do with plain Gremlin.
+
+In Haskell, we can distinguish pure and non-pure functions using, for example, `IO` monad, right? Likewise, we can limit power of traversals by using `Filter` or `Transform` walk types explicitly. That way, we can avoid executing unwanted side-effect accidentally.
+
+
+
 TBW
 
 - why WalkType is necessary?
 
 
+- 下の例は不適切だと思う。Filterを与えるほうがダメで、Transformを与えるといい、てのは逆だ。強いやつを禁止するのがポイントになるはず。
+- あ、つか、現状だとSideEffect型のwalkないな。。addVとdropくらいなら単純だから作ってもいいかも。
+
 ```haskell WalkType
 gV :: GTraversal Transform Void AVertex
-gV = source "g" & vertices []
+gV = source "g" & sV []
 
 main = hspec $ specify "liftWalk" $ do
   -- -- This won't compile

@@ -22,7 +22,7 @@ import Data.Greskell.Greskell
   ( toGremlin, Greskell, value)
 import Data.Greskell.GTraversal
   ( Walk, Transform,
-    source, vertices', edges', (&.), ($.),
+    source, (&.), ($.), sV', sE',
     gHas1, gHas2, gHas2P, gHasLabelP, gHasIdP,
     gOut', gRange, gValues, gNot, gIn',
     gOrderBy, ByComparator(ByComp), ByProjection,
@@ -45,14 +45,14 @@ spec = do
 spec_GraphTraversalSource :: Spec
 spec_GraphTraversalSource = describe "GraphTraversalSource" $ do
   specify "g.V()" $ do
-    (toGremlin $ vertices' [] $ source "g") `shouldBe` ("g.V()")
+    (toGremlin $ sV' [] $ source "g") `shouldBe` ("g.V()")
   specify "g.V(1,2,3)" $ do
     let ids = [1,2,3] :: [Greskell Int]
-    (toGremlin $ vertices' (map (fmap toJSON) ids) $ source "g") `shouldBe` ("g.V(1,2,3)")
+    (toGremlin $ sV' (map (fmap toJSON) ids) $ source "g") `shouldBe` ("g.V(1,2,3)")
 
 spec_order_by :: Spec
 spec_order_by = describe "gOrderBy" $ do
-  let gv = source "g" & vertices' []
+  let gv = source "g" & sV' []
   specify "no arg" $ do
     toGremlin (gv &. gOrderBy []) `shouldBe` "g.V().order()"
   specify "empty projection" $ do
@@ -78,44 +78,44 @@ spec_order_by = describe "gOrderBy" $ do
 spec_compose_steps :: Spec
 spec_compose_steps = describe "DSL to compose steps" $ do
   specify "(&) and (&.)" $ do
-    let gt = source "g" & vertices' [] &. gHas2P ("x" :: Key e Int) (pEq 100) &. gOut' [] &. gRange 0 100
+    let gt = source "g" & sV' [] &. gHas2P ("x" :: Key e Int) (pEq 100) &. gOut' [] &. gRange 0 100
     toGremlin gt `shouldBe` "g.V().has(\"x\",eq(100)).out().range(0,100)"
   specify "(&) and (&.) and (>>>)" $ do
-    let gt = source "g" & vertices' [value $ Number 200] &. (gOut' [] >>> gOut' ["friends_to"] >>> gValues ["name"])
+    let gt = source "g" & sV' [value $ Number 200] &. (gOut' [] >>> gOut' ["friends_to"] >>> gValues ["name"])
     toGremlin gt `shouldBe` "g.V(200.0).out().out(\"friends_to\").values(\"name\")"
   specify "($) and ($.)" $ do
-    let gt = gRange 20 30 $. gNot (gOut' ["friends_to"]) $. vertices' [] $ source "g"
+    let gt = gRange 20 30 $. gNot (gOut' ["friends_to"]) $. sV' [] $ source "g"
     toGremlin gt `shouldBe` "g.V().not(__.out(\"friends_to\")).range(20,30)"
   specify "($) and ($.) and (<<<)" $ do
-    let gt = gHas2P ("name" :: Key e Text) (pEq "hoge") <<< gIn' ["foo", "bar"] <<< gIn' [] $. vertices' [] $ source "g"
+    let gt = gHas2P ("name" :: Key e Text) (pEq "hoge") <<< gIn' ["foo", "bar"] <<< gIn' [] $. sV' [] $ source "g"
     toGremlin gt `shouldBe` "g.V().in().in(\"foo\",\"bar\").has(\"name\",eq(\"hoge\"))"
 
 spec_has :: Spec
 spec_has = do
   describe "gHas1" $ do
     specify "IsString Key" $ do
-      toGremlin (source "g" & vertices' [] &. gHas1 "foo") `shouldBe` "g.V().has(\"foo\")"
+      toGremlin (source "g" & sV' [] &. gHas1 "foo") `shouldBe` "g.V().has(\"foo\")"
   describe "gHas2" $ do
     specify "simple equality" $ do
-      toGremlin (source "g" & vertices' [] &. gHas2 "name" ("hoge" :: Greskell Text))
+      toGremlin (source "g" & sV' [] &. gHas2 "name" ("hoge" :: Greskell Text))
         `shouldBe` "g.V().has(\"name\",\"hoge\")"
   describe "gHas2P" $ do
     specify "IsString Key and P" $ do
-      toGremlin (source "g" & vertices' [] &. gHas2P ("name" :: Key e Text) (pNeq "hoge"))
+      toGremlin (source "g" & sV' [] &. gHas2P ("name" :: Key e Text) (pNeq "hoge"))
         `shouldBe` "g.V().has(\"name\",neq(\"hoge\"))"
   describe "gHasLabelP" $ do
     specify "P" $ do
-      toGremlin (source "g" & edges' [] &. gHasLabelP (pNeq "friends_to"))
+      toGremlin (source "g" & sE' [] &. gHasLabelP (pNeq "friends_to"))
         `shouldBe` "g.E().hasLabel(neq(\"friends_to\"))"
   describe "gHasIdP" $ do
     specify "P" $ do
-      toGremlin (source "g" & vertices' [] &. gHasIdP (pInside (value $ Number 10) (value $ Number 20)))
+      toGremlin (source "g" & sV' [] &. gHasIdP (pInside (value $ Number 10) (value $ Number 20)))
         `shouldBe` "g.V().hasId(inside(10.0,20.0))"
   describe "gHasKeyP, gProperties" $ do
     specify "P" $ do
-      toGremlin (source "g" & vertices' [] &. gProperties [] &. gHasKeyP (pEq "hoge"))
+      toGremlin (source "g" & sV' [] &. gProperties [] &. gHasKeyP (pEq "hoge"))
         `shouldBe` "g.V().properties().hasKey(eq(\"hoge\"))"
   describe "gHasValueP, gProperties" $ do
     specify "P" $ do
-      toGremlin (source "g" & vertices' [] &. gProperties ["age" :: Key e Int] &. gHasValueP (pGte 20))
+      toGremlin (source "g" & sV' [] &. gProperties ["age" :: Key e Int] &. gHasValueP (pGte 20))
         `shouldBe` "g.V().properties(\"age\").hasValue(gte(20))"
