@@ -88,13 +88,14 @@ module Data.Greskell.GTraversal
          gAddV',
          gDrop,
          gDropP,
-         -- * Types for @.by@ step
+         -- * @.by@ steps
          ByProjection,
-         pjEmpty,
-         pjTraversal,
-         pjT,
-         pjKey,
-         pjFunction,
+         gBy,
+         gByKey,
+         gByEmpty,
+         gByTraversal,
+         gByT,
+         gByFunction,
          ByComparator(ByComp)
        ) where
 
@@ -537,44 +538,48 @@ data ByProjection s e where
   BPKey :: Key s e -> ByProjection s e
   BPFunction :: Greskell (a -> b) -> ByProjection a b
 
--- | Use 'pjKey' with the literal property key.
+-- | Use 'gByKey' with the literal property key.
 instance IsString (ByProjection s e) where
-  fromString = pjKey . fromString
+  fromString = gByKey . fromString
 
 -- | A special 'ByProjection' that means omitting the projection
 -- altogether. In this case, the projection does nothing (i.e. it's
 -- the identity projection.)
-pjEmpty :: ByProjection s s
-pjEmpty = BPEmpty
+gByEmpty :: ByProjection s s
+gByEmpty = BPEmpty
 
 -- | Projection by transforming traversal.
-pjTraversal :: (ToGTraversal g) => g Transform s e -> ByProjection s e
-pjTraversal = BPTraversal
+gByTraversal :: (ToGTraversal g) => g Transform s e -> ByProjection s e
+gByTraversal = BPTraversal
 
 -- | A projection to get a property value from an Element by 'T'.
-pjT :: Greskell (T s e) -> ByProjection s e
-pjT = BPT
+gByT :: Greskell (T s e) -> ByProjection s e
+gByT = BPT
 
 -- | A projection to get a property value from an Element by property
 -- 'Key'.
-pjKey :: Key s e -> ByProjection s e
-pjKey = BPKey
+gByKey :: Key s e -> ByProjection s e
+gByKey = BPKey
+
+-- | Alias for 'gByKey'.
+gBy :: Key s e -> ByProjection s e
+gBy = gByKey
 
 -- | Projection by function.
-pjFunction :: Greskell (a -> b) -> ByProjection a b
-pjFunction = BPFunction
+gByFunction :: Greskell (a -> b) -> ByProjection a b
+gByFunction = BPFunction
 
 -- | Comparator of type @s@ used in @.by@ step.
 --
--- The input of type @s@ is first projected to type @e@, and compared
--- by the given comparator.
+-- The input of type @s@ is first projected to type @CompareArg c@,
+-- and compared by the given comparator.
 data ByComparator s where
   ByComp :: Comparator c => ByProjection s (CompareArg c) -> Greskell c -> ByComparator s
 
--- | @.order@ and @.by@ steps
-gOrderBy :: [ByComparator s] -- ^ comparators for each @.by@ step
-         -> Walk Transform s s
-gOrderBy bys = modulateWith order_step by_steps
+-- | @.order@ step.
+gOrder :: [ByComparator s] -- ^ following @.by@ steps.
+       -> Walk Transform s s
+gOrder bys = modulateWith order_step by_steps
   where
     order_step = unsafeWalk "order" []
     by_steps = map (unsafeWalk "by" . toByArgs) bys
