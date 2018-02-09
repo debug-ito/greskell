@@ -25,8 +25,8 @@ import Data.Greskell.GTraversal
     source, (&.), ($.), sV', sE',
     gHas1, gHas2, gHas2P, gHasLabelP, gHasIdP,
     gOut', gRange, gValues, gNot, gIn',
-    gOrderBy, ByComparator(ByComp), ByProjection,
-    pjEmpty, pjT, pjTraversal, pjKey,
+    gOrder,
+    gByEmpty, gByT, gByTraversal, gByKey, (/.),
     gProperties, gHasKeyP, gHasValueP
   )
 
@@ -51,12 +51,12 @@ spec_GraphTraversalSource = describe "GraphTraversalSource" $ do
     (toGremlin $ sV' (map (fmap toJSON) ids) $ source "g") `shouldBe` ("g.V(1,2,3)")
 
 spec_order_by :: Spec
-spec_order_by = describe "gOrderBy" $ do
+spec_order_by = describe "gOrder" $ do
   let gv = source "g" & sV' []
   specify "no arg" $ do
-    toGremlin (gv &. gOrderBy []) `shouldBe` "g.V().order()"
+    toGremlin (gv &. gOrder []) `shouldBe` "g.V().order()"
   specify "empty projection" $ do
-    toGremlin (gv &. gOrderBy [ByComp pjEmpty oIncr]) `shouldBe` "g.V().order().by(incr)"
+    toGremlin (gv &. gOrder [gByEmpty /. oIncr]) `shouldBe` "g.V().order().by(incr)"
   specify "traversal projection" $ do
     toGremlin (gv &. gOrderBy [ByComp (pjTraversal $ gOut' ["foo"] >>> gIn' ["bar"]) oShuffle])
       `shouldBe` "g.V().order().by(__.out(\"foo\").in(\"bar\"),shuffle)"

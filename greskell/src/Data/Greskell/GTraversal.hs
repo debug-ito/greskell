@@ -64,7 +64,7 @@ module Data.Greskell.GTraversal
          gOr,
          gNot,
          -- ** Sorting steps
-         gOrderBy,
+         gOrder,
          -- ** Size limitation steps
          gRange,
          -- ** Transformation steps
@@ -96,7 +96,9 @@ module Data.Greskell.GTraversal
          gByTraversal,
          gByT,
          gByFunction,
-         ByComparator(ByComp)
+         ByComparator(ByComparator),
+         (/.),
+         gByComp
        ) where
 
 import Prelude hiding (or, filter, not)
@@ -542,6 +544,26 @@ data ByProjection s e where
 instance IsString (ByProjection s e) where
   fromString = gByKey . fromString
 
+-- class FromByProjection b where
+--   fromByProjection :: ByProjection s e -> b
+-- 
+-- instance FromByProjection (ByProjection s e)
+
+-- 型クラスを使って、
+-- 
+-- gByEmpty :: ByProjection s s
+-- 
+-- gByEmpty :: ByComparator s
+-- 
+-- gByKey :: Key s e -> ByProjection s e
+-- 
+-- gByKey :: Key s e -> ByComprator s
+-- 
+-- とかできないかな。。
+
+-- 結局(/. oIncr)をつけるかどうかという話なんだけど。。
+  
+
 -- | A special 'ByProjection' that means omitting the projection
 -- altogether. In this case, the projection does nothing (i.e. it's
 -- the identity projection.)
@@ -571,10 +593,21 @@ gByFunction = BPFunction
 
 -- | Comparator of type @s@ used in @.by@ step.
 --
--- The input of type @s@ is first projected to type @CompareArg c@,
+-- The input of type @s@ is first projected to type @CompareArg comp@,
 -- and compared by the given comparator.
 data ByComparator s where
-  ByComp :: Comparator c => ByProjection s (CompareArg c) -> Greskell c -> ByComparator s
+  ByComparator :: Comparator comp => ByProjection s (CompareArg comp) -> Greskell comp -> ByComparator s
+
+infixl 3 /.
+
+-- | Operator version of 'ByComparator' constructor.
+(/.) :: Comparator comp => ByProjection s (CompareArg comp) -> Greskell comp -> ByComparator s
+(/.) = ByComparator
+
+-- | Create 'ByComparator' just from a comparator. 'gByEmpty' is used
+-- for the projection part.
+gByComp :: Comparator comp => Greskell comp -> ByComparator (CompareArg comp)
+gByComp c = gByEmpty /. c
 
 -- | @.order@ step.
 gOrder :: [ByComparator s] -- ^ following @.by@ steps.
@@ -583,7 +616,7 @@ gOrder bys = modulateWith order_step by_steps
   where
     order_step = unsafeWalk "order" []
     by_steps = map (unsafeWalk "by" . toByArgs) bys
-    toByArgs (ByComp proj comp) = case proj of
+    toByArgs (ByComparator proj comp) = case proj of
       BPEmpty -> [comp_text]
       BPTraversal gt -> [toGremlin $ toGTraversal gt, comp_text]
       BPT t -> [toGremlin t, comp_text]
