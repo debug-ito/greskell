@@ -89,16 +89,12 @@ module Data.Greskell.GTraversal
          gDrop,
          gDropP,
          -- * @.by@ steps
-         ByProjection,
+         ByProjection(..),
+         ProjectionLike(..),
+         ByComparator(..),
          gBy,
-         gByKey,
-         gByEmpty,
-         gByTraversal,
-         gByT,
-         gByFunction,
-         ByComparator(ByComparator),
-         (/.),
-         gByComp
+         gBy1,
+         gBy2
        ) where
 
 import Prelude hiding (or, filter, not)
@@ -531,83 +527,81 @@ gRange :: Greskell Int
        -> Walk Transform s s
 gRange min_g max_g = unsafeWalk "range" $ map toGremlin [min_g, max_g]
 
+-- | A data type that means a projection from one type to another.
+class ProjectionLike p where
+  type ProjectionLikeStart p
+  -- ^ The start type of the projection.
+  type ProjectionLikeEnd p
+  -- ^ The end type of the projection.
+
+instance ProjectionLike (Walk Transform s e) where
+  type ProjectionLikeStart (Walk Transform s e) = s
+  type ProjectionLikeEnd (Walk Transform s e) = e
+
+instance ProjectionLike (GTraversal Transform s e) where
+  type ProjectionLikeStart (GTraversal Transform s e) = s
+  type ProjectionLikeEnd (GTraversal Transform s e) = e
+
+instance ProjectionLike (Greskell (GraphTraversal Transform s e)) where
+  type ProjectionLikeStart (Greskell (GraphTraversal Transform s e)) = s
+  type ProjectionLikeEnd (Greskell (GraphTraversal Transform s e)) = e
+
+instance ProjectionLike (Key s e) where
+  type ProjectionLikeStart (Key s e) = s
+  type ProjectionLikeEnd (Key s e) = e
+
+instance ProjectionLike (Greskell (T s e)) where
+  type ProjectionLikeStart (Greskell (T s e)) = s
+  type ProjectionLikeEnd (Greskell (T s e)) = e
+
+instance ProjectionLike (Greskell (s -> e)) where
+  type ProjectionLikeStart (Greskell (s -> e)) = s
+  type ProjectionLikeEnd (Greskell (s -> e)) = e
+
+instance ProjectionLike (ByProjection s e) where
+  type ProjectionLikeStart (ByProjection s e) = s
+  type ProjectionLikeEnd (ByProjection s e) = e
 
 -- | Projection from type @s@ to type @e@ used in @.by@ step.
 data ByProjection s e where
-  BPEmpty :: ByProjection s s
-  BPTraversal :: (ToGTraversal g) => g Transform s e -> ByProjection s e
-  BPT :: Greskell (T s e) -> ByProjection s e
-  BPKey :: Key s e -> ByProjection s e
-  BPFunction :: Greskell (a -> b) -> ByProjection a b
+  ByProjection :: (ProjectionLike p, ToGreskell p) => p -> ByProjection (ProjectionLikeStart p) (ProjectionLikeEnd p)
 
--- | Use 'gByKey' with the literal property key.
+-- | Projection by literal property key.
 instance IsString (ByProjection s e) where
-  fromString = gByKey . fromString
+  fromString = ByProjection . toKey
+    where
+      toKey :: String -> Key s e
+      toKey = fromString
 
--- class FromByProjection b where
---   fromByProjection :: ByProjection s e -> b
--- 
--- instance FromByProjection (ByProjection s e)
+-- | @.by@ step with 1 argument, used for projection.
+gBy :: (ProjectionLike p, ToGreskell p) => p -> ByProjection (ProjectionLikeStart p) (ProjectionLikeEnd p)
+gBy = ByProjection 
 
--- 型クラスを使って、
--- 
--- gByEmpty :: ByProjection s s
--- 
--- gByEmpty :: ByComparator s
--- 
--- gByKey :: Key s e -> ByProjection s e
--- 
--- gByKey :: Key s e -> ByComprator s
--- 
--- とかできないかな。。
-
--- 結局(/. oIncr)をつけるかどうかという話なんだけど。。
-  
-
--- | A special 'ByProjection' that means omitting the projection
--- altogether. In this case, the projection does nothing (i.e. it's
--- the identity projection.)
-gByEmpty :: ByProjection s s
-gByEmpty = BPEmpty
-
--- | Projection by transforming traversal.
-gByTraversal :: (ToGTraversal g) => g Transform s e -> ByProjection s e
-gByTraversal = BPTraversal
-
--- | A projection to get a property value from an Element by 'T'.
-gByT :: Greskell (T s e) -> ByProjection s e
-gByT = BPT
-
--- | A projection to get a property value from an Element by property
--- 'Key'.
-gByKey :: Key s e -> ByProjection s e
-gByKey = BPKey
-
--- | Alias for 'gByKey'.
-gBy :: Key s e -> ByProjection s e
-gBy = gByKey
-
--- | Projection by function.
-gByFunction :: Greskell (a -> b) -> ByProjection a b
-gByFunction = BPFunction
-
--- | Comparator of type @s@ used in @.by@ step.
---
--- The input of type @s@ is first projected to type @CompareArg comp@,
--- and compared by the given comparator.
+-- | Comparison of type @s@ used in @.by@ step.
 data ByComparator s where
-  ByComparator :: Comparator comp => ByProjection s (CompareArg comp) -> Greskell comp -> ByComparator s
+  ByComparatorProj :: ByProjection s e -> ByComparator s
+  -- ^ Type @s@ is projected to type @e@, and compared by the natural
+  -- comparator of type @e@.
+  ByComparatorComp :: Comparator comp => Greskell comp -> ByComparator (CompareArg comp)
+  -- ^ Type @s@ is compared by the 'Comparator' @comp@.
+  ByComparatorProjComp :: Comparator comp => ByProjection s (CompareArg comp) -> Greskell comp -> ByComparator s
+  -- ^ Type @s@ is projected to type @CompareArg comp@, and compared
+  -- by the 'Comparator' @comp@.
 
-infixl 3 /.
+-- | 'ByComparatorProj' by literal property key.
+instance IsString (ByComparator s) where
+  fromString = ByComparatorProj . fromString
 
--- | Operator version of 'ByComparator' constructor.
-(/.) :: Comparator comp => ByProjection s (CompareArg comp) -> Greskell comp -> ByComparator s
-(/.) = ByComparator
+-- | @.by@ step with 1 argumernt, used for comparison.
+gBy1 :: (ProjectionLike p, ToGreskell p) => p -> ByComparator (ProjectionLikeStart p)
+gBy1 = ByComparatorProj . gBy
 
--- | Create 'ByComparator' just from a comparator. 'gByEmpty' is used
--- for the projection part.
-gByComp :: Comparator comp => Greskell comp -> ByComparator (CompareArg comp)
-gByComp c = gByEmpty /. c
+-- | @.by@ step with 2 arguments, used for comparison.
+gBy2 :: (ProjectionLike p, ToGreskell p, Comparator comp, ProjectionLikeEnd p ~ CompareArg comp)
+     => p
+     -> Greskell comp
+     -> ByComparator (ProjectionLikeStart p)
+gBy2 p c = ByComparatorProjComp (gBy p) c
 
 -- | @.order@ step.
 gOrder :: [ByComparator s] -- ^ following @.by@ steps.
@@ -616,14 +610,11 @@ gOrder bys = modulateWith order_step by_steps
   where
     order_step = unsafeWalk "order" []
     by_steps = map (unsafeWalk "by" . toByArgs) bys
-    toByArgs (ByComparator proj comp) = case proj of
-      BPEmpty -> [comp_text]
-      BPTraversal gt -> [toGremlin $ toGTraversal gt, comp_text]
-      BPT t -> [toGremlin t, comp_text]
-      BPKey k -> [toGremlin k, comp_text]
-      BPFunction fun -> [toGremlin fun, comp_text]
-      where
-        comp_text = toGremlin comp
+    toByArgs :: ByComparator s -> [Text]
+    toByArgs bc = case bc of
+      ByComparatorProj (ByProjection p) -> [toGremlin p]
+      ByComparatorComp comp -> [toGremlin comp]
+      ByComparatorProjComp (ByProjection p) comp -> [toGremlin p, toGremlin comp]
 
 -- | @.flatMap@ step.
 --

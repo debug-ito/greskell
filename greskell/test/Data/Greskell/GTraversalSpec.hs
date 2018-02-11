@@ -26,8 +26,8 @@ import Data.Greskell.GTraversal
     gHas1, gHas2, gHas2P, gHasLabelP, gHasIdP,
     gOut', gRange, gValues, gNot, gIn',
     gOrder,
-    gByEmpty, gByT, gByTraversal, gByKey, (/.),
-    gProperties, gHasKeyP, gHasValueP
+    gProperties, gHasKeyP, gHasValueP,
+    ByComparator(..), gBy2
   )
 
 
@@ -56,23 +56,24 @@ spec_order_by = describe "gOrder" $ do
   specify "no arg" $ do
     toGremlin (gv &. gOrder []) `shouldBe` "g.V().order()"
   specify "empty projection" $ do
-    toGremlin (gv &. gOrder [gByEmpty /. oIncr]) `shouldBe` "g.V().order().by(incr)"
+    -- This case is relatively rare (I think), so the API is not so convenient for now.
+    toGremlin (gv &. gOrder [ByComparatorComp oIncr]) `shouldBe` "g.V().order().by(incr)"
   specify "traversal projection" $ do
-    toGremlin (gv &. gOrderBy [ByComp (pjTraversal $ gOut' ["foo"] >>> gIn' ["bar"]) oShuffle])
+    toGremlin (gv &. gOrder [gBy2 (gOut' ["foo"] >>> gIn' ["bar"]) oShuffle])
       `shouldBe` "g.V().order().by(__.out(\"foo\").in(\"bar\"),shuffle)"
   specify "value projection" $ do
     let nameKey :: Key e Text
         nameKey = "name"
-    toGremlin (gv &. gOrderBy [ByComp (pjKey nameKey) oDecr]) `shouldBe` "g.V().order().by(\"name\",decr)"
+    toGremlin (gv &. gOrder [gBy2 nameKey oDecr]) `shouldBe` "g.V().order().by(\"name\",decr)"
   specify "T token projection" $ do
-    toGremlin (gv &. gOrderBy [ByComp (pjT tLabel) oIncr]) `shouldBe` "g.V().order().by(label,incr)"
-  specify "two by steps of different comparison types" $ do
+    toGremlin (gv &. gOrder [gBy2 tLabel oIncr]) `shouldBe` "g.V().order().by(label,incr)"
+  specify "two .by steps of different comparison types" $ do
     let ageKey :: Key e Int
         ageKey = "age"
-    toGremlin (gv &. gOrderBy [ByComp (pjKey ageKey) oDecr, ByComp (pjT tId) oDecr])
+    toGremlin (gv &. gOrder [gBy2 ageKey oDecr, gBy2 tId oDecr])
       `shouldBe` "g.V().order().by(\"age\",decr).by(id,decr)"
   specify "IsString instance of ByProjection" $ do
-    toGremlin (gv &. gOrderBy [ByComp "name" oIncr])
+    toGremlin (gv &. gOrder [ByComparatorProjComp ("name") oIncr])
       `shouldBe` "g.V().order().by(\"name\",incr)"
 
 spec_compose_steps :: Spec
