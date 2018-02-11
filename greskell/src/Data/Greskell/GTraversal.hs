@@ -220,6 +220,11 @@ instance ToGTraversal Walk where
   toGTraversal (Walk t) = GTraversal $ unsafeGreskellLazy ("__" <> t)
   liftWalk (Walk t) = Walk t
 
+-- | The 'Walk' is first converted to 'GTraversal', and it's converted
+-- to 'Greskell'.
+instance WalkType c => ToGreskell (Walk c s e) where
+  type GreskellReturn (Walk c s e) = GraphTraversal c s e
+  toGreskell = toGreskell . toGTraversal
 
 
 -- | Class of phantom type markers to describe the feature of the
