@@ -27,7 +27,7 @@ import Data.Greskell.GTraversal
     gOut', gRange, gValues, gNot, gIn',
     gOrder,
     gProperties, gHasKeyP, gHasValueP,
-    ByComparator(..), gBy2
+    ByComparator(..), gBy2, gBy1, gBy
   )
 
 
@@ -67,11 +67,17 @@ spec_order_by = describe "gOrder" $ do
     toGremlin (gv &. gOrder [gBy2 nameKey oDecr]) `shouldBe` "g.V().order().by(\"name\",decr)"
   specify "T token projection" $ do
     toGremlin (gv &. gOrder [gBy2 tLabel oIncr]) `shouldBe` "g.V().order().by(label,incr)"
-  specify "two .by steps of different comparison types" $ do
+  specify "multiple .by steps of different comparison types" $ do
     let ageKey :: Key e Int
         ageKey = "age"
-    toGremlin (gv &. gOrder [gBy2 ageKey oDecr, gBy2 tId oDecr])
-      `shouldBe` "g.V().order().by(\"age\",decr).by(id,decr)"
+    toGremlin (gv &. gOrder [gBy2 ageKey oDecr, gBy2 tId oDecr, gBy1 (gOut' ["foo"])])
+      `shouldBe` "g.V().order().by(\"age\",decr).by(id,decr).by(__.out(\"foo\"))"
+  specify "gBy1" $ do
+    toGremlin (gv &. gOrder [gBy1 ("name" :: Key e Text)]) `shouldBe` "g.V().order().by(\"name\")"
+  specify "IsString instance of ByComparator" $ do
+    toGremlin (gv &. gOrder ["age"]) `shouldBe` "g.V().order().by(\"age\")"
+  specify "gBy" $ do
+    toGremlin (gv &. gOrder [ByComparatorProj $ gBy tLabel]) `shouldBe` "g.V().order().by(label)"
   specify "IsString instance of ByProjection" $ do
     toGremlin (gv &. gOrder [ByComparatorProjComp ("name") oIncr])
       `shouldBe` "g.V().order().by(\"name\",incr)"
