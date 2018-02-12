@@ -583,14 +583,16 @@ gBy = ByProjection
 
 -- | Comparison of type @s@ used in @.by@ step.
 data ByComparator s where
-  ByComparatorProj :: ByProjection s e -> ByComparator s
-  -- ^ Type @s@ is projected to type @e@, and compared by the natural
+  -- | Type @s@ is projected to type @e@, and compared by the natural
   -- comparator of type @e@.
+  ByComparatorProj :: ByProjection s e -> ByComparator s
+  
+  -- | Type @s@ is compared by the 'Comparator' @comp@.
   ByComparatorComp :: Comparator comp => Greskell comp -> ByComparator (CompareArg comp)
-  -- ^ Type @s@ is compared by the 'Comparator' @comp@.
-  ByComparatorProjComp :: Comparator comp => ByProjection s (CompareArg comp) -> Greskell comp -> ByComparator s
-  -- ^ Type @s@ is projected to type @CompareArg comp@, and compared
+  
+  -- | Type @s@ is projected to type @CompareArg comp@, and compared
   -- by the 'Comparator' @comp@.
+  ByComparatorProjComp :: Comparator comp => ByProjection s (CompareArg comp) -> Greskell comp -> ByComparator s
 
 -- | 'ByComparatorProj' by literal property key.
 instance IsString (ByComparator s) where
