@@ -29,7 +29,6 @@ import Data.Text (Text)
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Aeson as A
 import Data.Function ((&))
-import Data.Void (Void)
 import Test.Hspec
 ```
 
@@ -118,7 +117,7 @@ import Data.Greskell.GTraversal
   )
 import Data.Greskell.Graph (AVertex)
 
-allV :: GTraversal Transform Void AVertex
+allV :: GTraversal Transform () AVertex
 allV = source "g" & sV []
 
 isPerson :: Walk Transform AVertex AVertex
@@ -205,7 +204,7 @@ TBW
 - あ、つか、現状だとSideEffect型のwalkないな。。addVとdropくらいなら単純だから作ってもいいかも。
 
 ```haskell WalkType
-gV :: GTraversal Transform Void AVertex
+gV :: GTraversal Transform () AVertex
 gV = source "g" & sV []
 
 main = hspec $ specify "liftWalk" $ do

@@ -111,7 +111,6 @@ import Data.String (IsString(..))
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
-import Data.Void (Void)
 import Data.Greskell.Graph
   ( Element(..), Vertex, Edge, Property(..),
     AVertex, AEdge,
@@ -319,26 +318,26 @@ sourceMethod method_name args src =
 sV :: Vertex v
    => [Greskell (ElementID v)] -- ^ vertex IDs
    -> Greskell GraphTraversalSource
-   -> GTraversal Transform Void v
+   -> GTraversal Transform () v
 sV ids src = GTraversal $ sourceMethod "V" ids src
 
 -- | Monomorphic version of 'sV'.
 sV' :: [Greskell Value]
     -> Greskell GraphTraversalSource
-    -> GTraversal Transform Void AVertex
+    -> GTraversal Transform () AVertex
 sV' = sV
 
 -- | @.E()@ method on 'GraphTraversalSource'.
 sE :: Edge e
    => [Greskell (ElementID e)] -- ^ edge IDs
    -> Greskell GraphTraversalSource
-   -> GTraversal Transform Void e
+   -> GTraversal Transform () e
 sE ids src = GTraversal $ sourceMethod "E" ids src
 
 -- | Monomorphic version of 'sE'.
 sE' :: [Greskell Value]
        -> Greskell GraphTraversalSource
-       -> GTraversal Transform Void AEdge
+       -> GTraversal Transform () AEdge
 sE' = sE
 
 -- | Unsafely create 'GTraversal' from the given raw Gremlin script.
