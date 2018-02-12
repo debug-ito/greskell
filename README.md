@@ -176,8 +176,8 @@ Walk types are hierarchical. `Transform` is more powerful than `Filter`, and `Si
 
 ```haskell WalkType
 import Data.Greskell.GTraversal
-  ( Walk, Filter, Transform, GTraversal,
-    liftWalk, gHas1, source, sV, (&.)
+  ( Walk, Filter, Transform, SideEffect, GTraversal,
+    liftWalk, gHas1, source, sV, (&.), gAddV
   )
 import Data.Greskell.Graph (AVertex)
 import Data.Greskell.Greskell (toGremlin)
@@ -191,7 +191,7 @@ hasAge' = liftWalk hasAge
 
 Now what are these walk types useful for? Well, it allows you to build graph traversals in a safer way than you do with plain Gremlin.
 
-In Haskell, we can distinguish pure and non-pure functions using, for example, `IO` monad, right? Likewise, we can limit power of traversals by using `Filter` or `Transform` walk types explicitly. That way, we can avoid executing unwanted side-effect accidentally.
+In Haskell, we can distinguish pure and non-pure functions using, for example, `IO` monad. Likewise, we can limit power of traversals by using `Filter` or `Transform` walk types explicitly. That way, we can avoid executing unwanted side-effect accidentally.
 
 
 
@@ -207,12 +207,18 @@ TBW
 gV :: GTraversal Transform () AVertex
 gV = source "g" & sV []
 
+newPerson :: Walk SideEffect a AVertex
+newPerson = gAddV "person"
+
 main = hspec $ specify "liftWalk" $ do
   -- -- This won't compile
-  -- toGremlin (gV &. hasAge) `shouldBe` "g.V().has(\"age\")"
+  -- toGremlin (gV &. newPerson) `shouldBe` "g.V().addV(\"person\")"
 
   -- This compiles
   toGremlin (gV &. hasAge') `shouldBe` "g.V().has(\"age\")"
+
+  -- This compiles, because the whole traversal is lifted to SideEffect
+  toGremlin (liftWalk (gV &. hasAge') &. newPerson) `shouldBe` "g.V().has(\"age\").addV(\"person\")"
 ```
 
 
