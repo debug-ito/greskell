@@ -20,6 +20,7 @@ module Data.Greskell.Graph
          tValue,
          -- * Extended API
          Key(..),
+         key,
          -- * Concrete data types
          --
          -- $concrete_types
@@ -127,6 +128,9 @@ instance ToGreskell (Key a b) where
   type GreskellReturn (Key a b) = Text
   toGreskell = unKey
 
+-- | Create a 'Key' from a literal string.
+key :: Text -> Key a b
+key = Key . string
 
 -- $concrete_types
 --

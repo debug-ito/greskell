@@ -15,7 +15,7 @@ import Data.Greskell.Gremlin
   )
 import Data.Greskell.Graph
   ( Element,
-    Key,
+    Key, key,
     tLabel, tId
   )
 import Data.Greskell.Greskell
@@ -73,7 +73,7 @@ spec_order_by = describe "gOrder" $ do
     toGremlin (gv &. gOrder [gBy2 ageKey oDecr, gBy2 tId oDecr, gBy1 (gOut' ["foo"])])
       `shouldBe` "g.V().order().by(\"age\",decr).by(id,decr).by(__.out(\"foo\"))"
   specify "gBy1" $ do
-    toGremlin (gv &. gOrder [gBy1 ("name" :: Key e Text)]) `shouldBe` "g.V().order().by(\"name\")"
+    toGremlin (gv &. gOrder [gBy1 (key "name")]) `shouldBe` "g.V().order().by(\"name\")"
   specify "IsString instance of ByComparator" $ do
     toGremlin (gv &. gOrder ["age"]) `shouldBe` "g.V().order().by(\"age\")"
   specify "gBy" $ do
@@ -94,7 +94,7 @@ spec_compose_steps = describe "DSL to compose steps" $ do
     let gt = gRange 20 30 $. gNot (gOut' ["friends_to"]) $. sV' [] $ source "g"
     toGremlin gt `shouldBe` "g.V().not(__.out(\"friends_to\")).range(20,30)"
   specify "($) and ($.) and (<<<)" $ do
-    let gt = gHas2P ("name" :: Key e Text) (pEq "hoge") <<< gIn' ["foo", "bar"] <<< gIn' [] $. sV' [] $ source "g"
+    let gt = gHas2P (key "name" :: Key e Text) (pEq "hoge") <<< gIn' ["foo", "bar"] <<< gIn' [] $. sV' [] $ source "g"
     toGremlin gt `shouldBe` "g.V().in().in(\"foo\",\"bar\").has(\"name\",eq(\"hoge\"))"
 
 spec_has :: Spec
