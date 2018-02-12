@@ -721,7 +721,7 @@ gAddV :: Vertex v => Greskell Text -> Walk SideEffect a v
 gAddV label = unsafeWalk "addV" [toGremlin label]
 
 -- | Monomorphic version of 'gAddV'.
-gAddV' :: Greskell Text -> Walk SideEffect AVertex AVertex
+gAddV' :: Greskell Text -> Walk SideEffect a AVertex
 gAddV' = gAddV
 
 -- | @.drop@ step on 'Element'.
