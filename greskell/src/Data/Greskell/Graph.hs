@@ -242,7 +242,7 @@ instance FromJSON v => FromJSON (SimpleProperty v) where
   parseJSON _ = empty
 
 instance FromJSON v => FromJSONWithKey (SimpleProperty v) where
-  parseJSONWithKey key v = SimpleProperty key <$> parseJSON v
+  parseJSONWithKey k v = SimpleProperty k <$> parseJSON v
 
 instance Property SimpleProperty where
   propertyKey = sPropertyKey
@@ -282,9 +282,9 @@ instance FromJSON v => FromJSON (AVertexProperty v) where
   parseJSON _ = empty
 
 instance FromJSON v => FromJSONWithKey (AVertexProperty v) where
-  parseJSONWithKey key (Object o) = AVertexProperty
+  parseJSONWithKey k (Object o) = AVertexProperty
                                     <$> (o .: "id")
-                                    <*> pure key
+                                    <*> pure k
                                     <*> (o .: "value")
                                     <*> (o `optionalMonoid` "properties")
   parseJSONWithKey _ _ = empty
@@ -321,7 +321,7 @@ instance Traversable AVertexProperty where
 class PropertyMap m where
   lookupOne :: Text -> m p v -> Maybe (p v)
   -- ^ Look up a property associated with the given key.
-  lookupOne key m = listToMaybe $ lookupList key m
+  lookupOne k m = listToMaybe $ lookupList k m
   lookupList :: Text -> m p v -> [p v]
   -- ^ Look up all properties associated with the given key.
   putProperty :: Property p => p v -> m p v -> m p v
@@ -333,11 +333,11 @@ class PropertyMap m where
 
 -- | Lookup a property value from a 'PropertyMap' by key.
 lookupOneValue :: (PropertyMap m, Property p) => Text -> m p v -> Maybe v
-lookupOneValue key = fmap propertyValue . lookupOne key
+lookupOneValue k = fmap propertyValue . lookupOne k
 
 -- | Lookup property values from a 'PropertyMap' by key.
 lookupListValues :: (PropertyMap m, Property p) => Text -> m p v -> [v]
-lookupListValues key = fmap propertyValue . lookupList key
+lookupListValues k = fmap propertyValue . lookupList k
 
 
 -- | Generic implementation of 'PropertyMap'. @t@ is the type of
@@ -368,7 +368,7 @@ putPropertyGeneric prop (PropertyMapGeneric hm) =
   PropertyMapGeneric $ HM.insertWith (<>) (propertyKey prop) (pure prop) hm
 
 removePropertyGeneric :: Text -> PropertyMapGeneric t p v -> PropertyMapGeneric t p v
-removePropertyGeneric key (PropertyMapGeneric hm) = PropertyMapGeneric $ HM.delete key hm
+removePropertyGeneric k (PropertyMapGeneric hm) = PropertyMapGeneric $ HM.delete k hm
 
 allPropertiesGeneric :: Foldable t => PropertyMapGeneric t p v -> [p v]
 allPropertiesGeneric (PropertyMapGeneric hm) = concat $ map toList $ HM.elems hm
@@ -379,8 +379,8 @@ parsePropertiesGeneric :: (Property p, PropertyMap m, Monoid (m p v), GraphSONTy
                        -> Parser (m p v)
 parsePropertiesGeneric normalizeCardinality (Object obj) = foldlM folder mempty $ HM.toList obj
   where
-    folder pm (key, value) = fmap (foldr putProperty pm) $ traverse (parseProperty key) =<< normalizeCardinality value
-    parseProperty key value = (fmap gsonValue $ parseTypedGraphSON value) <|> parseJSONWithKey key value
+    folder pm (k, value) = fmap (foldr putProperty pm) $ traverse (parseProperty k) =<< normalizeCardinality value
+    parseProperty k value = (fmap gsonValue $ parseTypedGraphSON value) <|> parseJSONWithKey k value
 parsePropertiesGeneric _ _ = empty
 
 expectAesonArray :: Value -> Parser [Value]
@@ -398,8 +398,8 @@ newtype PropertyMapSingle p v = PropertyMapSingle (PropertyMapGeneric Semigroup.
                               deriving (Show,Eq,Monoid,Functor,Foldable,Traversable)
 
 instance PropertyMap PropertyMapSingle where
-  lookupOne key (PropertyMapSingle (PropertyMapGeneric hm)) = fmap Semigroup.getFirst $ HM.lookup key hm
-  lookupList key m = maybe [] return $ lookupOne key m
+  lookupOne k (PropertyMapSingle (PropertyMapGeneric hm)) = fmap Semigroup.getFirst $ HM.lookup k hm
+  lookupList k m = maybe [] return $ lookupOne k m
   putProperty p (PropertyMapSingle pg) = PropertyMapSingle $ putPropertyGeneric p pg
   removeProperty t (PropertyMapSingle pg) = PropertyMapSingle $ removePropertyGeneric t pg
   allProperties (PropertyMapSingle pg) = allPropertiesGeneric pg
@@ -422,7 +422,7 @@ newtype PropertyMapList p v = PropertyMapList (PropertyMapGeneric NonEmpty p v)
                             deriving (Show,Eq,Monoid,Functor,Foldable,Traversable)
 
 instance PropertyMap PropertyMapList where
-  lookupList key (PropertyMapList (PropertyMapGeneric hm)) = maybe [] NL.toList $ HM.lookup key hm
+  lookupList k (PropertyMapList (PropertyMapGeneric hm)) = maybe [] NL.toList $ HM.lookup k hm
   putProperty p (PropertyMapList pg) = PropertyMapList $ putPropertyGeneric p pg
   removeProperty t (PropertyMapList pg) = PropertyMapList $ removePropertyGeneric t pg
   allProperties (PropertyMapList pg) = allPropertiesGeneric pg
