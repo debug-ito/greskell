@@ -177,7 +177,7 @@ Walk types are hierarchical. `Transform` is more powerful than `Filter`, and `Si
 ```haskell WalkType
 import Data.Greskell.GTraversal
   ( Walk, Filter, Transform, SideEffect, GTraversal,
-    liftWalk, gHas1, source, sV, (&.), gAddV
+    liftWalk, source, sV, (&.), gHas1, gAddV, gValues
   )
 import Data.Greskell.Graph (AVertex)
 import Data.Greskell.Greskell (toGremlin)
@@ -193,33 +193,22 @@ Now what are these walk types useful for? Well, it allows you to build graph tra
 
 In Haskell, we can distinguish pure and non-pure functions using, for example, `IO` monad. Likewise, we can limit power of traversals by using `Filter` or `Transform` walk types explicitly. That way, we can avoid executing unwanted side-effect accidentally.
 
-
-
-TBW
-
-- why WalkType is necessary?
-
-
-- 下の例は不適切だと思う。Filterを与えるほうがダメで、Transformを与えるといい、てのは逆だ。強いやつを禁止するのがポイントになるはず。
-- あ、つか、現状だとSideEffect型のwalkないな。。addVとdropくらいなら単純だから作ってもいいかも。
-
 ```haskell WalkType
-gV :: GTraversal Transform () AVertex
-gV = source "g" & sV []
+nameOfPeople :: Walk Filter AVertex AVertex -> GTraversal Transform () Text
+nameOfPeople pfilter = source "g" & sV ["person"] &. liftWalk pfilter &. gValues ["name"]
 
-newPerson :: Walk SideEffect a AVertex
+newPerson :: Walk SideEffect s AVertex
 newPerson = gAddV "person"
 
 main = hspec $ specify "liftWalk" $ do
-  -- -- This won't compile
-  -- toGremlin (gV &. newPerson) `shouldBe` "g.V().addV(\"person\")"
-
   -- This compiles
-  toGremlin (gV &. hasAge') `shouldBe` "g.V().has(\"age\")"
+  toGremlin (nameOfPeople hasAge) `shouldBe` "g.V(\"person\").has(\"age\").values(\"name\")"
 
-  -- This compiles, because the whole traversal is lifted to SideEffect
-  toGremlin (liftWalk (gV &. hasAge') &. newPerson) `shouldBe` "g.V().has(\"age\").addV(\"person\")"
+  -- This doesn't compile. It's impossible to pass a SideEffect walk to an argument that expects Filter.
+  -- toGremlin (nameOfPeople newPerson) `shouldBe` "g.V(\"person\").addV(\"person\").values(\"name\")"
 ```
+
+In the above example, `nameOfPeople` function takes a `Filter` walk and creates a `Transform` walk. There is no way to pass a `SideEffect` walk (like `gAddV`) to `nameOfPeople` because `Filter` is weaker than `SideEffect`. That way, we can be sure that the result traversal of `nameOfPeople` function never has any side-effect (thus its walk type is just `Transform`.)
 
 
 
