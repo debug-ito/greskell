@@ -215,8 +215,16 @@ main = hspec $ specify "liftWalk" $ do
 In the above example, `nameOfPeople` function takes a `Filter` walk and creates a `Transform` walk. There is no way to pass a `SideEffect` walk (like `gAddV`) to `nameOfPeople` because `Filter` is weaker than `SideEffect`. That way, we can be sure that the result traversal of `nameOfPeople` function never has any side-effect (thus its walk type is just `Transform`.)
 
 
-
 ## Graph structure types
+
+Graph structure interfaces in Gremlin are represented as type-classes. We have `Element`, `Vertex`, `Edge` and `Property` type-classes for the interfaces of the same name.
+
+The reason why we use type-classes is that it allows you to define your own data types as a graph structure. See ["Make your own graph structure types"](#make-your-own-graph-structure-types) below in detail.
+
+Nonetheless, it is convenient to have some generic data types we can use for graph structure types. For that purpose, we have `AVertex`, `AEdge`, `AVertexProperty` and `SimpleProperty` types.
+
+TBW..
+
 
 ## GraphSON parser
 
