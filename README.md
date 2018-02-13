@@ -195,17 +195,21 @@ In Haskell, we can distinguish pure and non-pure functions using, for example, `
 
 ```haskell WalkType
 nameOfPeople :: Walk Filter AVertex AVertex -> GTraversal Transform () Text
-nameOfPeople pfilter = source "g" & sV ["person"] &. liftWalk pfilter &. gValues ["name"]
+nameOfPeople pfilter =
+  source "g" & sV ["person"] &. liftWalk pfilter &. gValues ["name"]
 
 newPerson :: Walk SideEffect s AVertex
 newPerson = gAddV "person"
 
 main = hspec $ specify "liftWalk" $ do
-  -- This compiles
-  toGremlin (nameOfPeople hasAge) `shouldBe` "g.V(\"person\").has(\"age\").values(\"name\")"
+  ---- This compiles
+  toGremlin (nameOfPeople hasAge)
+    `shouldBe` "g.V(\"person\").has(\"age\").values(\"name\")"
 
-  -- This doesn't compile. It's impossible to pass a SideEffect walk to an argument that expects Filter.
-  -- toGremlin (nameOfPeople newPerson) `shouldBe` "g.V(\"person\").addV(\"person\").values(\"name\")"
+  ---- This doesn't compile.
+  ---- It's impossible to pass a SideEffect walk to an argument that expects Filter.
+  -- toGremlin (nameOfPeople newPerson)
+  --   `shouldBe` "g.V(\"person\").addV(\"person\").values(\"name\")"
 ```
 
 In the above example, `nameOfPeople` function takes a `Filter` walk and creates a `Transform` walk. There is no way to pass a `SideEffect` walk (like `gAddV`) to `nameOfPeople` because `Filter` is weaker than `SideEffect`. That way, we can be sure that the result traversal of `nameOfPeople` function never has any side-effect (thus its walk type is just `Transform`.)
