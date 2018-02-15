@@ -223,7 +223,32 @@ The reason why we use type-classes is that it allows you to define your own data
 
 Nonetheless, it is convenient to have some generic data types we can use for graph structure types. For that purpose, we have `AVertex`, `AEdge`, `AVertexProperty` and `SimpleProperty` types.
 
-TBW..
+Those types are useful because some functions are too polymorphic for the compiler to infer the types for its "start" and "end".
+
+```haskell monomorphic
+import Data.Greskell.Greskell (toGremlin)
+import Data.Greskell.Graph (AVertex)
+import Data.Greskell.GTraversal
+  ( GTraversal, Transform,
+    source, (&.), sV, gOut, sV', gOut',
+  )
+
+main = hspec $ specify "monomorphic walk" $ do
+  ---- This doesn't compile
+  -- toGremlin (source "g" & sV [] &. gOut []) `shouldBe` "g.V().out()"
+
+  -- This compiles, with type annotation.
+  let gv :: GTraversal Transform () AVertex
+      gv = source "g" & sV []
+      gvo :: GTraversal Transform () AVertex
+      gvo = gv &. gOut []
+  toGremlin gvo `shouldBe` "g.V().out()"
+  
+  -- This compiles, with monomorphic functions.
+  toGremlin (source "g" & sV' [] &. gOut' []) `shouldBe` "g.V().out()"
+```
+
+In the above example, `sV` and `gOut` are polymorphic with `Vertex` constraint, so the compiler complains about the ambiguity. In that case, you can add explicit type annotations of `AVertex` type, or use monomorphic versions, `sV'` and `gOut'`.
 
 
 ## GraphSON parser
