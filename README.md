@@ -221,7 +221,7 @@ Graph structure interfaces in Gremlin are represented as type-classes. We have `
 
 The reason why we use type-classes is that it allows you to define your own data types as a graph structure. See ["Make your own graph structure types"](#make-your-own-graph-structure-types) below in detail.
 
-Nonetheless, it is convenient to have some generic data types we can use for graph structure types. For that purpose, we have `AVertex`, `AEdge`, `AVertexProperty` and `SimpleProperty` types.
+Nonetheless, it is convenient to have some generic data types we can use for graph structure types. For that purpose, we have `AVertex`, `AEdge`, `AVertexProperty` and `AProperty` types.
 
 Those types are useful because some functions are too polymorphic for the compiler to infer the types for its "start" and "end".
 
@@ -248,10 +248,16 @@ main = hspec $ specify "monomorphic walk" $ do
   toGremlin (source "g" & sV' [] &. gOut' []) `shouldBe` "g.V().out()"
 ```
 
-In the above example, `sV` and `gOut` are polymorphic with `Vertex` constraint, so the compiler complains about the ambiguity. In that case, you can add explicit type annotations of `AVertex` type, or use monomorphic versions, `sV'` and `gOut'`.
+In the above example, `sV` and `gOut` are polymorphic with `Vertex` constraint, so the compiler would complain about the ambiguity. In that case, you can add explicit type annotations of `AVertex` type, or use monomorphic versions, `sV'` and `gOut'`.
 
 
 ## GraphSON parser
+
+`A` in `AVertex` stands for "Aeson". That means this type implements `FromJSON` instance from [Data.Aeson](http://hackage.haskell.org/package/aeson/docs/Data-Aeson.html) module. The `FromJSON` instance parses text encoded in GraphSON format.
+
+[GraphSON](http://tinkerpop.apache.org/docs/current/dev/io/#graphson) is a format to encode graph structure types into JSON. As of this writing, there are three slightly different versions of GraphSON. `AVertex`, `AEdge`, `AVertexProperty`, `AProperty`
+
+
 
 ## Make your own graph structure types
 

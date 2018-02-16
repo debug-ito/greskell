@@ -32,7 +32,7 @@ module Data.Greskell.Graph
          -- ** VertexProperty
          AVertexProperty(..),
          -- ** Property
-         SimpleProperty(..),
+         AProperty(..),
          -- ** PropertyMap
          PropertyMap(..),
          lookupOneValue,
@@ -190,14 +190,14 @@ data AEdge =
     -- ^ ID of this edge's destination vertex.
     aeOutV :: GraphSON Value,
     -- ^ ID of this edge's source vertex.
-    aeProperties :: PropertyMapSingle SimpleProperty (GraphSON Value)
+    aeProperties :: PropertyMapSingle AProperty (GraphSON Value)
     -- ^ Properties of this edge.
   }
   deriving (Show,Eq)
 
 instance Element AEdge where
   type ElementID AEdge = Value
-  type ElementProperty AEdge = SimpleProperty
+  type ElementProperty AEdge = AProperty
 
 instance Edge AEdge where
   type EdgeVertexID AEdge = Value
@@ -228,36 +228,36 @@ class FromJSONWithKey a where
 
 
 -- | General simple property type you can use for 'Property' class.
-data SimpleProperty v =
-  SimpleProperty
+data AProperty v =
+  AProperty
   { sPropertyKey :: Text,
     sPropertyValue :: v
   }
   deriving (Show,Eq,Ord)
 
 -- | Parse Property of GraphSON 1.0.
-instance FromJSON v => FromJSON (SimpleProperty v) where
+instance FromJSON v => FromJSON (AProperty v) where
   parseJSON (Object o) =
-    SimpleProperty <$> (o .: "key") <*> (o .: "value")
+    AProperty <$> (o .: "key") <*> (o .: "value")
   parseJSON _ = empty
 
-instance FromJSON v => FromJSONWithKey (SimpleProperty v) where
-  parseJSONWithKey k v = SimpleProperty k <$> parseJSON v
+instance FromJSON v => FromJSONWithKey (AProperty v) where
+  parseJSONWithKey k v = AProperty k <$> parseJSON v
 
-instance Property SimpleProperty where
+instance Property AProperty where
   propertyKey = sPropertyKey
   propertyValue = sPropertyValue
 
-instance GraphSONTyped (SimpleProperty v) where
+instance GraphSONTyped (AProperty v) where
   gsonTypeFor _ = "g:Property"
 
-instance Functor SimpleProperty where
+instance Functor AProperty where
   fmap f sp = sp { sPropertyValue = f $ sPropertyValue sp }
 
-instance Foldable SimpleProperty where
+instance Foldable AProperty where
   foldr f start sp = f (sPropertyValue sp) start
 
-instance Traversable SimpleProperty where
+instance Traversable AProperty where
   traverse f sp = fmap (\v -> sp { sPropertyValue = v } ) $ f $ sPropertyValue sp
 
 -- | General vertex property type you can use for VertexProperty,
@@ -270,7 +270,7 @@ data AVertexProperty v =
     -- ^ Label and key of this vertex property.
     avpValue :: v,
     -- ^ Value of this vertex property.
-    avpProperties :: PropertyMapSingle SimpleProperty (GraphSON Value)
+    avpProperties :: PropertyMapSingle AProperty (GraphSON Value)
     -- ^ (meta)properties of this vertex property.
   }
   deriving (Show,Eq)
@@ -295,7 +295,7 @@ instance GraphSONTyped (AVertexProperty v) where
 
 instance Element (AVertexProperty v) where
   type ElementID (AVertexProperty v) = Value
-  type ElementProperty (AVertexProperty v) = SimpleProperty
+  type ElementProperty (AVertexProperty v) = AProperty
 
 instance Property AVertexProperty where
   propertyKey = avpLabel

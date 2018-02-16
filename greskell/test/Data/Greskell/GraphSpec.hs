@@ -9,7 +9,7 @@ import Data.Text (Text)
 import Test.Hspec
 
 import Data.Greskell.Graph
-  ( SimpleProperty(..), PropertyMapSingle, PropertyMapList,
+  ( AProperty(..), PropertyMapSingle, PropertyMapList,
     PropertyMap(..),
     AEdge(..), AVertexProperty(..), AVertex(..)
   )
@@ -24,94 +24,94 @@ spec :: Spec
 spec = do
   spec_PropertyMap
   spec_AEdge
-  spec_SimpleProperty
+  spec_AProperty
   spec_AVertexProperty
   spec_AVertex
 
 spec_PropertyMap :: Spec
 spec_PropertyMap = do
   describe "PropertyMapSingle" $ do
-    let pm :: PropertyMapSingle SimpleProperty Int
-        pm = putProperty (SimpleProperty "buzz" 300)
-             $ putProperty (SimpleProperty "bar" 200)
-             $ putProperty (SimpleProperty "foo" 100) mempty
+    let pm :: PropertyMapSingle AProperty Int
+        pm = putProperty (AProperty "buzz" 300)
+             $ putProperty (AProperty "bar" 200)
+             $ putProperty (AProperty "foo" 100) mempty
     specify "allProperties" $ do
       allProperties pm `shouldMatchList`
-        [ SimpleProperty "buzz" 300,
-          SimpleProperty "bar" 200,
-          SimpleProperty "foo" 100
+        [ AProperty "buzz" 300,
+          AProperty "bar" 200,
+          AProperty "foo" 100
         ]
     specify "lookupOne existing" $ do
-      lookupOne "foo" pm `shouldBe` (Just $ SimpleProperty "foo" 100)
+      lookupOne "foo" pm `shouldBe` (Just $ AProperty "foo" 100)
     specify "lookupOne non-existing" $ do
       lookupOne "HOGE" pm `shouldBe` Nothing
     specify "lookupList existing" $ do
-      lookupList "bar" pm `shouldBe` [SimpleProperty "bar" 200]
+      lookupList "bar" pm `shouldBe` [AProperty "bar" 200]
     specify "lookupList non-existing" $ do
       lookupList "HOGE" pm `shouldBe` []
     specify "putProperty overrides" $ do
-      let pm2 = putProperty (SimpleProperty "foo" 500) pm
-      lookupOne "foo" pm2 `shouldBe` Just (SimpleProperty "foo" 500)
-      lookupList "foo" pm2 `shouldBe` [SimpleProperty "foo" 500]
+      let pm2 = putProperty (AProperty "foo" 500) pm
+      lookupOne "foo" pm2 `shouldBe` Just (AProperty "foo" 500)
+      lookupList "foo" pm2 `shouldBe` [AProperty "foo" 500]
     specify "removeProperty" $ do
       let pm2 = removeProperty "HOGE" $ removeProperty "bar" pm
       lookupList "bar" pm2 `shouldBe` []
     specify "mappend prefers the left" $ do
-      let pm2 :: PropertyMapSingle SimpleProperty Int
-          pm2 = putProperty (SimpleProperty "hoge" 600)
-                $ putProperty (SimpleProperty "bar" 500) mempty
+      let pm2 :: PropertyMapSingle AProperty Int
+          pm2 = putProperty (AProperty "hoge" 600)
+                $ putProperty (AProperty "bar" 500) mempty
           pm3 = pm <> pm2
       allProperties pm3 `shouldMatchList`
-        [ SimpleProperty "buzz" 300,
-          SimpleProperty "bar" 200,
-          SimpleProperty "foo" 100,
-          SimpleProperty "hoge" 600
+        [ AProperty "buzz" 300,
+          AProperty "bar" 200,
+          AProperty "foo" 100,
+          AProperty "hoge" 600
         ]
   describe "PropertyMapList" $ do
-    let pm :: PropertyMapList SimpleProperty Int
-        pm = putProperty (SimpleProperty "foo" 100)
-             $ putProperty (SimpleProperty "foo" 200)
-             $ putProperty (SimpleProperty "bar" 300)
-             $ putProperty (SimpleProperty "foo" 400) mempty
+    let pm :: PropertyMapList AProperty Int
+        pm = putProperty (AProperty "foo" 100)
+             $ putProperty (AProperty "foo" 200)
+             $ putProperty (AProperty "bar" 300)
+             $ putProperty (AProperty "foo" 400) mempty
     specify "allProperties" $ do
       allProperties pm `shouldMatchList`
-        [ SimpleProperty "foo" 100,
-          SimpleProperty "foo" 200,
-          SimpleProperty "bar" 300,
-          SimpleProperty "foo" 400
+        [ AProperty "foo" 100,
+          AProperty "foo" 200,
+          AProperty "bar" 300,
+          AProperty "foo" 400
         ]
     specify "lookupOne existing" $ do
-      lookupOne "foo" pm `shouldBe` Just (SimpleProperty "foo" 100)
+      lookupOne "foo" pm `shouldBe` Just (AProperty "foo" 100)
     specify "lookupOne non-existing" $ do
       lookupOne "HOGE" pm `shouldBe` Nothing
     specify "lookupList existing" $ do
-      lookupList "foo" pm `shouldBe` map (SimpleProperty "foo") [100,200,400]
+      lookupList "foo" pm `shouldBe` map (AProperty "foo") [100,200,400]
     specify "lookupList non-existing" $ do
       lookupList "HOGE" pm `shouldBe` []
     specify "putProperty appends" $ do
-      let pm2 = putProperty (SimpleProperty "bar" 500) pm
-      lookupOne "bar" pm2 `shouldBe` Just (SimpleProperty "bar" 500)
-      lookupList "bar" pm2 `shouldBe` map (SimpleProperty "bar") [500,300]
+      let pm2 = putProperty (AProperty "bar" 500) pm
+      lookupOne "bar" pm2 `shouldBe` Just (AProperty "bar" 500)
+      lookupList "bar" pm2 `shouldBe` map (AProperty "bar") [500,300]
     specify "removeProperty" $ do
       let pm2 = removeProperty "foo" $ removeProperty "HOGE" pm
       lookupOne "foo" pm2 `shouldBe` Nothing
       lookupList "foo" pm2 `shouldBe` []
     specify "mappend appends" $ do
-      let pm2 :: PropertyMapList SimpleProperty Int
-          pm2 = putProperty (SimpleProperty "bar" 500)
-                $ putProperty (SimpleProperty "buzz" 600)
-                $ putProperty (SimpleProperty "foo" 700) mempty
+      let pm2 :: PropertyMapList AProperty Int
+          pm2 = putProperty (AProperty "bar" 500)
+                $ putProperty (AProperty "buzz" 600)
+                $ putProperty (AProperty "foo" 700) mempty
           pm3 = pm <> pm2
-      lookupList "foo" pm3 `shouldBe` map (SimpleProperty "foo") [100,200,400,700]
-      lookupList "bar" pm3 `shouldBe` map (SimpleProperty "bar") [300,500]
+      lookupList "foo" pm3 `shouldBe` map (AProperty "foo") [100,200,400,700]
+      lookupList "bar" pm3 `shouldBe` map (AProperty "bar") [300,500]
       allProperties pm3 `shouldMatchList`
-        [ SimpleProperty "foo" 100,
-          SimpleProperty "foo" 200,
-          SimpleProperty "foo" 400,
-          SimpleProperty "foo" 700,
-          SimpleProperty "bar" 300,
-          SimpleProperty "bar" 500,
-          SimpleProperty "buzz" 600
+        [ AProperty "foo" 100,
+          AProperty "foo" 200,
+          AProperty "foo" 400,
+          AProperty "foo" 700,
+          AProperty "bar" 300,
+          AProperty "bar" 500,
+          AProperty "buzz" 600
         ]
 
 
@@ -130,7 +130,7 @@ spec_AEdge = describe "AEdge" $ do
                      aeInV = nonTypedGraphSON $ toJSON (10 :: Int),
                      aeOutV = nonTypedGraphSON $ toJSON (1 :: Int),
                      aeProperties = putProperty
-                                    (SimpleProperty "since" $ nonTypedGraphSON $ toJSON (2009 :: Int))
+                                    (AProperty "since" $ nonTypedGraphSON $ toJSON (2009 :: Int))
                                     $ mempty
                    }
     loadGraphSON "edge.v1.json" `shouldReturn` Right expected
@@ -143,7 +143,7 @@ spec_AEdge = describe "AEdge" $ do
                        aeInV = typedGraphSON' "g:Int32" $ toJSON (10 :: Int),
                        aeOutV = typedGraphSON' "g:Int32" $ toJSON (1 :: Int),
                        aeProperties = putProperty
-                                      (SimpleProperty "since" $ typedGraphSON' "g:Int32" $ toJSON (2009 :: Int))
+                                      (AProperty "since" $ typedGraphSON' "g:Int32" $ toJSON (2009 :: Int))
                                       $ mempty
                      }
   it "should parse GraphSON v2" $ do
@@ -151,12 +151,12 @@ spec_AEdge = describe "AEdge" $ do
   it "should parse GraphSON v3" $ do
     loadGraphSON "edge.v3.json" `shouldReturn` Right expected_v23
 
-spec_SimpleProperty :: Spec
-spec_SimpleProperty = describe "SimpleProperty" $ do
+spec_AProperty :: Spec
+spec_AProperty = describe "AProperty" $ do
   it "should parse GraphSON v1" $ do
-    let ex = nonTypedGraphSON $ SimpleProperty "since" $ nonTypedGraphSON (2009 :: Int)
+    let ex = nonTypedGraphSON $ AProperty "since" $ nonTypedGraphSON (2009 :: Int)
     loadGraphSON "property.v1.json" `shouldReturn` Right ex
-  let ex23 = typedGraphSON $ SimpleProperty "since" $ typedGraphSON' "g:Int32" (2009 :: Int)
+  let ex23 = typedGraphSON $ AProperty "since" $ typedGraphSON' "g:Int32" (2009 :: Int)
   it "should parse GraphSON v2" $ do
     loadGraphSON "property.v2.json" `shouldReturn` Right ex23
   it "should parse GraphSON v3" $ do
@@ -204,8 +204,8 @@ spec_AVertex = describe "AVertex" $ do
                                   avpLabel = "location",
                                   avpValue = nonTypedGraphSON $ toJSON ("san diego" :: Text),
                                   avpProperties = foldr putProperty mempty
-                                                  [ SimpleProperty "startTime" $ nonTypedGraphSON $ toJSON (1997 :: Int),
-                                                    SimpleProperty "endTime" $ nonTypedGraphSON $ toJSON (2001 :: Int)
+                                                  [ AProperty "startTime" $ nonTypedGraphSON $ toJSON (1997 :: Int),
+                                                    AProperty "endTime" $ nonTypedGraphSON $ toJSON (2001 :: Int)
                                                   ]
                                 },
                                 AVertexProperty
@@ -213,8 +213,8 @@ spec_AVertex = describe "AVertex" $ do
                                   avpLabel = "location",
                                   avpValue = nonTypedGraphSON $ toJSON ("santa cruz" :: Text),
                                   avpProperties = foldr putProperty mempty
-                                                  [ SimpleProperty "startTime" $ nonTypedGraphSON $ toJSON (2001 :: Int),
-                                                    SimpleProperty "endTime" $ nonTypedGraphSON $ toJSON (2004 :: Int)
+                                                  [ AProperty "startTime" $ nonTypedGraphSON $ toJSON (2001 :: Int),
+                                                    AProperty "endTime" $ nonTypedGraphSON $ toJSON (2004 :: Int)
                                                   ]
                                 },
                                 AVertexProperty
@@ -222,8 +222,8 @@ spec_AVertex = describe "AVertex" $ do
                                   avpLabel = "location",
                                   avpValue = nonTypedGraphSON $ toJSON ("brussels" :: Text),
                                   avpProperties = foldr putProperty mempty
-                                                  [ SimpleProperty "startTime" $ nonTypedGraphSON $ toJSON (2004 :: Int),
-                                                    SimpleProperty "endTime" $ nonTypedGraphSON $ toJSON (2005 :: Int)
+                                                  [ AProperty "startTime" $ nonTypedGraphSON $ toJSON (2004 :: Int),
+                                                    AProperty "endTime" $ nonTypedGraphSON $ toJSON (2005 :: Int)
                                                   ]
                                 },
                                 AVertexProperty
@@ -231,7 +231,7 @@ spec_AVertex = describe "AVertex" $ do
                                   avpLabel = "location",
                                   avpValue = nonTypedGraphSON $ toJSON ("santa fe" :: Text),
                                   avpProperties = foldr putProperty mempty
-                                                  [ SimpleProperty "startTime" $ nonTypedGraphSON $ toJSON (2005 :: Int)
+                                                  [ AProperty "startTime" $ nonTypedGraphSON $ toJSON (2005 :: Int)
                                                   ]
                                 }
                               ]
@@ -253,8 +253,8 @@ spec_AVertex = describe "AVertex" $ do
                                   avpLabel = "location",
                                   avpValue = nonTypedGraphSON $ toJSON ("san diego" :: Text),
                                   avpProperties = foldr putProperty mempty
-                                                  [ SimpleProperty "startTime" $ typedGraphSON' "g:Int32" $ toJSON (1997 :: Int),
-                                                    SimpleProperty "endTime" $ typedGraphSON' "g:Int32" $ toJSON (2001 :: Int)
+                                                  [ AProperty "startTime" $ typedGraphSON' "g:Int32" $ toJSON (1997 :: Int),
+                                                    AProperty "endTime" $ typedGraphSON' "g:Int32" $ toJSON (2001 :: Int)
                                                   ]
                                 },
                                 AVertexProperty
@@ -262,8 +262,8 @@ spec_AVertex = describe "AVertex" $ do
                                   avpLabel = "location",
                                   avpValue = nonTypedGraphSON $ toJSON ("santa cruz" :: Text),
                                   avpProperties = foldr putProperty mempty
-                                                  [ SimpleProperty "startTime" $ typedGraphSON' "g:Int32" $ toJSON (2001 :: Int),
-                                                    SimpleProperty "endTime" $ typedGraphSON' "g:Int32" $ toJSON (2004 :: Int)
+                                                  [ AProperty "startTime" $ typedGraphSON' "g:Int32" $ toJSON (2001 :: Int),
+                                                    AProperty "endTime" $ typedGraphSON' "g:Int32" $ toJSON (2004 :: Int)
                                                   ]
                                 },
                                 AVertexProperty
@@ -271,8 +271,8 @@ spec_AVertex = describe "AVertex" $ do
                                   avpLabel = "location",
                                   avpValue = nonTypedGraphSON $ toJSON ("brussels" :: Text),
                                   avpProperties = foldr putProperty mempty
-                                                  [ SimpleProperty "startTime" $ typedGraphSON' "g:Int32" $ toJSON (2004 :: Int),
-                                                    SimpleProperty "endTime" $ typedGraphSON' "g:Int32" $ toJSON (2005 :: Int)
+                                                  [ AProperty "startTime" $ typedGraphSON' "g:Int32" $ toJSON (2004 :: Int),
+                                                    AProperty "endTime" $ typedGraphSON' "g:Int32" $ toJSON (2005 :: Int)
                                                   ]
                                 },
                                 AVertexProperty
@@ -280,7 +280,7 @@ spec_AVertex = describe "AVertex" $ do
                                   avpLabel = "location",
                                   avpValue = nonTypedGraphSON $ toJSON ("santa fe" :: Text),
                                   avpProperties = foldr putProperty mempty
-                                                  [ SimpleProperty "startTime" $ typedGraphSON' "g:Int32" $ toJSON (2005 :: Int)
+                                                  [ AProperty "startTime" $ typedGraphSON' "g:Int32" $ toJSON (2005 :: Int)
                                                   ]
                                 }
                               ]
