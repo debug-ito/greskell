@@ -255,8 +255,20 @@ In the above example, `sV` and `gOut` are polymorphic with `Vertex` constraint, 
 
 `A` in `AVertex` stands for "Aeson". That means this type implements `FromJSON` instance from [Data.Aeson](http://hackage.haskell.org/package/aeson/docs/Data-Aeson.html) module. The `FromJSON` instance parses text encoded in GraphSON format.
 
-[GraphSON](http://tinkerpop.apache.org/docs/current/dev/io/#graphson) is a format to encode graph structure types into JSON. As of this writing, there are three slightly different versions of GraphSON. `AVertex`, `AEdge`, `AVertexProperty`, `AProperty`
+[GraphSON](http://tinkerpop.apache.org/docs/current/dev/io/#graphson) is a format to encode graph structure types into JSON. As of this writing, there are three slightly different versions of GraphSON. `AVertex`, `AEdge`, `AVertexProperty` and `AProperty` support all of GraphSON version 1, 2 and 3. However, that makes their structures a little complicated.
 
+To support GraphSON decoding, we introduced a data type called `GraphSON`. `GraphSON a` has data of type `a` and opitoal "type string" that describes the type of that data.
+
+```haskell GraphSON
+import Data.Greskell.GraphSON (GraphSON(..))
+
+main = hspec $ specify "GraphSON" $ do
+  A.decode "100"
+    `shouldBe` Just GraphSON { gsonType = Nothing, gsonValue = (100 :: Int) }
+
+  A.decode "{\"@type\": \"g:Int32\", \"@value\": 100}"
+    `shouldBe` Just GraphSON { gsonType = Just "g:Int32", gsonValue = (100 :: Int) }
+```
 
 
 ## Make your own graph structure types
