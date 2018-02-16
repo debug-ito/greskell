@@ -25,7 +25,7 @@ test-suite readme-Greskell
                         hspec,
                         greskell, greskell-core,
                         markdown-unlit,
-                        text, unordered-containers, aeson
+                        text, unordered-containers, aeson, heredoc
 
 test-suite readme-Binder
   type:                 exitcode-stdio-1.0
@@ -37,7 +37,7 @@ test-suite readme-Binder
                         hspec,
                         greskell, greskell-core,
                         markdown-unlit,
-                        text, unordered-containers, aeson,
+                        text, unordered-containers, aeson, heredoc,
                         gremlin-haskell                        
 
 test-suite readme-GTraversal
@@ -50,7 +50,7 @@ test-suite readme-GTraversal
                         hspec,
                         greskell, greskell-core,
                         markdown-unlit,
-                        text, unordered-containers, aeson                        
+                        text, unordered-containers, aeson, heredoc
 
 test-suite readme-WalkType
   type:                 exitcode-stdio-1.0
@@ -62,7 +62,7 @@ test-suite readme-WalkType
                         hspec,
                         greskell, greskell-core,
                         markdown-unlit,
-                        text, unordered-containers, aeson                        
+                        text, unordered-containers, aeson, heredoc
 
 
 test-suite readme-monomorphic
@@ -75,7 +75,7 @@ test-suite readme-monomorphic
                         hspec,
                         greskell, greskell-core,
                         markdown-unlit,
-                        text, unordered-containers, aeson                        
+                        text, unordered-containers, aeson, heredoc
 
 test-suite readme-GraphSON
   type:                 exitcode-stdio-1.0
@@ -87,7 +87,7 @@ test-suite readme-GraphSON
                         hspec,
                         greskell, greskell-core,
                         markdown-unlit,
-                        text, unordered-containers, aeson                        
+                        text, unordered-containers, aeson, heredoc
 
 
 source-repository head

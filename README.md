@@ -23,12 +23,14 @@ Contents:
 Because this README is also a test script, first we import common modules.
 
 ```haskell common
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings, QuasiQuotes #-}
 import Control.Category ((>>>))
+import Data.Monoid (mempty)
 import Data.Text (Text)
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Aeson as A
 import Data.Function ((&))
+import Text.Heredoc (here)
 import Test.Hspec
 ```
 
@@ -261,13 +263,91 @@ To support GraphSON decoding, we introduced a data type called `GraphSON`. `Grap
 
 ```haskell GraphSON
 import Data.Greskell.GraphSON (GraphSON(..))
+import Data.Greskell.Graph
+  ( AVertex(..), AVertexProperty(..),
+    fromProperties
+  )
+
+vertex_GraphSONv1 = [here|
+{
+  "id" : 1,
+  "label" : "person",
+  "type" : "vertex",
+  "properties" : {
+    "name" : [ {
+      "id" : 0,
+      "value" : "marko"
+    } ]
+  }
+}
+|]
+
+vertex_GraphSONv3 = [here|
+{
+  "@type" : "g:Vertex",
+  "@value" : {
+    "id" : {
+      "@type" : "g:Int32",
+      "@value" : 1
+    },
+    "label" : "person",
+    "properties" : {
+      "name" : [ {
+        "@type" : "g:VertexProperty",
+        "@value" : {
+          "id" : {
+            "@type" : "g:Int64",
+            "@value" : 0
+          },
+          "value" : "marko",
+          "label" : "name"
+        }
+      } ]
+    }
+  }
+}
+|]
+
+decoded_vertex_GraphSONv1 =
+  GraphSON
+  { gsonType = Nothing,
+    gsonValue =
+      AVertex 
+      { avId = GraphSON Nothing (A.Number 1),
+        avLabel = "person",
+        avProperties = fromProperties [
+          AVertexProperty
+          { avpId = GraphSON Nothing (A.Number 0),
+            avpLabel = "name",
+            avpValue = GraphSON Nothing (A.String "marko"),
+            avpProperties = mempty
+          }
+        ]
+      }
+  }
+
+decoded_vertex_GraphSONv3 =
+  GraphSON
+  { gsonType = Just "g:Vertex",
+    gsonValue =
+      AVertex 
+      { avId = GraphSON (Just "g:Int32") (A.Number 1),
+        avLabel = "person",
+        avProperties = fromProperties [
+          AVertexProperty
+          { avpId = GraphSON (Just "g:Int64") (A.Number 0),
+            avpLabel = "name",
+            avpValue = GraphSON Nothing (A.String "marko"),
+            avpProperties = mempty
+          }
+        ]
+      }
+  }
+
 
 main = hspec $ specify "GraphSON" $ do
-  A.decode "100"
-    `shouldBe` Just GraphSON { gsonType = Nothing, gsonValue = (100 :: Int) }
-
-  A.decode "{\"@type\": \"g:Int32\", \"@value\": 100}"
-    `shouldBe` Just GraphSON { gsonType = Just "g:Int32", gsonValue = (100 :: Int) }
+  A.decode vertex_GraphSONv1 `shouldBe` Just decoded_vertex_GraphSONv1
+  A.decode vertex_GraphSONv3 `shouldBe` Just decoded_vertex_GraphSONv3
 ```
 
 
