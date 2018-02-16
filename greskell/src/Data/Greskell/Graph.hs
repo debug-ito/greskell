@@ -37,6 +37,7 @@ module Data.Greskell.Graph
          PropertyMap(..),
          lookupOneValue,
          lookupListValues,
+         fromProperties,
          PropertyMapSingle,
          PropertyMapList,
          -- * Parser support
@@ -339,6 +340,11 @@ lookupOneValue k = fmap propertyValue . lookupOne k
 lookupListValues :: (PropertyMap m, Property p) => Text -> m p v -> [v]
 lookupListValues k = fmap propertyValue . lookupList k
 
+-- | Create a 'PropertyMap' from list of 'Property's.
+fromProperties :: (PropertyMap m, Property p, Monoid (m p v))
+               => [p v]
+               -> m p v
+fromProperties = foldr putProperty mempty
 
 -- | Generic implementation of 'PropertyMap'. @t@ is the type of
 -- cardinality, @p@ is the type of 'Property' class and @v@ is the
