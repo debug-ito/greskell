@@ -365,7 +365,7 @@ For example, let's make the following `Person` type a graph vertex.
 ```haskell own_types
 import Data.Greskell.Graph
   ( Element(..), Vertex, AVertexProperty, AVertex(..),
-    lookupOneValue
+    parseOneValue
   )
 import Data.Greskell.GraphSON (GraphSON(..))
 import Data.Greskell.Greskell (toGremlin)
@@ -416,8 +416,8 @@ instance A.FromJSON Person where
       fromAVertex av = do
         guard (avLabel av == "person")
         pid <- A.parseJSON $ gsonValue $ avId av
-        name <- maybe empty (A.parseJSON . gsonValue) $ lookupOneValue "name" $ avProperties av
-        age <- maybe empty (A.parseJSON . gsonValue) $ lookupOneValue "age" $ avProperties av
+        name <- parseOneValue "name" $ avProperties av
+        age <- parseOneValue "age" $ avProperties av
         return $ Person pid name age
 ```
 

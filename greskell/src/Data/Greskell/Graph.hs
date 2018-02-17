@@ -35,12 +35,15 @@ module Data.Greskell.Graph
          AProperty(..),
          -- ** PropertyMap
          PropertyMap(..),
-         lookupOneValue,
-         lookupListValues,
-         fromProperties,
          PropertyMapSingle,
          PropertyMapList,
-         -- * Parser support
+         lookupOneValue,
+         lookupListValues,
+         parseOneValue,
+         parseListValues,
+         parseNonEmptyValues,
+         fromProperties,
+         -- * Internal use
          FromJSONWithKey
        ) where
 
@@ -49,14 +52,14 @@ import Data.Aeson (Value(..), FromJSON(..), (.:), (.:?), Object)
 import Data.Aeson.Types (Parser)
 import Data.Foldable (toList, Foldable(foldr), foldlM)
 import qualified Data.HashMap.Lazy as HM
-import Data.List.NonEmpty (NonEmpty)
+import Data.List.NonEmpty (NonEmpty(..))
 import qualified Data.List.NonEmpty as NL
 import Data.Maybe (listToMaybe)
 import Data.Monoid (Monoid)
 import Data.Semigroup ((<>), Semigroup)
 import qualified Data.Semigroup as Semigroup
 import Data.String (IsString(..))
-import Data.Text (Text)
+import Data.Text (Text, unpack)
 import Data.Traversable (Traversable(traverse))
 
 import Data.Greskell.GraphSON (GraphSON(..), GraphSONTyped(..), parseTypedGraphSON)
@@ -336,9 +339,31 @@ class PropertyMap m where
 lookupOneValue :: (PropertyMap m, Property p) => Text -> m p v -> Maybe v
 lookupOneValue k = fmap propertyValue . lookupOne k
 
--- | Lookup property values from a 'PropertyMap' by key.
+-- | Lookup a list of property values from a 'PropertyMap' by key.
 lookupListValues :: (PropertyMap m, Property p) => Text -> m p v -> [v]
 lookupListValues k = fmap propertyValue . lookupList k
+
+notExistErrorMsg :: Text -> String
+notExistErrorMsg k = "Property '" ++ unpack k ++ "' does not exist."
+
+-- | Lookup a property 'Value' by the given key, and parse it.
+parseOneValue :: (PropertyMap m, Property p, FromJSON v) => Text -> m p (GraphSON Value) -> Parser v
+parseOneValue k pm = maybe (fail err_msg) (parseJSON . gsonValue) $ lookupOneValue k pm
+  where
+    err_msg = notExistErrorMsg k
+
+-- | Lookup a list of property values from a 'PropertyMap' by the
+-- given key, and parse them.
+parseListValues :: (PropertyMap m, Property p, FromJSON v) => Text -> m p (GraphSON Value) -> Parser [v]
+parseListValues k pm = mapM (parseJSON . gsonValue) $ lookupListValues k pm
+
+-- | Like 'parseListValues', but this function 'fail's when there is
+-- no property with the given key.
+parseNonEmptyValues :: (PropertyMap m, Property p, FromJSON v) => Text -> m p (GraphSON Value) -> Parser (NonEmpty v)
+parseNonEmptyValues k pm = toNonEmpty =<< parseListValues k pm
+  where
+    toNonEmpty [] = fail $ notExistErrorMsg k
+    toNonEmpty (x : rest) = return (x :| rest)
 
 -- | Create a 'PropertyMap' from list of 'Property's.
 fromProperties :: (PropertyMap m, Property p, Monoid (m p v))
