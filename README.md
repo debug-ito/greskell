@@ -129,7 +129,7 @@ isPerson :: Walk Transform AVertex AVertex
 isPerson = gHasLabel "person"
 
 isMarko :: Walk Transform AVertex AVertex
-isMarko = gHas2 "name" ("marko" :: Greskell Text)
+isMarko = gHas2 "name" "marko"
 
 main = hspec $ specify "GTraversal" $ do
   toGremlin (allV &. isPerson &. isMarko)
@@ -164,7 +164,7 @@ Walk       walk_type start end
 
 ```haskell GTraversal
   let composite_walk = isPerson >>> isMarko
-  (toGremlin $ source "g" & sV [] &. composite_walk )
+  toGremlin (source "g" & sV [] &. composite_walk)
     `shouldBe`
     "g.V().hasLabel(\"person\").has(\"name\",\"marko\")"
 ```
@@ -175,14 +175,14 @@ The first type parameter of `GTraversal` and `Walk` is called "walk type". Walk 
 
 - Walks of `Filter` type do filtering only. It takes input traversers and emits some of them. It does nothing else. Example: `.has` and `.filter` steps.
 - Walks of `Transform` type may transform the input traversers but have no side effects. Example: `.map` and `.out` steps.
-- Walks of `SideEffect` type may alter the "side effect" context of the Traversal object or the state outside the Traversal object. Example: `.aggregate` and `.addE` steps.
+- Walks of `SideEffect` type may alter the "side effect" context of the Traversal object or the state outside the Traversal object. Example: `.aggregate` and `.addV` steps.
 
 Walk types are hierarchical. `Transform` is more powerful than `Filter`, and `SideEffect` is more powerful than `Transform`. You can "lift" a walk with a certain walk type to one with a more powerful walk type by `liftWalk` function.
 
 ```haskell WalkType
 import Data.Greskell.GTraversal
   ( Walk, Filter, Transform, SideEffect, GTraversal,
-    liftWalk, source, sV, (&.), gHas1, gAddV, gValues
+    liftWalk, source, sV, (&.), gHasLabel, gHas1, gAddV, gValues
   )
 import Data.Greskell.Graph (AVertex)
 import Data.Greskell.Greskell (toGremlin)
@@ -201,7 +201,7 @@ In Haskell, we can distinguish pure and non-pure functions using, for example, `
 ```haskell WalkType
 nameOfPeople :: Walk Filter AVertex AVertex -> GTraversal Transform () Text
 nameOfPeople pfilter =
-  source "g" & sV [] &. liftWalk pfilter &. gValues ["name"]
+  source "g" & sV [] &. gHasLabel "person" &. liftWalk pfilter &. gValues ["name"]
 
 newPerson :: Walk SideEffect s AVertex
 newPerson = gAddV "person"
@@ -209,12 +209,12 @@ newPerson = gAddV "person"
 main = hspec $ specify "liftWalk" $ do
   ---- This compiles
   toGremlin (nameOfPeople hasAge)
-    `shouldBe` "g.V().has(\"age\").values(\"name\")"
+    `shouldBe` "g.V().hasLabel(\"person\").has(\"age\").values(\"name\")"
 
   ---- This doesn't compile.
   ---- It's impossible to pass a SideEffect walk to an argument that expects Filter.
   -- toGremlin (nameOfPeople newPerson)
-  --   `shouldBe` "g.V().addV(\"person\").values(\"name\")"
+  --   `shouldBe` "g.V().hasLabel(\"person\").addV(\"person\").values(\"name\")"
 ```
 
 In the above example, `nameOfPeople` function takes a `Filter` walk and creates a `Transform` walk. There is no way to pass a `SideEffect` walk (like `gAddV`) to `nameOfPeople` because `Filter` is weaker than `SideEffect`. That way, we can be sure that the result traversal of `nameOfPeople` function never has any side-effect (thus its walk type is just `Transform`.)
@@ -222,7 +222,7 @@ In the above example, `nameOfPeople` function takes a `Filter` walk and creates 
 
 ## Graph structure types
 
-Graph structure interfaces in Gremlin are represented as type-classes. We have `Element`, `Vertex`, `Edge` and `Property` type-classes for the interfaces of the same name.
+Graph structure interfaces in Gremlin are represented as type-classes in greskell. We have `Element`, `Vertex`, `Edge` and `Property` type-classes for the interfaces of the same name.
 
 The reason why we use type-classes is that it allows you to define your own data types as a graph structure. See ["Make your own graph structure types"](#make-your-own-graph-structure-types) below in detail.
 
