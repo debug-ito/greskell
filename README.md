@@ -424,6 +424,12 @@ instance A.FromJSON Person where
 Using `AVertex` as an intermediate type, you can now parse GraphSON (in any version!) vertex into `Person` type.
 
 
+## Todo
+
+- Complete graph traversal steps API.
+- Develop WebSocket transport for Gremlin Server.
+
+
 ## Author
 
 Toshio Ito <debug.ito@gmail.com>
