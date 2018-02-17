@@ -15,7 +15,13 @@ __NOTE: for now greskell doesn't support connecting to a Gremlin server. For tha
 Contents:
 
 - [The Greskell type](#the-greskell-type)
-- (TBW)
+- [Build variable binding](#build-variable-binding)
+- [DSL for graph traversals](#dsl-for-graph-traversals)
+- [Type parameters of GTraversal and Walk](#type-parameters-of-gtraversal-and-walk)
+- [Restrict effect of GTraversal by WalkType](#restrict-effect-of-gtraversal-by-walktype)
+- [Graph structure types](#graph-structure-types)
+- [GraphSON parser](#graphson-parser)
+- [Make your own graph structure types](#make-your-own-graph-structure-types)
 
 
 ## Prelude
@@ -104,7 +110,7 @@ executeExample = do
 ```
 
 
-## GTraversal and Walk
+## DSL for graph traversals
 
 greskell has a domain-specific language (DSL) for building Gremlin [Traversal](http://tinkerpop.apache.org/docs/current/reference/#traversal) object. Two data types, `GTraversal` and `Walk`, are especially important in this DSL.
 
@@ -158,7 +164,7 @@ GTraversal walk_type start end
 Walk       walk_type start end
 ```
 
-`GTraversal` and `Walk` both take the traversers with data of type `start`, and emit the traversers with data of type `end`. We will explain `walk_type` [later](#walktype).
+`GTraversal` and `Walk` both take the traversers with data of type `start`, and emit the traversers with data of type `end`. We will explain `walk_type` [later](#restrict-effect-of-gtraversal-by-walktype).
 
 `Walk` is very similar to function `(->)`. That is why it is an instance of `Category`, so you can compose `Walk`s together. The example in the last section can also be written as
 
@@ -169,7 +175,7 @@ Walk       walk_type start end
     "g.V().hasLabel(\"person\").has(\"name\",\"marko\")"
 ```
 
-## WalkType
+## Restrict effect of GTraversal by WalkType
 
 The first type parameter of `GTraversal` and `Walk` is called "walk type". Walk type is a type marker to describe effect of the graph traversal. There are three walk types, `Filter`, `Transform` and `SideEffect`. All of them are instance of `WalkType` class.
 
