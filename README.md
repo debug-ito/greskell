@@ -23,12 +23,15 @@ Contents:
 Because this README is also a test script, first we import common modules.
 
 ```haskell common
-{-# LANGUAGE OverloadedStrings, QuasiQuotes #-}
+{-# LANGUAGE OverloadedStrings, QuasiQuotes, TypeFamilies #-}
+import Control.Applicative (empty)
 import Control.Category ((>>>))
+import Control.Monad (guard)
 import Data.Monoid (mempty)
 import Data.Text (Text)
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Aeson as A
+import qualified Data.Aeson.Types as A
 import Data.Function ((&))
 import Text.Heredoc (here)
 import Test.Hspec
@@ -198,7 +201,7 @@ In Haskell, we can distinguish pure and non-pure functions using, for example, `
 ```haskell WalkType
 nameOfPeople :: Walk Filter AVertex AVertex -> GTraversal Transform () Text
 nameOfPeople pfilter =
-  source "g" & sV ["person"] &. liftWalk pfilter &. gValues ["name"]
+  source "g" & sV [] &. liftWalk pfilter &. gValues ["name"]
 
 newPerson :: Walk SideEffect s AVertex
 newPerson = gAddV "person"
@@ -206,12 +209,12 @@ newPerson = gAddV "person"
 main = hspec $ specify "liftWalk" $ do
   ---- This compiles
   toGremlin (nameOfPeople hasAge)
-    `shouldBe` "g.V(\"person\").has(\"age\").values(\"name\")"
+    `shouldBe` "g.V().has(\"age\").values(\"name\")"
 
   ---- This doesn't compile.
   ---- It's impossible to pass a SideEffect walk to an argument that expects Filter.
   -- toGremlin (nameOfPeople newPerson)
-  --   `shouldBe` "g.V(\"person\").addV(\"person\").values(\"name\")"
+  --   `shouldBe` "g.V().addV(\"person\").values(\"name\")"
 ```
 
 In the above example, `nameOfPeople` function takes a `Filter` walk and creates a `Transform` walk. There is no way to pass a `SideEffect` walk (like `gAddV`) to `nameOfPeople` because `Filter` is weaker than `SideEffect`. That way, we can be sure that the result traversal of `nameOfPeople` function never has any side-effect (thus its walk type is just `Transform`.)
@@ -259,7 +262,7 @@ In the above example, `sV` and `gOut` are polymorphic with `Vertex` constraint, 
 
 [GraphSON](http://tinkerpop.apache.org/docs/current/dev/io/#graphson) is a format to encode graph structure types into JSON. As of this writing, there are three slightly different versions of GraphSON. `AVertex`, `AEdge`, `AVertexProperty` and `AProperty` support all of GraphSON version 1, 2 and 3. However, that makes their structures a little complicated.
 
-To support GraphSON decoding, we introduced a data type called `GraphSON`. `GraphSON a` has data of type `a` and opitoal "type string" that describes the type of that data.
+To support GraphSON decoding, we introduced a data type called `GraphSON`. `GraphSON a` has data of type `a` and optional "type string" that describes the type of that data.
 
 ```haskell GraphSON
 import Data.Greskell.GraphSON (GraphSON(..))
@@ -350,8 +353,76 @@ main = hspec $ specify "GraphSON" $ do
   A.decode vertex_GraphSONv3 `shouldBe` Just decoded_vertex_GraphSONv3
 ```
 
+As you can see in the above example, the vertex object in GraphSON version 3 has `@type` and `@value` fields, while version 1 does not. `AVertex` can parse both versions. The `@type` field, if present, is set to `gsonType` field of `GraphSON` data type.
+
 
 ## Make your own graph structure types
+
+When you use a graph database, I think you usually encode your application-specific data types as graph data structures, and store them in the database. greskell supports directly embedding your application-specific data types into graph data structures.
+
+For example, let's make the following `Person` type a graph vertex.
+
+```haskell own_types
+import Data.Greskell.Graph
+  ( Element(..), Vertex, AVertexProperty, AVertex(..),
+    lookupOneValue
+  )
+import Data.Greskell.GraphSON (GraphSON(..))
+import Data.Greskell.Greskell (toGremlin)
+import Data.Greskell.GTraversal
+  ( GTraversal, Transform,
+    source, sV, gHasLabel, gHas2, (&.)
+  )
+
+data Person =
+  Person
+  { personId :: Int,
+    personName :: Text,
+    personAge :: Int
+  }
+```
+
+In that case, just make it instances of `Element` and `Vertex` type-classes.
+
+```haskell own_types
+instance Element Person where
+  type ElementID Person = Int
+  type ElementProperty Person = AVertexProperty
+
+instance Vertex Person
+```
+
+`Element` type-class has two associated types.
+
+- `ElementID` is the type of the vertex ID. It depends on your graph database implementation and settings.
+- `ElementProperty` is the type of the property of the vertex. If you don't care, just use `AVertexProperty`.
+
+Once `Person` is a `Vertex`, you can use it in greskell's traversal DSL.
+
+```haskell own_types
+main = hspec $ specify "your own graph types" $ do
+  let get_marko :: GTraversal Transform () Person
+      get_marko = source "g" & sV [] &. gHasLabel "person" &. gHas2 "name" "marko"
+  toGremlin get_marko `shouldBe` "g.V().hasLabel(\"person\").has(\"name\",\"marko\")"
+```
+
+In addition, you can easily implement `FromJSON` instance for `Person` type using `AVertex`.
+
+```haskell own_types
+instance A.FromJSON Person where
+  parseJSON v = fromAVertex =<< A.parseJSON v
+    where
+      fromAVertex :: AVertex -> A.Parser Person
+      fromAVertex av = do
+        guard (avLabel av == "person")
+        pid <- A.parseJSON $ gsonValue $ avId av
+        name <- maybe empty (A.parseJSON . gsonValue) $ lookupOneValue "name" $ avProperties av
+        age <- maybe empty (A.parseJSON . gsonValue) $ lookupOneValue "age" $ avProperties av
+        return $ Person pid name age
+```
+
+Using `AVertex` as an intermediate type, you can now parse GraphSON (in any version!) vertex into `Person` type.
+
 
 ## Author
 
