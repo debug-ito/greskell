@@ -231,8 +231,8 @@ class FromJSONWithKey a where
 -- | General simple property type you can use for 'Property' class.
 data AProperty v =
   AProperty
-  { sPropertyKey :: Text,
-    sPropertyValue :: v
+  { apKey :: Text,
+    apValue :: v
   }
   deriving (Show,Eq,Ord)
 
@@ -246,20 +246,20 @@ instance FromJSON v => FromJSONWithKey (AProperty v) where
   parseJSONWithKey k v = AProperty k <$> parseJSON v
 
 instance Property AProperty where
-  propertyKey = sPropertyKey
-  propertyValue = sPropertyValue
+  propertyKey = apKey
+  propertyValue = apValue
 
 instance GraphSONTyped (AProperty v) where
   gsonTypeFor _ = "g:Property"
 
 instance Functor AProperty where
-  fmap f sp = sp { sPropertyValue = f $ sPropertyValue sp }
+  fmap f sp = sp { apValue = f $ apValue sp }
 
 instance Foldable AProperty where
-  foldr f start sp = f (sPropertyValue sp) start
+  foldr f start sp = f (apValue sp) start
 
 instance Traversable AProperty where
-  traverse f sp = fmap (\v -> sp { sPropertyValue = v } ) $ f $ sPropertyValue sp
+  traverse f sp = fmap (\v -> sp { apValue = v } ) $ f $ apValue sp
 
 -- | General vertex property type you can use for VertexProperty,
 -- based on aeson data types.
