@@ -151,6 +151,8 @@ unsafeGreskellLazy = Greskell
 --
 -- >>> toGremlin $ string "foo bar"
 -- "\"foo bar\""
+-- >>> toGremlin $ string "escape newline\n escape dollar $"
+-- "\"escape newline\\n escape dollar \\$\""
 string :: Text -> Greskell Text
 string = fromString . unpack
 
