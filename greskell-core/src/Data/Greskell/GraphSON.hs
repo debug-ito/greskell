@@ -15,7 +15,7 @@ module Data.Greskell.GraphSON
        ) where
 
 import Control.Applicative ((<$>), (<*>))
-import Control.Monad (guard)
+import Control.Monad (when)
 import Data.Aeson (ToJSON(toJSON), FromJSON(parseJSON), object, (.=), Value(Object), (.:?))
 import qualified Data.Aeson as Aeson
 import Data.Aeson.Types (Parser)
@@ -151,6 +151,9 @@ parseTypedGraphSON :: (GraphSONTyped v, FromJSON v) => Value -> Parser (GraphSON
 parseTypedGraphSON v = checkType =<< parseJSON v
   where
     checkType gson = do
-      guard (gsonType gson == Just (gsonTypeFor $ gsonValue gson))
+      let exp_type = gsonTypeFor $ gsonValue gson
+          mgot_type = gsonType gson
+      when (mgot_type /= Just exp_type) $ do
+        fail ("Expected @type of " ++ show exp_type ++ ", but got " ++ show mgot_type)
       return gson
 
