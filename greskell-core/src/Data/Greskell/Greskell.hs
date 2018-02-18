@@ -46,6 +46,9 @@ import Data.List (intersperse)
 import Data.Text (Text, pack, unpack)
 import qualified Data.Text.Lazy as TL
 
+-- $
+-- >>> :set -XOverloadedStrings
+
 -- | Gremlin expression of type @a@.
 --
 -- 'Greskell' is essentially just a piece of Gremlin script with a
@@ -124,6 +127,9 @@ escapeDQuotes orig = ('"' : (esc =<< orig)) ++ "\""
 
 -- | Unsafely create a 'Greskell' of arbitrary type. The given Gremlin
 -- script is printed as-is.
+--
+-- >>> toGremlin $ unsafeGreskell "x + 100"
+-- "x + 100"
 unsafeGreskell :: Text -- ^ Gremlin script
                -> Greskell a
 unsafeGreskell = Greskell . TL.fromStrict
