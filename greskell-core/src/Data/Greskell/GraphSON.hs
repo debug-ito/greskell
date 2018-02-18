@@ -17,6 +17,7 @@ module Data.Greskell.GraphSON
 import Control.Applicative ((<$>), (<*>))
 import Control.Monad (guard)
 import Data.Aeson (ToJSON(toJSON), FromJSON(parseJSON), object, (.=), Value(Object), (.:?))
+import qualified Data.Aeson as Aeson
 import Data.Aeson.Types (Parser)
 import Data.Foldable (Foldable(foldr))
 import qualified Data.HashMap.Lazy as HML
@@ -25,6 +26,9 @@ import Data.Int (Int8, Int16, Int32, Int64)
 import Data.Scientific (Scientific)
 import Data.Text (Text)
 import Data.Traversable (Traversable(traverse))
+
+-- $
+-- >>> :set -XOverloadedStrings
 
 -- | Wrapper of \"typed JSON object\" introduced in GraphSON version
 -- 2. See http://tinkerpop.apache.org/docs/current/dev/io/#graphson
@@ -47,14 +51,23 @@ instance Traversable GraphSON where
   traverse f gs = fmap (\v -> gs { gsonValue = v }) $ f $ gsonValue gs
 
 -- | Create a 'GraphSON' without 'gsonType'.
+--
+-- >>> nonTypedGraphSON (10 :: Int)
+-- GraphSON {gsonType = Nothing, gsonValue = 10}
 nonTypedGraphSON :: v -> GraphSON v
 nonTypedGraphSON = GraphSON Nothing
 
 -- | Create a 'GraphSON' with its type label.
+--
+-- >>> typedGraphSON (10 :: Int32)
+-- GraphSON {gsonType = Just "g:Int32", gsonValue = 10}
 typedGraphSON :: GraphSONTyped v => v -> GraphSON v
 typedGraphSON v = GraphSON (Just $ gsonTypeFor v) v
 
 -- | Create a 'GraphSON' with the given type label.
+--
+-- >>> typedGraphSON' "g:Int32" (10 :: Int)
+-- GraphSON {gsonType = Just "g:Int32", gsonValue = 10}
 typedGraphSON' :: Text -> v -> GraphSON v
 typedGraphSON' t = GraphSON (Just t)
 
@@ -71,6 +84,11 @@ instance ToJSON v => ToJSON (GraphSON v) where
 -- | If the given 'Value' is a typed JSON object, 'gsonType' field of
 -- the result is 'Just'. Otherwise, the given 'Value' is directly
 -- parsed into 'gsonValue', and 'gsonType' is 'Nothing'.
+--
+-- >>> Aeson.decode "1000" :: Maybe (GraphSON Int32)
+-- Just (GraphSON {gsonType = Nothing, gsonValue = 1000})
+-- >>> Aeson.decode "{\"@type\": \"g:Int32\", \"@value\": 1000}" :: Maybe (GraphSON Int32)
+-- Just (GraphSON {gsonType = Just "g:Int32", gsonValue = 1000})
 instance FromJSON v => FromJSON (GraphSON v) where
   parseJSON v@(Object o) = do
     if length o /= 2
@@ -125,7 +143,6 @@ instance GraphSONTyped (HML.HashMap k v) where
 
 instance GraphSONTyped (HashSet a) where
   gsonTypeFor _ = "g:Set"
-
 
 
 -- | Parse @GraphSON v@, but it checks 'gsonType'. If 'gsonType' is
