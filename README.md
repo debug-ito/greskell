@@ -24,7 +24,6 @@ Because this README is also a test script, first we import common modules.
 
 ```haskell common
 {-# LANGUAGE OverloadedStrings, QuasiQuotes, TypeFamilies #-}
-import Control.Applicative (empty)
 import Control.Category ((>>>))
 import Control.Monad (guard)
 import Data.Monoid (mempty)
