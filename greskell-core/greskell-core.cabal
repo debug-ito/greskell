@@ -50,7 +50,7 @@ test-suite doctest
   main-is:              DocTest.hs
   build-depends:        base,
                         doctest,
-                        doctest-discover
+                        doctest-discover >=0.1.0.8
 
 
 
