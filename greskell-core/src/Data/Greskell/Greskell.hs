@@ -148,18 +148,30 @@ unsafeGreskellLazy = Greskell
 
 -- | Create a String literal in Gremlin script. The content is
 -- automatically escaped.
+--
+-- >>> toGremlin $ string "foo bar"
+-- "\"foo bar\""
 string :: Text -> Greskell Text
 string = fromString . unpack
 
 -- | Boolean @true@ literal.
+--
+-- >>> toGremlin true
+-- "true"
 true :: Greskell Bool
 true = unsafeGreskell "true"
 
 -- | Boolean @false@ literal.
+--
+-- >>> toGremlin false
+-- "false"
 false :: Greskell Bool
 false = unsafeGreskell "false"
 
 -- | List literal.
+--
+-- >>> toGremlin $ list ([100, 200, 300] :: [Greskell Int])
+-- "[100,200,300]"
 list :: [Greskell a] -> Greskell [a]
 list gs = unsafeGreskellLazy $ ("[" <> TL.intercalate "," gs_txt <> "]")
   where
@@ -167,14 +179,27 @@ list gs = unsafeGreskellLazy $ ("[" <> TL.intercalate "," gs_txt <> "]")
 
 -- | Make a list with a single object. Useful to prevent the Gremlin
 -- Server from automatically iterating the result object.
+--
+-- >>> toGremlin $ single ("hoge" :: Greskell String)
+-- "[\"hoge\"]"
 single :: Greskell a -> Greskell [a]
 single g = list [g]
 
 -- | Arbitrary precision number literal, like \"123e8\".
+--
+-- >>> toGremlin $ number 123e8
+-- "1.23e10"
 number :: Scientific -> Greskell Scientific
 number = unsafeGreskell . pack . show
 
 -- | Aeson 'Value' literal.
+--
+-- >>> toGremlin $ value Aeson.Null
+-- "null"
+-- >>> toGremlin $ value $ Aeson.toJSON $ ([10, 20, 30] :: [Int])
+-- "[10.0,20.0,30.0]"
+-- >>> toGremlin $ value $ Aeson.Object mempty
+-- "[:]"
 value :: Value -> Greskell Value
 value Aeson.Null = unsafeGreskellLazy "null"
 value (Aeson.Bool b) = unsafeToValue (if b then true else false)
@@ -218,6 +243,9 @@ unsafeFunCallText fun_name args = fun_name <> "(" <> args_g <> ")"
 
 -- | Unsafely create a 'Greskell' that calls the given function with
 -- the given arguments.
+--
+-- >>> toGremlin $ unsafeFunCall "add" ["10", "20"]
+-- "add(10,20)"
 unsafeFunCall :: Text -- ^ function name
               -> [Text] -- ^ arguments
               -> Greskell a -- ^ return value of the function call
@@ -225,6 +253,9 @@ unsafeFunCall fun_name args = unsafeGreskell $ unsafeFunCallText fun_name args
 
 -- | Unsafely create a 'Greskell' that calls the given object method
 -- call with the given target and arguments.
+--
+-- >>> toGremlin $ unsafeMethodCall ("foobar" :: Greskell String) "length" []
+-- "(\"foobar\").length()"
 unsafeMethodCall :: Greskell a -- ^ target object
                  -> Text -- ^ method name
                  -> [Text] -- ^ arguments
