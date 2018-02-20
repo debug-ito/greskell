@@ -1,15 +1,29 @@
 module Data.Greskell.BinderSpec (main,spec) where
 
 import Control.Applicative ((<$>), (<*>))
+import Control.Monad (forM_)
 import Data.Aeson (toJSON)
 import qualified Data.HashMap.Strict as HM
+import Data.Text (unpack)
 import Test.Hspec
 
-import Data.Greskell.Greskell (toPlaceHolderVariable, toGremlin, unsafeGreskell)
+import Data.Greskell.Greskell (toGremlin, unsafeGreskell, Greskell)
 import Data.Greskell.Binder (newBind, runBinder)
 
 main :: IO ()
 main = hspec spec
+
+shouldBeVariable :: Greskell a -> IO ()
+shouldBeVariable got_greskell =
+  case unpack $ toGremlin got_greskell of
+   [] -> expectationFailure "Expect a Gremlin variable, but got empty script."
+   (h : rest) -> do
+     h `shouldSatisfy` (`elem` variableHeads)
+     forM_ rest (`shouldSatisfy` (`elem` variableRests))
+  where
+    variableHeads = '_' : (['a' .. 'z'] ++ ['A' .. 'Z'])
+    variableRests = variableHeads ++ ['0' .. '9']
+
 
 spec :: Spec
 spec = describe "Binder" $ do
@@ -19,16 +33,18 @@ spec = describe "Binder" $ do
           v2 <- newBind "hogehoge"
           return (v1, v2)
         ((got_v1, got_v2), got_bind) = runBinder b
-    got_v1 `shouldBe` (unsafeGreskell $ toPlaceHolderVariable 0)
-    got_v2 `shouldBe` (unsafeGreskell $ toPlaceHolderVariable 1)
+    toGremlin got_v1 `shouldNotBe` toGremlin got_v2
+    shouldBeVariable got_v1
+    shouldBeVariable got_v2
     got_bind `shouldBe` HM.fromList [ (toGremlin got_v1, toJSON (100 :: Int)),
                                       (toGremlin got_v2, toJSON "hogehoge")
                                     ]
   it "should compose and produce new variables" $ do
     let b = newBind "foobar"
         ((got_v1, got_v2), got_bind) = runBinder $ ((,) <$> b <*> b)
-    got_v1 `shouldBe` (unsafeGreskell $ toPlaceHolderVariable 0)
-    got_v2 `shouldBe` (unsafeGreskell $ toPlaceHolderVariable 1)
+    toGremlin got_v1 `shouldNotBe` toGremlin got_v2
+    shouldBeVariable got_v1
+    shouldBeVariable got_v2
     got_bind `shouldBe` HM.fromList [ (toGremlin got_v1, toJSON "foobar"),
                                       (toGremlin got_v2, toJSON "foobar")
                                     ]

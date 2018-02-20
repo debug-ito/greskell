@@ -20,12 +20,9 @@ import qualified Control.Monad.Trans.State as State
 import Data.Aeson (Value, ToJSON(toJSON), Object)
 import Data.Monoid ((<>))
 import qualified Data.HashMap.Strict as HM
-import Data.Text (Text, pack)
+import qualified Data.Text.Lazy as TL
 
-import Data.Greskell.Greskell
-  ( Greskell, unsafePlaceHolder, toPlaceHolderVariable,
-    PlaceHolderIndex
-  )
+import Data.Greskell.Greskell (unsafeGreskellLazy, Greskell)
 
 -- | A Monad that manages binding variables to values.
 newtype Binder a = Binder { unBinder :: State (PlaceHolderIndex, [Value]) a }
@@ -48,5 +45,21 @@ runBinder :: Binder a -> (a, Binding)
 runBinder binder = (ret, binding)
   where
     (ret, (_, values)) = State.runState (unBinder binder) (0, [])
-    binding = HM.fromList $ zip (map toPlaceHolderVariable [0 ..]) $ values
+    binding = HM.fromList $ zip (map toPlaceHolderVariableStrict [0 ..]) $ values
+    toPlaceHolderVariableStrict = TL.toStrict . toPlaceHolderVariable
 
+-- | __This type is only for internal use.__
+type PlaceHolderIndex = Int
+
+-- | __This function is only for internal use.__
+--
+-- Unsafely create a placeholder variable of arbitrary type with the
+-- given index.
+unsafePlaceHolder :: PlaceHolderIndex -> Greskell a
+unsafePlaceHolder = unsafeGreskellLazy . toPlaceHolderVariable
+
+-- | __This function is only for internal use.__
+--
+-- Create placeholder variable string from the index.
+toPlaceHolderVariable :: PlaceHolderIndex -> TL.Text
+toPlaceHolderVariable i =  TL.pack ("__v" ++ show i)

@@ -9,7 +9,6 @@ import Test.QuickCheck (property)
 
 import Data.Greskell.Greskell
   ( unsafeGreskell, toGremlin,
-    unsafePlaceHolder, toPlaceHolderVariable,
     unsafeFunCall,
     string, list, true, false, number, value,
     Greskell
@@ -56,8 +55,6 @@ spec_other = do
     specify "mappend" $ do
       let got = (mappend "foo" "bar") :: Greskell Text
       toGremlin got `shouldBe` "(\"foo\")+(\"bar\")"
-  describe "placeHolder" $ it "should create a placeholder variable" $ property $ \i ->
-    (toGremlin $ unsafePlaceHolder i) `shouldBe` toPlaceHolderVariable i
   describe "unsafeFunCall" $ do
     it "should make function call" $ do
       (toGremlin $ unsafeFunCall "fun" ["foo", "bar"]) `shouldBe` "fun(foo,bar)"

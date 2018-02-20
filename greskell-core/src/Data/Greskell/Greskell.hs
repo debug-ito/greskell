@@ -26,9 +26,6 @@ module Data.Greskell.Greskell
          -- * Unsafe constructors
          unsafeGreskell,
          unsafeGreskellLazy,
-         unsafePlaceHolder,
-         PlaceHolderIndex,
-         toPlaceHolderVariable,
          unsafeFunCall,
          unsafeMethodCall
        ) where
@@ -218,17 +215,6 @@ value (Aeson.Object obj)
 
 unsafeToValue :: Greskell a -> Greskell Value
 unsafeToValue = fmap (const Aeson.Null)
-
-type PlaceHolderIndex = Int
-
--- | Unsafely create a placeholder variable of arbitrary type with the
--- given index.
-unsafePlaceHolder :: PlaceHolderIndex -> Greskell a
-unsafePlaceHolder = Greskell . TL.fromStrict . toPlaceHolderVariable
-
--- | Create placeholder variable string from the index.
-toPlaceHolderVariable :: PlaceHolderIndex -> Text
-toPlaceHolderVariable i =  pack ("__v" ++ show i)
 
 -- | Create a readable Gremlin script from 'Greskell'.
 toGremlin :: ToGreskell a => a -> Text
