@@ -32,6 +32,13 @@ import Data.Traversable (Traversable(traverse))
 
 -- | Wrapper of \"typed JSON object\" introduced in GraphSON version
 -- 2. See http://tinkerpop.apache.org/docs/current/dev/io/#graphson
+--
+-- This data type is useful for encoding/decoding GraphSON text.
+-- 
+-- >>> Aeson.decode "1000" :: Maybe (GraphSON Int32)
+-- Just (GraphSON {gsonType = Nothing, gsonValue = 1000})
+-- >>> Aeson.decode "{\"@type\": \"g:Int32\", \"@value\": 1000}" :: Maybe (GraphSON Int32)
+-- Just (GraphSON {gsonType = Just "g:Int32", gsonValue = 1000})
 data GraphSON v =
   GraphSON
   { gsonType :: Maybe Text,
@@ -84,11 +91,6 @@ instance ToJSON v => ToJSON (GraphSON v) where
 -- | If the given 'Value' is a typed JSON object, 'gsonType' field of
 -- the result is 'Just'. Otherwise, the given 'Value' is directly
 -- parsed into 'gsonValue', and 'gsonType' is 'Nothing'.
---
--- >>> Aeson.decode "1000" :: Maybe (GraphSON Int32)
--- Just (GraphSON {gsonType = Nothing, gsonValue = 1000})
--- >>> Aeson.decode "{\"@type\": \"g:Int32\", \"@value\": 1000}" :: Maybe (GraphSON Int32)
--- Just (GraphSON {gsonType = Just "g:Int32", gsonValue = 1000})
 instance FromJSON v => FromJSON (GraphSON v) where
   parseJSON v@(Object o) = do
     if length o /= 2
