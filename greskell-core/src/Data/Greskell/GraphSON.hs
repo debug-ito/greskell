@@ -6,11 +6,14 @@
 --
 -- 
 module Data.Greskell.GraphSON
-       ( GraphSON(..),
+       ( -- * Type
+         GraphSON(..),
+         GraphSONTyped(..),
+         -- * Constructors
          nonTypedGraphSON,
          typedGraphSON,
          typedGraphSON',
-         GraphSONTyped(..),
+         -- * Parser support
          parseTypedGraphSON
        ) where
 
