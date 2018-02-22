@@ -33,7 +33,7 @@ import Data.Traversable (Traversable(traverse))
 -- $
 -- >>> :set -XOverloadedStrings
 
--- | Wrapper of \"typed JSON object\" introduced in GraphSON version
+-- | Wrapper for \"typed JSON object\" introduced in GraphSON version
 -- 2. See http://tinkerpop.apache.org/docs/current/dev/io/#graphson
 --
 -- This data type is useful for encoding/decoding GraphSON text.
@@ -67,14 +67,14 @@ instance Traversable GraphSON where
 nonTypedGraphSON :: v -> GraphSON v
 nonTypedGraphSON = GraphSON Nothing
 
--- | Create a 'GraphSON' with its type label.
+-- | Create a 'GraphSON' with its type ID.
 --
 -- >>> typedGraphSON (10 :: Int32)
 -- GraphSON {gsonType = Just "g:Int32", gsonValue = 10}
 typedGraphSON :: GraphSONTyped v => v -> GraphSON v
 typedGraphSON v = GraphSON (Just $ gsonTypeFor v) v
 
--- | Create a 'GraphSON' with the given type label.
+-- | Create a 'GraphSON' with the given type ID.
 --
 -- >>> typedGraphSON' "g:Int32" (10 :: Int)
 -- GraphSON {gsonType = Just "g:Int32", gsonValue = 10}
@@ -108,10 +108,10 @@ parseDirect :: FromJSON v => Value -> Parser (GraphSON v)
 parseDirect v = GraphSON Nothing <$> parseJSON v
 
 
--- | Types that have an intrinsic type label for 'gsonType' field.
+-- | Types that have an intrinsic type ID for 'gsonType' field.
 class GraphSONTyped a where
   gsonTypeFor :: a -> Text
-  -- ^ Type label for 'gsonType'.
+  -- ^ Type ID for 'gsonType'.
 
 instance GraphSONTyped Char where
   gsonTypeFor _ = "gx:Char"
