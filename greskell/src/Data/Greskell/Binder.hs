@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings, GeneralizedNewtypeDeriving #-}
 -- |
 -- Module: Data.Greskell.Binder
--- Description: Binder monad to make binding between Gremlin variables and JSON values.
+-- Description: Binder monad to make binding between Gremlin variables and JSON values
 -- Maintainer: Toshio Ito <debug.ito@gmail.com>
 --
 -- 
@@ -24,7 +24,24 @@ import qualified Data.Text.Lazy as TL
 
 import Data.Greskell.Greskell (unsafeGreskellLazy, Greskell)
 
+-- $setup
+--
+-- >>> import Control.Applicative ((<$>), (<*>))
+-- >>> import Data.Greskell.Greskell (toGremlin)
+-- >>> import Data.List (sortBy)
+-- >>> import Data.Ord (comparing)
+-- >>> import qualified Data.HashMap.Strict as HashMap
+
 -- | A Monad that manages binding variables to values.
+--
+-- >>> let binder = (,) <$> newBind (10 :: Int) <*> newBind "hoge"
+-- >>> let ((var_int, var_str), binding) = runBinder binder
+-- >>> toGremlin var_int
+-- "__v0"
+-- >>> toGremlin var_str
+-- "__v1"
+-- >>> sortBy (comparing fst) $ HashMap.toList binding
+-- [("__v0",Number 10.0),("__v1",String "hoge")]
 newtype Binder a = Binder { unBinder :: State (PlaceHolderIndex, [Value]) a }
                    deriving (Functor, Applicative, Monad)
 
@@ -32,6 +49,10 @@ newtype Binder a = Binder { unBinder :: State (PlaceHolderIndex, [Value]) a }
 type Binding = Object
 
 -- | Create a new Gremlin variable bound to the given value.
+--
+-- The value @v@ is kept in the monadic context. The returned
+-- 'Greskell' is a Gremlin variable pointing to the @v@. The Gremlin
+-- variable is guaranteed to be unique in the current monadic context.
 newBind :: ToJSON v
         => v -- ^ bound value
         -> Binder (Greskell v) -- ^ variable
