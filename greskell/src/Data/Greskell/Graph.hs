@@ -2,12 +2,13 @@
 {-# OPTIONS_GHC -fno-warn-redundant-constraints #-}
 -- |
 -- Module: Data.Greskell.Graph
--- Description: Haskell counterpart of Gremlin graph structure data types.
+-- Description: Haskell counterpart of Gremlin graph structure data types
 -- Maintainer: Toshio Ito <debug.ito@gmail.com>
 --
--- 
+-- This module defines types and functions about TinkerPop graph
+-- structure API.
 module Data.Greskell.Graph
-       ( -- * TinkerPop graph structure API
+       ( -- * TinkerPop graph structure types
          Element(..),
          Vertex,
          Edge(..),
@@ -68,26 +69,35 @@ import Data.Greskell.Greskell
     ToGreskell(..)
   )
 
--- | @Element@ interface in a TinkerPop graph.
+-- | @org.apache.tinkerpop.gremlin.structure.Element@ interface in a
+-- TinkerPop graph.
 class Element e where
   type ElementID e
-  -- ^ ID type of the 'Element'
+  -- ^ ID type of the 'Element'. This depends on graph database
+  -- implementation and its settings.
   type ElementProperty e :: * -> *
   -- ^ Property type of the 'Element'. It should be of 'Property'
-  -- class.
+  -- class. If you don't care, use 'AVertexProperty' if type @e@ is an
+  -- 'Vertex' and use 'AProperty' if type @e@ is an 'Edge' or
+  -- VertexProperty.
 
--- | @Vertex@ interface in a TinkerPop graph.
+-- | @org.apache.tinkerpop.gremlin.structure.Vertex@ interface in a
+-- TinkerPop graph.
 class (Element v) => Vertex v
 
--- | @Edge@ interface in a TinkerPop graph.
+-- | @org.apache.tinkerpop.gremlin.structure.Edge@ interface in a
+-- TinkerPop graph.
 class (Element e) => Edge e where
   type EdgeVertexID e
   -- ^ ID type of the 'Vertex' this edge connects.
 
--- | @Property@ interface in a TinkerPop graph.
+-- | @org.apache.tinkerpop.gremlin.structure.Property@ interface in a
+-- TinkerPop graph.
 class Property p where
   propertyKey :: p v -> Text
+  -- ^ Get key of this property.
   propertyValue :: p v -> v
+  -- ^ Get value of this property.
 
 -- | @org.apache.tinkerpop.gremlin.structure.T@ enum.
 --
