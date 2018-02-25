@@ -19,7 +19,7 @@ module Data.Greskell.Graph
          tKey,
          tLabel,
          tValue,
-         -- * Extended API
+         -- * Typed Key (accessor of a Property)
          Key(..),
          key,
          -- * Concrete data types
@@ -91,6 +91,7 @@ class (Element e) => Edge e where
   type EdgeVertexID e
   -- ^ ID type of the 'Vertex' this edge connects.
 
+
 -- | @org.apache.tinkerpop.gremlin.structure.Property@ interface in a
 -- TinkerPop graph.
 class Property p where
@@ -158,6 +159,10 @@ key = Key . string
 --
 -- As for properties, you can use 'PropertyMap' and other type-classes
 -- to manipulate them.
+--
+-- If you want to define your own graph structure types, see
+-- [README.md](https://github.com/debug-ito/greskell#make-your-own-graph-structure-types)
+-- for detail.
 
 
 -- | General vertex type you can use for 'Vertex' class, based on

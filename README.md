@@ -359,11 +359,12 @@ As you can see in the above example, the vertex object in GraphSON version 3 has
 
 When you use a graph database, I think you usually encode your application-specific data types as graph data structures, and store them in the database. greskell supports directly embedding your application-specific data types into graph data structures.
 
-For example, let's make the following `Person` type a graph vertex.
+For example, let's make the following `Person` type a graph Vertex.
 
 ```haskell own_types
 import Data.Greskell.Graph
-  ( Element(..), Vertex, AVertexProperty, AVertex(..),
+  ( Element(..), Vertex, Edge(..), Property(..),
+    AVertexProperty, AVertex(..), AProperty,
     parseOneValue
   )
 import Data.Greskell.GraphSON (GraphSON(..))
@@ -421,6 +422,45 @@ instance A.FromJSON Person where
 ```
 
 Using `AVertex` as an intermediate type, you can now parse GraphSON (in any version!) vertex into `Person` type.
+
+Like the above example of `Person`, you can make your own graph structure types for `Edge`, `Property` etc.
+
+For an `Edge`, make it instances of `Element` and `Edge`. `ElementProperty` should be `AProperty` if you don't care.
+
+```haskell own_types
+data MyEdge = MyEdge
+
+instance Element MyEdge where
+  type ElementID MyEdge = Text
+  type ElementProperty MyEdge = AProperty
+
+instance Edge MyEdge where
+  type EdgeVertexID MyEdge = Integer
+```
+
+For a simple `Property`, make it instance of `Property`. Note that the kind of a property type should be `(* -> *)`.
+
+```haskell own_types
+data MyProperty v = MyProperty v
+
+instance Property MyProperty where
+  propertyKey _ = "key"
+  propertyValue (MyProperty v) = v
+```
+
+For a `VertexProperty`, just make it instances of `Element` and `Property`. We don't have `VertexProperty` type-class, because `Element` and `Property` have different kinds. `ElementProperty` should be `AProperty` if you don't care.
+
+```haskell own_types
+data MyVertexProperty v = MyVertexProperty v
+
+instance Element (MyVertexProperty v) where
+  type ElementID (MyVertexProperty v) = Int
+  type ElementProperty (MyVertexProperty v) = AProperty
+
+instance Property MyVertexProperty where
+  propertyKey _ = "key"
+  propertyValue (MyVertexProperty v) = v
+```
 
 
 ## Todo
