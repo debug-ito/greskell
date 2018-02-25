@@ -107,21 +107,22 @@ data T a b
 instance GraphSONTyped (T a b) where
   gsonTypeFor _ = "g:T"
 
+
 -- | @T.id@ token.
 tId :: Element a => Greskell (T a (ElementID a))
-tId = unsafeGreskellLazy "id"
+tId = unsafeGreskellLazy "T.id"
 
 -- | @T.key@ token.
 tKey :: (Element (p v), Property p) => Greskell (T (p v) Text)
-tKey = unsafeGreskellLazy "key"
+tKey = unsafeGreskellLazy "T.key"
 
 -- | @T.label@ token.
 tLabel :: Element a => Greskell (T a Text)
-tLabel = unsafeGreskellLazy "label"
+tLabel = unsafeGreskellLazy "T.label"
 
 -- | @T.value@ token.
 tValue :: (Element (p v), Property p) => Greskell (T (p v) v)
-tValue = unsafeGreskellLazy "value"
+tValue = unsafeGreskellLazy "T.value"
 
 
 -- | A property key accessing value @b@ in an Element @a@. In Gremlin,

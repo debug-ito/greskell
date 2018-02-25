@@ -1,7 +1,9 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Main (main,spec) where
 
+import Control.Category ((<<<))
 import qualified Data.Aeson as Aeson
+import Data.Either (isRight)
 import Data.Monoid (mempty, (<>))
 import Data.Scientific (Scientific)
 import Data.Text (unpack, Text)
@@ -16,7 +18,17 @@ import Data.Greskell.Gremlin
   )
 import Data.Greskell.Greskell
   ( toGremlin, Greskell,
-    true, false, list, value, single, number
+    true, false, list, value, single, number,
+    unsafeMethodCall
+  )
+import Data.Greskell.Graph
+  ( AVertex, T, tId, tLabel, tKey, tValue
+  )
+import Data.Greskell.GTraversal
+  ( Walk, GTraversal,
+    source, sV', ($.), gOrder, gBy1,
+    Transform, unsafeWalk, unsafeGTraversal,
+    gProperties
   )
 
 main :: IO ()
@@ -27,6 +39,7 @@ spec = withEnv $ do
   spec_basics
   spec_comparator
   spec_predicate
+  spec_T
 
 
 spec_basics :: SpecWith (String,Int)
@@ -84,10 +97,12 @@ spec_basics = do
     let array_in_obj = Aeson.object [("foo", Aeson.toJSON [(3 :: Int), 2, 1]), ("hoge", Aeson.toJSON [("a" :: Text), "b", "c"])]
     checkV (value array_in_obj) array_in_obj
 
+shouldReturnA :: (Aeson.ToJSON a, Show e, Eq e) => IO (Either e [Aeson.Value]) -> [a] -> IO ()
+shouldReturnA act expected = act `shouldReturn` Right (map Aeson.toJSON expected)
 
 checkRaw :: Aeson.ToJSON b => Greskell a -> [b] -> SpecWith (String, Int)
 checkRaw  input expected = specify label $ withConn $ \conn -> do
-  TP.submit conn (toGremlin input) Nothing `shouldReturn` Right (map Aeson.toJSON expected)
+  TP.submit conn (toGremlin input) Nothing `shouldReturnA` expected
   where
     label = unpack $ toGremlin input
 
@@ -125,3 +140,28 @@ spec_predicate = do
   checkOne (pTest (pLt 20 `pAnd` pGte 10) (15 :: Greskell Int)) True
   checkOne (pTest (pLt 20 `pAnd` pGte 10) (20 :: Greskell Int)) False
 
+
+shouldReturnRight :: (Show a, Show b, Eq a, Eq b) => IO (Either a b) -> IO ()
+shouldReturnRight act = do
+  eret <- act
+  eret `shouldSatisfy` isRight
+
+spec_T :: SpecWith (String,Int)
+spec_T = describe "T enum" $ do
+  specFor "tId" (gMapT tId) [Aeson.Number 10]
+  specFor "tLabel" (gMapT tLabel) ["VLABEL"]
+  specFor "tKey" (gMapT tKey <<< gProperties ["vprop"]) ["vprop"]
+  specFor "tValue" (gMapT tValue <<< gProperties ["vprop"]) [Aeson.Number 400]
+  where
+    gMapT :: Greskell (T a b) -> Walk Transform a b
+    gMapT t = unsafeWalk "map" ["{ " <> toGremlin (unsafeMethodCall t "apply" ["it.get()"]) <> " }"]
+    specFor :: Aeson.ToJSON a => String -> Walk Transform AVertex a -> [a] -> SpecWith (String,Int)
+    specFor desc mapper expected = specify desc $ withConn $ \conn -> do
+      let prelude = 
+            ( "graph = org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph.open(); "
+              <> "v = graph.addVertex(id, 10, label, \"VLABEL\"); "
+              <> "v.property(\"vprop\", 400, \"a\", \"A\", \"b\", \"B\"); "
+              <> "g = graph.traversal(); "
+            )
+          body = toGremlin $ mapper $. sV' [] $ source "g"
+      TP.submit conn (prelude <> body) Nothing `shouldReturnA` expected
