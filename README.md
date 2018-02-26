@@ -359,6 +359,8 @@ As you can see in the above example, the vertex object in GraphSON version 3 has
 
 When you use a graph database, I think you usually encode your application-specific data types as graph data structures, and store them in the database. greskell supports directly embedding your application-specific data types into graph data structures.
 
+### Vertex
+
 For example, let's make the following `Person` type a graph Vertex.
 
 ```haskell own_types
@@ -425,6 +427,8 @@ Using `AVertex` as an intermediate type, you can now parse GraphSON (in any vers
 
 Like the above example of `Person`, you can make your own graph structure types for `Edge`, `Property` etc.
 
+### Edge
+
 For an `Edge`, make it instances of `Element` and `Edge`. `ElementProperty` should be `AProperty` if you don't care.
 
 ```haskell own_types
@@ -438,6 +442,8 @@ instance Edge MyEdge where
   type EdgeVertexID MyEdge = Integer
 ```
 
+### Property
+
 For a simple `Property`, make it instance of `Property`. Note that the kind of a property type should be `(* -> *)`.
 
 ```haskell own_types
@@ -447,6 +453,8 @@ instance Property MyProperty where
   propertyKey _ = "key"
   propertyValue (MyProperty v) = v
 ```
+
+### VertexProperty
 
 For a `VertexProperty`, just make it instances of `Element` and `Property`. We don't have `VertexProperty` type-class, because `Element` and `Property` have different kinds. `ElementProperty` should be `AProperty` if you don't care.
 
