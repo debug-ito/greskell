@@ -397,7 +397,7 @@ instance Vertex Person
 `Element` type-class has two associated types.
 
 - `ElementID` is the type of the vertex ID. It depends on your graph database implementation and settings.
-- `ElementProperty` is the type of the property of the vertex. If you don't care, just use `AVertexProperty`.
+- `ElementProperty` is the type of the property of the vertex. If you don't care, you can use `AVertexProperty`.
 
 Once `Person` is a `Vertex`, you can use it in greskell's traversal DSL.
 
@@ -425,11 +425,11 @@ instance A.FromJSON Person where
 
 Using `AVertex` as an intermediate type, you can now parse GraphSON (in any version!) vertex into `Person` type.
 
-Like the above example of `Person`, you can make your own graph structure types for `Edge`, `Property` etc.
+Like the above example of `Person`, you can make your own types for other graph structures.
 
 ### Edge
 
-For an `Edge`, make it instances of `Element` and `Edge`. `ElementProperty` should be `AProperty` if you don't care.
+For an `Edge`, make it instances of `Element` and `Edge`. You can use `AProperty` for `ElementProperty` if you don't care.
 
 ```haskell own_types
 data MyEdge = MyEdge
@@ -444,7 +444,7 @@ instance Edge MyEdge where
 
 ### Property
 
-For a simple `Property`, make it instance of `Property`. Note that the kind of a property type should be `(* -> *)`.
+For a simple `Property`, make it instance of `Property`. Note that the kind of a property type has to be `(* -> *)`.
 
 ```haskell own_types
 data MyProperty v = MyProperty v
@@ -456,7 +456,7 @@ instance Property MyProperty where
 
 ### VertexProperty
 
-For a `VertexProperty`, just make it instances of `Element` and `Property`. We don't have `VertexProperty` type-class, because `Element` and `Property` have different kinds. `ElementProperty` should be `AProperty` if you don't care.
+For a `VertexProperty`, just make it instances of `Element` and `Property`. We don't have `VertexProperty` type-class, because `Element` and `Property` have different kinds. You can use `AProperty` for `ElementProperty` if you don't care.
 
 ```haskell own_types
 data MyVertexProperty v = MyVertexProperty v
