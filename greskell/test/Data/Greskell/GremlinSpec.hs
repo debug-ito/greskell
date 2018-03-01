@@ -17,4 +17,4 @@ spec = do
     specify "P and Predicate methods" $ do
       let expr = (pBetween (10 :: Greskell Int) 50 `pAnd` ((pNegate (pWithin [5, 15, 25, 35])) `pOr` pGte 20)) `pTest` 50
       toGremlin expr `shouldBe`
-        "((between(10,50)).and(((within(5,15,25,35)).negate()).or(gte(20)))).test(50)"
+        "((P.between(10,50)).and(((P.within(5,15,25,35)).negate()).or(P.gte(20)))).test(50)"

@@ -86,7 +86,7 @@ spec_compose_steps :: Spec
 spec_compose_steps = describe "DSL to compose steps" $ do
   specify "(&) and (&.)" $ do
     let gt = source "g" & sV' [] &. gHas2P ("x" :: Key e Int) (pEq 100) &. gOut' [] &. gRange 0 100
-    toGremlin gt `shouldBe` "g.V().has(\"x\",eq(100)).out().range(0,100)"
+    toGremlin gt `shouldBe` "g.V().has(\"x\",P.eq(100)).out().range(0,100)"
   specify "(&) and (&.) and (>>>)" $ do
     let gt = source "g" & sV' [value $ Number 200] &. (gOut' [] >>> gOut' ["friends_to"] >>> gValues ["name"])
     toGremlin gt `shouldBe` "g.V(200.0).out().out(\"friends_to\").values(\"name\")"
@@ -95,7 +95,7 @@ spec_compose_steps = describe "DSL to compose steps" $ do
     toGremlin gt `shouldBe` "g.V().not(__.out(\"friends_to\")).range(20,30)"
   specify "($) and ($.) and (<<<)" $ do
     let gt = gHas2P (key "name" :: Key e Text) (pEq "hoge") <<< gIn' ["foo", "bar"] <<< gIn' [] $. sV' [] $ source "g"
-    toGremlin gt `shouldBe` "g.V().in().in(\"foo\",\"bar\").has(\"name\",eq(\"hoge\"))"
+    toGremlin gt `shouldBe` "g.V().in().in(\"foo\",\"bar\").has(\"name\",P.eq(\"hoge\"))"
 
 spec_has :: Spec
 spec_has = do
@@ -109,20 +109,20 @@ spec_has = do
   describe "gHas2P" $ do
     specify "IsString Key and P" $ do
       toGremlin (source "g" & sV' [] &. gHas2P ("name" :: Key e Text) (pNeq "hoge"))
-        `shouldBe` "g.V().has(\"name\",neq(\"hoge\"))"
+        `shouldBe` "g.V().has(\"name\",P.neq(\"hoge\"))"
   describe "gHasLabelP" $ do
     specify "P" $ do
       toGremlin (source "g" & sE' [] &. gHasLabelP (pNeq "friends_to"))
-        `shouldBe` "g.E().hasLabel(neq(\"friends_to\"))"
+        `shouldBe` "g.E().hasLabel(P.neq(\"friends_to\"))"
   describe "gHasIdP" $ do
     specify "P" $ do
       toGremlin (source "g" & sV' [] &. gHasIdP (pInside (value $ Number 10) (value $ Number 20)))
-        `shouldBe` "g.V().hasId(inside(10.0,20.0))"
+        `shouldBe` "g.V().hasId(P.inside(10.0,20.0))"
   describe "gHasKeyP, gProperties" $ do
     specify "P" $ do
       toGremlin (source "g" & sV' [] &. gProperties [] &. gHasKeyP (pEq "hoge"))
-        `shouldBe` "g.V().properties().hasKey(eq(\"hoge\"))"
+        `shouldBe` "g.V().properties().hasKey(P.eq(\"hoge\"))"
   describe "gHasValueP, gProperties" $ do
     specify "P" $ do
       toGremlin (source "g" & sV' [] &. gProperties ["age" :: Key e Int] &. gHasValueP (pGte 20))
-        `shouldBe` "g.V().properties(\"age\").hasValue(gte(20))"
+        `shouldBe` "g.V().properties(\"age\").hasValue(P.gte(20))"
