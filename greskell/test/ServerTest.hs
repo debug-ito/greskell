@@ -14,7 +14,7 @@ import Test.Hspec
 
 import Data.Greskell.Gremlin
   ( oIncr, cCompare, Order,
-    Predicate(..), pLt, pAnd, pGte
+    Predicate(..), pLt, pAnd, pGte, pNot, pEq, pTest
   )
 import Data.Greskell.Greskell
   ( toGremlin, Greskell,
@@ -40,6 +40,7 @@ spec = withEnv $ do
   spec_comparator
   spec_predicate
   spec_T
+  spec_P
 
 
 spec_basics :: SpecWith (String,Int)
@@ -140,12 +141,6 @@ spec_predicate = do
   checkOne (pTest (pLt 20 `pAnd` pGte 10) (15 :: Greskell Int)) True
   checkOne (pTest (pLt 20 `pAnd` pGte 10) (20 :: Greskell Int)) False
 
-
-shouldReturnRight :: (Show a, Show b, Eq a, Eq b) => IO (Either a b) -> IO ()
-shouldReturnRight act = do
-  eret <- act
-  eret `shouldSatisfy` isRight
-
 spec_T :: SpecWith (String,Int)
 spec_T = describe "T enum" $ do
   specFor "tId" (gMapT tId) [Aeson.Number 10]
@@ -165,3 +160,10 @@ spec_T = describe "T enum" $ do
             )
           body = toGremlin $ mapper $. sV' [] $ source "g"
       TP.submit conn (prelude <> body) Nothing `shouldReturnA` expected
+
+spec_P :: SpecWith (String,Int)
+spec_P = describe "P class" $ specify "pNot, pEq, pTest" $ withConn $ \conn -> do
+  let p = pNot $ pEq $ number 10
+      test v = toGremlin $ pTest p $ v
+  TP.submit conn (test $ number 10) Nothing `shouldReturnA` [False]
+  TP.submit conn (test $ number 15) Nothing `shouldReturnA` [True]

@@ -1,15 +1,16 @@
 {-# LANGUAGE OverloadedStrings, TypeFamilies #-}
 -- |
 -- Module: Data.Greskell.Gremlin
--- Description: Basic Gremlin (Groovy/Java) data types
+-- Description: Gremlin (Groovy/Java) utility classes
 -- Maintainer: Toshio Ito <debug.ito@gmail.com>
 --
--- 
+-- This modules defines types and functions for utility classes in
+-- Gremlin.
 module Data.Greskell.Gremlin
        ( -- * Predicate
          Predicate(..),
          PredicateA(..),
-         -- ** org.apache.tinkerpop.gremlin.process.traversal.P
+         -- ** P class
          P,
          pNot,
          pEq,
@@ -26,7 +27,7 @@ module Data.Greskell.Gremlin
          -- * Comparator
          Comparator(..),
          ComparatorA(..),
-         -- ** org.apache.tinkerpop.gremlin.process.traversal.Order
+         -- ** Order enum
          Order,
          oDecr,
          oIncr,
@@ -41,15 +42,27 @@ import Data.Greskell.Greskell
     toGremlin, toGremlinLazy, unsafeMethodCall, unsafeFunCall
   )
 
+-- $setup
+--
+-- >>> :set -XOverloadedStrings
+-- >>> import Data.Greskell.Greskell (number, string)
+
 -- | @java.util.function.Predicate@ interface.
+--
+-- A 'Predicate' @p@ is a function that takes 'PredicateArg' @p@ and
+-- returns 'Bool'.
 class Predicate p where
   type PredicateArg p
+  -- | @.and@ method.
   pAnd :: Greskell p -> Greskell p -> Greskell p
   pAnd p1 p2 = unsafeMethodCall p1 "and" [toGremlin p2]
+  -- | @.or@ method.
   pOr :: Greskell p -> Greskell p -> Greskell p
   pOr o1 o2 = unsafeMethodCall o1 "or" [toGremlin o2]
+  -- | @.test@ method.
   pTest :: Greskell p -> Greskell (PredicateArg p) -> Greskell Bool
   pTest p arg = unsafeMethodCall p "test" [toGremlin arg]
+  -- | @.nagate@ method.
   pNegate :: Greskell p -> Greskell p
   pNegate p = unsafeMethodCall p "negate" []
 
@@ -61,7 +74,7 @@ instance Predicate (PredicateA a) where
 
 -- | @org.apache.tinkerpop.gremlin.process.traversal.P@ class.
 --
--- @P a@ keeps data of type @a@ and compare it with data of type @a@
+-- @P a@ keeps data of type @a@ and compares it with data of type @a@
 -- given as the Predicate argument.
 data P a
 
@@ -71,53 +84,66 @@ instance Predicate (P a) where
 instance GraphSONTyped (P a) where
   gsonTypeFor _ = "g:P"
 
+
 -- | @P.not@ static method.
+--
+-- >>> toGremlin $ pNot $ pEq $ number 10
+-- "P.not(P.eq(10.0))"
 pNot :: Greskell (P a) -> Greskell (P a)
-pNot a = unsafeFunCall "not" [toGremlin a]
+pNot a = unsafeFunCall "P.not" [toGremlin a]
 
 -- | @P.eq@ static method.
+--
+-- >>> toGremlin $ pEq $ string "hoge"
+-- "P.eq(\"hoge\")"
 pEq :: Greskell a -> Greskell (P a)
-pEq arg = unsafeFunCall "eq" [toGremlin arg]
+pEq arg = unsafeFunCall "P.eq" [toGremlin arg]
 
 -- | @P.neq@ static method.
 pNeq :: Greskell a -> Greskell (P a)
-pNeq arg = unsafeFunCall "neq" [toGremlin arg]
+pNeq arg = unsafeFunCall "P.neq" [toGremlin arg]
 
 -- | @P.lt@ static method.
 pLt :: Greskell a -> Greskell (P a)
-pLt arg = unsafeFunCall "lt" [toGremlin arg]
+pLt arg = unsafeFunCall "P.lt" [toGremlin arg]
 
 -- | @P.lte@ static method.
 pLte :: Greskell a -> Greskell (P a)
-pLte arg = unsafeFunCall "lte" [toGremlin arg]
+pLte arg = unsafeFunCall "P.lte" [toGremlin arg]
 
 -- | @P.gt@ static method.
 pGt :: Greskell a -> Greskell (P a)
-pGt arg = unsafeFunCall "gt" [toGremlin arg]
+pGt arg = unsafeFunCall "P.gt" [toGremlin arg]
 
 -- | @P.gte@ static method.
 pGte :: Greskell a -> Greskell (P a)
-pGte arg = unsafeFunCall "gte" [toGremlin arg]
+pGte arg = unsafeFunCall "P.gte" [toGremlin arg]
 
 -- | @P.inside@ static method.
+--
+-- >>> toGremlin $ pInside (number 10) (number 20)
+-- "P.inside(10.0,20.0)"
 pInside :: Greskell a -> Greskell a -> Greskell (P a)
-pInside a b = unsafeFunCall "inside" $ map toGremlin [a, b]
+pInside a b = unsafeFunCall "P.inside" $ map toGremlin [a, b]
 
 -- | @P.outside@ static method.
 pOutside :: Greskell a -> Greskell a -> Greskell (P a)
-pOutside a b = unsafeFunCall "outside" $ map toGremlin [a, b]
+pOutside a b = unsafeFunCall "P.outside" $ map toGremlin [a, b]
 
 -- | @P.between@ static method.
 pBetween :: Greskell a -> Greskell a -> Greskell (P a)
-pBetween a b = unsafeFunCall "between" $ map toGremlin [a, b]
+pBetween a b = unsafeFunCall "P.between" $ map toGremlin [a, b]
 
 -- | @P.within@ static method.
+--
+-- >>> toGremlin $ pWithin (["foo", "bar", "hoge"] :: [Greskell String])
+-- "P.within(\"foo\",\"bar\",\"hoge\")"
 pWithin :: [Greskell a] -> Greskell (P a)
-pWithin = unsafeFunCall "within" . map toGremlin
+pWithin = unsafeFunCall "P.within" . map toGremlin
 
 -- | @P.without@ static method.
 pWithout :: [Greskell a] -> Greskell (P a)
-pWithout = unsafeFunCall "without" . map toGremlin
+pWithout = unsafeFunCall "P.without" . map toGremlin
 
 -- | @java.util.Comparator@ interface.
 class Comparator c where
