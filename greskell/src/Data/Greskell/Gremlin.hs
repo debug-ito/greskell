@@ -146,12 +146,17 @@ pWithout :: [Greskell a] -> Greskell (P a)
 pWithout = unsafeFunCall "P.without" . map toGremlin
 
 -- | @java.util.Comparator@ interface.
+--
+-- 'Comparator' compares two data of type 'CompareArg' @c@.
 class Comparator c where
   type CompareArg c
+  -- | @.compare@ method.
   cCompare :: Greskell c -> Greskell (CompareArg c) -> Greskell (CompareArg c) -> Greskell Int
   cCompare cmp a b = unsafeMethodCall cmp "compare" $ map toGremlin [a, b]
+  -- | @.reverse@ method.
   cReversed :: Greskell c -> Greskell c
   cReversed cmp = unsafeMethodCall cmp "reversed" []
+  -- | @.thenComparing@ method.
   cThenComparing :: Greskell c -> Greskell c -> Greskell c
   cThenComparing cmp1 cmp2 = unsafeMethodCall cmp1 "thenComparing" [toGremlin cmp2]
 
@@ -161,7 +166,7 @@ newtype ComparatorA a = ComparatorA { unComparatorA :: a -> a -> Int }
 instance Comparator (ComparatorA a) where
   type CompareArg (ComparatorA a) = a
 
--- | org.apache.tinkerpop.gremlin.process.traversal.Order enum.
+-- | @org.apache.tinkerpop.gremlin.process.traversal.Order@ enum.
 data Order a
 
 -- | @Order a@ compares the type @a@.
