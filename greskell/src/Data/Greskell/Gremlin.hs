@@ -177,13 +177,16 @@ instance GraphSONTyped (Order a) where
   gsonTypeFor _ = "g:Order"
 
 -- | @decr@ order.
+--
+-- >>> toGremlin oDecr
+-- "Order.decr"
 oDecr :: Greskell (Order a)
-oDecr = unsafeGreskellLazy "decr"
+oDecr = unsafeGreskellLazy "Order.decr"
 
 -- | @incr@ order.
 oIncr :: Greskell (Order a)
-oIncr = unsafeGreskellLazy "incr"
+oIncr = unsafeGreskellLazy "Order.incr"
 
 -- | @shuffle@ order.
 oShuffle :: Greskell (Order a)
-oShuffle = unsafeGreskellLazy "shuffle"
+oShuffle = unsafeGreskellLazy "Order.shuffle"

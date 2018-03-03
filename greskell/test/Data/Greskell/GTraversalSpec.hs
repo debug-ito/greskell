@@ -57,21 +57,21 @@ spec_order_by = describe "gOrder" $ do
     toGremlin (gv &. gOrder []) `shouldBe` "g.V().order()"
   specify "empty projection" $ do
     -- This case is relatively rare (I think), so the API is not so convenient for now.
-    toGremlin (gv &. gOrder [ByComparatorComp oIncr]) `shouldBe` "g.V().order().by(incr)"
+    toGremlin (gv &. gOrder [ByComparatorComp oIncr]) `shouldBe` "g.V().order().by(Order.incr)"
   specify "traversal projection" $ do
     toGremlin (gv &. gOrder [gBy2 (gOut' ["foo"] >>> gIn' ["bar"]) oShuffle])
-      `shouldBe` "g.V().order().by(__.out(\"foo\").in(\"bar\"),shuffle)"
+      `shouldBe` "g.V().order().by(__.out(\"foo\").in(\"bar\"),Order.shuffle)"
   specify "value projection" $ do
     let nameKey :: Key e Text
         nameKey = "name"
-    toGremlin (gv &. gOrder [gBy2 nameKey oDecr]) `shouldBe` "g.V().order().by(\"name\",decr)"
+    toGremlin (gv &. gOrder [gBy2 nameKey oDecr]) `shouldBe` "g.V().order().by(\"name\",Order.decr)"
   specify "T token projection" $ do
-    toGremlin (gv &. gOrder [gBy2 tLabel oIncr]) `shouldBe` "g.V().order().by(T.label,incr)"
+    toGremlin (gv &. gOrder [gBy2 tLabel oIncr]) `shouldBe` "g.V().order().by(T.label,Order.incr)"
   specify "multiple .by steps of different comparison types" $ do
     let ageKey :: Key e Int
         ageKey = "age"
     toGremlin (gv &. gOrder [gBy2 ageKey oDecr, gBy2 tId oDecr, gBy1 (gOut' ["foo"])])
-      `shouldBe` "g.V().order().by(\"age\",decr).by(T.id,decr).by(__.out(\"foo\"))"
+      `shouldBe` "g.V().order().by(\"age\",Order.decr).by(T.id,Order.decr).by(__.out(\"foo\"))"
   specify "gBy1" $ do
     toGremlin (gv &. gOrder [gBy1 (key "name")]) `shouldBe` "g.V().order().by(\"name\")"
   specify "IsString instance of ByComparator" $ do
@@ -80,7 +80,7 @@ spec_order_by = describe "gOrder" $ do
     toGremlin (gv &. gOrder [ByComparatorProj $ gBy tLabel]) `shouldBe` "g.V().order().by(T.label)"
   specify "IsString instance of ByProjection" $ do
     toGremlin (gv &. gOrder [ByComparatorProjComp ("name") oIncr])
-      `shouldBe` "g.V().order().by(\"name\",incr)"
+      `shouldBe` "g.V().order().by(\"name\",Order.incr)"
 
 spec_compose_steps :: Spec
 spec_compose_steps = describe "DSL to compose steps" $ do

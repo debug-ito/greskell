@@ -13,7 +13,7 @@ import System.Environment (lookupEnv)
 import Test.Hspec
 
 import Data.Greskell.Gremlin
-  ( oIncr, cCompare, Order,
+  ( oIncr, oDecr, cCompare, Order,
     Predicate(..), pLt, pAnd, pGte, pNot, pEq, pTest
   )
 import Data.Greskell.Greskell
@@ -130,9 +130,14 @@ spec_comparator :: SpecWith (String,Int)
 spec_comparator = do
   let oIncr' :: Greskell (Order Int)
       oIncr' = oIncr
+      oDecr' :: Greskell (Order Int)
+      oDecr' = oDecr
   checkOne (cCompare oIncr' 20 20) 0
   checkOne (cCompare oIncr' 10 20) (-1)
   checkOne (cCompare oIncr' 20 10) 1
+  checkOne (cCompare oDecr' 20 20) 0
+  checkOne (cCompare oDecr' 10 20) 1
+  checkOne (cCompare oDecr' 20 10) (-1)
 
 spec_predicate :: SpecWith (String,Int)
 spec_predicate = do
