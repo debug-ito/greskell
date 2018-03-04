@@ -5,7 +5,9 @@
 -- Description: Gremlin traversal/step types.
 -- Maintainer: Toshio Ito <debug.ito@gmail.com>
 --
--- 
+-- This module defines 'GTraversal', greskell counterpart of
+-- @GraphTraversal@ class object, and a DSL of composing graph
+-- traversal steps.
 module Data.Greskell.GTraversal
        ( -- * Types
          -- ** GraphTraversal and others
@@ -88,7 +90,7 @@ module Data.Greskell.GTraversal
          gAddV',
          gDrop,
          gDropP,
-         -- * @.by@ steps
+         -- ** @.by@ steps
          ByProjection(..),
          ProjectionLike(..),
          ByComparator(..),
@@ -97,7 +99,6 @@ module Data.Greskell.GTraversal
          gBy2
        ) where
 
-import Prelude hiding (or, filter, not)
 import Control.Category (Category, (>>>))
 -- (below) to import Category methods without conflict with Prelude
 import qualified Control.Category as Category
@@ -126,7 +127,14 @@ import Data.Greskell.Greskell
   )
 
 
--- | newtype wrapper of 'Greskell' 'GraphTraversal'.
+-- | @GraphTraversal@ class object of TinkerPop. It takes data @s@
+-- from upstream and emits data @e@ to downstream. Type @c@ is called
+-- \"walk type\", a marker to describe the effect of the traversal.
+--
+-- 'GTraversal' is NOT a 'Category'. Because a @GraphTraversal@ object
+-- keeps some context data, the starting (left-most) @GraphTraversal@
+-- object controls most of the behavior of entire composition of
+-- traversals and steps. This violates 'Category' law.
 newtype GTraversal c s e = GTraversal { unGTraversal :: Greskell (GraphTraversal c s e) }
                          deriving (Show)
 
@@ -143,14 +151,8 @@ instance ToGreskell (GTraversal c s e) where
   type GreskellReturn (GTraversal c s e) = GraphTraversal c s e
   toGreskell = unGTraversal
 
--- | @GraphTraversal@ class object of TinkerPop. It takes data @s@
--- from upstream and emits data @e@ to downstream. Type @c@ is a
--- marker to describe the effect of the traversal.
---
--- 'GraphTraversal' is NOT a 'Category'. Because a @GraphTraversal@
--- object keeps some context data, the starting (left-most)
--- @GraphTraversal@ object controls most of the behavior of entire
--- composition of traversals and steps. This violates 'Category' law.
+-- | Phantom type for @GraphTraversal@ class. In greskell, we usually
+-- use 'GTraversal' instead of 'Greskell' 'GraphTraversal'.
 data GraphTraversal c s e = GraphTraversal
                           deriving (Show)
                                   
@@ -179,7 +181,7 @@ instance ToGTraversal GTraversal where
 --
 -- 'Walk' represents a chain of method calls such as
 -- @.has(x).outE()@. Because this is not a Gremlin (Groovy)
--- expression, 'Walk' is not a 'Greskell'.
+-- expression, we use bare 'Walk', not 'Greskell' 'Walk'.
 --
 -- 'Walk' is a 'Category'. You can use functions from
 -- "Control.Category" to compose 'Walk's. This is equivalent to making
