@@ -227,8 +227,7 @@ instance WalkType c => ToGreskell (Walk c s e) where
   type GreskellReturn (Walk c s e) = GraphTraversal c s e
   toGreskell = toGreskell . toGTraversal
 
-
--- | Class of phantom type markers to describe the feature of the
+-- | Class of phantom type markers to describe the effect of the
 -- walk/traversals.
 class WalkType t
 
@@ -539,6 +538,18 @@ class ProjectionLike p where
   -- ^ The start type of the projection.
   type ProjectionLikeEnd p
   -- ^ The end type of the projection.
+
+instance ProjectionLike (Walk Filter s e) where
+  type ProjectionLikeStart (Walk Filter s e) = s
+  type ProjectionLikeEnd (Walk Filter s e) = e
+
+instance ProjectionLike (GTraversal Filter s e) where
+  type ProjectionLikeStart (GTraversal Filter s e) = s
+  type ProjectionLikeEnd (GTraversal Filter s e) = e
+
+instance ProjectionLike (Greskell (GraphTraversal Filter s e)) where
+  type ProjectionLikeStart (Greskell (GraphTraversal Filter s e)) = s
+  type ProjectionLikeEnd (Greskell (GraphTraversal Filter s e)) = e
 
 instance ProjectionLike (Walk Transform s e) where
   type ProjectionLikeStart (Walk Transform s e) = s
