@@ -126,6 +126,12 @@ import Data.Greskell.Greskell
     toGremlinLazy, toGremlin
   )
 
+-- $setup
+--
+-- >>> :set -XOverloadedStrings
+-- >>> import Data.Function ((&))
+-- >>> import qualified Data.Aeson as Aeson
+-- >>> import Data.Greskell.Greskell (value)
 
 -- | @GraphTraversal@ class object of TinkerPop. It takes data @s@
 -- from upstream and emits data @e@ to downstream. Type @c@ is called
@@ -290,6 +296,9 @@ instance Lift SideEffect SideEffect
 
 -- | Relation of 'WalkType's where the child walk @c@ is split from
 -- the parent walk @p@.
+--
+-- When splitting, transformation effect done in the child walk is
+-- rolled back (canceled) in the parent walk.
 class Split c p
 
 instance (WalkType p) => Split Filter p
@@ -307,6 +316,9 @@ data GraphTraversalSource = GraphTraversalSource
 
 
 -- | Create 'GraphTraversalSource' from a varible name in Gremlin
+--
+-- >>> toGremlin $ source "g"
+-- "g"
 source :: Text -- ^ variable name of 'GraphTraversalSource'
        -> Greskell GraphTraversalSource
 source = unsafeGreskell
@@ -323,6 +335,9 @@ sV :: Vertex v
 sV ids src = GTraversal $ sourceMethod "V" ids src
 
 -- | Monomorphic version of 'sV'.
+--
+-- >>> toGremlin (source "g" & sV' (map (value . Aeson.Number) [1,2,3]))
+-- "g.V(1.0,2.0,3.0)"
 sV' :: [Greskell Value]
     -> Greskell GraphTraversalSource
     -> GTraversal Transform () AVertex
