@@ -34,12 +34,26 @@ module Data.Greskell.GTraversal
          ($.),
          unsafeGTraversal,
          -- * Walk/Steps
+
+         -- |
+         -- Functions for TinkerPop graph traversal steps.
+         -- __For now greskell does not cover all graph traversal steps.__
+         -- If you want some steps added, just open an issue.
+         --
+         -- There may be multiple versions of Haskell functions for a
+         -- single step. This is because Gremlin steps are too
+         -- polymorphic for Haskell. greskell should be type-safe so
+         -- that incorrect combination of steps is detected in compile
+         -- time.
+
+         -- ** Low-level functions
          unsafeWalk,
          modulateWith,
          -- ** Filter steps
          gIdentity,
          gIdentity',
          gFilter,
+         -- ** Has steps
          gHas1,
          gHas1',
          gHas2,
@@ -62,6 +76,7 @@ module Data.Greskell.GTraversal
          gHasValue',
          gHasValueP,
          gHasValueP',
+         -- ** Logic steps
          gAnd,
          gOr,
          gNot,
@@ -132,6 +147,8 @@ import Data.Greskell.Greskell
 -- >>> import Data.Function ((&))
 -- >>> import qualified Data.Aeson as Aeson
 -- >>> import Data.Greskell.Greskell (value)
+-- >>> import Data.Greskell.Gremlin (pBetween, pEq, pLte, oDecr)
+-- >>> import Data.Greskell.Graph (tId)
 
 -- | @GraphTraversal@ class object of TinkerPop. It takes data @s@
 -- from upstream and emits data @e@ to downstream. Type @c@ is called
@@ -351,12 +368,18 @@ sE :: Edge e
 sE ids src = GTraversal $ sourceMethod "E" ids src
 
 -- | Monomorphic version of 'sE'.
+--
+-- >>> toGremlin (source "g" & sE' (map (value . Aeson.Number) [1]))
+-- "g.E(1.0)"
 sE' :: [Greskell Value]
        -> Greskell GraphTraversalSource
        -> GTraversal Transform () AEdge
 sE' = sE
 
 -- | Unsafely create 'GTraversal' from the given raw Gremlin script.
+--
+-- >>> toGremlin $ unsafeGTraversal "g.V().count()"
+-- "g.V().count()"
 unsafeGTraversal :: Text -> GTraversal c s e
 unsafeGTraversal = GTraversal . unsafeGreskell
 
@@ -364,14 +387,23 @@ infixl 1 &.
 
 -- | Apply the 'Walk' to the 'GTraversal'. In Gremlin, this means
 -- calling a chain of methods on the Traversal object.
+--
+-- >>> toGremlin (source "g" & sV' [] &. gValues ["age"])
+-- "g.V().values(\"age\")"
 (&.) :: GTraversal c a b -> Walk c b d -> GTraversal c a d
 (GTraversal gt) &. (Walk twalk) = GTraversal $ unsafeGreskellLazy (toGremlinLazy gt <> twalk)
 
 infixr 0 $.
 
 -- | Same as '&.' with arguments flipped.
+--
+-- >>> toGremlin (gValues ["age"] $. sV' [] $ source "g")
+-- "g.V().values(\"age\")"
 ($.) :: Walk c b d -> GTraversal c a b -> GTraversal c a d
 gs $. gt = gt &. gs
+
+-- -- $walk-steps
+-- --
 
 methodCallText :: Text -- ^ method name
                -> [Text] -- ^ args
@@ -380,6 +412,9 @@ methodCallText name args = ("." <>) $ toGremlinLazy $ unsafeFunCall name args
 
 -- | Unsafely create a 'Walk' that represents a single method call on
 -- a @GraphTraversal@.
+--
+-- >>> toGremlin (source "g" & sV' [] &. unsafeWalk "valueMap" ["'foo'", "'bar'"])
+-- "g.V().valueMap('foo','bar')"
 unsafeWalk :: WalkType c
            => Text -- ^ step method name (e.g. "outE")
            -> [Text] -- ^ step method arguments
@@ -387,6 +422,9 @@ unsafeWalk :: WalkType c
 unsafeWalk name args = Walk $ methodCallText name args
 
 -- | Optionally modulate the main 'Walk' with some modulating 'Walk's.
+--
+-- >>> toGremlin (source "g" & sV' [] &. modulateWith (unsafeWalk "path" []) [unsafeWalk "by" ["'name'"], unsafeWalk "by" ["'age'"]])
+-- "g.V().path().by('name').by('age')"
 modulateWith :: (WalkType c)
              => Walk c s e -- ^ the main 'Walk'
              -> [Walk c e e] -- ^ the modulating 'Walk's
@@ -406,6 +444,9 @@ travToG :: (ToGTraversal g, WalkType c) => g c s e -> Text
 travToG = toGremlin . unGTraversal . toGTraversal
 
 -- | @.filter@ step that takes a traversal.
+--
+-- >>> toGremlin (source "g" & sV' [] &. gFilter (gOut' ["knows"]))
+-- "g.V().filter(__.out(\"knows\"))"
 gFilter :: (ToGTraversal g, WalkType c, WalkType p, Split c p) => g c s e -> Walk p s s
 gFilter walk = unsafeWalk "filter" [travToG walk]
 
@@ -416,6 +457,9 @@ gFilter walk = unsafeWalk "filter" [travToG walk]
 -- 
 
 -- | @.has@ step with one argument.
+--
+-- >>> toGremlin (source "g" & sV' [] &. gHas1 "age")
+-- "g.V().has(\"age\")"
 gHas1 :: (WalkType c, Element s)
       => Key s v -- ^ property key
       -> Walk c s s
@@ -426,6 +470,9 @@ gHas1' :: (Element s) => Key s v -> Walk Filter s s
 gHas1' key = unsafeWalk "has" [toGremlin key]
 
 -- | @.has@ step with two arguments.
+--
+-- >>> toGremlin (source "g" & sV' [] &. gHas2 "age" (31 :: Greskell Int))
+-- "g.V().has(\"age\",31)"
 gHas2 :: (WalkType c, Element s) => Key s v -> Greskell v -> Walk c s s
 gHas2 k v = liftWalk $ gHas2' k v
 
@@ -434,6 +481,9 @@ gHas2' :: (Element s) => Key s v -> Greskell v -> Walk Filter s s
 gHas2' k v = unsafeWalk "has" [toGremlin k, toGremlin v]
 
 -- | @.has@ step with two arguments and 'P' type.
+--
+-- >>> toGremlin (source "g" & sV' [] &. gHas2P "age" (pBetween (30 :: Greskell Int) 40))
+-- "g.V().has(\"age\",P.between(30,40))"
 gHas2P :: (WalkType c, Element s)
        => Key s v -- ^ property key
        -> Greskell (P v) -- ^ predicate on the property value
@@ -447,6 +497,9 @@ gHas2P' key p = unsafeWalk "has" [toGremlin key, toGremlin p]
 -- TODO: has(Key,Traversal), has(Label,Key,P)
 
 -- | @.hasLabel@ step.
+--
+-- >>> toGremlin (source "g" & sV' [] &. gHasLabel "person")
+-- "g.V().hasLabel(\"person\")"
 gHasLabel :: (Element s, WalkType c) => Greskell Text -> Walk c s s
 gHasLabel = liftWalk . gHasLabel'
 
@@ -455,6 +508,9 @@ gHasLabel' :: (Element s) => Greskell Text -> Walk Filter s s
 gHasLabel' l = unsafeWalk "hasLabel" [toGremlin l]
 
 -- | @.hasLabel@ step with 'P' type. Supported since TinkerPop 3.2.7.
+--
+-- >>> toGremlin (source "g" & sV' [] &. gHasLabelP (pEq "person"))
+-- "g.V().hasLabel(P.eq(\"person\"))"
 gHasLabelP :: (Element s, WalkType c)
            => Greskell (P Text) -- ^ predicate on Element label.
            -> Walk c s s
@@ -467,6 +523,9 @@ gHasLabelP' :: Element s
 gHasLabelP' p = unsafeWalk "hasLabel" [toGremlin p]
 
 -- | @.hasId@ step.
+--
+-- >>> toGremlin (source "g" & sV' [] &. gHasId (value $ Aeson.Number 7))
+-- "g.V().hasId(7.0)"
 gHasId :: (Element s, WalkType c) => Greskell (ElementID s) -> Walk c s s
 gHasId = liftWalk . gHasId'
 
@@ -475,6 +534,9 @@ gHasId' :: Element s => Greskell (ElementID s) -> Walk Filter s s
 gHasId' i = unsafeWalk "hasId" [toGremlin i]
 
 -- | @.hasId@ step with 'P' type. Supported since TinkerPop 3.2.7.
+--
+-- >>> toGremlin (source "g" & sV' [] &. gHasIdP (pLte $ value $ Aeson.Number 100))
+-- "g.V().hasId(P.lte(100.0))"
 gHasIdP :: (Element s, WalkType c)
         => Greskell (P (ElementID s))
         -> Walk c s s
@@ -487,9 +549,13 @@ gHasIdP' :: Element s
 gHasIdP' p = unsafeWalk "hasId" [toGremlin p]
 
 -- | @.hasKey@ step. The input type should be a VertexProperty.
+--
+-- >>> toGremlin (source "g" & sV' [] &. gProperties [] &. gHasKey "age")
+-- "g.V().properties().hasKey(\"age\")"
 gHasKey :: (Element (p v), Property p, WalkType c) => Greskell Text -> Walk c (p v) (p v)
 gHasKey = liftWalk . gHasKey'
 
+-- | Monomorphic version of 'gHasKey'.
 gHasKey' :: (Element (p v), Property p) => Greskell Text -> Walk Filter (p v) (p v)
 gHasKey' k = unsafeWalk "hasKey" [toGremlin k]
 
@@ -504,6 +570,9 @@ gHasKeyP' :: (Element (p v), Property p) => Greskell (P Text) -> Walk Filter (p 
 gHasKeyP' p = unsafeWalk "hasKey" [toGremlin p]
 
 -- | @.hasValue@ step. The input type should be a VertexProperty.
+--
+-- >>> toGremlin (source "g" & sV' [] &. gProperties ["age"] &. gHasValue (32 :: Greskell Int))
+-- "g.V().properties(\"age\").hasValue(32)"
 gHasValue :: (Element (p v), Property p, WalkType c) => Greskell v -> Walk c (p v) (p v)
 gHasValue = liftWalk . gHasValue'
 
@@ -512,6 +581,9 @@ gHasValue' :: (Element (p v), Property p) => Greskell v -> Walk Filter (p v) (p 
 gHasValue' v = unsafeWalk "hasValue" [toGremlin v]
 
 -- | @.hasValue@ step with 'P' type. Supported since TinkerPop 3.2.7.
+--
+-- >>> toGremlin (source "g" & sV' [] &. gProperties ["age"] &. gHasValueP (pBetween (30 :: Greskell Int) 40))
+-- "g.V().properties(\"age\").hasValue(P.between(30,40))"
 gHasValueP :: (Element (p v), Property p, WalkType c)
            => Greskell (P v) -- ^ predicate on the VertexProperty's value
            -> Walk c (p v) (p v)
@@ -528,18 +600,32 @@ multiLogic :: (ToGTraversal g, WalkType c, WalkType p, Split c p)
 multiLogic method_name = unsafeWalk method_name . map travToG
 
 -- | @.and@ step.
+--
+-- >>> toGremlin (source "g" & sV' [] &. gAnd [gOut' ["knows"], gHas1 "age"])
+-- "g.V().and(__.out(\"knows\"),__.has(\"age\"))"
 gAnd :: (ToGTraversal g, WalkType c, WalkType p, Split c p) => [g c s e] -> Walk p s s
 gAnd = multiLogic "and"
 
 -- | @.or@ step.
+--
+-- >>> toGremlin (source "g" & sV' [] &. gOr [gOut' ["knows"], gHas1 "age"])
+-- "g.V().or(__.out(\"knows\"),__.has(\"age\"))"
 gOr :: (ToGTraversal g, WalkType c, WalkType p, Split c p) => [g c s e] -> Walk p s s
 gOr = multiLogic "or"
 
 -- | @.not@ step.
+--
+-- >>> toGremlin (source "g" & sV' [] &. gNot (gOut' ["knows"]))
+-- "g.V().not(__.out(\"knows\"))"
 gNot :: (ToGTraversal g, WalkType c, WalkType p, Split c p) => g c s e -> Walk p s s
 gNot cond = unsafeWalk "not" [travToG cond]
 
--- | @.range@ step.
+-- | @.range@ step. This step is not a 'Filter', because the filtering
+-- decision by this step is based on position of each element, not the
+-- element itself. This violates 'Filter' law.
+--
+-- >>> toGremlin (source "g" & sV' [] &. gRange 0 100)
+-- "g.V().range(0,100)"
 gRange :: Greskell Int
        -- ^ min
        -> Greskell Int
@@ -547,7 +633,7 @@ gRange :: Greskell Int
        -> Walk Transform s s
 gRange min_g max_g = unsafeWalk "range" $ map toGremlin [min_g, max_g]
 
--- | A data type that means a projection from one type to another.
+-- | Data types that mean a projection from one type to another.
 class ProjectionLike p where
   type ProjectionLikeStart p
   -- ^ The start type of the projection.
@@ -594,7 +680,8 @@ instance ProjectionLike (ByProjection s e) where
   type ProjectionLikeStart (ByProjection s e) = s
   type ProjectionLikeEnd (ByProjection s e) = e
 
--- | Projection from type @s@ to type @e@ used in @.by@ step.
+-- | Projection from type @s@ to type @e@ used in @.by@ step. You can
+-- also use 'gBy' to construct 'ByProjection'.
 data ByProjection s e where
   ByProjection :: (ProjectionLike p, ToGreskell p) => p -> ByProjection (ProjectionLikeStart p) (ProjectionLikeEnd p)
 
@@ -609,7 +696,8 @@ instance IsString (ByProjection s e) where
 gBy :: (ProjectionLike p, ToGreskell p) => p -> ByProjection (ProjectionLikeStart p) (ProjectionLikeEnd p)
 gBy = ByProjection 
 
--- | Comparison of type @s@ used in @.by@ step.
+-- | Comparison of type @s@ used in @.by@ step. You can also use
+-- 'gBy1' and 'gBy2' to construct 'ByComparator'.
 data ByComparator s where
   -- | Type @s@ is projected to type @e@, and compared by the natural
   -- comparator of type @e@.
@@ -638,6 +726,12 @@ gBy2 :: (ProjectionLike p, ToGreskell p, Comparator comp, ProjectionLikeEnd p ~ 
 gBy2 p c = ByComparatorProjComp (gBy p) c
 
 -- | @.order@ step.
+--
+-- >>> let key_age = ("age" :: Key AVertex Int)
+-- >>> toGremlin (source "g" & sV' [] &. gOrder [gBy1 key_age])
+-- "g.V().order().by(\"age\")"
+-- >>> toGremlin (source "g" & sV' [] &. gOrder [gBy2 key_age oDecr, gBy1 tId])
+-- "g.V().order().by(\"age\",Order.decr).by(T.id)"
 gOrder :: [ByComparator s] -- ^ following @.by@ steps.
        -> Walk Transform s s
 gOrder bys = modulateWith order_step by_steps
