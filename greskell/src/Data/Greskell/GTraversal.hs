@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, FlexibleInstances, MultiParamTypeClasses, TypeFamilies, GADTs #-}
+{-# LANGUAGE OverloadedStrings, FlexibleInstances, FlexibleContexts, MultiParamTypeClasses, TypeFamilies, GADTs #-}
 {-# OPTIONS_GHC -fno-warn-redundant-constraints #-}
 -- |
 -- Module: Data.Greskell.GTraversal
@@ -103,6 +103,7 @@ module Data.Greskell.GTraversal
          gInE',
          -- ** Side-effect steps
          gSideEffect,
+         gSideEffect',
          -- ** Graph manipulation steps
          gAddV,
          gAddV',
@@ -850,11 +851,16 @@ gInE' :: (Vertex v)
 gInE' = gInE
 
 -- | @.sideEffect@ step that takes a traversal.
---
--- >>> toGremlin (source "g" & sV' [] & liftWalk &. gHas2 "name" "marko" &. gSideEffect (gAddV' "toshio"))
--- "g.V().has(\"name\",\"marko\").sideEffect(__.addV(\"toshio\"))"
 gSideEffect :: (ToGTraversal g, WalkType c, WalkType p, Split c p) => g c s e -> Walk p s s
 gSideEffect walk = unsafeWalk "sideEffect" [travToG walk]
+
+-- | Monomorphic version of 'gSideEffect'. The result walk is always
+-- 'SideEffect' type.
+--
+-- >>> toGremlin (source "g" & sV' [] & liftWalk &. gHas2 "name" "marko" &. gSideEffect' (gAddV' "toshio"))
+-- "g.V().has(\"name\",\"marko\").sideEffect(__.addV(\"toshio\"))"
+gSideEffect' :: (ToGTraversal g, WalkType c, Split c SideEffect) => g c s e -> Walk SideEffect s s
+gSideEffect' w = gSideEffect w
 
 ---- -- probably we can implement .as() step like this. GBuilder generates
 ---- -- some 'Label', which is passed to .as() step and can be passed later

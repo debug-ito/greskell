@@ -20,7 +20,7 @@ library
   ghc-options:          -Wall -fno-warn-unused-imports
   -- default-extensions:   
   other-extensions:     OverloadedStrings, GeneralizedNewtypeDeriving,
-                        FlexibleInstances, MultiParamTypeClasses, TypeFamilies,
+                        FlexibleInstances, FlexibleContexts, MultiParamTypeClasses, TypeFamilies,
                         GADTs, DeriveTraversable
   exposed-modules:      Data.Greskell,
                         Data.Greskell.Gremlin,
