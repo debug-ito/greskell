@@ -110,6 +110,9 @@ module Data.Greskell.GTraversal
          gDrop,
          gDropP,
          -- ** @.by@ steps
+         
+         -- | @.by@ steps are not 'Walk' on their own because they are
+         -- always used in conjunction with other steps like 'gOrder'.
          ByProjection(..),
          ProjectionLike(..),
          ByComparator(..),
