@@ -82,13 +82,16 @@ module Data.Greskell.GTraversal
          gNot,
          -- ** Sorting steps
          gOrder,
-         -- ** Size limitation steps
+         -- ** Paging steps
          gRange,
          -- ** Transformation steps
          gFlatMap,
+         -- ** Accesor steps
          gValues,
          gProperties,
+         -- ** Summarizing steps
          gFold,
+         gCount,
          -- ** Graph traversal steps
          gOut,
          gOut',
@@ -776,6 +779,10 @@ gProperties = unsafeWalk "properties" . map toGremlin
 -- | @.fold@ step.
 gFold :: Walk Transform a [a]
 gFold = unsafeWalk "fold" []
+
+-- | @.count@ step.
+gCount :: Walk Transform a Int
+gCount = unsafeWalk "count" []
 
 genericTraversalWalk :: Vertex v => Text -> [Greskell Text] -> Walk Transform v e
 genericTraversalWalk method_name = unsafeWalk method_name . map toGremlin
