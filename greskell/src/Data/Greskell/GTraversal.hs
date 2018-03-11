@@ -86,7 +86,7 @@ module Data.Greskell.GTraversal
          gRange,
          -- ** Transformation steps
          gFlatMap,
-         -- ** Accesor steps
+         -- ** Accessor steps
          gValues,
          gProperties,
          -- ** Summarizing steps
@@ -150,7 +150,7 @@ import Data.Greskell.Greskell
 -- >>> import Data.Function ((&))
 -- >>> import qualified Data.Aeson as Aeson
 -- >>> import Data.Greskell.Greskell (value)
--- >>> import Data.Greskell.Gremlin (pBetween, pEq, pLte, oDecr)
+-- >>> import Data.Greskell.Gremlin (pBetween, pEq, pLte, oDecr, oIncr)
 -- >>> import Data.Greskell.Graph (tId)
 
 -- | @GraphTraversal@ class object of TinkerPop. It takes data @s@
@@ -735,6 +735,8 @@ gBy2 p c = ByComparatorProjComp (gBy p) c
 -- "g.V().order().by(\"age\")"
 -- >>> toGremlin (source "g" & sV' [] &. gOrder [gBy2 key_age oDecr, gBy1 tId])
 -- "g.V().order().by(\"age\",Order.decr).by(T.id)"
+-- >>> toGremlin (source "g" & sV' [] &. gOrder [gBy2 (gOut' ["knows"] >>> gCount) oIncr, gBy2 tId oIncr])
+-- "g.V().order().by(__.out(\"knows\").count(),Order.incr).by(T.id,Order.incr)"
 gOrder :: [ByComparator s] -- ^ following @.by@ steps.
        -> Walk Transform s s
 gOrder bys = modulateWith order_step by_steps
@@ -752,6 +754,9 @@ gOrder bys = modulateWith order_step by_steps
 -- @.flatMap@ step is a 'Transform' step even if the child walk is
 -- 'Filter' type. This is because @.flatMap@ step always modifies the
 -- path of the Traverser.
+--
+-- >>> toGremlin (source "g" & sV' [] &. gFlatMap (gOut' ["knows"] >>> gOut' ["created"]))
+-- "g.V().flatMap(__.out(\"knows\").out(\"created\"))"
 gFlatMap :: (ToGTraversal g) => g Transform s e -> Walk Transform s e
 gFlatMap gt = unsafeWalk "flatMap" [travToG gt]
 
@@ -764,6 +769,9 @@ gFlatMap gt = unsafeWalk "flatMap" [travToG gt]
 
 
 -- | @.values@ step.
+--
+-- >>> toGremlin (source "g" & sV' [] &. gValues ["name", "age"])
+-- "g.V().values(\"name\",\"age\")"
 gValues :: Element s
         => [Key s e]
         -- ^ property keys
@@ -771,6 +779,9 @@ gValues :: Element s
 gValues = unsafeWalk "values" . map toGremlin
 
 -- | @.properties@ step.
+--
+-- >>> toGremlin (source "g" & sV' [] &. gProperties ["age"])
+-- "g.V().properties(\"age\")"
 gProperties :: (Element s, Property p, ElementProperty s ~ p)
             => [Key s v]
             -> Walk Transform s (p v)
@@ -794,6 +805,9 @@ gOut :: (Vertex v1, Vertex v2)
 gOut = genericTraversalWalk "out"
 
 -- | Monomorphic version of 'gOut'.
+--
+-- >>> toGremlin (source "g" & sV' ["person"] &. gOut' ["knows"])
+-- "g.V(\"person\").out(\"knows\")"
 gOut' :: (Vertex v)
       => [Greskell Text]
       -> Walk Transform v AVertex
@@ -836,6 +850,9 @@ gInE' :: (Vertex v)
 gInE' = gInE
 
 -- | @.sideEffect@ step that takes a traversal.
+--
+-- >>> toGremlin (source "g" & sV' [] & liftWalk &. gHas2 "name" "marko" &. gSideEffect (gAddV' "toshio"))
+-- "g.V().has(\"name\",\"marko\").sideEffect(__.addV(\"toshio\"))"
 gSideEffect :: (ToGTraversal g, WalkType c, WalkType p, Split c p) => g c s e -> Walk p s s
 gSideEffect walk = unsafeWalk "sideEffect" [travToG walk]
 
@@ -854,9 +871,15 @@ gAddV' :: Greskell Text -> Walk SideEffect a AVertex
 gAddV' = gAddV
 
 -- | @.drop@ step on 'Element'.
+-- 
+-- >>> toGremlin (source "g" & sV' [] &. gHas2 "name" "marko" & liftWalk &. gDrop)
+-- "g.V().has(\"name\",\"marko\").drop()"
 gDrop :: Element e => Walk SideEffect e e
 gDrop = unsafeWalk "drop" []
 
 -- | @.drop@ step on 'Property'.
+--
+-- >>> toGremlin (source "g" & sE' [] &. gProperties ["weight"] & liftWalk &. gDropP)
+-- "g.E().properties(\"weight\").drop()"
 gDropP :: Property p => Walk SideEffect (p a) (p a)
 gDropP = unsafeWalk "drop" []
