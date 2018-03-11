@@ -4,6 +4,8 @@ import org.junit.Test;
 import static org.junit.Assert.assertThat;
 import static org.hamcrest.CoreMatchers.*;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
+import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
+import org.apache.tinkerpop.gremlin.process.traversal.Order;
 
 
 public class TestGremlin {
@@ -67,4 +69,35 @@ public class TestGremlin {
     assertThat g.V().flatMap(__.out().in().out().in()).path().next().size(), is(2);
   }
 
+  @Test
+  public void order_by_projection_traversal_uses_the_first_element() throws Exception {
+    def graph = TinkerGraph.open();
+    def g = graph.traversal();
+    g.addV("target").property("name","A")
+    .addV("target").property("name","B")
+    .addV("valA").property("v",10)
+    .addV("valA").property("v",20)
+    .addV("valA").property("v",30)
+    .addV("valB").property("v",5)
+    .addV("valB").property("v",15)
+    .addV("valB").property("v",25)
+    .addV("valB").property("v",35)
+    .addV("valB").property("v",45).iterate();
+    g.V().hasLabel("target").has("name","A").as("target_A").V().hasLabel("valA").addE("has_value").from("target_A").iterate();
+    g.V().hasLabel("target").has("name","B").as("target_B").V().hasLabel("valB").addE("has_value").from("target_B").iterate();
+    assertThat g.V().hasLabel("target").has("name","A").out().values("v").order().by(Order.incr).toList(), is([10,20,30]);
+    assertThat g.V().hasLabel("target").has("name","B").out().values("v").order().by(Order.incr).toList(), is([5,15,25,35,45]);
+
+    assertThat g.V().hasLabel("target").order().by(__.out().values("v").order().by(Order.incr), Order.incr).values("name").toList(), is(["B", "A"]);
+    assertThat g.V().hasLabel("target").order().by(__.out().values("v").order().by(Order.decr), Order.incr).values("name").toList(), is(["A", "B"]);
+  }
+
+  @Test
+  public void path_by_projection_traversal_uses_the_first_element() throws Exception {
+    def g = MyModern.make().traversal();
+    assertThat g.V().has("name", "marko").path().by("name")
+               .map({ it.get().objects() }).toList(), is([["marko"]]);
+    assertThat g.V().has("name", "marko").path().by(__.outE("knows").order().by("weight",Order.decr).inV().values("name"))
+               .map({ it.get().objects() }).toList(), is([["josh"]]);
+  }
 }
