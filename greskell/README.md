@@ -1,13 +1,8 @@
-# greskell - Haskell builder for Gremlin graph query language
+# greskell
 
-greskell is a DSL to build [Gremlin graph query language](http://tinkerpop.apache.org/gremlin.html) in Haskell.
+Haskell binding for Gremlin query language.
 
-Features:
-
-- A monadic interface to manage variable bindings.
-- A type-safe interface to construct `GraphTraversal`s.
-- etc... (TBW)
-
+See the package description, or [project README](https://github.com/debug-ito/greskell/blob/master/README.md).
 
 ## Author
 
