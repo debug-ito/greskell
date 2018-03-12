@@ -26,10 +26,10 @@ library
                         Data.Greskell.GraphSON
   -- other-modules:        
   build-depends:        base >=4.9.0.0 && <4.11,
-                        aeson,
-                        unordered-containers,
-                        scientific,
-                        text
+                        aeson >=0.11.2.1 && <1.3,
+                        unordered-containers >=0.2.7.1 && <0.3,
+                        scientific >=0.3.4.9 && <0.4,
+                        text >=1.2.2.1 && <1.3
 
 test-suite spec
   type:                 exitcode-stdio-1.0
@@ -42,8 +42,8 @@ test-suite spec
   other-modules:        Data.Greskell.GreskellSpec,
                         Data.Greskell.Test.QuickCheck
   build-depends:        base, greskell-core, text, aeson,
-                        hspec,
-                        QuickCheck
+                        hspec >=2.2.3,
+                        QuickCheck >=2.8.2 && <2.11
 
 test-suite doctest
   type:                 exitcode-stdio-1.0
@@ -52,8 +52,8 @@ test-suite doctest
   ghc-options:          -Wall -fno-warn-unused-imports "-with-rtsopts=-M512m"
   main-is:              DocTest.hs
   build-depends:        base,
-                        doctest,
-                        doctest-discover >=0.1.0.8
+                        doctest >=0.11 && <0.14,
+                        doctest-discover >=0.1.0.7 && <0.2
 
 
 
