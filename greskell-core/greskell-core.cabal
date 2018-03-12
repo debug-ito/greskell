@@ -5,13 +5,15 @@ maintainer:             Toshio Ito <debug.ito@gmail.com>
 license:                BSD3
 license-file:           LICENSE
 synopsis:               Haskell binding for Gremlin graph query language - core data types and tools
--- description:            
--- category:               
+description:            Haskell binding for [Gremlin graph query language](http://tinkerpop.apache.org/gremlin.html).
+                        This package contains only core data types and tools used commonly by other related packages.
+                        See [README.md](https://github.com/debug-ito/greskell/blob/master/README.md) for detail.
+category:               Data
 cabal-version:          >= 1.10
 build-type:             Simple
 extra-source-files:     README.md, ChangeLog.md
--- homepage:               
--- bug-reports:            
+homepage:               https://github.com/debug-ito/greskell/
+bug-reports:            https://github.com/debug-ito/greskell/issues/
 
 library
   default-language:     Haskell2010
@@ -56,4 +58,4 @@ test-suite doctest
 
 source-repository head
   type:                 git
---  location:             
+  location:             https://github.com/debug-ito/greskell.git
