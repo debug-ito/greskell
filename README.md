@@ -1,7 +1,5 @@
 # greskell - Haskell binding for Gremlin graph query language
 
-__This package is work in progress. Be patient...__
-
 greskell is a toolset to build and execute [Gremlin graph query language](http://tinkerpop.apache.org/gremlin.html) in Haskell.
 
 __NOTE: for now greskell doesn't support connecting to a Gremlin server. For that purpose, use [gremlin-haskell](http://hackage.haskell.org/package/gremlin-haskell).__
