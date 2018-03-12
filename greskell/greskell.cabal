@@ -36,7 +36,7 @@ library
                         greskell-core >=0.1.0.0 && <0.2,
                         text >=1.2.2.1 && <1.3,
                         transformers >=0.5.2 && <0.6,
-                        aeson >=0.11.2.1 && <1.3,
+                        aeson >=0.11.2.1 && <1.4,
                         unordered-containers >=0.2.7.1 && <0.3,
                         semigroups >=0.18.2 && <0.19
 
@@ -52,8 +52,8 @@ test-suite spec
                         Data.Greskell.GTraversalSpec,
                         Data.Greskell.GremlinSpec,
                         Data.Greskell.GraphSpec
-  build-depends:        base, greskell, text, aeson,
-                        greskell-core, unordered-containers,
+  build-depends:        base, text, aeson,  unordered-containers,
+                        greskell, greskell-core,
                         hspec >=2.2.3,
                         bytestring >=0.10.8.1 && <0.11
 
@@ -64,7 +64,7 @@ test-suite doctest
   ghc-options:          -Wall -fno-warn-unused-imports "-with-rtsopts=-M512m"
   main-is:              DocTest.hs
   build-depends:        base,
-                        doctest >=0.11 && <0.14,
+                        doctest >=0.11 && <0.15,
                         doctest-discover >=0.1.0.8 && <0.2
 
 
@@ -80,7 +80,8 @@ test-suite hint-test-suite
   hs-source-dirs:       test
   ghc-options:          -Wall -fno-warn-unused-imports "-with-rtsopts=-M512m"
   main-is:              HintTest.hs
-  build-depends:        base, greskell, hspec,
+  build-depends:        base, hspec,
+                        greskell, 
                         hint >=0.6 && <0.8
 
 
@@ -99,7 +100,8 @@ test-suite server-test-suite
   -- other-modules:
   if flag(server-test)
     -- Explicitly remove dependency. See https://github.com/haskell/cabal/issues/1725
-    build-depends:        base, greskell, aeson, hspec, text, greskell-core,
+    build-depends:        base, aeson, hspec, text,
+                          greskell, greskell-core,
                           scientific >=0.3.4.9 && <0.4,
                           gremlin-haskell >=0.1.0.2 && <0.2
   else

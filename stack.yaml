@@ -15,7 +15,7 @@
 # resolver:
 #  name: custom-snapshot
 #  location: "./custom-snapshot.yaml"
-resolver: lts-7.0
+resolver: lts-10.9
 
 # User packages to be built.
 # Various formats can be used as shown in the example below.
@@ -45,6 +45,16 @@ packages:
 extra-deps:
 - gremlin-haskell-0.1.0.2
 - doctest-discover-0.1.0.8
+
+#### confirmed on 2018-03-12
+## - aeson-1.3.0.0
+## - QuickCheck-2.11.3
+## - doctest-0.14.1
+## - text-1.2.3.0
+## - hspec-core-2.4.8
+## - hspec-2.4.8
+## - hspec-discover-2.4.8
+## - hspec-expectations-0.8.2
 
 # Override default flag values for local packages and extra-deps
 flags: {}
