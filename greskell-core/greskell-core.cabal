@@ -6,8 +6,9 @@ license:                BSD3
 license-file:           LICENSE
 synopsis:               Haskell binding for Gremlin graph query language - core data types and tools
 description:            Haskell binding for [Gremlin graph query language](http://tinkerpop.apache.org/gremlin.html).
-                        This package contains only core data types and tools used commonly by other related packages.
                         See [README.md](https://github.com/debug-ito/greskell/blob/master/README.md) for detail.
+                        .
+                        This package contains only core data types and tools used commonly by other related packages.
 category:               Data
 cabal-version:          >= 1.10
 build-type:             Simple
