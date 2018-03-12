@@ -211,7 +211,9 @@ script:
       for dir in $PACKAGES
       do
         cd $dir
-        cabal check || [ "$CABALVER" == "1.16" ]
+        if [ dir != "test-readme" ]; then
+          cabal check || [ "$CABALVER" == "1.16" ]
+        fi
         cabal sdist
         PKGVER=$(cabal info . | awk '{print $2;exit}')
         SRC_TGZ=$PKGVER.tar.gz
