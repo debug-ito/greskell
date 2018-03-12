@@ -133,7 +133,7 @@ spec_AEdge = describe "AEdge" $ do
                                     (AProperty "since" $ nonTypedGraphSON $ toJSON (2009 :: Int))
                                     $ mempty
                    }
-    loadGraphSON "edge.v1.json" `shouldReturn` Right expected
+    loadGraphSON "edge_v1.json" `shouldReturn` Right expected
   let expected_v23 = typedGraphSON
                      $ AEdge
                      { aeId = typedGraphSON' "g:Int32" $ toJSON (13 :: Int),
@@ -147,20 +147,20 @@ spec_AEdge = describe "AEdge" $ do
                                       $ mempty
                      }
   it "should parse GraphSON v2" $ do
-    loadGraphSON "edge.v2.json" `shouldReturn` Right expected_v23
+    loadGraphSON "edge_v2.json" `shouldReturn` Right expected_v23
   it "should parse GraphSON v3" $ do
-    loadGraphSON "edge.v3.json" `shouldReturn` Right expected_v23
+    loadGraphSON "edge_v3.json" `shouldReturn` Right expected_v23
 
 spec_AProperty :: Spec
 spec_AProperty = describe "AProperty" $ do
   it "should parse GraphSON v1" $ do
     let ex = nonTypedGraphSON $ AProperty "since" $ nonTypedGraphSON (2009 :: Int)
-    loadGraphSON "property.v1.json" `shouldReturn` Right ex
+    loadGraphSON "property_v1.json" `shouldReturn` Right ex
   let ex23 = typedGraphSON $ AProperty "since" $ typedGraphSON' "g:Int32" (2009 :: Int)
   it "should parse GraphSON v2" $ do
-    loadGraphSON "property.v2.json" `shouldReturn` Right ex23
+    loadGraphSON "property_v2.json" `shouldReturn` Right ex23
   it "should parse GraphSON v3" $ do
-    loadGraphSON "property.v3.json" `shouldReturn` Right ex23
+    loadGraphSON "property_v3.json" `shouldReturn` Right ex23
 
 spec_AVertexProperty :: Spec
 spec_AVertexProperty = describe "AVertexProperty" $ do
@@ -172,7 +172,7 @@ spec_AVertexProperty = describe "AVertexProperty" $ do
                avpValue = nonTypedGraphSON $ toJSON ("marko" :: Text),
                avpProperties = mempty
              }
-    loadGraphSON "vertex_property.v1.json" `shouldReturn` Right ex
+    loadGraphSON "vertex_property_v1.json" `shouldReturn` Right ex
   let ex23 = typedGraphSON $
              AVertexProperty
              { avpId = typedGraphSON' "g:Int64" $ toJSON (0 :: Int),
@@ -181,9 +181,9 @@ spec_AVertexProperty = describe "AVertexProperty" $ do
                avpProperties = mempty
              }
   it "should parse GraphSON v2" $ do
-    loadGraphSON "vertex_property.v2.json" `shouldReturn` Right ex23
+    loadGraphSON "vertex_property_v2.json" `shouldReturn` Right ex23
   it "should parse GraphSON v3" $ do
-    loadGraphSON "vertex_property.v3.json" `shouldReturn` Right ex23
+    loadGraphSON "vertex_property_v3.json" `shouldReturn` Right ex23
 
 spec_AVertex :: Spec
 spec_AVertex = describe "AVertex" $ do
@@ -236,7 +236,7 @@ spec_AVertex = describe "AVertex" $ do
                                 }
                               ]
              }
-    loadGraphSON "vertex.v1.json" `shouldReturn` Right ex
+    loadGraphSON "vertex_v1.json" `shouldReturn` Right ex
   let ex23 = typedGraphSON $
              AVertex
              { avId = typedGraphSON' "g:Int32" $ toJSON (1 :: Int),
@@ -286,6 +286,6 @@ spec_AVertex = describe "AVertex" $ do
                               ]
              }
   it "should parse GraphSON v2" $ do
-    loadGraphSON "vertex.v2.json" `shouldReturn` Right ex23
+    loadGraphSON "vertex_v2.json" `shouldReturn` Right ex23
   it "should parse GraphSON v3" $ do
-    loadGraphSON "vertex.v3.json" `shouldReturn` Right ex23
+    loadGraphSON "vertex_v3.json" `shouldReturn` Right ex23
