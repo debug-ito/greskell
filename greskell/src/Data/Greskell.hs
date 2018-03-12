@@ -2,7 +2,9 @@
 -- Module: Data.Greskell
 -- Description: Haskell binding for Gremlin graph query language
 -- Maintainer: Toshio Ito <debug.ito@gmail.com>
--- 
+--
+-- Data.Greskell is a Haskell support to use the Gremlin graph query
+-- language. For more information, see [project README](https://github.com/debug-ito/greskell).
 module Data.Greskell
        (
          module Data.Greskell.Greskell,
