@@ -25,7 +25,7 @@ library
   exposed-modules:      Data.Greskell.Greskell,
                         Data.Greskell.GraphSON
   -- other-modules:        
-  build-depends:        base,
+  build-depends:        base >=4.9.0.0,
                         aeson,
                         unordered-containers,
                         scientific,
