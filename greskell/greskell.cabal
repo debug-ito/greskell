@@ -32,7 +32,7 @@ library
                         Data.Greskell.Graph,
                         Data.Greskell.GTraversal
   -- other-modules:        
-  build-depends:        base >=4.9.0.0,
+  build-depends:        base >=4.9.0.0 && <4.11,
                         greskell-core,
                         text,
                         transformers,

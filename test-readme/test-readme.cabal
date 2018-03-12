@@ -18,7 +18,7 @@ library
   hs-source-dirs:       src
   ghc-options:          -Wall -fno-warn-unused-imports
   exposed-modules:      Database.TinkerPop
-  build-depends:        base >=4.9.0.0,
+  build-depends:        base >=4.9.0.0 && <4.11,
                         text,
                         aeson
 
@@ -28,7 +28,7 @@ test-suite readme-Greskell
   ghc-options:          -Wall -fno-warn-unused-imports "-with-rtsopts=-M512m" -fno-warn-missing-signatures -pgmL markdown-unlit
                         "-optL=common Greskell"
   main-is:              README.lhs
-  build-depends:        base, 
+  build-depends:        base,
                         hspec,
                         greskell, greskell-core,
                         markdown-unlit,
@@ -40,7 +40,7 @@ test-suite readme-Binder
   ghc-options:          -Wall -fno-warn-unused-imports "-with-rtsopts=-M512m" -fno-warn-missing-signatures -pgmL markdown-unlit
                         "-optL=common Binder" -fno-warn-unused-top-binds
   main-is:              README.lhs
-  build-depends:        base, 
+  build-depends:        base,
                         hspec,
                         greskell, greskell-core,
                         markdown-unlit,
@@ -53,7 +53,7 @@ test-suite readme-GTraversal
   ghc-options:          -Wall -fno-warn-unused-imports "-with-rtsopts=-M512m" -fno-warn-missing-signatures -pgmL markdown-unlit
                         "-optL=common GTraversal" -fno-warn-type-defaults
   main-is:              README.lhs
-  build-depends:        base, 
+  build-depends:        base,
                         hspec,
                         greskell, greskell-core,
                         markdown-unlit,
@@ -65,7 +65,7 @@ test-suite readme-WalkType
   ghc-options:          -Wall -fno-warn-unused-imports "-with-rtsopts=-M512m" -fno-warn-missing-signatures -pgmL markdown-unlit
                         "-optL=common WalkType" -fno-warn-unused-top-binds
   main-is:              README.lhs
-  build-depends:        base, 
+  build-depends:        base,
                         hspec,
                         greskell, greskell-core,
                         markdown-unlit,
@@ -78,7 +78,7 @@ test-suite readme-monomorphic
   ghc-options:          -Wall -fno-warn-unused-imports "-with-rtsopts=-M512m" -fno-warn-missing-signatures -pgmL markdown-unlit
                         "-optL=common monomorphic" -fno-warn-unused-top-binds
   main-is:              README.lhs
-  build-depends:        base, 
+  build-depends:        base,
                         hspec,
                         greskell, greskell-core,
                         markdown-unlit,
@@ -90,7 +90,7 @@ test-suite readme-GraphSON
   ghc-options:          -Wall -fno-warn-unused-imports "-with-rtsopts=-M512m" -fno-warn-missing-signatures -pgmL markdown-unlit
                         "-optL=common GraphSON" -fno-warn-unused-top-binds
   main-is:              README.lhs
-  build-depends:        base, 
+  build-depends:        base,
                         hspec,
                         greskell, greskell-core,
                         markdown-unlit,
@@ -102,7 +102,7 @@ test-suite readme-own_types
   ghc-options:          -Wall -fno-warn-unused-imports "-with-rtsopts=-M512m" -fno-warn-missing-signatures -pgmL markdown-unlit
                         "-optL=common own_types" -fno-warn-unused-top-binds -fno-warn-type-defaults
   main-is:              README.lhs
-  build-depends:        base, 
+  build-depends:        base,
                         hspec,
                         greskell, greskell-core,
                         markdown-unlit,
