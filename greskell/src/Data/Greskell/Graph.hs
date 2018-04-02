@@ -393,10 +393,12 @@ fromProperties = foldr putProperty mempty
 newtype PropertyMapGeneric t p v = PropertyMapGeneric (HM.HashMap Text (t (p v)))
                                  deriving (Show,Eq)
 
+instance Semigroup (t (p v)) => Semigroup (PropertyMapGeneric t p v) where
+  (PropertyMapGeneric a) <> (PropertyMapGeneric b) = PropertyMapGeneric $ HM.unionWith (<>) a b
+
 instance Semigroup (t (p v)) => Monoid (PropertyMapGeneric t p v) where
   mempty = PropertyMapGeneric mempty
-  mappend (PropertyMapGeneric a) (PropertyMapGeneric b) =
-    PropertyMapGeneric $ HM.unionWith (<>) a b
+  mappend = (<>)
 
 instance (Functor t, Functor p) => Functor (PropertyMapGeneric t p) where
   fmap f (PropertyMapGeneric hm) = PropertyMapGeneric $ (fmap . fmap . fmap) f hm
@@ -442,7 +444,7 @@ expectAesonArray _ = empty
 -- property maps share some same keys, the value from the left map
 -- wins.
 newtype PropertyMapSingle p v = PropertyMapSingle (PropertyMapGeneric Semigroup.First p v)
-                              deriving (Show,Eq,Monoid,Functor,Foldable,Traversable)
+                              deriving (Show,Eq,Semigroup,Monoid,Functor,Foldable,Traversable)
 
 instance PropertyMap PropertyMapSingle where
   lookupOne k (PropertyMapSingle (PropertyMapGeneric hm)) = fmap Semigroup.getFirst $ HM.lookup k hm
@@ -466,7 +468,7 @@ instance (Property p, GraphSONTyped (p v), FromJSON (p v), FromJSONWithKey (p v)
 -- property maps share some same keys, those property lists are
 -- concatenated.
 newtype PropertyMapList p v = PropertyMapList (PropertyMapGeneric NonEmpty p v)
-                            deriving (Show,Eq,Monoid,Functor,Foldable,Traversable)
+                            deriving (Show,Eq,Semigroup,Monoid,Functor,Foldable,Traversable)
 
 instance PropertyMap PropertyMapList where
   lookupList k (PropertyMapList (PropertyMapGeneric hm)) = maybe [] NL.toList $ HM.lookup k hm
