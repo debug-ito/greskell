@@ -35,9 +35,10 @@ import qualified Data.Aeson as Aeson
 import Data.Bifunctor (bimap)
 import Data.Foldable (toList)
 import qualified Data.HashMap.Lazy as HM
-import Data.Monoid (Monoid(..), (<>))
+import Data.Monoid (Monoid(..))
 import Data.Ratio (numerator, denominator, Rational)
 import Data.Scientific (Scientific, coefficient, base10Exponent)
+import Data.Semigroup (Semigroup(..))
 import Data.String (IsString(..))
 import Data.List (intersperse)
 import Data.Text (Text, pack, unpack)
@@ -83,12 +84,17 @@ instance Fractional a => Fractional (Greskell a) where
     where
       scriptOf accessor = TL.pack $ show $ accessor rat
 
+-- | Semigroup operator '(<>)' on 'Greskell' assumes @String@
+-- concatenation on Gremlin.
+instance IsString a => Semigroup (Greskell a) where
+  (<>) = biOp "+"
+
 -- | Monoidal operations on 'Greskell' assumes @String@ operations in
 -- Gremlin. 'mempty' is the empty String, and 'mappend' is String
 -- concatenation.
 instance IsString a => Monoid (Greskell a) where
   mempty = fromString ""
-  mappend = biOp "+"
+  mappend = (<>)
 
 -- | Something that can convert to 'Greskell'.
 class ToGreskell a where
