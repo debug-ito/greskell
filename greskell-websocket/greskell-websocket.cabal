@@ -21,7 +21,8 @@ library
   -- other-extensions:     
   exposed-modules:      Data.Greskell.WebSocket,
                         Data.Greskell.WebSocket.Connection,
-                        Data.Greskell.WebSocket.Request
+                        Data.Greskell.WebSocket.Request,
+                        Data.Greskell.WebSocket.Response
   -- other-modules:        
   build-depends:        base,
                         bytestring,
