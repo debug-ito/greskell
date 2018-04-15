@@ -54,6 +54,7 @@ test-suite spec
   -- other-extensions:     
   other-modules:        Data.Greskell.WebSocket.Codec.JSONSpec
   build-depends:        base, greskell-websocket, aeson, uuid, bytestring,
+                        greskell-core,
                         hspec
 
 source-repository head
