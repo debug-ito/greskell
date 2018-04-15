@@ -19,9 +19,16 @@ library
   ghc-options:          -Wall -fno-warn-unused-imports
   -- default-extensions:   
   -- other-extensions:     
-  exposed-modules:      Data.Greskell.WebSocket
+  exposed-modules:      Data.Greskell.WebSocket,
+                        Data.Greskell.WebSocket.Connection,
+                        Data.Greskell.WebSocket.Request
   -- other-modules:        
-  build-depends:        base
+  build-depends:        base,
+                        bytestring,
+                        text,
+                        aeson,
+                        unordered-containers,
+                        uuid
 
 -- executable greskell-websocket
 --   default-language:     Haskell2010

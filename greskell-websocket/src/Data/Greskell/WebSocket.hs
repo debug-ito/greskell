@@ -5,4 +5,3 @@
 -- 
 module Data.Greskell.WebSocket
        () where
-
