@@ -18,11 +18,13 @@ library
   hs-source-dirs:       src
   ghc-options:          -Wall -fno-warn-unused-imports
   -- default-extensions:   
-  -- other-extensions:     
+  other-extensions:     OverloadedStrings, DuplicateRecordFields
   exposed-modules:      Data.Greskell.WebSocket,
                         Data.Greskell.WebSocket.Connection,
                         Data.Greskell.WebSocket.Request,
-                        Data.Greskell.WebSocket.Response
+                        Data.Greskell.WebSocket.Response,
+                        Data.Greskell.WebSocket.Codec,
+                        Data.Greskell.WebSocket.Codec.JSON
   -- other-modules:        
   build-depends:        base,
                         bytestring,
