@@ -14,7 +14,7 @@ import Data.Aeson (ToJSON, FromJSON)
 import Data.Greskell.WebSocket.Codec (Codec(..))
 
 -- | Simple \"application/json\" codec.
-jsonCodec :: (ToJSON q, FromJSON s) => Codec q s
+jsonCodec :: Codec q s -- TODO: we will need some constaints.
 jsonCodec = Codec { mimeType = "application/json",
                     encodeWith = encode,
                     decodeWith = decode
