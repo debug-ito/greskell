@@ -10,7 +10,7 @@ license-file:           LICENSE
 cabal-version:          >= 1.10
 build-type:             Simple
 extra-source-files:     README.md, ChangeLog.md,
-                        test/data/*.json
+                        test/samples/*.json
 -- homepage:               
 -- bug-reports:            
 

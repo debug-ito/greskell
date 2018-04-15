@@ -40,7 +40,7 @@ decode_spec = describe "decodeWith" $ do
                                       meta = mempty
                                     }
     forM_ ["v1", "v2", "v3"] $ \graphson_ver -> specify graphson_ver $ do
-      got <- decodeWith codec <$> BSL.readFile ("test/data/response_auth_" ++ graphson_ver ++ ".json")
+      got <- decodeWith codec <$> BSL.readFile ("samples/data/response_auth_" ++ graphson_ver ++ ".json")
       got `shouldBe` Right exp_msg
       
     
