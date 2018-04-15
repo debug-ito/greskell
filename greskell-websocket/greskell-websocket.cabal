@@ -52,8 +52,7 @@ test-suite spec
   main-is:              Spec.hs
   -- default-extensions:   
   -- other-extensions:     
-  other-modules:        Data.Greskell.WebSocketSpec,
-                        Data.Greskell.WebSocket.Codec.JSONSpec
+  other-modules:        Data.Greskell.WebSocket.Codec.JSONSpec
   build-depends:        base, greskell-websocket, aeson, uuid, bytestring,
                         hspec
 
