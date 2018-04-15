@@ -66,7 +66,7 @@ data ResponseStatus =
   ResponseStatus
   { code :: ResponseCode,
     message :: Text,
-    attribute :: Object
+    attributes :: Object
   }
   deriving (Show,Eq)
 
