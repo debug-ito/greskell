@@ -9,7 +9,8 @@ license-file:           LICENSE
 -- category:               
 cabal-version:          >= 1.10
 build-type:             Simple
-extra-source-files:     README.md, ChangeLog.md
+extra-source-files:     README.md, ChangeLog.md,
+                        test/data/*.json
 -- homepage:               
 -- bug-reports:            
 
@@ -51,8 +52,9 @@ test-suite spec
   main-is:              Spec.hs
   -- default-extensions:   
   -- other-extensions:     
-  other-modules:        Data.Greskell.WebSocketSpec
-  build-depends:        base, greskell-websocket,
+  other-modules:        Data.Greskell.WebSocketSpec,
+                        Data.Greskell.WebSocket.Codec.JSONSpec
+  build-depends:        base, greskell-websocket, aeson, uuid, bytestring,
                         hspec
 
 source-repository head
