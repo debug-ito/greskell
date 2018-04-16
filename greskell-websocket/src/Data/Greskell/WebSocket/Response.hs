@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveGeneric #-}
 -- |
 -- Module: Data.Greskell.WebSocket.Response
 -- Description: Response from Gremlin Server
@@ -13,7 +14,12 @@ module Data.Greskell.WebSocket.Response
          codeFromInt
        ) where
 
-import Data.Aeson (Object)
+import Control.Applicative (empty)
+import Data.Aeson
+  ( Object, ToJSON(..), FromJSON(..), Value(Number),
+    defaultOptions, genericParseJSON, Options(fieldLabelModifier)
+  )
+import GHC.Generics (Generic)
 import Data.Text (Text)
 import Data.UUID (UUID)
 
@@ -61,6 +67,16 @@ codeFromInt i = case i of
   599 -> Just ServerSerializationError
   _ -> Nothing
 
+instance FromJSON ResponseCode where
+  parseJSON (Number n) = maybe err return $ codeFromInt $ floor n
+    where
+      err = error ("Unknown response code: " ++ show n)
+  parseJSON _ = empty
+
+instance ToJSON ResponseCode where
+  toJSON = toJSON . codeToInt
+
+
 -- | \"status\" field.
 data ResponseStatus =
   ResponseStatus
@@ -68,7 +84,11 @@ data ResponseStatus =
     message :: Text,
     attributes :: Object
   }
-  deriving (Show,Eq)
+  deriving (Show,Eq,Generic)
+
+instance FromJSON ResponseStatus where
+  parseJSON = genericParseJSON defaultOptions
+
 
 -- | \"result\" field.
 data ResponseResult s =
@@ -77,7 +97,15 @@ data ResponseResult s =
     -- ^ \"data\" field.
     meta :: Object
   }
-  deriving (Show,Eq)
+  deriving (Show,Eq,Generic)
+
+instance FromJSON s => FromJSON (ResponseResult s) where
+  parseJSON = genericParseJSON $ defaultOptions { fieldLabelModifier = labeler }
+    where
+      labeler orig = if orig == "resultData"
+                     then "data"
+                     else orig
+
 
 -- | ResponseMessage object from Gremlin Server.
 data ResponseMessage s =
@@ -86,4 +114,7 @@ data ResponseMessage s =
     status :: ResponseStatus,
     result :: ResponseResult s
   }
-  deriving (Show,Eq)
+  deriving (Show,Eq,Generic)
+
+instance FromJSON s => FromJSON (ResponseMessage s) where
+  parseJSON = genericParseJSON defaultOptions
