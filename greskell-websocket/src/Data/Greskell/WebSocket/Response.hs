@@ -80,9 +80,9 @@ instance ToJSON ResponseCode where
 -- | \"status\" field.
 data ResponseStatus =
   ResponseStatus
-  { code :: ResponseCode,
-    message :: Text,
-    attributes :: Object
+  { code :: !ResponseCode,
+    message :: !Text,
+    attributes :: !Object
   }
   deriving (Show,Eq,Generic)
 
@@ -93,9 +93,9 @@ instance FromJSON ResponseStatus where
 -- | \"result\" field.
 data ResponseResult s =
   ResponseResult
-  { resultData :: s,
+  { resultData :: !s,
     -- ^ \"data\" field.
-    meta :: Object
+    meta :: !Object
   }
   deriving (Show,Eq,Generic)
 
@@ -110,9 +110,9 @@ instance FromJSON s => FromJSON (ResponseResult s) where
 -- | ResponseMessage object from Gremlin Server.
 data ResponseMessage s =
   ResponseMessage
-  { requestId :: UUID,
-    status :: ResponseStatus,
-    result :: ResponseResult s
+  { requestId :: !UUID,
+    status :: !ResponseStatus,
+    result :: !(ResponseResult s)
   }
   deriving (Show,Eq,Generic)
 

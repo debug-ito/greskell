@@ -27,9 +27,9 @@ import Data.UUID (UUID)
 -- | RequestMessage to a Gremlin Server.
 data RequestMessage q =
   RequestMessage
-  { requestId :: UUID,
+  { requestId :: !UUID,
     -- ^ \"requestId\" field.
-    requestOperation :: q
+    requestOperation :: !q
     -- ^ "Operation" object.
   }
   deriving (Show,Eq,Ord)
@@ -51,11 +51,11 @@ instance (Operation a, Operation b) => Operation (Either a b) where
 -- | \"authentication\" operation.
 data OpAuthentication =
   OpAuthentication
-  { processor :: Text,
+  { processor :: !Text,
     -- | \"processor\" field.
-    batchSize :: Maybe Int,
-    sasl :: ByteString,
-    saslMechanism :: SASLMechanism
+    batchSize :: !(Maybe Int),
+    sasl :: !ByteString,
+    saslMechanism :: !SASLMechanism
   }
   deriving (Show,Eq,Ord)
 
@@ -67,12 +67,12 @@ data SASLMechanism = SASLPlain -- ^ \"PLAIN\" SASL
 -- | Sessionless \"eval\" operation.
 data OpEval =
   OpEval
-  { batchSize :: Maybe Int,
-    gremlin :: ByteString,
-    binding :: Maybe Object,
-    language :: Maybe Text,
-    aliases :: Maybe (HashMap Text Text),
-    scriptEvaluationTimeout :: Int
+  { batchSize :: !(Maybe Int),
+    gremlin :: !ByteString,
+    binding :: !(Maybe Object),
+    language :: !(Maybe Text),
+    aliases :: !(Maybe (HashMap Text Text)),
+    scriptEvaluationTimeout :: !Int
   }
   deriving (Show,Eq)
 
@@ -82,17 +82,17 @@ type SessionID = UUID
 -- | \"eval\" operation in session.
 data OpSessionEval =
   OpSessionEval
-  { eval :: OpEval,
-    session :: SessionID,
-    manageTransaction :: Maybe Bool
+  { eval :: !OpEval,
+    session :: !SessionID,
+    manageTransaction :: !(Maybe Bool)
   }
   deriving (Show,Eq)
 
 -- | Session \"close\" operation.
 data OpClose =
   OpClose
-  { batchSize :: Maybe Int,
-    session :: SessionID,
-    force :: Maybe Bool
+  { batchSize :: !(Maybe Int),
+    session :: !SessionID,
+    force :: !(Maybe Bool)
   }
   deriving (Show,Eq,Ord)
