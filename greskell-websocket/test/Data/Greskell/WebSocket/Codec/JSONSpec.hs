@@ -26,7 +26,7 @@ spec = do
   decode_spec
 
 loadSample :: FilePath -> IO BSL.ByteString
-loadSample filename = BSL.readFile ("samples/data/" ++ filename)
+loadSample filename = BSL.readFile ("test/samples/" ++ filename)
 
 decode_spec :: Spec
 decode_spec = describe "decodeWith" $ do
