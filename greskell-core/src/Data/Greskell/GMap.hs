@@ -1,4 +1,4 @@
-{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeFamilies, OverloadedStrings #-}
 -- |
 -- Module: Data.Greskell.GMap
 -- Description: data type for g:Map
@@ -19,6 +19,8 @@ import Data.HashMap.Strict (HashMap)
 import Data.Text (Text)
 import Data.Vector ((!))
 import GHC.Exts (IsList(Item, fromList, toList))
+
+import Data.Greskell.GraphSON (GraphSONTyped(..))
 
 -- $setup
 -- >>> :set -XOverloadedStrings
@@ -67,6 +69,9 @@ instance (ToJSON k, ToJSON v, IsList (c k v), Item (c k v) ~ (k,v)) => ToJSON (G
       toValuePair (k, v) = (toJSON k, toJSON v)
       flatten pl = (\(k, v) -> [k, v]) =<< pl
 
+-- | Map to \"g:Map\".
+instance GraphSONTyped (GMap c k v) where
+  gsonTypeFor _ = "g:Map"
 
 -- | If key type of a @g:Map@ is Text, the @g:Map@ type can be
 -- expressed as a plain JSON object (in GraphSON v1 and v2) as well as
@@ -77,3 +82,7 @@ data GraphSONObject v = GraphSONObject (HashMap Text v)
                       | GraphSONGMap (GMap HashMap Text v)
                         -- ^ the 'HashMap' is encoded as a @g:Map@ object.
                       deriving (Show,Eq)
+
+-- | Map to \"g:Map\".
+instance GraphSONTyped (GraphSONObject v) where
+  gsonTypeFor _ = "g:Map"
