@@ -12,7 +12,7 @@ module Data.Greskell.GMap
          GraphSONObject(..)
        ) where
 
-import Control.Applicative ((<$>), (<*>))
+import Control.Applicative ((<$>), (<*>), (<|>))
 import Data.Aeson (FromJSON(..), ToJSON(..), Value(..))
 import Data.Foldable (length)
 import Data.HashMap.Strict (HashMap)
@@ -20,7 +20,8 @@ import Data.Text (Text)
 import Data.Vector ((!))
 import GHC.Exts (IsList(Item, fromList, toList))
 
-import Data.Greskell.GraphSON (GraphSONTyped(..))
+import Data.Greskell.GraphSON
+  (GraphSON(gsonValue), GraphSONTyped(..), parseTypedGraphSON, typedGraphSON)
 
 -- $setup
 -- >>> :set -XOverloadedStrings
@@ -80,11 +81,14 @@ instance GraphSONTyped (GMap c k v) where
 --
 -- >>> Aeson.eitherDecode "{\"ten\": 10}" :: Either String (GraphSONObject Int)
 -- Right (GraphSONObject (fromList [("ten",10)]))
--- >>> Aeson.eitherDecode "{\"@type\": \"g:Map\", \"@value\": 10}" :: Either String (GraphSONObject Int)
--- Right (GraphSONGMap (GMap (fromList [("ten",10)])))
+-- >>> Aeson.eitherDecode "{\"@type\": \"g:Map\", \"@value\": [\"ten\", 10]}" :: Either String (GraphSONObject Int)
+-- Right (GraphSONGMap (GMap {unGMap = fromList [("ten",10)]}))
 -- >>> Aeson.encode $ GraphSONObject (fromList [("ten", 10)] :: HashMap Text Int)
 -- "{\"ten\":10}"
--- >>> Aeson.encode $ GraphSONGMap $ GMap (fromList [("ten", 10)] :: HashMap Text Int)
+-- >>> let result = Aeson.encode $ GraphSONGMap $ GMap (fromList [("ten", 10)] :: HashMap Text Int)
+-- >>> result
+-- ...\"@type\":\"g:Map\"...
+-- >>> result
 -- ...\"@value\":[\"ten\",10]...
 data GraphSONObject v = GraphSONObject (HashMap Text v)
                         -- ^ the 'HashMap' is encoded as a plain JSON object.
@@ -97,7 +101,10 @@ instance GraphSONTyped (GraphSONObject v) where
   gsonTypeFor _ = "g:Map"
 
 instance (FromJSON v) => FromJSON (GraphSONObject v) where
-  parseJSON = undefined
+  parseJSON v = (fmap toGraphSONGMap $ parseTypedGraphSON v) <|> (fmap GraphSONObject $ parseJSON v)
+    where
+      toGraphSONGMap = GraphSONGMap . gsonValue
 
 instance (ToJSON v) => ToJSON (GraphSONObject v) where
-  toJSON = undefined
+  toJSON (GraphSONObject hm) = toJSON hm
+  toJSON (GraphSONGMap gm) = toJSON $ typedGraphSON gm
