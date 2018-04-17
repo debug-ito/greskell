@@ -27,7 +27,7 @@ import Data.Greskell.GraphSON
 -- >>> :set -XOverloadedStrings
 -- >>> import qualified Data.Aeson as Aeson
 -- >>> import Data.HashMap.Strict (HashMap)
--- >>> import Data.List (sort, isInfixOf)
+-- >>> import Data.List (sort)
 -- >>> import Data.Either (isLeft, fromLeft)
 
 -- | Haskell representation of @g:Map@ type in GraphSON.
@@ -46,8 +46,8 @@ import Data.Greskell.GraphSON
 -- >>> fmap (sort . toList . unGMap) $ (Aeson.eitherDecode "[]" :: Either String (GMap HashMap String String))
 -- Right []
 -- >>> let (Left err_msg) = (Aeson.eitherDecode "[10, \"ten\", 11]" :: Either String (GMap HashMap Int String))
--- >>> "odd number of elements" `isInfixOf` err_msg
--- True
+-- >>> err_msg
+-- ...odd number of elements...
 -- >>> Aeson.encode $ GMap $ (fromList [(10, "ten")] :: HashMap Int String)
 -- "[10,\"ten\"]"
 newtype GMap c k v = GMap { unGMap :: c k v }
