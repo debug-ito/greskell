@@ -80,6 +80,11 @@ instance GraphSONTyped (GMap c k v) where
 -- a @g:Map@ object (in GraphSON v3). 'GraphSONObject' parses and
 -- formats both cases.
 --
+-- Note that 'FromJSON' instance of this type tries to parse the
+-- GraphSON \"typed\" object (i.e. \"{\"\@type\": ...}\" stuff), so
+-- enclosing 'GraphSONObject' with 'GraphSON' type is usually a bad
+-- idea.
+--
 -- >>> Aeson.eitherDecode "{\"ten\": 10}" :: Either String (GraphSONObject Int)
 -- Right (GraphSONObject (fromList [("ten",10)]))
 -- >>> Aeson.eitherDecode "{\"@type\": \"g:Map\", \"@value\": [\"ten\", 10]}" :: Either String (GraphSONObject Int)
