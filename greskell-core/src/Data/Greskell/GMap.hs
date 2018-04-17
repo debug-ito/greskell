@@ -47,8 +47,8 @@ import Data.Greskell.GraphSON (GraphSONTyped(..))
 -- >>> let (Left err_msg) = (Aeson.eitherDecode "[10, \"ten\", 11]" :: Either String (GMap HashMap Int String))
 -- >>> "odd number of elements" `isInfixOf` err_msg
 -- True
--- >>> Aeson.toJSON $ GMap $ (fromList [(10, "ten")] :: HashMap Int String)
--- Array [Number 10.0,String "ten"]
+-- >>> Aeson.encode $ GMap $ (fromList [(10, "ten")] :: HashMap Int String)
+-- "[10,\"ten\"]"
 newtype GMap c k v = GMap { unGMap :: c k v }
                    deriving (Show,Eq,Ord)
 
