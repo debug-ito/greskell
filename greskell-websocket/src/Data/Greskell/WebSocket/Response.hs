@@ -70,7 +70,7 @@ codeFromInt i = case i of
 instance FromJSON ResponseCode where
   parseJSON (Number n) = maybe err return $ codeFromInt $ floor n
     where
-      err = error ("Unknown response code: " ++ show n)
+      err = fail ("Unknown response code: " ++ show n)
   parseJSON _ = empty
 
 instance ToJSON ResponseCode where
