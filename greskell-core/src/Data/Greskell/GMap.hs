@@ -77,6 +77,15 @@ instance GraphSONTyped (GMap c k v) where
 -- expressed as a plain JSON object (in GraphSON v1 and v2) as well as
 -- a @g:Map@ object (in GraphSON v3). 'GraphSONObject' parses and
 -- formats both cases.
+--
+-- >>> Aeson.eitherDecode "{\"ten\": 10}" :: Either String (GraphSONObject Int)
+-- Right (GraphSONObject (fromList [("ten",10)]))
+-- >>> Aeson.eitherDecode "{\"@type\": \"g:Map\", \"@value\": 10}" :: Either String (GraphSONObject Int)
+-- Right (GraphSONGMap (GMap (fromList [("ten",10)])))
+-- >>> Aeson.encode $ GraphSONObject (fromList [("ten", 10)] :: HashMap Text Int)
+-- "{\"ten\":10}"
+-- >>> Aeson.encode $ GraphSONGMap $ GMap (fromList [("ten", 10)] :: HashMap Text Int)
+-- ...\"@value\":[\"ten\",10]...
 data GraphSONObject v = GraphSONObject (HashMap Text v)
                         -- ^ the 'HashMap' is encoded as a plain JSON object.
                       | GraphSONGMap (GMap HashMap Text v)
@@ -86,3 +95,9 @@ data GraphSONObject v = GraphSONObject (HashMap Text v)
 -- | Map to \"g:Map\".
 instance GraphSONTyped (GraphSONObject v) where
   gsonTypeFor _ = "g:Map"
+
+instance (FromJSON v) => FromJSON (GraphSONObject v) where
+  parseJSON = undefined
+
+instance (ToJSON v) => ToJSON (GraphSONObject v) where
+  toJSON = undefined
