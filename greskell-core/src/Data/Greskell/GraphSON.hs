@@ -149,6 +149,9 @@ instance GraphSONTyped (HML.HashMap k v) where
 instance GraphSONTyped (HashSet a) where
   gsonTypeFor _ = "g:Set"
 
+instance (GraphSONTyped a, GraphSONTyped b) => GraphSONTyped (Either a b) where
+  gsonTypeFor e = either gsonTypeFor gsonTypeFor e
+
 
 -- | Parse @GraphSON v@, but it checks 'gsonType'. If 'gsonType' is
 -- 'Nothing' or it's not equal to 'gsonTypeFor', the 'Parser' fails.
