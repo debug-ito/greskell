@@ -9,7 +9,8 @@ module Data.Greskell.GMap
        ( -- * GMap
          GMap(..),
          -- * GraphSONObject
-         GraphSONObject(..)
+         GraphSONObject(..),
+         gsonObject
        ) where
 
 import Control.Applicative ((<$>), (<*>), (<|>))
@@ -108,3 +109,8 @@ instance (FromJSON v) => FromJSON (GraphSONObject v) where
 instance (ToJSON v) => ToJSON (GraphSONObject v) where
   toJSON (GraphSONObject hm) = toJSON hm
   toJSON (GraphSONGMap gm) = toJSON $ typedGraphSON gm
+
+-- | Extract 'HashMap' from 'GraphSONObject'.
+gsonObject :: GraphSONObject v -> HashMap Text v
+gsonObject (GraphSONObject hm) = hm
+gsonObject (GraphSONGMap (GMap hm)) = hm
