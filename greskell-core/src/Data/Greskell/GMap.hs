@@ -6,12 +6,17 @@
 --
 -- 
 module Data.Greskell.GMap
-       ( GMap(..) 
+       ( -- * GMap
+         GMap(..),
+         -- * GraphSONObject
+         GraphSONObject(..)
        ) where
 
 import Control.Applicative ((<$>), (<*>))
 import Data.Aeson (FromJSON(..), ToJSON(..), Value(..))
 import Data.Foldable (length)
+import Data.HashMap.Strict (HashMap)
+import Data.Text (Text)
 import Data.Vector ((!))
 import GHC.Exts (IsList(Item, fromList, toList))
 
@@ -22,7 +27,7 @@ import GHC.Exts (IsList(Item, fromList, toList))
 -- >>> import Data.List (sort, isInfixOf)
 -- >>> import Data.Either (isLeft, fromLeft)
 
--- | 'GMap' corresponds to @g:Map@ type in GraphSON.
+-- | Haskell representation of @g:Map@ type in GraphSON.
 -- 
 -- In GraphSON v3, @g:Map@ is encoded as a flattened list of keys and
 -- values. 'FromJSON' and 'ToJSON' instances of 'GMap' implements this
@@ -61,3 +66,14 @@ instance (ToJSON k, ToJSON v, IsList (c k v), Item (c k v) ~ (k,v)) => ToJSON (G
     where
       toValuePair (k, v) = (toJSON k, toJSON v)
       flatten pl = (\(k, v) -> [k, v]) =<< pl
+
+
+-- | If key type of a @g:Map@ is Text, the @g:Map@ type can be
+-- expressed as a plain JSON object (in GraphSON v1 and v2) as well as
+-- a @g:Map@ object (in GraphSON v3). 'GraphSONObject' parses and
+-- formats both cases.
+data GraphSONObject v = GraphSONObject (HashMap Text v)
+                        -- ^ the 'HashMap' is encoded as a plain JSON object.
+                      | GraphSONGMap (GMap HashMap Text v)
+                        -- ^ the 'HashMap' is encoded as a @g:Map@ object.
+                      deriving (Show,Eq)
