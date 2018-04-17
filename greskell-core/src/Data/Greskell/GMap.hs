@@ -88,17 +88,17 @@ instance GraphSONTyped (GMap c k v) where
 -- >>> Aeson.eitherDecode "{\"ten\": 10}" :: Either String (GraphSONObject Int)
 -- Right (GraphSONObject (fromList [("ten",10)]))
 -- >>> Aeson.eitherDecode "{\"@type\": \"g:Map\", \"@value\": [\"ten\", 10]}" :: Either String (GraphSONObject Int)
--- Right (GraphSONGMap (GMap {unGMap = fromList [("ten",10)]}))
+-- Right (GraphSONGMap (fromList [("ten",10)]))
 -- >>> Aeson.encode $ GraphSONObject (fromList [("ten", 10)] :: HashMap Text Int)
 -- "{\"ten\":10}"
--- >>> let result = Aeson.encode $ GraphSONGMap $ GMap (fromList [("ten", 10)] :: HashMap Text Int)
+-- >>> let result = Aeson.encode $ GraphSONGMap (fromList [("ten", 10)] :: HashMap Text Int)
 -- >>> result
 -- ...\"@type\":\"g:Map\"...
 -- >>> result
 -- ...\"@value\":[\"ten\",10]...
 data GraphSONObject v = GraphSONObject (HashMap Text v)
                         -- ^ the 'HashMap' is encoded as a plain JSON object.
-                      | GraphSONGMap (GMap HashMap Text v)
+                      | GraphSONGMap (HashMap Text v)
                         -- ^ the 'HashMap' is encoded as a @g:Map@ object.
                       deriving (Show,Eq)
 
@@ -109,13 +109,13 @@ instance GraphSONTyped (GraphSONObject v) where
 instance (FromJSON v) => FromJSON (GraphSONObject v) where
   parseJSON v = (fmap toGraphSONGMap $ parseTypedGraphSON v) <|> (fmap GraphSONObject $ parseJSON v)
     where
-      toGraphSONGMap = GraphSONGMap . gsonValue
+      toGraphSONGMap = GraphSONGMap . unGMap . gsonValue
 
 instance (ToJSON v) => ToJSON (GraphSONObject v) where
   toJSON (GraphSONObject hm) = toJSON hm
-  toJSON (GraphSONGMap gm) = toJSON $ typedGraphSON gm
+  toJSON (GraphSONGMap hm) = toJSON $ typedGraphSON $ GMap hm
 
 -- | Extract 'HashMap' from 'GraphSONObject'.
 gsonObject :: GraphSONObject v -> HashMap Text v
 gsonObject (GraphSONObject hm) = hm
-gsonObject (GraphSONGMap (GMap hm)) = hm
+gsonObject (GraphSONGMap hm) = hm
