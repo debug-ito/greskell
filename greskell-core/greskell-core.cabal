@@ -43,6 +43,7 @@ test-suite spec
   -- default-extensions:   
   other-extensions:     OverloadedStrings
   other-modules:        Data.Greskell.GreskellSpec,
+                        Data.Greskell.GraphSONSpec
                         Data.Greskell.Test.QuickCheck
   build-depends:        base, text, aeson,
                         greskell-core,
