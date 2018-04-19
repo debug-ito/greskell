@@ -14,7 +14,8 @@ module Data.Greskell.GraphSON
          typedGraphSON,
          typedGraphSON',
          -- * Parser support
-         parseTypedGraphSON
+         parseTypedGraphSON,
+         parseTypedGraphSON'
        ) where
 
 import Control.Applicative ((<$>), (<*>))
@@ -165,3 +166,29 @@ parseTypedGraphSON v = checkType =<< parseJSON v
         fail ("Expected @type of " ++ show exp_type ++ ", but got " ++ show mgot_type)
       return gson
 
+-- | Like 'parseTypedGraphSON', but this handles parse errors in a
+-- finer granularity.
+--
+-- - If the given 'Value' is not a typed JSON object, it returns
+--   'Left'.
+-- - If the given 'Value' is a typed JSON object but it fails to parse
+--   the \"\@value\" field, the 'Parser' fails.
+-- - If the given 'Value' is a typed JSON object but the \"\@type\"
+--   field is not equal to the 'gsonTypeFor' of type @v@, the 'Parser'
+--   fails.
+-- - Otherwise (if the given 'Value' is a typed JSON object with valid
+--   \"\@type\" and \"\@value\" fields,) it returns 'Right'.
+parseTypedGraphSON' :: (GraphSONTyped v, FromJSON v) => Value -> Parser (Either String (GraphSON v))
+parseTypedGraphSON' v = do
+  graphsonv <- parseGraphSONPlain v
+  case gsonType graphsonv of
+   Nothing -> return $ Left ("Not a valid typed JSON object.")
+   Just got_type -> do
+     goal <- parseJSON $ gsonValue graphsonv
+     let exp_type = gsonTypeFor goal 
+     when (got_type /= exp_type) $ do
+       fail ("Expected @type of " ++ show exp_type ++ ", but got " ++ show got_type)
+     return $ Right $ graphsonv { gsonValue = goal }
+  where
+    parseGraphSONPlain :: Value -> Parser (GraphSON Value)
+    parseGraphSONPlain = parseJSON
