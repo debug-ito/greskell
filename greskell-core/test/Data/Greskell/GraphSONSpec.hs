@@ -1,11 +1,15 @@
+{-# LANGUAGE OverloadedStrings, NoMonomorphismRestriction #-}
 module Data.Greskell.GraphSONSpec (main,spec) where
 
+import Data.Aeson (object, (.=))
 import Data.Aeson.Types (parseEither, Value(..), Parser)
+import Data.HashMap.Strict (HashMap)
+import qualified Data.HashMap.Strict as HM
 import Data.List (isInfixOf)
 import Data.Int (Int32)
 import Test.Hspec
 
-import Data.Greskell.GraphSON (GraphSON, parseTypedGraphSON)
+import Data.Greskell.GraphSON (GraphSON, parseTypedGraphSON, typedGraphSON')
 
 main :: IO ()
 main = hspec spec
@@ -18,9 +22,34 @@ parseTypedGraphSON_spec :: Spec
 parseTypedGraphSON_spec = describe "parseTypedGraphSON" $ do
   let parse = parseEither parseTypedGraphSON
   describe "Int32" $ do
-    let expected :: Int32
-        expected = 255
+    specify "invalid bare value" $ do
+      let (Left got) = parse (String "foo") :: Either String (GraphSON Int32)
+      got `shouldSatisfy` (`isInfixOf` "Not a valid typed JSON")
     specify "valid bare value" $ do
       let (Left got) = parse (Number 255) :: Either String (GraphSON Int32)
       got `shouldSatisfy` (`isInfixOf` "Not a valid typed JSON")
-      
+    specify "typed JSON with invalid @type field" $ do
+      let (Left got) = parse (object ["@type" .= String "g:Int64", "@value" .= Number 255]) :: Either String (GraphSON Int32)
+      got `shouldSatisfy` (`isInfixOf` "Expected @type")
+    specify "typed JSON with valid @type field" $ do
+      let got = parse (object ["@type" .= String "g:Int32", "@value" .= Number 255]) :: Either String (GraphSON Int32)
+      got `shouldBe` (Right $ typedGraphSON' "g:Int32" 255)
+  describe "HashMap" $ do
+    specify "invalid bare value" $ do
+      let (Left got) = parse (String "quux") :: Either String (GraphSON (HashMap String String))
+      got `shouldSatisfy` (`isInfixOf` "Not a valid typed JSON")
+    specify "valid bare value" $ do
+      let (Left got) = parse (object ["hoge" .= String "HOGE", "foo" .= String "FOO"]) :: Either String (GraphSON (HashMap String String))
+      got `shouldSatisfy` (`isInfixOf` "Not a valid typed JSON")
+    specify "typed JSON with invalid @type field" $ do
+      let (Left got) = parse (object [ "@type" .= String "g:Array",
+                                       "@value" .= object ["hoge" .= String "HOGE", "foo" .= String "FOO"]
+                                     ]) :: Either String (GraphSON (HashMap String String))
+      got `shouldSatisfy` (`isInfixOf` "Expected @type")
+    specify "typed JSON with valid @type field" $ do
+      let got = parse (object [ "@type" .= String "g:Map",
+                                "@value" .= object ["hoge" .= String "HOGE", "foo" .= String "FOO"]
+                              ]) :: Either String (GraphSON (HashMap String String))
+      got `shouldBe` (Right $ typedGraphSON' "g:Map" $ HM.fromList [("hoge", "HOGE"), ("foo", "FOO")])
+
+

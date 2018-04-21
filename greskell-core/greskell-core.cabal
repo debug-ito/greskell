@@ -41,11 +41,11 @@ test-suite spec
   ghc-options:          -Wall -fno-warn-unused-imports "-with-rtsopts=-M512m"
   main-is:              Spec.hs
   -- default-extensions:   
-  other-extensions:     OverloadedStrings
+  other-extensions:     OverloadedStrings, NoMonomorphismRestriction
   other-modules:        Data.Greskell.GreskellSpec,
                         Data.Greskell.GraphSONSpec
                         Data.Greskell.Test.QuickCheck
-  build-depends:        base, text, aeson,
+  build-depends:        base, text, aeson, unordered-containers,
                         greskell-core,
                         hspec >=2.2.3,
                         QuickCheck >=2.8.2 && <2.12
