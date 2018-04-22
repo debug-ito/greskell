@@ -72,7 +72,7 @@ data OpEval =
     binding :: !(Maybe Object),
     language :: !(Maybe Text),
     aliases :: !(Maybe (HashMap Text Text)),
-    scriptEvaluationTimeout :: !Int
+    scriptEvaluationTimeout :: !(Maybe Int)
   }
   deriving (Show,Eq)
 
