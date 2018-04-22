@@ -101,36 +101,37 @@ encodedValue c req = case A.eitherDecode $ encodeWith c req of
   Left e -> error e
   Right v -> v
 
+encodeCase :: Operation q => String -> RequestMessage q -> Spec
+encodeCase filename input = specify filename $ do
+  expected <- loadSampleValue filename
+  encodedValue codec input `shouldBe` expected
+  where
+    codec :: Operation q => Codec q Value
+    codec = jsonCodec
+
 encode_spec :: Spec
 encode_spec = describe "encodeWith" $ do
-  let codec :: Operation q => Codec q Value
-      codec = jsonCodec
-      encodedValue' = encodedValue codec
-  specify "auth" $ do
-    let input = RequestMessage
-                { requestId = fromJust $ UUID.fromString "cb682578-9d92-4499-9ebc-5c6aa73c5397",
-                  requestOperation = OpAuthentication
-                                     { processor = "",
-                                       batchSize = Nothing,
-                                       sasl = BS.singleton 0 <> "stephphen" <> BS.singleton 0 <> "password",
-                                       saslMechanism = SASLPlain
-                                     }
-                }
-    expected <- loadSampleValue "request_auth_v1.json"
-    encodedValue' input `shouldBe` expected
-  specify "sessionless eval" $ do
-    let input = RequestMessage
-                { requestId = fromJust $ UUID.fromString "cb682578-9d92-4499-9ebc-5c6aa73c5397",
-                  requestOperation = OpEval
-                                     { batchSize = Nothing,
-                                       gremlin = "g.V(x)",
-                                       bindings = Just $ HM.fromList [("x", Number 1)],
-                                       language = Just "gremlin-groovy",
-                                       aliases = Nothing,
-                                       scriptEvaluationTimeout = Nothing
-                                     }
-                }
-    expected <- loadSampleValue "request_sessionless_eval_v1.json"
-    encodedValue' input `shouldBe` expected
+  encodeCase "request_auth_v1.json"
+    $ RequestMessage
+      { requestId = fromJust $ UUID.fromString "cb682578-9d92-4499-9ebc-5c6aa73c5397",
+        requestOperation = OpAuthentication
+                           { processor = "",
+                             batchSize = Nothing,
+                             sasl = BS.singleton 0 <> "stephphen" <> BS.singleton 0 <> "password",
+                             saslMechanism = SASLPlain
+                           }
+      }
+  encodeCase "request_sessionless_eval_v1.json"
+    $ RequestMessage
+      { requestId = fromJust $ UUID.fromString "cb682578-9d92-4499-9ebc-5c6aa73c5397",
+        requestOperation = OpEval
+                           { batchSize = Nothing,
+                             gremlin = "g.V(x)",
+                             bindings = Just $ HM.fromList [("x", Number 1)],
+                             language = Just "gremlin-groovy",
+                             aliases = Nothing,
+                             scriptEvaluationTimeout = Nothing
+                           }
+      }
 
 -- TODO: other cases.    
