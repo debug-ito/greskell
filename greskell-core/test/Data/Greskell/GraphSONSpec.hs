@@ -37,7 +37,7 @@ parseTypedGraphSON_spec = describe "parseTypedGraphSON" $ do
       got `shouldSatisfy` (isInfixOf "Expected @type")
     specify "typed JSON with valid @type field and invalid @value" $ do
       let (Left got) = parse (object ["@type" .= String "g:Int32", "@value" .= String "hoge"]) :: Either String (GraphSON Int32)
-      got `shouldSatisfy` (isInfixOf "Expected @type")
+      got `shouldSatisfy` (isInfixOf "expected Int32")
     specify "typed JSON with valid @type and @value" $ do
       let got = parse (object ["@type" .= String "g:Int32", "@value" .= Number 255]) :: Either String (GraphSON Int32)
       got `shouldBe` (Right $ typedGraphSON' "g:Int32" 255)
@@ -57,7 +57,7 @@ parseTypedGraphSON_spec = describe "parseTypedGraphSON" $ do
       let (Left got) = parse (object [ "@type" .= String "g:Array",
                                        "@value" .= Number 100
                                      ]) :: Either String (GraphSON (HashMap String String))
-      got `shouldSatisfy` (isInfixOf "Invalid @value")
+      got `shouldSatisfy` (isInfixOf "expected HashMap")
     specify "typed JSON with valid @type and @value" $ do
       let got = parse (object [ "@type" .= String "g:Map",
                                 "@value" .= object ["hoge" .= String "HOGE", "foo" .= String "FOO"]
@@ -80,7 +80,7 @@ parseTypedGraphSON'_spec = describe "parseTypedGraphSON'" $ do
       got `shouldSatisfy` (isInfixOf "Expected @type")
     specify "typed JSON with valid @type field and invalid @value" $ do
       let (Left got) = parse (object ["@type" .= String "g:Int32", "@value" .= String "hoge"]) :: Either String (Either String (GraphSON Int32))
-      got `shouldSatisfy` (isInfixOf "Invalid @value")
+      got `shouldSatisfy` (isInfixOf "expected Int32")
     specify "typed JSON with valid @type and @value" $ do
       let got = parse (object ["@type" .= String "g:Int32", "@value" .= Number 255]) :: Either String (Either String (GraphSON Int32))
       got `shouldBe` (Right $ Right $ typedGraphSON' "g:Int32" 255)
@@ -101,7 +101,7 @@ parseTypedGraphSON'_spec = describe "parseTypedGraphSON'" $ do
       let (Left got) = parse (object [ "@type" .= String "g:Array",
                                        "@value" .= Number 100
                                      ]) :: Either String (Either String (GraphSON (HashMap String String)))
-      got `shouldSatisfy` (isInfixOf "Invalid @value")
+      got `shouldSatisfy` (isInfixOf "expected HashMap")
     specify "typed JSON with valid @type and @value" $ do
       let got = parse (object [ "@type" .= String "g:Map",
                                 "@value" .= object ["hoge" .= String "HOGE", "foo" .= String "FOO"]
