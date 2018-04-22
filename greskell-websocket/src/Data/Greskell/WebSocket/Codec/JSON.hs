@@ -10,20 +10,22 @@ module Data.Greskell.WebSocket.Codec.JSON
        ) where
 
 import Data.Aeson (ToJSON, FromJSON, eitherDecode')
+import qualified Data.Aeson as A
 import Data.Bifunctor (first)
 import Data.Text (pack)
 
 import Data.Greskell.WebSocket.Codec (Codec(..))
+import Data.Greskell.WebSocket.Request (Operation)
 
 -- | Simple \"application/json\" codec.
 --
 -- The encoder uses GraphSON v1 format. The decoder supports all
 -- GraphSON v1, v2 and v3.
-jsonCodec :: (FromJSON s) => Codec q s -- TODO: we will need some constaints.
+jsonCodec :: (Operation q, FromJSON s) => Codec q s
 jsonCodec = Codec { mimeType = "application/json",
                     encodeWith = encode,
                     decodeWith = decode
                   }
   where
-    encode = undefined
+    encode = A.encode
     decode = first pack . eitherDecode'
