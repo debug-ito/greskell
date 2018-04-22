@@ -16,7 +16,7 @@ import Test.Hspec
 
 import Data.Greskell.WebSocket.Request
   ( RequestMessage(..), OpEval(..), OpAuthentication(..), SASLMechanism(..),
-    Operation
+    Operation, OpSessionEval(..)
   )
 import Data.Greskell.WebSocket.Response
   (ResponseMessage(..), ResponseStatus(..), ResponseResult(..), ResponseCode(..))
@@ -132,6 +132,35 @@ encode_spec = describe "encodeWith" $ do
                              aliases = Nothing,
                              scriptEvaluationTimeout = Nothing
                            }
+      }
+  encodeCase "request_sessionless_eval_aliased_v1.json"
+    $ RequestMessage
+      { requestId = fromJust $ UUID.fromString "cb682578-9d92-4499-9ebc-5c6aa73c5397",
+        requestOperation = OpEval
+                           { batchSize = Nothing,
+                             gremlin = "social.V(x)",
+                             bindings = Just $ HM.fromList [("x", Number 1)],
+                             language = Just "gremlin-groovy",
+                             aliases = Just $ HM.fromList [("g", "social")],
+                             scriptEvaluationTimeout = Nothing
+                           }
+      }
+  encodeCase "request_session_eval_v1.json"
+    $ RequestMessage
+      { requestId = fromJust $ UUID.fromString "cb682578-9d92-4499-9ebc-5c6aa73c5397",
+        requestOperation =
+          OpSessionEval
+          { eval = OpEval
+                   { batchSize = Nothing,
+                     gremlin = "g.V(x)",
+                     bindings = Just $ HM.fromList [("x", Number 1)],
+                     language = Just "gremlin-groovy",
+                     aliases = Nothing,
+                     scriptEvaluationTimeout = Nothing
+                   },
+            session = fromJust $ UUID.fromString "41d2e28a-20a4-4ab0-b379-d810dede3786",
+            manageTransaction = Nothing
+          }
       }
 
 -- TODO: other cases.    

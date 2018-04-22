@@ -26,6 +26,7 @@ import qualified Data.ByteString.Base64 as Base64
 import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as HM
 import Data.Maybe (catMaybes)
+import Data.Monoid ((<>))
 import Data.Text (Text)
 import Data.Text.Encoding (decodeUtf8)
 import Data.UUID (UUID)
@@ -148,6 +149,17 @@ data OpSessionEval =
     manageTransaction :: !(Maybe Bool)
   }
   deriving (Show,Eq)
+
+instance Operation OpSessionEval where
+  opProcessor _ = "session"
+  opName _ = "eval"
+  opArgs op = eval_args <> session_args
+    where
+      eval_args = opArgs $ eval $ op
+      session_args = mobject
+                     [ "session" .=! (session (op :: OpSessionEval)),
+                       "manageTransaction" .=? (manageTransaction $ op)
+                     ]
 
 -- | Session \"close\" operation.
 data OpClose =
