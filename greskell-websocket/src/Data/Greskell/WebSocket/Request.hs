@@ -35,7 +35,7 @@ data RequestMessage q =
   { requestId :: !UUID,
     -- ^ \"requestId\" field.
     requestOperation :: !q
-    -- ^ "Operation" object.
+    -- ^ 'Operation' object.
   }
   deriving (Show,Eq,Ord)
 
@@ -125,7 +125,7 @@ data OpEval =
 instance Operation OpEval where
   opProcessor _ = ""
   opName _ = "eval"
-  opArgs = undefined
+  opArgs = undefined -- TODO
 
 -- | Session ID.
 type SessionID = UUID
