@@ -1,4 +1,5 @@
-{-# LANGUAGE OverloadedStrings, DuplicateRecordFields #-}
+{-# LANGUAGE OverloadedStrings, DuplicateRecordFields, PartialTypeSignatures, FlexibleContexts, DeriveGeneric #-}
+{-# OPTIONS_GHC -fno-warn-partial-type-signatures #-}
 -- |
 -- Module: Data.Greskell.WebSocket.Request
 -- Description: Request to Gremlin Server
@@ -18,7 +19,7 @@ module Data.Greskell.WebSocket.Request
          OpClose(..)
        ) where
 
-import Data.Aeson (Object, ToJSON(..), (.=), Value)
+import Data.Aeson (Object, ToJSON(..), (.=), Value(Object))
 import qualified Data.Aeson as A
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Base64 as Base64
@@ -28,6 +29,7 @@ import Data.Maybe (catMaybes)
 import Data.Text (Text)
 import Data.Text.Encoding (decodeUtf8)
 import Data.UUID (UUID)
+import GHC.Generics (Generic)
 
 -- | RequestMessage to a Gremlin Server.
 data RequestMessage q =
@@ -88,6 +90,14 @@ label .=! v = Just (label .= v)
 mobject :: [MPair] -> Object
 mobject = HM.fromList . catMaybes
 
+toObject :: _ => a -> Object
+toObject = expectObject . A.genericToJSON opt
+  where
+    opt = A.defaultOptions { A.omitNothingFields = True
+                           }
+    expectObject (Object o) = o
+    expectObject _ = error "Expect Object, but got something else"
+
 
 instance Operation OpAuthentication where
   opProcessor = processor
@@ -114,18 +124,18 @@ saslMechanismToText SASLGSSAPI = "GSSAPI"
 data OpEval =
   OpEval
   { batchSize :: !(Maybe Int),
-    gremlin :: !ByteString,
-    binding :: !(Maybe Object),
+    gremlin :: !Text,
+    bindings :: !(Maybe Object),
     language :: !(Maybe Text),
     aliases :: !(Maybe (HashMap Text Text)),
     scriptEvaluationTimeout :: !(Maybe Int)
   }
-  deriving (Show,Eq)
+  deriving (Show,Eq,Generic)
 
 instance Operation OpEval where
   opProcessor _ = ""
   opName _ = "eval"
-  opArgs = undefined -- TODO
+  opArgs = toObject
 
 -- | Session ID.
 type SessionID = UUID
