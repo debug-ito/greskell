@@ -14,6 +14,8 @@ import Data.Monoid (mempty, (<>))
 import qualified Data.UUID as UUID
 import Test.Hspec
 
+import Data.Greskell.Greskell (unsafeGreskell, Greskell)
+
 import Data.Greskell.WebSocket.Request
   ( RequestMessage(..), OpEval(..), OpAuthentication(..), SASLMechanism(..),
     Operation, OpSessionEval(..)
@@ -44,7 +46,7 @@ loadSampleValue filename = do
 decode_spec :: Spec
 decode_spec = describe "decodeWith" $ do
   describe "authentication challenge" $ do
-    let codec :: Codec OpEval Value
+    let codec :: Codec OpAuthentication Value
         codec = jsonCodec
         exp_msg = ResponseMessage { requestId = fromJust $ UUID.fromString "41d2e28a-20a4-4ab0-b379-d810dede3786",
                                     status = exp_status,
@@ -62,7 +64,7 @@ decode_spec = describe "decodeWith" $ do
       got `shouldBe` Right exp_msg
 
   describe "standard response" $ do
-    let codec :: Codec OpEval (GraphSON [GraphSON Value])
+    let codec :: Codec (OpEval (Greskell ())) (GraphSON [GraphSON Value])
         codec = jsonCodec
         expMsg d = ResponseMessage { requestId = fromJust $ UUID.fromString "41d2e28a-20a4-4ab0-b379-d810dede3786",
                                      status = exp_status,
@@ -126,7 +128,7 @@ encode_spec = describe "encodeWith" $ do
       { requestId = fromJust $ UUID.fromString "cb682578-9d92-4499-9ebc-5c6aa73c5397",
         requestOperation = OpEval
                            { batchSize = Nothing,
-                             gremlin = "g.V(x)",
+                             gremlin = unsafeGreskell "g.V(x)",
                              bindings = Just $ HM.fromList [("x", Number 1)],
                              language = Just "gremlin-groovy",
                              aliases = Nothing,
@@ -138,7 +140,7 @@ encode_spec = describe "encodeWith" $ do
       { requestId = fromJust $ UUID.fromString "cb682578-9d92-4499-9ebc-5c6aa73c5397",
         requestOperation = OpEval
                            { batchSize = Nothing,
-                             gremlin = "social.V(x)",
+                             gremlin = unsafeGreskell "social.V(x)",
                              bindings = Just $ HM.fromList [("x", Number 1)],
                              language = Just "gremlin-groovy",
                              aliases = Just $ HM.fromList [("g", "social")],
@@ -152,7 +154,7 @@ encode_spec = describe "encodeWith" $ do
           OpSessionEval
           { eval = OpEval
                    { batchSize = Nothing,
-                     gremlin = "g.V(x)",
+                     gremlin = unsafeGreskell "g.V(x)",
                      bindings = Just $ HM.fromList [("x", Number 1)],
                      language = Just "gremlin-groovy",
                      aliases = Nothing,

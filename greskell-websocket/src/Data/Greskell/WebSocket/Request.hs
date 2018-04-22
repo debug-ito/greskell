@@ -32,6 +32,8 @@ import Data.Text.Encoding (decodeUtf8)
 import Data.UUID (UUID)
 import GHC.Generics (Generic)
 
+import Data.Greskell.Greskell (ToGreskell, toGremlin)
+
 -- | RequestMessage to a Gremlin Server.
 data RequestMessage q =
   RequestMessage
@@ -122,10 +124,12 @@ saslMechanismToText SASLPlain = "PLAIN"
 saslMechanismToText SASLGSSAPI = "GSSAPI"
 
 -- | Sessionless \"eval\" operation.
-data OpEval =
+--
+-- Type @g@ should be an instance of 'ToGreskell'.
+data OpEval g =
   OpEval
   { batchSize :: !(Maybe Int),
-    gremlin :: !Text,
+    gremlin :: !g,
     bindings :: !(Maybe Object),
     language :: !(Maybe Text),
     aliases :: !(Maybe (HashMap Text Text)),
@@ -133,31 +137,33 @@ data OpEval =
   }
   deriving (Show,Eq,Generic)
 
-instance Operation OpEval where
+instance (ToGreskell g) => Operation (OpEval g) where
   opProcessor _ = ""
   opName _ = "eval"
-  opArgs = toObject
+  opArgs orig = toObject $ orig { gremlin = toGremlin $ gremlin orig }
 
 -- | Session ID.
 type SessionID = UUID
 
 -- | \"eval\" operation in session.
-data OpSessionEval =
+-- 
+-- Type @g@ should be an instance of 'ToGreskell'.
+data OpSessionEval g =
   OpSessionEval
-  { eval :: !OpEval,
+  { eval :: !(OpEval g),
     session :: !SessionID,
     manageTransaction :: !(Maybe Bool)
   }
   deriving (Show,Eq)
 
-instance Operation OpSessionEval where
+instance (ToGreskell g) => Operation (OpSessionEval g) where
   opProcessor _ = "session"
   opName _ = "eval"
-  opArgs op = eval_args <> session_args
+  opArgs op@(OpSessionEval { session = op_session }) = eval_args <> session_args
     where
       eval_args = opArgs $ eval $ op
       session_args = mobject
-                     [ "session" .=! (session (op :: OpSessionEval)),
+                     [ "session" .=! op_session,
                        "manageTransaction" .=? (manageTransaction $ op)
                      ]
 
