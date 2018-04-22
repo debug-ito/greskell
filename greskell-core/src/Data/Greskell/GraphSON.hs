@@ -153,18 +153,10 @@ instance GraphSONTyped (HashSet a) where
 instance (GraphSONTyped a, GraphSONTyped b) => GraphSONTyped (Either a b) where
   gsonTypeFor e = either gsonTypeFor gsonTypeFor e
 
-
 -- | Parse @GraphSON v@, but it checks 'gsonType'. If 'gsonType' is
 -- 'Nothing' or it's not equal to 'gsonTypeFor', the 'Parser' fails.
 parseTypedGraphSON :: (GraphSONTyped v, FromJSON v) => Value -> Parser (GraphSON v)
-parseTypedGraphSON v = checkType =<< parseJSON v
-  where
-    checkType gson = do
-      let exp_type = gsonTypeFor $ gsonValue gson
-          mgot_type = gsonType gson
-      when (mgot_type /= Just exp_type) $ do
-        fail ("Expected @type of " ++ show exp_type ++ ", but got " ++ show mgot_type)
-      return gson
+parseTypedGraphSON v = either fail return =<< parseTypedGraphSON' v
 
 -- | Like 'parseTypedGraphSON', but this handles parse errors in a
 -- finer granularity.
