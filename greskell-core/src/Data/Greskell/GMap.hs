@@ -22,7 +22,7 @@ import Data.Vector ((!))
 import GHC.Exts (IsList(Item, fromList, toList))
 
 import Data.Greskell.GraphSON
-  (GraphSON(gsonValue), GraphSONTyped(..), parseTypedGraphSON, typedGraphSON)
+  (GraphSON(gsonValue), GraphSONTyped(..), parseTypedGraphSON', typedGraphSON)
 
 -- $setup
 -- >>> :set -XOverloadedStrings
@@ -107,9 +107,10 @@ instance GraphSONTyped (GraphSONObject v) where
   gsonTypeFor _ = "g:Map"
 
 instance (FromJSON v) => FromJSON (GraphSONObject v) where
-  parseJSON v = (fmap toGraphSONGMap $ parseTypedGraphSON v) <|> (fmap GraphSONObject $ parseJSON v)
+  parseJSON v = either toObject toGMap =<< parseTypedGraphSON' v
     where
-      toGraphSONGMap = GraphSONGMap . unGMap . gsonValue
+      toObject _ = GraphSONObject <$> parseJSON v
+      toGMap = return . GraphSONGMap . unGMap . gsonValue
 
 instance (ToJSON v) => ToJSON (GraphSONObject v) where
   toJSON (GraphSONObject hm) = toJSON hm
