@@ -1,20 +1,23 @@
-{-# LANGUAGE OverloadedStrings, DuplicateRecordFields #-}
+{-# LANGUAGE OverloadedStrings, DuplicateRecordFields, NoMonomorphismRestriction #-}
 module Data.Greskell.WebSocket.Codec.JSONSpec (main,spec) where
 
 import Control.Applicative ((<$>))
 import Control.Monad (forM_)
 import Data.Aeson (Value(Null, Number), (.=))
 import qualified Data.Aeson as A
+import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy as BSL
 import Data.Greskell.GraphSON (GraphSON, nonTypedGraphSON, typedGraphSON, typedGraphSON')
 import qualified Data.HashMap.Strict as HM
 import Data.Maybe (fromJust)
-import Data.Monoid (mempty)
+import Data.Monoid (mempty, (<>))
 import qualified Data.UUID as UUID
 import Test.Hspec
 
 import Data.Greskell.WebSocket.Request
-  (RequestMessage(..), OpEval(..), OpAuthentication(..), SASLMechanism(..))
+  ( RequestMessage(..), OpEval(..), OpAuthentication(..), SASLMechanism(..),
+    Operation
+  )
 import Data.Greskell.WebSocket.Response
   (ResponseMessage(..), ResponseStatus(..), ResponseResult(..), ResponseCode(..))
 import Data.Greskell.WebSocket.Codec (Codec(..))
@@ -100,7 +103,7 @@ encodedValue c req = case A.eitherDecode $ encodeWith c req of
 
 encode_spec :: Spec
 encode_spec = describe "encodeWith" $ do
-  let codec :: Codec q Value
+  let codec :: Operation q => Codec q Value
       codec = jsonCodec
       encodedValue' = encodedValue codec
   specify "auth" $ do
@@ -109,7 +112,7 @@ encode_spec = describe "encodeWith" $ do
                   requestOperation = OpAuthentication
                                      { processor = "",
                                        batchSize = Nothing,
-                                       sasl = "AHN0ZXBocGhlbgBwYXNzd29yZA==",
+                                       sasl = BS.singleton 0 <> "stephphen" <> BS.singleton 0 <> "password",
                                        saslMechanism = SASLPlain
                                      }
                 }
