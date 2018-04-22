@@ -1,18 +1,20 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings, DuplicateRecordFields #-}
 module Data.Greskell.WebSocket.Codec.JSONSpec (main,spec) where
 
 import Control.Applicative ((<$>))
 import Control.Monad (forM_)
-import Data.Aeson (Value(Null), (.=))
+import Data.Aeson (Value(Null, Number), (.=))
 import qualified Data.Aeson as A
 import qualified Data.ByteString.Lazy as BSL
 import Data.Greskell.GraphSON (GraphSON, nonTypedGraphSON, typedGraphSON, typedGraphSON')
+import qualified Data.HashMap.Strict as HM
 import Data.Maybe (fromJust)
 import Data.Monoid (mempty)
 import qualified Data.UUID as UUID
 import Test.Hspec
 
-import Data.Greskell.WebSocket.Request (OpEval)
+import Data.Greskell.WebSocket.Request
+  (RequestMessage(..), OpEval(..), OpAuthentication(..), SASLMechanism(..))
 import Data.Greskell.WebSocket.Response
   (ResponseMessage(..), ResponseStatus(..), ResponseResult(..), ResponseCode(..))
 import Data.Greskell.WebSocket.Codec (Codec(..))
@@ -24,9 +26,17 @@ main = hspec spec
 spec :: Spec
 spec = do
   decode_spec
+  encode_spec
 
 loadSample :: FilePath -> IO BSL.ByteString
 loadSample filename = BSL.readFile ("test/samples/" ++ filename)
+
+loadSampleValue :: FilePath -> IO Value
+loadSampleValue filename = do
+  json_text <- loadSample filename
+  case A.eitherDecode' json_text of
+   Left e -> error e
+   Right v -> return v
 
 decode_spec :: Spec
 decode_spec = describe "decodeWith" $ do
@@ -83,3 +93,41 @@ decode_spec = describe "decodeWith" $ do
       got <- decodeWith codec <$> loadSample (sampleFile "v3")
       got `shouldBe` Right (expMsg $ typedGraphSON [typedGraphSON' "g:Vertex" exp_v3])
 
+encodedValue :: Codec q s -> RequestMessage q -> Value
+encodedValue c req = case A.eitherDecode $ encodeWith c req of
+  Left e -> error e
+  Right v -> v
+
+encode_spec :: Spec
+encode_spec = describe "encodeWith" $ do
+  let codec :: Codec q Value
+      codec = jsonCodec
+      encodedValue' = encodedValue codec
+  specify "auth" $ do
+    let input = RequestMessage
+                { requestId = fromJust $ UUID.fromString "cb682578-9d92-4499-9ebc-5c6aa73c5397",
+                  requestOperation = OpAuthentication
+                                     { processor = "",
+                                       batchSize = Nothing,
+                                       sasl = "AHN0ZXBocGhlbgBwYXNzd29yZA==",
+                                       saslMechanism = SASLPlain
+                                     }
+                }
+    expected <- loadSampleValue "request_auth_v1.json"
+    encodedValue' input `shouldBe` expected
+  specify "sessionless eval" $ do
+    let input = RequestMessage
+                { requestId = fromJust $ UUID.fromString "cb682578-9d92-4499-9ebc-5c6aa73c5397",
+                  requestOperation = OpEval
+                                     { batchSize = Nothing,
+                                       gremlin = "g.V(x)",
+                                       binding = Just $ HM.fromList [("x", Number 1)],
+                                       language = Just "gremlin-groovy",
+                                       aliases = Nothing,
+                                       scriptEvaluationTimeout = Nothing
+                                     }
+                }
+    expected <- loadSampleValue "request_sessionless_eval_v1.json"
+    encodedValue' input `shouldBe` expected
+
+-- TODO: other cases.    
