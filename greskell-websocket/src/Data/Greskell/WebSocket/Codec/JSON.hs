@@ -16,6 +16,9 @@ import Data.Text (pack)
 import Data.Greskell.WebSocket.Codec (Codec(..))
 
 -- | Simple \"application/json\" codec.
+--
+-- The encoder uses GraphSON v1 format. The decoder supports all
+-- GraphSON v1, v2 and v3.
 jsonCodec :: (FromJSON s) => Codec q s -- TODO: we will need some constaints.
 jsonCodec = Codec { mimeType = "application/json",
                     encodeWith = encode,
