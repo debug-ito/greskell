@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveGeneric, OverloadedStrings #-}
 -- |
 -- Module: Data.Greskell.WebSocket.Response
 -- Description: Response from Gremlin Server
@@ -14,14 +14,18 @@ module Data.Greskell.WebSocket.Response
          codeFromInt
        ) where
 
-import Control.Applicative (empty)
+import Control.Applicative (empty, (<$>), (<*>))
 import Data.Aeson
-  ( Object, ToJSON(..), FromJSON(..), Value(Number),
-    defaultOptions, genericParseJSON, Options(fieldLabelModifier)
+  ( Object, ToJSON(..), FromJSON(..), Value(Number, Object),
+    defaultOptions, genericParseJSON,
+    (.:)
   )
 import GHC.Generics (Generic)
 import Data.Text (Text)
 import Data.UUID (UUID)
+
+import Data.Greskell.GMap (gsonObject)
+
 
 -- | Response status code
 data ResponseCode =
@@ -76,7 +80,6 @@ instance FromJSON ResponseCode where
 instance ToJSON ResponseCode where
   toJSON = toJSON . codeToInt
 
-
 -- | \"status\" field.
 data ResponseStatus =
   ResponseStatus
@@ -87,7 +90,12 @@ data ResponseStatus =
   deriving (Show,Eq,Generic)
 
 instance FromJSON ResponseStatus where
-  parseJSON = genericParseJSON defaultOptions
+  parseJSON (Object o) =
+    ResponseStatus
+    <$> o .: "code"
+    <*> o .: "message"
+    <*> (gsonObject <$> o .: "attributes")
+  parseJSON _ = empty
 
 
 -- | \"result\" field.
@@ -100,12 +108,11 @@ data ResponseResult s =
   deriving (Show,Eq,Generic)
 
 instance FromJSON s => FromJSON (ResponseResult s) where
-  parseJSON = genericParseJSON $ defaultOptions { fieldLabelModifier = labeler }
-    where
-      labeler orig = if orig == "resultData"
-                     then "data"
-                     else orig
-
+  parseJSON (Object o) =
+    ResponseResult
+    <$> o .: "data"
+    <*> (gsonObject <$> o .: "meta")
+  parseJSON _ = empty
 
 -- | ResponseMessage object from Gremlin Server.
 data ResponseMessage s =

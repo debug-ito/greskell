@@ -29,6 +29,7 @@ library
                         Data.Greskell.WebSocket.Codec.JSON
   -- other-modules:        
   build-depends:        base,
+                        greskell-core,
                         bytestring,
                         text,
                         aeson,
