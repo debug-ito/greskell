@@ -31,7 +31,7 @@ import Data.Greskell.GraphSON
 -- >>> import Data.List (sort)
 -- >>> import Data.Either (isLeft, fromLeft)
 
--- | Haskell representation of @g:Map@ type in GraphSON.
+-- | Haskell representation of @g:Map@ type in GraphSON v3.
 -- 
 -- In GraphSON v3, @g:Map@ is encoded as a flattened list of keys and
 -- values. 'FromJSON' and 'ToJSON' instances of 'GMap' implements this

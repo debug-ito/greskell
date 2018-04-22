@@ -43,6 +43,10 @@ import Data.Traversable (Traversable(traverse))
 -- Just (GraphSON {gsonType = Nothing, gsonValue = 1000})
 -- >>> Aeson.decode "{\"@type\": \"g:Int32\", \"@value\": 1000}" :: Maybe (GraphSON Int32)
 -- Just (GraphSON {gsonType = Just "g:Int32", gsonValue = 1000})
+--
+-- Note that encoding of the \"g:Map\" type is inconsistent between
+-- GraphSON v1, v2 and v3. To handle the encoding, use
+-- "Data.Greskell.GMap".
 data GraphSON v =
   GraphSON
   { gsonType :: Maybe Text,
