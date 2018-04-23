@@ -17,9 +17,13 @@ import Test.Hspec
 import Data.Greskell.Greskell (unsafeGreskell, Greskell)
 
 import Data.Greskell.WebSocket.Request
-  ( RequestMessage(..), OpEval(..), OpAuthentication(..), SASLMechanism(..),
-    Operation, OpSessionEval(..)
+  ( RequestMessage(..), toRequestMessage
   )
+import Data.Greskell.WebSocket.Request.Common (SASLMechanism(..), Operation, Base64(..))
+import Data.Greskell.WebSocket.Request.Standard
+  ( OpAuthentication(..), OpEval(..)
+  )
+import qualified Data.Greskell.WebSocket.Request.Session as S
 import Data.Greskell.WebSocket.Response
   (ResponseMessage(..), ResponseStatus(..), ResponseResult(..), ResponseCode(..))
 import Data.Greskell.WebSocket.Codec (Codec(..))
@@ -46,7 +50,7 @@ loadSampleValue filename = do
 decode_spec :: Spec
 decode_spec = describe "decodeWith" $ do
   describe "authentication challenge" $ do
-    let codec :: Codec OpAuthentication Value
+    let codec :: Codec Value
         codec = jsonCodec
         exp_msg = ResponseMessage { requestId = fromJust $ UUID.fromString "41d2e28a-20a4-4ab0-b379-d810dede3786",
                                     status = exp_status,
@@ -64,7 +68,7 @@ decode_spec = describe "decodeWith" $ do
       got `shouldBe` Right exp_msg
 
   describe "standard response" $ do
-    let codec :: Codec (OpEval (Greskell ())) (GraphSON [GraphSON Value])
+    let codec :: Codec (GraphSON [GraphSON Value])
         codec = jsonCodec
         expMsg d = ResponseMessage { requestId = fromJust $ UUID.fromString "41d2e28a-20a4-4ab0-b379-d810dede3786",
                                      status = exp_status,
@@ -98,71 +102,55 @@ decode_spec = describe "decodeWith" $ do
       got <- decodeWith codec <$> loadSample (sampleFile "v3")
       got `shouldBe` Right (expMsg $ typedGraphSON [typedGraphSON' "g:Vertex" exp_v3])
 
-encodedValue :: Codec q s -> RequestMessage q -> Value
+encodedValue :: Codec s -> RequestMessage -> Value
 encodedValue c req = case A.eitherDecode $ encodeWith c req of
   Left e -> error e
   Right v -> v
 
-encodeCase :: Operation q => String -> RequestMessage q -> Spec
+encodeCase :: String -> RequestMessage -> Spec
 encodeCase filename input = specify filename $ do
   expected <- loadSampleValue filename
   encodedValue codec input `shouldBe` expected
   where
-    codec :: Operation q => Codec q Value
+    codec :: Codec Value
     codec = jsonCodec
 
 encode_spec :: Spec
 encode_spec = describe "encodeWith" $ do
-  encodeCase "request_auth_v1.json"
-    $ RequestMessage
-      { requestId = fromJust $ UUID.fromString "cb682578-9d92-4499-9ebc-5c6aa73c5397",
-        requestOperation = OpAuthentication
-                           { processor = "",
-                             batchSize = Nothing,
-                             sasl = BS.singleton 0 <> "stephphen" <> BS.singleton 0 <> "password",
-                             saslMechanism = SASLPlain
-                           }
+  encodeCase "request_auth_v1.json" $ toRequestMessage (fromJust $ UUID.fromString "cb682578-9d92-4499-9ebc-5c6aa73c5397")
+    $ OpAuthentication
+      { batchSize = Nothing,
+        sasl = Base64 (BS.singleton 0 <> "stephphen" <> BS.singleton 0 <> "password"),
+        saslMechanism = SASLPlain
       }
-  encodeCase "request_sessionless_eval_v1.json"
-    $ RequestMessage
-      { requestId = fromJust $ UUID.fromString "cb682578-9d92-4499-9ebc-5c6aa73c5397",
-        requestOperation = OpEval
-                           { batchSize = Nothing,
-                             gremlin = unsafeGreskell "g.V(x)",
-                             bindings = Just $ HM.fromList [("x", Number 1)],
-                             language = Just "gremlin-groovy",
-                             aliases = Nothing,
-                             scriptEvaluationTimeout = Nothing
-                           }
+  encodeCase "request_sessionless_eval_v1.json" $ toRequestMessage (fromJust $ UUID.fromString "cb682578-9d92-4499-9ebc-5c6aa73c5397")
+    $ OpEval
+      { batchSize = Nothing,
+        gremlin = "g.V(x)",
+        bindings = Just $ HM.fromList [("x", Number 1)],
+        language = Just "gremlin-groovy",
+        aliases = Nothing,
+        scriptEvaluationTimeout = Nothing
       }
-  encodeCase "request_sessionless_eval_aliased_v1.json"
-    $ RequestMessage
-      { requestId = fromJust $ UUID.fromString "cb682578-9d92-4499-9ebc-5c6aa73c5397",
-        requestOperation = OpEval
-                           { batchSize = Nothing,
-                             gremlin = unsafeGreskell "social.V(x)",
-                             bindings = Just $ HM.fromList [("x", Number 1)],
-                             language = Just "gremlin-groovy",
-                             aliases = Just $ HM.fromList [("g", "social")],
-                             scriptEvaluationTimeout = Nothing
-                           }
+  encodeCase "request_sessionless_eval_aliased_v1.json" $ toRequestMessage (fromJust $ UUID.fromString "cb682578-9d92-4499-9ebc-5c6aa73c5397")
+    $ OpEval
+      { batchSize = Nothing,
+        gremlin = "social.V(x)",
+        bindings = Just $ HM.fromList [("x", Number 1)],
+        language = Just "gremlin-groovy",
+        aliases = Just $ HM.fromList [("g", "social")],
+        scriptEvaluationTimeout = Nothing
       }
-  encodeCase "request_session_eval_v1.json"
-    $ RequestMessage
-      { requestId = fromJust $ UUID.fromString "cb682578-9d92-4499-9ebc-5c6aa73c5397",
-        requestOperation =
-          OpSessionEval
-          { eval = OpEval
-                   { batchSize = Nothing,
-                     gremlin = unsafeGreskell "g.V(x)",
-                     bindings = Just $ HM.fromList [("x", Number 1)],
-                     language = Just "gremlin-groovy",
-                     aliases = Nothing,
-                     scriptEvaluationTimeout = Nothing
-                   },
-            session = fromJust $ UUID.fromString "41d2e28a-20a4-4ab0-b379-d810dede3786",
-            manageTransaction = Nothing
-          }
+  encodeCase "request_session_eval_v1.json" $ toRequestMessage (fromJust $ UUID.fromString "cb682578-9d92-4499-9ebc-5c6aa73c5397")
+    $ S.OpEval
+      { S.batchSize = Nothing,
+        S.gremlin = "g.V(x)",
+        S.bindings = Just $ HM.fromList [("x", Number 1)],
+        S.language = Just "gremlin-groovy",
+        S.aliases = Nothing,
+        S.scriptEvaluationTimeout = Nothing,
+        S.session = fromJust $ UUID.fromString "41d2e28a-20a4-4ab0-b379-d810dede3786",
+        S.manageTransaction = Nothing
       }
 
 -- TODO: other cases.    

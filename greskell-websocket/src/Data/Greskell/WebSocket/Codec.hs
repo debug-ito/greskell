@@ -19,10 +19,10 @@ type ErrorMessage = Text
 
 -- | Encoder of 'RequestMessage' and decoder of 'ResponseMessage',
 -- associated with a MIME type.
-data Codec q s =
+data Codec s =
   Codec
   { mimeType :: Text,
-    encodeWith :: RequestMessage q -> BSL.ByteString,
+    encodeWith :: RequestMessage -> BSL.ByteString,
     decodeWith :: BSL.ByteString -> Either ErrorMessage (ResponseMessage s)
   }
 
