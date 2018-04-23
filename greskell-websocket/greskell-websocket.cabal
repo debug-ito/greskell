@@ -24,10 +24,13 @@ library
   exposed-modules:      Data.Greskell.WebSocket,
                         Data.Greskell.WebSocket.Connection,
                         Data.Greskell.WebSocket.Request,
+                        Data.Greskell.WebSocket.Request.Common,
+                        Data.Greskell.WebSocket.Request.Standard,
+                        Data.Greskell.WebSocket.Request.Session,
                         Data.Greskell.WebSocket.Response,
                         Data.Greskell.WebSocket.Codec,
                         Data.Greskell.WebSocket.Codec.JSON
-  -- other-modules:        
+  other-modules:        Data.Greskell.WebSocket.Request.Aeson
   build-depends:        base,
                         greskell-core,
                         bytestring,
