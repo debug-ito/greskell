@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveGeneric, DuplicateRecordFields #-}
+{-# LANGUAGE DeriveGeneric, DuplicateRecordFields, OverloadedStrings #-}
 -- |
 -- Module: Data.Greskell.WebSocket.Request.Session
 -- Description: Operation objects for session OpProcessor
@@ -20,7 +20,7 @@ import GHC.Generics (Generic)
 
 import qualified Data.Greskell.WebSocket.Request.Aeson as GAeson
 import Data.Greskell.WebSocket.Request.Common
-  (Base64, SASLMechanism)
+  (Base64, SASLMechanism, Operation(..))
 
 data OpAuthentication =
   OpAuthentication
@@ -36,6 +36,12 @@ instance ToJSON OpAuthentication where
 
 instance FromJSON OpAuthentication where
   parseJSON = GAeson.genericParseJSON GAeson.opt
+
+instance Operation OpAuthentication where
+  opProcessor _ = "session"
+  opName _ = "authentication"
+  opArgs = GAeson.toObject
+
 
 type SessionID = UUID
 
@@ -59,6 +65,12 @@ instance ToJSON OpEval where
 instance FromJSON OpEval where
   parseJSON = GAeson.genericParseJSON GAeson.opt
 
+instance Operation OpEval where
+  opProcessor _ = "session"
+  opName _ = "eval"
+  opArgs = GAeson.toObject
+
+
 data OpClose =
   OpClose
   { session :: !SessionID,
@@ -72,3 +84,9 @@ instance ToJSON OpClose where
 
 instance FromJSON OpClose where
   parseJSON = GAeson.genericParseJSON GAeson.opt
+
+instance Operation OpClose where
+  opProcessor _ = "session"
+  opName _ = "close"
+  opArgs = GAeson.toObject
+
