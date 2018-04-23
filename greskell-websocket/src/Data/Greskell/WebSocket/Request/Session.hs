@@ -73,7 +73,8 @@ instance Operation OpEval where
 
 data OpClose =
   OpClose
-  { session :: !SessionID,
+  { batchSize :: !(Maybe Int),
+    session :: !SessionID,
     force :: !(Maybe Bool)
   }
   deriving (Show,Eq,Ord,Generic)
