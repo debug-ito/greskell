@@ -6,9 +6,9 @@
 --
 -- 
 module Data.Greskell.WebSocket.Request.Common
-       ( SASLMechanism(..),
-         Base64(..),
-         Operation(..)
+       ( Operation(..),
+         SASLMechanism(..),
+         Base64(..)
        ) where
 
 import Control.Applicative (empty)
@@ -17,6 +17,22 @@ import Data.ByteString (ByteString)
 import qualified Data.ByteString.Base64 as B64
 import Data.Text (unpack, Text)
 import Data.Text.Encoding (decodeUtf8, encodeUtf8)
+
+
+-- | Class of operation objects.
+class Operation o where
+  opProcessor :: o -> Text
+  -- ^ \"processor\" field.
+  opName :: o -> Text
+  -- ^ \"op\" field.
+  opArgs :: o -> Object
+  -- ^ \"args\" field.
+
+instance (Operation a, Operation b) => Operation (Either a b) where
+  opProcessor e = either opProcessor opProcessor e
+  opName e = either opName opName e
+  opArgs e = either opArgs opArgs e
+
 
 -- | Possible SASL mechanisms.
 data SASLMechanism = SASLPlain -- ^ \"PLAIN\" SASL
@@ -51,18 +67,3 @@ instance FromJSON Base64 where
   parseJSON (String t) = either fail (return . Base64) $ B64.decode $ encodeUtf8 t
   parseJSON _ = empty
 
-
-
--- | Class of operation objects.
-class Operation o where
-  opProcessor :: o -> Text
-  -- ^ \"processor\" field.
-  opName :: o -> Text
-  -- ^ \"op\" field.
-  opArgs :: o -> Object
-  -- ^ \"args\" field.
-
-instance (Operation a, Operation b) => Operation (Either a b) where
-  opProcessor e = either opProcessor opProcessor e
-  opName e = either opName opName e
-  opArgs e = either opArgs opArgs e
