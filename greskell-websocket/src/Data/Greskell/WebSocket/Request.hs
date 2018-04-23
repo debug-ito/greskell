@@ -8,7 +8,8 @@
 module Data.Greskell.WebSocket.Request
        ( -- * RequestMessage
          RequestMessage(..),
-         toRequestMessage
+         toRequestMessage,
+         Operation(..)
        ) where
 
 import Data.Aeson (Object, ToJSON(..), FromJSON(..))
