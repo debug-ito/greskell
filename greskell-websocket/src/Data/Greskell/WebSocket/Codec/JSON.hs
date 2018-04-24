@@ -11,8 +11,6 @@ module Data.Greskell.WebSocket.Codec.JSON
 
 import Data.Aeson (ToJSON, FromJSON, eitherDecode')
 import qualified Data.Aeson as A
-import Data.Bifunctor (first)
-import Data.Text (pack)
 
 import Data.Greskell.WebSocket.Codec (Codec(..))
 
@@ -27,4 +25,4 @@ jsonCodec = Codec { mimeType = "application/json",
                   }
   where
     encode = A.encode
-    decode = first pack . eitherDecode'
+    decode = eitherDecode'

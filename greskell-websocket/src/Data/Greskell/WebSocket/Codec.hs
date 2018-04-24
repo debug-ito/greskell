@@ -15,7 +15,7 @@ import Data.Text (Text)
 import Data.Greskell.WebSocket.Request (RequestMessage)
 import Data.Greskell.WebSocket.Response (ResponseMessage)
 
-type ErrorMessage = Text
+type ErrorMessage = String
 
 -- | Encoder of 'RequestMessage' and decoder of 'ResponseMessage',
 -- associated with a MIME type.
