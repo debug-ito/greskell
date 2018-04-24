@@ -47,12 +47,15 @@ loadSampleValue filename = do
    Left e -> error e
    Right v -> return v
 
+uuidFromString :: String -> UUID.UUID
+uuidFromString = fromJust . UUID.fromString
+
 decode_spec :: Spec
 decode_spec = describe "decodeWith" $ do
   describe "authentication challenge" $ do
     let codec :: Codec Value
         codec = jsonCodec
-        exp_msg = ResponseMessage { requestId = fromJust $ UUID.fromString "41d2e28a-20a4-4ab0-b379-d810dede3786",
+        exp_msg = ResponseMessage { requestId = uuidFromString "41d2e28a-20a4-4ab0-b379-d810dede3786",
                                     status = exp_status,
                                     result = exp_result
                                   }
@@ -70,7 +73,7 @@ decode_spec = describe "decodeWith" $ do
   describe "standard response" $ do
     let codec :: Codec (GraphSON [GraphSON Value])
         codec = jsonCodec
-        expMsg d = ResponseMessage { requestId = fromJust $ UUID.fromString "41d2e28a-20a4-4ab0-b379-d810dede3786",
+        expMsg d = ResponseMessage { requestId = uuidFromString "41d2e28a-20a4-4ab0-b379-d810dede3786",
                                      status = exp_status,
                                      result = expResult d
                                    }
@@ -117,13 +120,13 @@ encodeCase filename input = specify filename $ do
 
 encode_spec :: Spec
 encode_spec = describe "encodeWith" $ do
-  encodeCase "request_auth_v1.json" $ toRequestMessage (fromJust $ UUID.fromString "cb682578-9d92-4499-9ebc-5c6aa73c5397")
+  encodeCase "request_auth_v1.json" $ toRequestMessage (uuidFromString "cb682578-9d92-4499-9ebc-5c6aa73c5397")
     $ OpAuthentication
       { batchSize = Nothing,
         sasl = Base64 (BS.singleton 0 <> "stephphen" <> BS.singleton 0 <> "password"),
         saslMechanism = SASLPlain
       }
-  encodeCase "request_sessionless_eval_v1.json" $ toRequestMessage (fromJust $ UUID.fromString "cb682578-9d92-4499-9ebc-5c6aa73c5397")
+  encodeCase "request_sessionless_eval_v1.json" $ toRequestMessage (uuidFromString "cb682578-9d92-4499-9ebc-5c6aa73c5397")
     $ OpEval
       { batchSize = Nothing,
         gremlin = "g.V(x)",
@@ -132,7 +135,7 @@ encode_spec = describe "encodeWith" $ do
         aliases = Nothing,
         scriptEvaluationTimeout = Nothing
       }
-  encodeCase "request_sessionless_eval_aliased_v1.json" $ toRequestMessage (fromJust $ UUID.fromString "cb682578-9d92-4499-9ebc-5c6aa73c5397")
+  encodeCase "request_sessionless_eval_aliased_v1.json" $ toRequestMessage (uuidFromString "cb682578-9d92-4499-9ebc-5c6aa73c5397")
     $ OpEval
       { batchSize = Nothing,
         gremlin = "social.V(x)",
@@ -141,7 +144,7 @@ encode_spec = describe "encodeWith" $ do
         aliases = Just $ HM.fromList [("g", "social")],
         scriptEvaluationTimeout = Nothing
       }
-  encodeCase "request_session_eval_v1.json" $ toRequestMessage (fromJust $ UUID.fromString "cb682578-9d92-4499-9ebc-5c6aa73c5397")
+  encodeCase "request_session_eval_v1.json" $ toRequestMessage (uuidFromString "cb682578-9d92-4499-9ebc-5c6aa73c5397")
     $ S.OpEval
       { S.batchSize = Nothing,
         S.gremlin = "g.V(x)",
@@ -149,8 +152,23 @@ encode_spec = describe "encodeWith" $ do
         S.language = Just "gremlin-groovy",
         S.aliases = Nothing,
         S.scriptEvaluationTimeout = Nothing,
-        S.session = fromJust $ UUID.fromString "41d2e28a-20a4-4ab0-b379-d810dede3786",
+        S.session = uuidFromString "41d2e28a-20a4-4ab0-b379-d810dede3786",
         S.manageTransaction = Nothing
       }
-
--- TODO: other cases.    
+  encodeCase "request_session_eval_aliased_v1.json" $ toRequestMessage (uuidFromString "cb682578-9d92-4499-9ebc-5c6aa73c5397")
+    $ S.OpEval
+      { S.batchSize = Nothing,
+        S.gremlin = "social.V(x)",
+        S.bindings = Just $ HM.fromList [("x", Number 1)],
+        S.language = Just "gremlin-groovy",
+        S.aliases = Just $ HM.fromList [("g", "social")],
+        S.scriptEvaluationTimeout = Nothing,
+        S.session = uuidFromString "41d2e28a-20a4-4ab0-b379-d810dede3786",
+        S.manageTransaction = Nothing
+      }
+  encodeCase "request_session_close_v1.json" $ toRequestMessage (uuidFromString "cb682578-9d92-4499-9ebc-5c6aa73c5397")
+    $ S.OpClose
+      { S.batchSize = Nothing,
+        S.session = uuidFromString "41d2e28a-20a4-4ab0-b379-d810dede3786",
+        S.force = Nothing
+      }
