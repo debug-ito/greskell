@@ -41,7 +41,8 @@ library
                         uuid,
                         async,
                         stm,
-                        websockets
+                        websockets,
+                        hashtables
 
 -- executable greskell-websocket
 --   default-language:     Haskell2010
