@@ -21,6 +21,7 @@ module Data.Greskell.WebSocket.Connection
 
 import Control.Applicative ((<$>), (<|>))
 import Control.Concurrent.Async (withAsync, Async, async)
+import qualified Control.Concurrent.Async as Async
 import Control.Concurrent.STM
   ( TBQueue, readTBQueue, newTBQueueIO, writeTBQueue,
     TQueue, writeTQueue, newTQueueIO, readTQueue,
@@ -61,7 +62,8 @@ connect codec host port path = do
 
 -- | Close the 'Connection'.
 close :: Connection s -> IO ()
-close = undefined -- TODO
+close (Connection { connWSThread = ws_async }) = Async.cancel ws_async
+-- TODO: maybe we need some more clean-up operations...
 
 
 type RawReq = BSL.ByteString
