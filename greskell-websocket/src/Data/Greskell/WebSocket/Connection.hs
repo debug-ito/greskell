@@ -1,3 +1,4 @@
+{-# LANGUAGE DuplicateRecordFields #-}
 -- |
 -- Module: Data.Greskell.WebSocket.Connection
 -- Description: WebSocket Connection to Gremlin Server
@@ -21,7 +22,7 @@ module Data.Greskell.WebSocket.Connection
 import Control.Applicative ((<$>), (<|>))
 import Control.Concurrent.Async (withAsync, Async, async)
 import Control.Concurrent.STM
-  ( TBQueue, readTBQueue, newTBQueueIO,
+  ( TBQueue, readTBQueue, newTBQueueIO, writeTBQueue,
     TQueue, writeTQueue, newTQueueIO, readTQueue,
     atomically
   )
@@ -32,7 +33,7 @@ import qualified Data.ByteString.Lazy as BSL
 import qualified Data.HashTable.IO as HT
 
 import Data.Greskell.WebSocket.Codec (Codec(decodeWith, encodeWith))
-import Data.Greskell.WebSocket.Request (RequestMessage)
+import Data.Greskell.WebSocket.Request (RequestMessage(RequestMessage, requestId))
 import Data.Greskell.WebSocket.Response (ResponseMessage(ResponseMessage, requestId))
 
 -- | Host name or an IP address.
@@ -52,7 +53,8 @@ connect codec host port path = do
   qreq <- newTBQueueIO qreq_size
   ws_thread <- async $ runWSConn codec host port path qreq
   return $ Connection { connQReq = qreq,
-                        connWSThread = ws_thread
+                        connWSThread = ws_thread,
+                        connCodec = codec
                       }
   where
     qreq_size = 512 -- TODO: make it configurable
@@ -71,16 +73,17 @@ type ReqID = UUID
 -- | Package of request data and related stuff. It's passed from the
 -- caller thread into WS handling thread.
 data ReqPack s = ReqPack
-                 { reqData :: RawReq,
-                   reqId :: ReqID,
-                   reqOutput :: TQueue (ResponseMessage s)
+                 { reqData :: !RawReq,
+                   reqId :: !ReqID,
+                   reqOutput :: !(TQueue (ResponseMessage s))
                  }
 
 -- | A WebSocket connection to a Gremlin Server.
 data Connection s =
   Connection
-  { connQReq :: TBQueue (ReqPack s),
-    connWSThread :: Async ()
+  { connQReq :: !(TBQueue (ReqPack s)),
+    connWSThread :: !(Async ()),
+    connCodec :: !(Codec s)
   }
 
 
@@ -131,16 +134,23 @@ runRxLoop wsconn qres = loop
 
 -- | A handle associated in a 'Connection' for a pair of request and
 -- response. You can retrieve 'ResponseMessage's from this object.
-data ResponseHandle s
+newtype ResponseHandle s = ResponseHandle (TQueue (ResponseMessage s))
 
 -- | Send a 'RequestMessage' to the server.
 --
 -- TODO: define exception spec.
 sendRequest :: Connection s -> RequestMessage -> IO (ResponseHandle s)
-sendRequest = undefined
+sendRequest (Connection { connCodec = codec, connQReq = qreq }) req_msg@(RequestMessage { requestId = rid }) = do
+  qout <- newTQueueIO
+  atomically $ writeTBQueue qreq $ ReqPack { reqData = encodeWith codec req_msg, -- TODO: encode MIME type.
+                                             reqId = rid,
+                                             reqOutput = qout
+                                           }
+  return $ ResponseHandle qout
 
 -- | Get a 'ResponseMessage' from 'ResponseHandle'.
 --
 -- TODO: define exception spec.
 getResponse :: ResponseHandle s -> IO (ResponseMessage s)
-getResponse = undefined
+getResponse (ResponseHandle qout) = atomically $ readTQueue qout
+-- TODO: inspect the received message, and clean up the ReqPack from ReqPool.
