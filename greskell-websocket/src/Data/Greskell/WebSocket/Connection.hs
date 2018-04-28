@@ -118,8 +118,7 @@ runMuxLoop wsconn req_pool codec qreq qres = loop
        Right res -> handleRes res
       loop
     handleReq req = do
-      res_output <- newTQueueIO
-      HT.insert req_pool (reqId req) res_output -- TODO: if the reqId already exists, it's error.
+      HT.insert req_pool (reqId req) (reqOutput req) -- TODO: if the reqId already exists, it's error.
       WS.sendBinaryData wsconn $ reqData req
     handleRes res = case decodeWith codec res of -- TODO: perhaps we have to decode MIME type packaging
       Left err -> undefined -- TODO: handle parse error
