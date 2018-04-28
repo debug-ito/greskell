@@ -15,8 +15,10 @@ module Data.Greskell.WebSocket.Connection
          Path,
          -- * Make a request
          sendRequest,
+         sendRequest',
          ResponseHandle,
-         getResponse
+         getResponse,
+         slurpResponses
        ) where
 
 import Control.Applicative ((<$>), (<|>))
@@ -28,13 +30,18 @@ import Control.Concurrent.STM
     atomically
   )
 import Data.Aeson (Value)
+import qualified Data.DList as DL
+import Data.Monoid (mempty, (<>))
 import Data.UUID (UUID)
 import qualified Network.WebSockets as WS
 import qualified Data.ByteString.Lazy as BSL
 import qualified Data.HashTable.IO as HT
 
 import Data.Greskell.WebSocket.Codec (Codec(decodeWith, encodeWith))
-import Data.Greskell.WebSocket.Request (RequestMessage(RequestMessage, requestId))
+import Data.Greskell.WebSocket.Request
+  ( RequestMessage(RequestMessage, requestId),
+    Operation, makeRequestMessage
+  )
 import Data.Greskell.WebSocket.Response (ResponseMessage(ResponseMessage, requestId))
 
 -- | Host name or an IP address.
@@ -112,7 +119,7 @@ runMuxLoop wsconn req_pool codec qreq qres = loop
       loop
     handleReq req = do
       res_output <- newTQueueIO
-      HT.insert req_pool (reqId req) res_output
+      HT.insert req_pool (reqId req) res_output -- TODO: if the reqId already exists, it's error.
       WS.sendBinaryData wsconn $ reqData req
     handleRes res = case decodeWith codec res of -- TODO: perhaps we have to decode MIME type packaging
       Left err -> undefined -- TODO: handle parse error
@@ -138,11 +145,15 @@ runRxLoop wsconn qres = loop
 -- response. You can retrieve 'ResponseMessage's from this object.
 newtype ResponseHandle s = ResponseHandle (TQueue (ResponseMessage s))
 
+-- | Make a 'RequestMessage' from an 'Operation' and send it.
+sendRequest :: Operation o => Connection s -> o -> IO (ResponseHandle s)
+sendRequest conn o = sendRequest' conn =<< makeRequestMessage o
+
 -- | Send a 'RequestMessage' to the server.
 --
 -- TODO: define exception spec.
-sendRequest :: Connection s -> RequestMessage -> IO (ResponseHandle s)
-sendRequest (Connection { connCodec = codec, connQReq = qreq }) req_msg@(RequestMessage { requestId = rid }) = do
+sendRequest' :: Connection s -> RequestMessage -> IO (ResponseHandle s)
+sendRequest' (Connection { connCodec = codec, connQReq = qreq }) req_msg@(RequestMessage { requestId = rid }) = do
   qout <- newTQueueIO
   atomically $ writeTBQueue qreq $ ReqPack { reqData = encodeWith codec req_msg, -- TODO: encode MIME type.
                                              reqId = rid,
@@ -150,9 +161,20 @@ sendRequest (Connection { connCodec = codec, connQReq = qreq }) req_msg@(Request
                                            }
   return $ ResponseHandle qout
 
--- | Get a 'ResponseMessage' from 'ResponseHandle'.
+-- | Get a 'ResponseMessage' from 'ResponseHandle'. If you have
+-- already got all responses, it returns 'Nothing'.
 --
 -- TODO: define exception spec.
-getResponse :: ResponseHandle s -> IO (ResponseMessage s)
-getResponse (ResponseHandle qout) = atomically $ readTQueue qout
+getResponse :: ResponseHandle s -> IO (Maybe (ResponseMessage s))
+getResponse (ResponseHandle qout) = fmap Just $ atomically $ readTQueue qout
 -- TODO: inspect the received message, and clean up the ReqPack from ReqPool.
+
+-- | Get all remaining 'ResponseMessage's from 'ResponseHandle'.
+slurpResponses :: ResponseHandle s -> IO [ResponseMessage s]
+slurpResponses h = fmap DL.toList $ go mempty
+  where
+    go got = do
+      mres <- getResponse h
+      case mres of
+       Nothing -> return got
+       Just res -> return (got <> DL.singleton res)

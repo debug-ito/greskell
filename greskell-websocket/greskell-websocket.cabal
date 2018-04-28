@@ -42,7 +42,8 @@ library
                         async,
                         stm,
                         websockets,
-                        hashtables
+                        hashtables,
+                        dlist
 
 -- executable greskell-websocket
 --   default-language:     Haskell2010
