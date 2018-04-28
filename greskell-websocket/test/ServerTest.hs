@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 module Main (main,spec) where
 
 import Control.Exception.Safe (bracket)
@@ -8,8 +9,10 @@ import Test.Hspec
 import Data.Greskell.WebSocket.Codec.JSON (jsonCodec)
 import Data.Greskell.WebSocket.Connection
   ( Host, Port, Connection,
-    close, connect, sendRequest, getResponse
+    close, connect, sendRequest, slurpResponses
   )
+import Data.Greskell.WebSocket.Request (makeRequestMessage)
+import Data.Greskell.WebSocket.Request.Standard (OpEval(..))
 
 main :: IO ()
 main = hspec spec
@@ -40,4 +43,14 @@ withConn act (host, port) = bracket makeConn close act
 conn_basic_spec :: SpecWith (Host, Port)
 conn_basic_spec = do
   specify "basic transaction" $ withConn $ \conn -> do
-    True `shouldBe` False
+    let op = OpEval { batchSize = Nothing,
+                      gremlin = "123",
+                      bindings = Nothing,
+                      language = Nothing,
+                      aliases = Nothing,
+                      scriptEvaluationTimeout = Nothing
+                    }
+    res <- sendRequest conn op
+    got <- slurpResponses res
+    length got `shouldBe` 1
+    -- TODO: check the response content.
