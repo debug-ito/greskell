@@ -37,7 +37,7 @@ import qualified Network.WebSockets as WS
 import qualified Data.ByteString.Lazy as BSL
 import qualified Data.HashTable.IO as HT
 
-import Data.Greskell.WebSocket.Codec (Codec(decodeWith, encodeWith))
+import Data.Greskell.WebSocket.Codec (Codec(decodeWith, encodeWith), encodeBinaryWith)
 import Data.Greskell.WebSocket.Request
   ( RequestMessage(RequestMessage, requestId),
     Operation, makeRequestMessage
@@ -155,7 +155,7 @@ sendRequest conn o = sendRequest' conn =<< makeRequestMessage o
 sendRequest' :: Connection s -> RequestMessage -> IO (ResponseHandle s)
 sendRequest' (Connection { connCodec = codec, connQReq = qreq }) req_msg@(RequestMessage { requestId = rid }) = do
   qout <- newTQueueIO
-  atomically $ writeTBQueue qreq $ ReqPack { reqData = encodeWith codec req_msg, -- TODO: encode MIME type.
+  atomically $ writeTBQueue qreq $ ReqPack { reqData = encodeBinaryWith codec req_msg,
                                              reqId = rid,
                                              reqOutput = qout
                                            }
