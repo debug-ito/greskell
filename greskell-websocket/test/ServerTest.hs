@@ -14,7 +14,7 @@ import Test.Hspec
 
 import Data.Greskell.WebSocket.Codec.JSON (jsonCodec)
 import Data.Greskell.WebSocket.Connection
-  ( Host, Port, Connection,
+  ( Host, Port, Connection, ResponseHandle,
     close, connect, sendRequest', slurpResponses
   )
 import Data.Greskell.WebSocket.Request (toRequestMessage)
@@ -48,7 +48,7 @@ withEnv = before $ do
 withConn :: (Connection Value -> IO a) -> (Host, Port) -> IO a
 withConn act (host, port) = bracket makeConn close act
   where
-    makeConn = connect jsonCodec host port "/gremlin"
+    makeConn = connect jsonCodec host port "/gremlin" -- TODO: Path should be inside API.
 
 parseValue :: FromJSON a => Value -> Either String a
 parseValue v = Aeson.parseEither parseJSON v
@@ -62,6 +62,13 @@ opEval g = OpEval { batchSize = Nothing,
                     scriptEvaluationTimeout = Nothing
                   }
 
+---- 'resultData' should be parsed with GraphSON wrappers to support v1, v2 and v3.
+slurpParseEval :: FromJSON a => ResponseHandle Value -> IO [ResponseMessage (Either String (GraphSON [GraphSON a]))]
+slurpParseEval rh = (fmap . fmap . fmap) parseValue $ slurpResponses rh
+
+responseValues :: ResponseMessage (Either String (GraphSON [GraphSON a])) -> Either String [a]
+responseValues = fmap (map gsonValue . gsonValue) . resultData . result
+
 conn_basic_spec :: SpecWith (Host, Port)
 conn_basic_spec = do
   specify "basic transaction" $ withConn $ \conn -> do
@@ -70,10 +77,10 @@ conn_basic_spec = do
         exp_val :: [Int]
         exp_val = [123]
     res <- sendRequest' conn $ toRequestMessage rid op
-    got <- (fmap . fmap . fmap) parseValue $ slurpResponses res :: IO [ResponseMessage (Either String (GraphSON [GraphSON Int]))]
+    got <- slurpParseEval res
     map (requestId) got `shouldBe` [rid]
     map (code . status) got `shouldBe` [Success]
-    map (fmap (map gsonValue . gsonValue) . resultData . result) got `shouldBe` [Right exp_val]
+    map responseValues got `shouldBe` [Right exp_val]
   specify "continuous response with bindings" $ withConn $ \conn -> do
     rid <- nextRandom
     let op = (opEval "x") { batchSize = Just 2,
@@ -81,9 +88,9 @@ conn_basic_spec = do
                           }
         exp_vals :: [Either String [Int]]
         exp_vals = map Right [[1,2], [3,4], [5,6], [7,8], [9,10]]
-    got <- (fmap . fmap . fmap) parseValue $ slurpResponses =<< (sendRequest' conn $ toRequestMessage rid op)
-           :: IO [ResponseMessage (Either String (GraphSON [GraphSON Int]))]
+    got <- slurpParseEval =<< (sendRequest' conn $ toRequestMessage rid op)
     map (requestId) got `shouldBe` replicate 5 rid
     map (code . status) got `shouldBe` ((replicate 4 PartialContent) ++ [Success])
-    map (fmap (map gsonValue . gsonValue) . resultData . result) got `shouldBe` exp_vals
+    map responseValues got `shouldBe` exp_vals
+    
 
