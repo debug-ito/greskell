@@ -66,10 +66,10 @@ conn_basic_spec = do
         exp_val :: [Int]
         exp_val = [123]
     res <- sendRequest' conn $ toRequestMessage rid op
-    got <- (fmap . fmap . fmap) parseValue $ slurpResponses res
+    got <- (fmap . fmap . fmap) parseValue $ slurpResponses res :: IO [ResponseMessage (Either String (GraphSON [GraphSON Int]))]
     map (requestId) got `shouldBe` [rid]
     map (code . status) got `shouldBe` [Success]
-    map (fmap gsonValue . resultData . result) got `shouldBe` [Right exp_val]
+    map (fmap (map gsonValue . gsonValue) . resultData . result) got `shouldBe` [Right exp_val]
   specify "continuous response with bindings" $ withConn $ \conn -> do
     rid <- nextRandom
     let op = OpEval { batchSize = Just 2,
@@ -82,8 +82,9 @@ conn_basic_spec = do
         exp_vals :: [Either String [Int]]
         exp_vals = map Right [[1,2], [3,4], [5,6], [7,8], [9,10]]
     got <- (fmap . fmap . fmap) parseValue $ slurpResponses =<< (sendRequest' conn $ toRequestMessage rid op)
+           :: IO [ResponseMessage (Either String (GraphSON [GraphSON Int]))]
     map (requestId) got `shouldBe` replicate 5 rid
     map (code . status) got `shouldBe` ((replicate 4 PartialContent) ++ [Success])
-    map (fmap gsonValue . resultData . result) got `shouldBe` exp_vals
+    map (fmap (map gsonValue . gsonValue) . resultData . result) got `shouldBe` exp_vals
 
 
