@@ -85,7 +85,7 @@ test-suite server-test
   -- other-modules:        
   if flag(server-test)
     build-depends:        base, greskell-websocket, greskell-core,
-                          aeson, uuid, unordered-containers,
+                          aeson, uuid, unordered-containers, text,
                           hspec,
                           safe-exceptions
   else

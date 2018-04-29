@@ -2,11 +2,12 @@
 module Main (main,spec) where
 
 import Control.Exception.Safe (bracket)
-import Data.Aeson (Value(Number), FromJSON(..), ToJSON(toJSON))
+import Data.Aeson (Value(Number), FromJSON(..), ToJSON(toJSON), Object)
 import qualified Data.Aeson as Aeson
 import qualified Data.Aeson.Types as Aeson (parseEither)
 import qualified Data.HashMap.Strict as HM
 import Data.Greskell.GraphSON (GraphSON, gsonValue)
+import Data.Text (Text)
 import Data.UUID.V4 (nextRandom)
 import System.Environment (lookupEnv)
 import Test.Hspec
@@ -52,17 +53,20 @@ withConn act (host, port) = bracket makeConn close act
 parseValue :: FromJSON a => Value -> Either String a
 parseValue v = Aeson.parseEither parseJSON v
 
+opEval :: Text -> OpEval
+opEval g = OpEval { batchSize = Nothing,
+                    gremlin = g,
+                    bindings = Nothing,
+                    language = Nothing,
+                    aliases = Nothing,
+                    scriptEvaluationTimeout = Nothing
+                  }
+
 conn_basic_spec :: SpecWith (Host, Port)
 conn_basic_spec = do
   specify "basic transaction" $ withConn $ \conn -> do
     rid <- nextRandom
-    let op = OpEval { batchSize = Nothing,
-                      gremlin = "123",
-                      bindings = Nothing,
-                      language = Nothing,
-                      aliases = Nothing,
-                      scriptEvaluationTimeout = Nothing
-                    }
+    let op = opEval "123"
         exp_val :: [Int]
         exp_val = [123]
     res <- sendRequest' conn $ toRequestMessage rid op
@@ -72,13 +76,9 @@ conn_basic_spec = do
     map (fmap (map gsonValue . gsonValue) . resultData . result) got `shouldBe` [Right exp_val]
   specify "continuous response with bindings" $ withConn $ \conn -> do
     rid <- nextRandom
-    let op = OpEval { batchSize = Just 2,
-                      gremlin = "x",
-                      bindings = Just $ HM.fromList [("x", toJSON ([1 .. 10] :: [Int]))],
-                      language = Nothing,
-                      aliases = Nothing,
-                      scriptEvaluationTimeout = Nothing
-                    }
+    let op = (opEval "x") { batchSize = Just 2,
+                            bindings = Just $ HM.fromList [("x", toJSON ([1 .. 10] :: [Int]))]
+                          }
         exp_vals :: [Either String [Int]]
         exp_vals = map Right [[1,2], [3,4], [5,6], [7,8], [9,10]]
     got <- (fmap . fmap . fmap) parseValue $ slurpResponses =<< (sendRequest' conn $ toRequestMessage rid op)
@@ -86,5 +86,4 @@ conn_basic_spec = do
     map (requestId) got `shouldBe` replicate 5 rid
     map (code . status) got `shouldBe` ((replicate 4 PartialContent) ++ [Success])
     map (fmap (map gsonValue . gsonValue) . resultData . result) got `shouldBe` exp_vals
-
 
