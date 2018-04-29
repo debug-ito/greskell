@@ -114,6 +114,9 @@ instance FromJSON s => FromJSON (ResponseResult s) where
     <*> (gsonObject <$> o .: "meta")
   parseJSON _ = empty
 
+instance Functor ResponseResult where
+  fmap f rr = rr { resultData = f $ resultData rr }
+
 -- | ResponseMessage object from Gremlin Server.
 data ResponseMessage s =
   ResponseMessage
@@ -125,3 +128,6 @@ data ResponseMessage s =
 
 instance FromJSON s => FromJSON (ResponseMessage s) where
   parseJSON = genericParseJSON defaultOptions
+
+instance Functor ResponseMessage where
+  fmap f rm = rm { result = fmap f $ result rm }

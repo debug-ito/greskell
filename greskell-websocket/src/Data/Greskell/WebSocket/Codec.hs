@@ -30,6 +30,9 @@ data Codec s =
     decodeWith :: BSL.ByteString -> Either ErrorMessage (ResponseMessage s)
   }
 
+instance Functor Codec where
+  fmap f c = c { decodeWith = (fmap . fmap . fmap) f $ decodeWith c }
+
 -- | Make a request message header.
 messageHeader :: Text -- ^ MIME type
               -> BSL.ByteString
