@@ -176,4 +176,4 @@ slurpResponses h = fmap DL.toList $ go mempty
       mres <- getResponse h
       case mres of
        Nothing -> return got
-       Just res -> return (got <> DL.singleton res)
+       Just res -> go (got <> DL.singleton res)
