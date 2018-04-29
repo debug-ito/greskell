@@ -2,17 +2,25 @@
 module Main (main,spec) where
 
 import Control.Exception.Safe (bracket)
-import Data.Aeson (Value)
+import Data.Aeson (Value, FromJSON(..))
+import qualified Data.Aeson as Aeson
+import qualified Data.Aeson.Types as Aeson (parseEither)
+import Data.Greskell.GraphSON (GraphSON, gsonValue)
+import Data.UUID.V4 (nextRandom)
 import System.Environment (lookupEnv)
 import Test.Hspec
 
 import Data.Greskell.WebSocket.Codec.JSON (jsonCodec)
 import Data.Greskell.WebSocket.Connection
   ( Host, Port, Connection,
-    close, connect, sendRequest, slurpResponses
+    close, connect, sendRequest', slurpResponses
   )
-import Data.Greskell.WebSocket.Request (makeRequestMessage)
+import Data.Greskell.WebSocket.Request (toRequestMessage)
 import Data.Greskell.WebSocket.Request.Standard (OpEval(..))
+import Data.Greskell.WebSocket.Response
+  ( ResponseMessage(requestId, status, result), ResponseStatus(code), ResponseCode(..),
+    ResponseResult(resultData)
+  )
 
 main :: IO ()
 main = hspec spec
@@ -40,9 +48,13 @@ withConn act (host, port) = bracket makeConn close act
   where
     makeConn = connect jsonCodec host port "/gremlin"
 
+parseValue :: FromJSON a => Value -> Either String a
+parseValue v = Aeson.parseEither parseJSON v
+
 conn_basic_spec :: SpecWith (Host, Port)
 conn_basic_spec = do
   specify "basic transaction" $ withConn $ \conn -> do
+    rid <- nextRandom
     let op = OpEval { batchSize = Nothing,
                       gremlin = "123",
                       bindings = Nothing,
@@ -50,7 +62,11 @@ conn_basic_spec = do
                       aliases = Nothing,
                       scriptEvaluationTimeout = Nothing
                     }
-    res <- sendRequest conn op
-    got <- slurpResponses res
-    length got `shouldBe` 1
-    -- TODO: check the response content.
+        exp_val :: [Int]
+        exp_val = [123]
+    res <- sendRequest' conn $ toRequestMessage rid op
+    got <- (fmap . fmap . fmap) parseValue $ slurpResponses res
+    map (requestId) got `shouldBe` [rid]
+    map (code . status) got `shouldBe` [Success]
+    map (fmap gsonValue . resultData . result) got `shouldBe` [Right exp_val]
+
