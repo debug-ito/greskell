@@ -48,7 +48,7 @@ withEnv = before $ do
 withConn :: (Connection Value -> IO a) -> (Host, Port) -> IO a
 withConn act (host, port) = bracket makeConn close act
   where
-    makeConn = connect jsonCodec host port "/gremlin" -- TODO: Path should be inside API.
+    makeConn = connect jsonCodec host port
 
 parseValue :: FromJSON a => Value -> Either String a
 parseValue v = Aeson.parseEither parseJSON v

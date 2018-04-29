@@ -12,7 +12,6 @@ module Data.Greskell.WebSocket.Connection
          Connection,
          Host,
          Port,
-         Path,
          -- * Make a request
          sendRequest,
          sendRequest',
@@ -56,22 +55,20 @@ type Host = String
 -- | TCP port number.
 type Port = Int
 
--- | WebSocket end-point path
-type Path = String
-
 -- | Make a 'Connection' to a Gremlin Server.
 --
 -- TODO: define exception spec.
-connect :: Codec s -> Host -> Port -> Path -> IO (Connection s)
-connect codec host port path = do
+connect :: Codec s -> Host -> Port -> IO (Connection s)
+connect codec host port = do
   qreq <- newTBQueueIO qreq_size
-  ws_thread <- async $ runWSConn codec host port path qreq
+  ws_thread <- async $ runWSConn codec host port ws_path qreq
   return $ Connection { connQReq = qreq,
                         connWSThread = ws_thread,
                         connCodec = codec
                       }
   where
     qreq_size = 512 -- TODO: make it configurable
+    ws_path = "/gremlin" -- TODO: make it configurable
 
 -- | Close the 'Connection'.
 close :: Connection s -> IO ()
@@ -101,6 +98,7 @@ data Connection s =
     connCodec :: !(Codec s)
   }
 
+type Path = String
 
 -- | A thread taking care of a WS connection.
 runWSConn :: Codec s -> Host -> Port -> Path -> TBQueue (ReqPack s) -> IO ()
