@@ -2,9 +2,10 @@
 module Main (main,spec) where
 
 import Control.Exception.Safe (bracket)
-import Data.Aeson (Value, FromJSON(..))
+import Data.Aeson (Value(Number), FromJSON(..), ToJSON(toJSON))
 import qualified Data.Aeson as Aeson
 import qualified Data.Aeson.Types as Aeson (parseEither)
+import qualified Data.HashMap.Strict as HM
 import Data.Greskell.GraphSON (GraphSON, gsonValue)
 import Data.UUID.V4 (nextRandom)
 import System.Environment (lookupEnv)
@@ -69,4 +70,20 @@ conn_basic_spec = do
     map (requestId) got `shouldBe` [rid]
     map (code . status) got `shouldBe` [Success]
     map (fmap gsonValue . resultData . result) got `shouldBe` [Right exp_val]
+  specify "continuous response with bindings" $ withConn $ \conn -> do
+    rid <- nextRandom
+    let op = OpEval { batchSize = Just 2,
+                      gremlin = "x",
+                      bindings = Just $ HM.fromList [("x", toJSON ([1 .. 10] :: [Int]))],
+                      language = Nothing,
+                      aliases = Nothing,
+                      scriptEvaluationTimeout = Nothing
+                    }
+        exp_vals :: [Either String [Int]]
+        exp_vals = map Right [[1,2], [3,4], [5,6], [7,8], [9,10]]
+    got <- (fmap . fmap . fmap) parseValue $ slurpResponses =<< (sendRequest' conn $ toRequestMessage rid op)
+    map (requestId) got `shouldBe` replicate 5 rid
+    map (code . status) got `shouldBe` ((replicate 4 PartialContent) ++ [Success])
+    map (fmap gsonValue . resultData . result) got `shouldBe` exp_vals
+
 
