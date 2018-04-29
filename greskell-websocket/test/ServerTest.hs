@@ -5,9 +5,10 @@ import Control.Exception.Safe (bracket)
 import Data.Aeson (Value(Number), FromJSON(..), ToJSON(toJSON), Object)
 import qualified Data.Aeson as Aeson
 import qualified Data.Aeson.Types as Aeson (parseEither)
+import Data.Monoid ((<>))
 import qualified Data.HashMap.Strict as HM
 import Data.Greskell.GraphSON (GraphSON, gsonValue)
-import Data.Text (Text)
+import Data.Text (Text, pack)
 import Data.UUID.V4 (nextRandom)
 import System.Environment (lookupEnv)
 import Test.Hspec
@@ -15,7 +16,7 @@ import Test.Hspec
 import Data.Greskell.WebSocket.Codec.JSON (jsonCodec)
 import Data.Greskell.WebSocket.Connection
   ( Host, Port, Connection, ResponseHandle,
-    close, connect, sendRequest', slurpResponses
+    close, connect, sendRequest', sendRequest, slurpResponses
   )
 import Data.Greskell.WebSocket.Request (toRequestMessage)
 import Data.Greskell.WebSocket.Request.Standard (OpEval(..))
@@ -92,5 +93,18 @@ conn_basic_spec = do
     map (requestId) got `shouldBe` replicate 5 rid
     map (code . status) got `shouldBe` ((replicate 4 PartialContent) ++ [Success])
     map responseValues got `shouldBe` exp_vals
+  specify "concurrent requests" $ withConn $ \conn -> do
+    let op :: Int -> OpEval
+        op time = opEval ("sleep " <> time_str <> "; " <> time_str)
+          where
+            time_str = pack $ show time
+        sendReq o = fmap (map responseValues) $ slurpParseEval =<< sendRequest conn o
+    got <- mapM sendReq $ map op $ map (* 100) $ reverse [1..5] :: IO [[Either String [Int]]]
+    got `shouldBe` [ [Right [500]],
+                     [Right [400]],
+                     [Right [300]],
+                     [Right [200]],
+                     [Right [100]]
+                   ]
     
-
+    
