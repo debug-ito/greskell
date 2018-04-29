@@ -27,7 +27,7 @@ import qualified Control.Concurrent.Async as Async
 import Control.Concurrent.STM
   ( TBQueue, readTBQueue, newTBQueueIO, writeTBQueue,
     TQueue, writeTQueue, newTQueueIO, readTQueue,
-    atomically
+    atomically, STM
   )
 import Data.Aeson (Value)
 import qualified Data.DList as DL
@@ -142,7 +142,16 @@ runRxLoop wsconn qres = loop
 
 -- | A handle associated in a 'Connection' for a pair of request and
 -- response. You can retrieve 'ResponseMessage's from this object.
-newtype ResponseHandle s = ResponseHandle (TQueue (ResponseMessage s))
+data ResponseHandle s =
+  ResponseHandle
+  { rhGetResponse :: STM (ResponseMessage s)
+  }
+
+instance Functor ResponseHandle where
+  fmap f rh = rh { rhGetResponse = (fmap . fmap) f $ rhGetResponse rh }
+
+
+-- (TQueue (ResponseMessage s))
 
 -- | Make a 'RequestMessage' from an 'Operation' and send it.
 sendRequest :: Operation o => Connection s -> o -> IO (ResponseHandle s)
@@ -158,14 +167,17 @@ sendRequest' (Connection { connCodec = codec, connQReq = qreq }) req_msg@(Reques
                                              reqId = rid,
                                              reqOutput = qout
                                            }
-  return $ ResponseHandle qout
+  let rhandle = ResponseHandle
+                { rhGetResponse = readTQueue qout
+                }
+  return rhandle
 
 -- | Get a 'ResponseMessage' from 'ResponseHandle'. If you have
 -- already got all responses, it returns 'Nothing'.
 --
 -- TODO: define exception spec.
 getResponse :: ResponseHandle s -> IO (Maybe (ResponseMessage s))
-getResponse (ResponseHandle qout) = fmap Just $ atomically $ readTQueue qout
+getResponse rh = fmap Just $ atomically $ rhGetResponse rh
 -- TODO: inspect the received message, and clean up the ReqPack from ReqPool.
 
 -- | Get all remaining 'ResponseMessage's from 'ResponseHandle'.
