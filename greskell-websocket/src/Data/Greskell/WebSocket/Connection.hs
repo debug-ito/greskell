@@ -158,8 +158,6 @@ instance Functor ResponseHandle where
   fmap f rh = rh { rhGetResponse = (fmap . fmap) f $ rhGetResponse rh }
 
 
--- (TQueue (ResponseMessage s))
-
 -- | Make a 'RequestMessage' from an 'Operation' and send it.
 sendRequest :: Operation o => Connection s -> o -> IO (ResponseHandle s)
 sendRequest conn o = sendRequest' conn =<< makeRequestMessage o
