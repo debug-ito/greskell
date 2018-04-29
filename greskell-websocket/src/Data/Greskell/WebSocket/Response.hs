@@ -11,7 +11,8 @@ module Data.Greskell.WebSocket.Response
          ResponseResult(..),
          ResponseCode(..),
          codeToInt,
-         codeFromInt
+         codeFromInt,
+         isTerminating
        ) where
 
 import Control.Applicative (empty, (<$>), (<*>))
@@ -70,6 +71,11 @@ codeFromInt i = case i of
   598 -> Just ServerTimeout
   599 -> Just ServerSerializationError
   _ -> Nothing
+
+-- | Returns 'True' if the 'ResponseCode' is a terminating code.
+isTerminating :: ResponseCode -> Bool
+isTerminating PartialContent = False
+isTerminating _ = True
 
 instance FromJSON ResponseCode where
   parseJSON (Number n) = maybe err return $ codeFromInt $ floor n
