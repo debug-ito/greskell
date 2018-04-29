@@ -27,8 +27,10 @@ import qualified Control.Concurrent.Async as Async
 import Control.Concurrent.STM
   ( TBQueue, readTBQueue, newTBQueueIO, writeTBQueue,
     TQueue, writeTQueue, newTQueueIO, readTQueue,
-    atomically, STM
+    atomically, STM,
+    TVar, newTVarIO, readTVar, writeTVar
   )
+import Control.Monad (when)
 import Data.Aeson (Value)
 import qualified Data.DList as DL
 import Data.Monoid (mempty, (<>))
@@ -42,7 +44,11 @@ import Data.Greskell.WebSocket.Request
   ( RequestMessage(RequestMessage, requestId),
     Operation, makeRequestMessage
   )
-import Data.Greskell.WebSocket.Response (ResponseMessage(ResponseMessage, requestId))
+import Data.Greskell.WebSocket.Response
+  ( ResponseMessage(ResponseMessage, requestId, status),
+    ResponseStatus(code),
+    isTerminating
+  )
 
 -- | Host name or an IP address.
 type Host = String
@@ -144,7 +150,8 @@ runRxLoop wsconn qres = loop
 -- response. You can retrieve 'ResponseMessage's from this object.
 data ResponseHandle s =
   ResponseHandle
-  { rhGetResponse :: STM (ResponseMessage s)
+  { rhGetResponse :: STM (ResponseMessage s),
+    rhTerminated :: TVar Bool
   }
 
 instance Functor ResponseHandle where
@@ -167,8 +174,10 @@ sendRequest' (Connection { connCodec = codec, connQReq = qreq }) req_msg@(Reques
                                              reqId = rid,
                                              reqOutput = qout
                                            }
+  var_term <- newTVarIO False
   let rhandle = ResponseHandle
-                { rhGetResponse = readTQueue qout
+                { rhGetResponse = readTQueue qout,
+                  rhTerminated = var_term
                 }
   return rhandle
 
@@ -177,8 +186,20 @@ sendRequest' (Connection { connCodec = codec, connQReq = qreq }) req_msg@(Reques
 --
 -- TODO: define exception spec.
 getResponse :: ResponseHandle s -> IO (Maybe (ResponseMessage s))
-getResponse rh = fmap Just $ atomically $ rhGetResponse rh
--- TODO: inspect the received message, and clean up the ReqPack from ReqPool.
+getResponse rh = atomically $ do
+  termed <- readTVar $ rhTerminated rh
+  if termed
+    then return Nothing
+    else readResponse
+  where
+    readResponse = do
+      res <- rhGetResponse rh
+      updateTermed res
+      return $ Just res
+    updateTermed res =
+      when (isTerminating $ code $ status res) $ do
+        writeTVar (rhTerminated rh) True
+        -- TODO: clean up the ReqPack and ReqPool.
 
 -- | Get all remaining 'ResponseMessage's from 'ResponseHandle'.
 slurpResponses :: ResponseHandle s -> IO [ResponseMessage s]
