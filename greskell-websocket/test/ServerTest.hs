@@ -98,8 +98,8 @@ conn_basic_spec = do
         op time = opEval ("sleep " <> time_str <> "; " <> time_str)
           where
             time_str = pack $ show time
-        sendReq o = fmap (map responseValues) $ slurpParseEval =<< sendRequest conn o
-    got <- mapM sendReq $ map op $ map (* 100) $ reverse [1..5] :: IO [[Either String [Int]]]
+    handles <- mapM (sendRequest conn) $ map op $ map (* 100) $ reverse [1..5]
+    got <- (fmap . map . map) responseValues $ mapM slurpParseEval handles :: IO [[Either String [Int]]]
     got `shouldBe` [ [Right [500]],
                      [Right [400]],
                      [Right [300]],
