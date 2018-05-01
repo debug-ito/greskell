@@ -2,6 +2,7 @@
 module Main (main,spec) where
 
 import Control.Exception.Safe (bracket)
+import Control.Concurrent.Async (mapConcurrently)
 import Data.Aeson (Value(Number), FromJSON(..), ToJSON(toJSON), Object)
 import qualified Data.Aeson as Aeson
 import qualified Data.Aeson.Types as Aeson (parseEither)
@@ -70,6 +71,11 @@ slurpParseEval rh = (fmap . fmap . fmap) parseValue $ slurpResponses rh
 responseValues :: ResponseMessage (Either String (GraphSON [GraphSON a])) -> Either String [a]
 responseValues = fmap (map gsonValue . gsonValue) . resultData . result
 
+opSleep :: Int -> OpEval
+opSleep time_ms = opEval ("sleep " <> time_str <> "; " <> time_str)
+  where
+    time_str = pack $ show time_ms
+
 conn_basic_spec :: SpecWith (Host, Port)
 conn_basic_spec = do
   specify "basic transaction" $ withConn $ \conn -> do
@@ -94,11 +100,7 @@ conn_basic_spec = do
     map (code . status) got `shouldBe` ((replicate 4 PartialContent) ++ [Success])
     map responseValues got `shouldBe` exp_vals
   specify "concurrent requests" $ withConn $ \conn -> do
-    let op :: Int -> OpEval
-        op time = opEval ("sleep " <> time_str <> "; " <> time_str)
-          where
-            time_str = pack $ show time
-    handles <- mapM (sendRequest conn) $ map op $ map (* 100) $ reverse [1..5]
+    handles <- mapM (sendRequest conn) $ map opSleep $ map (* 100) $ reverse [1..5]
     got <- (fmap . map . map) responseValues $ mapM slurpParseEval handles :: IO [[Either String [Int]]]
     got `shouldBe` [ [Right [500]],
                      [Right [400]],
@@ -106,5 +108,13 @@ conn_basic_spec = do
                      [Right [200]],
                      [Right [100]]
                    ]
-    
-    
+  specify "make requests from multiple threads" $ withConn $ \conn -> do
+    let reqAndRes t = (fmap . map) responseValues $ slurpParseEval =<< (sendRequest conn $ opSleep t)
+    got <- mapConcurrently reqAndRes $ replicate 5 200
+           :: IO [[Either String [Int]]]
+    got `shouldBe` [ [Right [200]],
+                     [Right [200]],
+                     [Right [200]],
+                     [Right [200]],
+                     [Right [200]]
+                   ]
