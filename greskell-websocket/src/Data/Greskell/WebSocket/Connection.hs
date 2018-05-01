@@ -17,7 +17,9 @@ module Data.Greskell.WebSocket.Connection
          sendRequest',
          ResponseHandle,
          getResponse,
-         slurpResponses
+         slurpResponses,
+         -- * Exceptions
+         ConnectException(..)
        ) where
 
 import Control.Applicative ((<$>), (<|>))
@@ -29,10 +31,12 @@ import Control.Concurrent.STM
     atomically, STM,
     TVar, newTVarIO, readTVar, writeTVar
   )
+import Control.Exception (Exception)
 import Control.Monad (when)
 import Data.Aeson (Value)
 import qualified Data.DList as DL
 import Data.Monoid (mempty, (<>))
+import Data.Typeable (Typeable)
 import Data.UUID (UUID)
 import qualified Network.WebSockets as WS
 import qualified Data.ByteString.Lazy as BSL
@@ -55,9 +59,17 @@ type Host = String
 -- | TCP port number.
 type Port = Int
 
+-- | Exception from 'connect'.
+data ConnectException = ConnectException
+                      deriving (Show,Eq,Ord,Typeable)
+
+instance Exception ConnectException
+
+
 -- | Make a 'Connection' to a Gremlin Server.
 --
--- TODO: define exception spec.
+-- If it fails to connect to the specified server, it throws
+-- 'ConnectException'.
 connect :: Codec s -> Host -> Port -> IO (Connection s)
 connect codec host port = do
   qreq <- newTBQueueIO qreq_size

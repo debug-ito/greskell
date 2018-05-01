@@ -15,9 +15,11 @@ import System.Environment (lookupEnv)
 import Test.Hspec
 
 import Data.Greskell.WebSocket.Codec.JSON (jsonCodec)
+import Data.Greskell.WebSocket.Codec (Codec)
 import Data.Greskell.WebSocket.Connection
   ( Host, Port, Connection, ResponseHandle,
-    close, connect, sendRequest', sendRequest, slurpResponses
+    close, connect, sendRequest', sendRequest, slurpResponses,
+    ConnectException(..)
   )
 import Data.Greskell.WebSocket.Request (toRequestMessage)
 import Data.Greskell.WebSocket.Request.Standard (OpEval(..))
@@ -30,9 +32,11 @@ main :: IO ()
 main = hspec spec
 
 spec :: Spec
-spec = withEnv $ do
-  describe "Connection" $ do
-    conn_basic_spec
+spec = do
+  no_external_server_spec
+  withEnv $ do
+    describe "Connection" $ do
+      conn_basic_spec
 
 requireEnv :: String -> IO String
 requireEnv env_key = maybe bail return =<< lookupEnv env_key
@@ -75,6 +79,14 @@ opSleep :: Int -> OpEval
 opSleep time_ms = opEval ("sleep " <> time_str <> "; " <> time_str)
   where
     time_str = pack $ show time_ms
+
+no_external_server_spec :: Spec
+no_external_server_spec = describe "Connection" $ describe "connect" $ do
+  it "should throw exception on failure" $ do
+    let act = connect (jsonCodec :: Codec Value) "this.should.not.be.real.server.com" 8000
+    act `shouldThrow` (\ConnectException -> True)
+    
+  
 
 conn_basic_spec :: SpecWith (Host, Port)
 conn_basic_spec = do
