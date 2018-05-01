@@ -31,7 +31,7 @@ import Control.Concurrent.STM
     atomically, STM,
     TVar, newTVarIO, readTVar, writeTVar
   )
-import Control.Exception (Exception)
+import Control.Exception (Exception, SomeException)
 import Control.Monad (when)
 import Data.Aeson (Value)
 import qualified Data.DList as DL
@@ -59,9 +59,10 @@ type Host = String
 -- | TCP port number.
 type Port = Int
 
--- | Exception from 'connect'.
-data ConnectException = ConnectException
-                      deriving (Show,Eq,Ord,Typeable)
+-- | Exception from 'connect'. It has the 'SomeException' that caused
+-- 'ConnectException'.
+data ConnectException = ConnectException SomeException
+                      deriving (Show,Typeable)
 
 instance Exception ConnectException
 

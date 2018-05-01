@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Main (main,spec) where
 
-import Control.Exception.Safe (bracket)
+import Control.Exception.Safe (bracket, Exception, withException, SomeException)
 import Control.Concurrent.Async (mapConcurrently)
 import Data.Aeson (Value(Number), FromJSON(..), ToJSON(toJSON), Object)
 import qualified Data.Aeson as Aeson
@@ -12,6 +12,7 @@ import Data.Greskell.GraphSON (GraphSON, gsonValue)
 import Data.Text (Text, pack)
 import Data.UUID.V4 (nextRandom)
 import System.Environment (lookupEnv)
+import System.IO (stderr, hPutStrLn)
 import Test.Hspec
 
 import Data.Greskell.WebSocket.Codec.JSON (jsonCodec)
@@ -80,11 +81,17 @@ opSleep time_ms = opEval ("sleep " <> time_str <> "; " <> time_str)
   where
     time_str = pack $ show time_ms
 
+inspectException :: IO a -> IO a
+inspectException act = act `withException` printE
+  where
+    printE :: SomeException -> IO ()
+    printE e = hPutStrLn stderr ("exception thrown: " ++ show e)
+
 no_external_server_spec :: Spec
 no_external_server_spec = describe "Connection" $ describe "connect" $ do
   it "should throw exception on failure" $ do
     let act = connect (jsonCodec :: Codec Value) "this.should.not.be.real.server.com" 8000
-    act `shouldThrow` (\ConnectException -> True)
+    inspectException act `shouldThrow` (\ (ConnectException _) -> True)
     
   
 
