@@ -85,7 +85,7 @@ inspectException :: IO a -> IO a
 inspectException act = act `withException` printE
   where
     printE :: SomeException -> IO ()
-    printE e = hPutStrLn stderr ("exception thrown: " ++ show e)
+    printE e = hPutStrLn stderr ("[DEBUG] exception thrown: " ++ show e)
 
 no_external_server_spec :: Spec
 no_external_server_spec = describe "Connection" $ describe "connect" $ do
