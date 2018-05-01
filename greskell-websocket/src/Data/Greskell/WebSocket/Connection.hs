@@ -194,12 +194,15 @@ instance Functor ResponseHandle where
 
 
 -- | Make a 'RequestMessage' from an 'Operation' and send it.
+--
+-- Usually this function does not throw any exception. Exceptions
+-- about sending requests are reported when you operate on
+-- 'ResponseHandle'.
 sendRequest :: Operation o => Connection s -> o -> IO (ResponseHandle s)
 sendRequest conn o = sendRequest' conn =<< makeRequestMessage o
 
--- | Send a 'RequestMessage' to the server.
---
--- TODO: define exception spec.
+-- | Like 'sendRequest', but you can pass a 'RequestMessage' directly
+-- to this function.
 sendRequest' :: Connection s -> RequestMessage -> IO (ResponseHandle s)
 sendRequest' (Connection { connCodec = codec, connQReq = qreq }) req_msg@(RequestMessage { requestId = rid }) = do
   qout <- newTQueueIO
