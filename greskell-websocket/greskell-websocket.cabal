@@ -43,7 +43,8 @@ library
                         stm,
                         websockets,
                         hashtables,
-                        dlist
+                        dlist,
+                        safe-exceptions
 
 -- executable greskell-websocket
 --   default-language:     Haskell2010
@@ -86,9 +87,9 @@ test-suite server-test
   -- other-modules:        
   if flag(server-test)
     build-depends:        base, greskell-websocket, greskell-core,
-                          aeson, uuid, unordered-containers, text, async,
-                          hspec,
-                          safe-exceptions
+                          aeson, uuid, unordered-containers, text, async, safe-exceptions,
+                          hspec
+                          
   else
     buildable: False
 

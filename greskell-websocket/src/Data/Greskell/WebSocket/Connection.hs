@@ -25,13 +25,15 @@ module Data.Greskell.WebSocket.Connection
 import Control.Applicative ((<$>), (<|>))
 import Control.Concurrent.Async (withAsync, Async, async)
 import qualified Control.Concurrent.Async as Async
+import Control.Monad (void)
 import Control.Concurrent.STM
   ( TBQueue, readTBQueue, newTBQueueIO, writeTBQueue,
     TQueue, writeTQueue, newTQueueIO, readTQueue,
     atomically, STM,
-    TVar, newTVarIO, readTVar, writeTVar
+    TVar, newTVarIO, readTVar, writeTVar,
+    TMVar, tryPutTMVar, tryReadTMVar, putTMVar, newEmptyTMVarIO, readTMVar
   )
-import Control.Exception (Exception, SomeException)
+import Control.Exception.Safe (Exception, SomeException, withException, throw)
 import Control.Monad (when)
 import Data.Aeson (Value)
 import qualified Data.DList as DL
@@ -74,11 +76,15 @@ instance Exception ConnectException
 connect :: Codec s -> Host -> Port -> IO (Connection s)
 connect codec host port = do
   qreq <- newTBQueueIO qreq_size
-  ws_thread <- async $ runWSConn codec host port ws_path qreq
-  return $ Connection { connQReq = qreq,
-                        connWSThread = ws_thread,
-                        connCodec = codec
-                      }
+  var_connect_result <- newEmptyTMVarIO
+  ws_thread <- async $ runWSConn codec host port ws_path qreq var_connect_result
+  eret <- atomically $ readTMVar var_connect_result
+  case eret of
+   Left e -> throw e
+   Right () -> return $ Connection { connQReq = qreq,
+                                     connWSThread = ws_thread,
+                                     connCodec = codec
+                                   }
   where
     qreq_size = 512 -- TODO: make it configurable
     ws_path = "/gremlin" -- TODO: make it configurable
@@ -114,12 +120,30 @@ data Connection s =
 type Path = String
 
 -- | A thread taking care of a WS connection.
-runWSConn :: Codec s -> Host -> Port -> Path -> TBQueue (ReqPack s) -> IO ()
-runWSConn codec host port path qreq = WS.runClient host port path $ \wsconn -> do -- TODO: handle exception
-  qres <- newTQueueIO
-  req_pool <- HT.new
-  withAsync (runRxLoop wsconn qres) $ \_ -> 
-    runMuxLoop wsconn req_pool codec qreq qres 
+runWSConn :: Codec s -> Host -> Port -> Path -> TBQueue (ReqPack s) -> TMVar (Either ConnectException ()) -> IO ()
+runWSConn codec host port path qreq var_connect_result = doConnect `withException` reportException
+  where
+    doConnect = WS.runClient host port path $ \wsconn -> do
+      is_success <- isConnectSuccess
+      if not is_success
+        then return () -- result is already reported at var_connect_result
+        else setupMux wsconn
+    setupMux wsconn = do
+      qres <- newTQueueIO
+      req_pool <- HT.new
+      withAsync (runRxLoop wsconn qres) $ \_ -> 
+        runMuxLoop wsconn req_pool codec qreq qres 
+    reportException :: SomeException -> IO ()
+    reportException cause = void $ atomically $ tryPutTMVar var_connect_result $ Left $ ConnectException cause
+    isConnectSuccess = atomically $ do
+      mret <- tryReadTMVar var_connect_result
+      case mret of
+       -- usually, mret should be Nothing.
+       Nothing -> do
+         putTMVar var_connect_result $ Right ()
+         return True
+       Just (Right _) -> return True
+       Just (Left _) -> return False
 
 -- | (requestId of pending request) --> (output channel of the corresponding responses)
 type ReqPool s = HT.BasicHashTable ReqID (TQueue (ResponseMessage s))
