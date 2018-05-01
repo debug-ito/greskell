@@ -177,7 +177,7 @@ runMuxLoop wsconn req_pool codec qreq qres = loop
     handleReq req = do
       HT.insert req_pool (reqId req) (reqOutput req) -- TODO: if the reqId already exists, it's error.
       handleAny abortAllWith $ WS.sendBinaryData wsconn $ reqData req
-    handleRes res = case decodeWith codec res of -- TODO: perhaps we have to decode MIME type packaging
+    handleRes res = case decodeWith codec res of
       Left err -> undefined -- TODO: handle parse error
       Right res_msg -> handleResMsg res_msg
     handleResMsg res_msg@(ResponseMessage { requestId = rid }) = do
