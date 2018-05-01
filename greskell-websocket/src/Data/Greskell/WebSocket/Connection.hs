@@ -19,7 +19,8 @@ module Data.Greskell.WebSocket.Connection
          getResponse,
          slurpResponses,
          -- * Exceptions
-         ConnectException(..)
+         ConnectException(..),
+         RequestException(..)
        ) where
 
 import Control.Applicative ((<$>), (<|>))
@@ -101,12 +102,16 @@ type RawRes = BSL.ByteString
 
 type ReqID = UUID
 
+
+-- | Package of Response data and related stuff.
+type ResPack s = Either RequestException (ResponseMessage s)
+
 -- | Package of request data and related stuff. It's passed from the
 -- caller thread into WS handling thread.
 data ReqPack s = ReqPack
                  { reqData :: !RawReq,
                    reqId :: !ReqID,
-                   reqOutput :: !(TQueue (ResponseMessage s))
+                   reqOutput :: !(TQueue (ResPack s))
                  }
 
 -- | A WebSocket connection to a Gremlin Server.
@@ -134,7 +139,9 @@ runWSConn codec host port path qreq var_connect_result = doConnect `withExceptio
       withAsync (runRxLoop wsconn qres) $ \_ -> 
         runMuxLoop wsconn req_pool codec qreq qres 
     reportException :: SomeException -> IO ()
-    reportException cause = void $ atomically $ tryPutTMVar var_connect_result $ Left $ ConnectException cause
+    reportException cause =
+      -- TODO: exception can be thrown while runMuxLoop runs.
+      void $ atomically $ tryPutTMVar var_connect_result $ Left $ ConnectException cause
     isConnectSuccess = atomically $ do
       mret <- tryReadTMVar var_connect_result
       case mret of
@@ -145,8 +152,14 @@ runWSConn codec host port path qreq var_connect_result = doConnect `withExceptio
        Just (Right _) -> return True
        Just (Left _) -> return False
 
+-- | An exception related to a specific request.
+data RequestException = SendException SomeException
+                      deriving (Show,Typeable)
+
+instance Exception RequestException
+
 -- | (requestId of pending request) --> (output channel of the corresponding responses)
-type ReqPool s = HT.BasicHashTable ReqID (TQueue (ResponseMessage s))
+type ReqPool s = HT.BasicHashTable ReqID (TQueue (ResPack s))
 
 -- | Multiplexer loop.
 runMuxLoop :: WS.Connection -> ReqPool s -> Codec s -> TBQueue (ReqPack s) -> TQueue RawRes -> IO ()
@@ -160,7 +173,7 @@ runMuxLoop wsconn req_pool codec qreq qres = loop
       loop
     handleReq req = do
       HT.insert req_pool (reqId req) (reqOutput req) -- TODO: if the reqId already exists, it's error.
-      WS.sendBinaryData wsconn $ reqData req
+      WS.sendBinaryData wsconn $ reqData req -- TODO: handle exception
     handleRes res = case decodeWith codec res of -- TODO: perhaps we have to decode MIME type packaging
       Left err -> undefined -- TODO: handle parse error
       Right res_msg -> handleResMsg res_msg
@@ -168,7 +181,7 @@ runMuxLoop wsconn req_pool codec qreq qres = loop
       m_qout <- HT.lookup req_pool rid
       case m_qout of
        Nothing -> undefined -- TODO: handle unknown requestId case.
-       Just qout -> atomically $ writeTQueue qout res_msg
+       Just qout -> atomically $ writeTQueue qout $ Right res_msg
 
 
 -- | Receiver thread.
@@ -185,12 +198,12 @@ runRxLoop wsconn qres = loop
 -- response. You can retrieve 'ResponseMessage's from this object.
 data ResponseHandle s =
   ResponseHandle
-  { rhGetResponse :: STM (ResponseMessage s),
+  { rhGetResponse :: STM (ResPack s),
     rhTerminated :: TVar Bool
   }
 
 instance Functor ResponseHandle where
-  fmap f rh = rh { rhGetResponse = (fmap . fmap) f $ rhGetResponse rh }
+  fmap f rh = rh { rhGetResponse = (fmap . fmap . fmap) f $ rhGetResponse rh }
 
 
 -- | Make a 'RequestMessage' from an 'Operation' and send it.
@@ -229,9 +242,12 @@ getResponse rh = atomically $ do
     else readResponse
   where
     readResponse = do
-      res <- rhGetResponse rh
-      updateTermed res
-      return $ Just res
+      eres <- rhGetResponse rh
+      case eres of
+       Left ex -> throw ex
+       Right res -> do
+         updateTermed res
+         return $ Just res
     updateTermed res =
       when (isTerminating $ code $ status res) $ do
         writeTVar (rhTerminated rh) True
