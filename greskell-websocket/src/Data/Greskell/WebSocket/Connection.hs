@@ -34,7 +34,10 @@ import Control.Concurrent.STM
     TVar, newTVarIO, readTVar, writeTVar,
     TMVar, tryPutTMVar, tryReadTMVar, putTMVar, newEmptyTMVarIO, readTMVar
   )
-import Control.Exception.Safe (Exception, SomeException, withException, throw)
+import Control.Exception.Safe
+  ( Exception, SomeException, withException, throw,
+    handleAny
+  )
 import Control.Monad (when)
 import Data.Aeson (Value)
 import qualified Data.DList as DL
@@ -173,7 +176,7 @@ runMuxLoop wsconn req_pool codec qreq qres = loop
       loop
     handleReq req = do
       HT.insert req_pool (reqId req) (reqOutput req) -- TODO: if the reqId already exists, it's error.
-      WS.sendBinaryData wsconn $ reqData req -- TODO: handle exception
+      handleAny abortAllWith $ WS.sendBinaryData wsconn $ reqData req
     handleRes res = case decodeWith codec res of -- TODO: perhaps we have to decode MIME type packaging
       Left err -> undefined -- TODO: handle parse error
       Right res_msg -> handleResMsg res_msg
@@ -182,6 +185,15 @@ runMuxLoop wsconn req_pool codec qreq qres = loop
       case m_qout of
        Nothing -> undefined -- TODO: handle unknown requestId case.
        Just qout -> atomically $ writeTQueue qout $ Right res_msg
+    abortPendingReq rid ex = do
+      m_qout <- HT.lookup req_pool rid
+      case m_qout of
+       Nothing -> return () -- TODO: we might as well emit warning here.
+       Just qout -> do
+         HT.delete req_pool rid
+         atomically $ writeTQueue qout $ Left ex
+    abortAllWith ex = undefined -- TODO: abort everything! close the Connection entirely. what should we do?
+       
 
 
 -- | Receiver thread.
