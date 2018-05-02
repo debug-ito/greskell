@@ -71,9 +71,10 @@ type Port = Int
 -- exception.
 connect :: Codec s -> Host -> Port -> IO (Connection s)
 connect codec host port = do
+  req_pool <- HT.new
   qreq <- newTBQueueIO qreq_size
   var_connect_result <- newEmptyTMVarIO
-  ws_thread <- async $ runWSConn codec host port ws_path qreq var_connect_result
+  ws_thread <- async $ runWSConn codec host port ws_path req_pool qreq var_connect_result
   eret <- atomically $ readTMVar var_connect_result
   case eret of
    Left e -> throw e
@@ -89,6 +90,7 @@ connect codec host port = do
 close :: Connection s -> IO ()
 close (Connection { connWSThread = ws_async }) = Async.cancel ws_async
 -- TODO: maybe we need some more clean-up operations...
+-- TODO: specify and test close behavior.
 
 
 type RawReq = BSL.ByteString
@@ -120,17 +122,17 @@ data Connection s =
 type Path = String
 
 -- | A thread taking care of a WS connection.
-runWSConn :: Codec s -> Host -> Port -> Path -> TBQueue (ReqPack s) -> TMVar (Either SomeException ()) -> IO ()
-runWSConn codec host port path qreq var_connect_result = do
-  req_pool <- HT.new
-  doConnect req_pool `withException` reportFatalEx req_pool
+runWSConn :: Codec s -> Host -> Port -> Path -> ReqPool s
+          -> TBQueue (ReqPack s) -> TMVar (Either SomeException ()) -> IO ()
+runWSConn codec host port path req_pool qreq var_connect_result =
+  doConnect `withException` reportFatalEx
   where
-    doConnect req_pool = WS.runClient host port path $ \wsconn -> do
+    doConnect = WS.runClient host port path $ \wsconn -> do
       is_success <- checkAndReportConnectSuccess
       if not is_success
         then return () -- result is already reported at var_connect_result
-        else setupMux req_pool wsconn
-    setupMux req_pool wsconn = do
+        else setupMux wsconn
+    setupMux wsconn = do
       qres <- newTQueueIO
       withAsync (runRxLoop wsconn qres) $ \_ -> 
         runMuxLoop wsconn req_pool codec qreq qres 
@@ -143,17 +145,17 @@ runWSConn codec host port path qreq var_connect_result = do
          return True
        Just (Right _) -> return True
        Just (Left _) -> return False
-    reportFatalEx :: ReqPool s -> SomeException -> IO ()
-    reportFatalEx req_pool cause = do
+    reportFatalEx :: SomeException -> IO ()
+    reportFatalEx cause = do
       reportToConnectCaller cause
       reportToQReq cause
-      reportToReqPool req_pool cause
+      reportToReqPool cause
     reportToConnectCaller cause = void $ atomically $ tryPutTMVar var_connect_result $ Left cause
     reportToQReq cause = atomically $ do
       reqpacks <- flushTBQueue qreq
       forM_ reqpacks $ \reqpack ->
         writeTQueue (reqOutput reqpack) $ Left cause
-    reportToReqPool req_pool cause = HT.mapM_ forEntry req_pool
+    reportToReqPool cause = HT.mapM_ forEntry req_pool
       where
         forEntry (_, qout) = atomically $ writeTQueue qout $ Left cause
       
