@@ -45,6 +45,7 @@ spec = do
   withEnvForExtServer $ do
     describe "Connection" $ do
       conn_basic_spec
+      conn_error_spec
   withEnvForIntServer $ do
     conn_bad_server_spec
 
@@ -157,6 +158,18 @@ conn_basic_spec = do
                      [Right [4]],
                      [Right [5]]
                    ]
+
+conn_error_spec :: SpecWith (Host, Port)
+conn_error_spec = do
+  specify "duplicate requests" $ withConn $ \conn -> do
+    req <- makeRequestMessage $ opSleep 300
+    let expEx (DuplicateRequestId got_rid) = got_rid == requestId (req :: RequestMessage)
+        expEx _ = False
+    ok_rh <- sendRequest' conn req
+    ng_rh <- sendRequest' conn req
+    ok_res <- (fmap . map) responseValues $ slurpParseEval ok_rh :: IO [Either String [Int]]
+    ok_res `shouldBe` [Right [300]]
+    getResponse ng_rh `shouldThrow` expEx
 
 wsServer :: Int -- ^ port number
          -> (WS.Connection -> IO ())

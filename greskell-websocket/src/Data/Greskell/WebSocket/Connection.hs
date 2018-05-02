@@ -168,6 +168,9 @@ data RequestException =
   ServerClosed
   -- ^ the server closed the connection cleanly before sending
   -- response for this request
+  | DuplicateRequestId UUID
+  -- ^ The requestId (kept in this object) is already pending in the
+  -- connection.
   deriving (Show,Typeable)
 
 instance Exception RequestException
