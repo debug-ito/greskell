@@ -8,13 +8,15 @@ module Data.Greskell.WebSocket.Codec
        ( Codec(..),
          ErrorMessage,
          encodeBinaryWith,
-         messageHeader
+         messageHeader,
+         decodeBinary
        ) where
 
+import Control.Monad (when)
 import qualified Data.ByteString.Lazy as BSL
 import Data.Monoid ((<>))
 import Data.Text (Text)
-import Data.Text.Encoding (encodeUtf8)
+import Data.Text.Encoding (encodeUtf8, decodeUtf8')
 
 import Data.Greskell.WebSocket.Request (RequestMessage)
 import Data.Greskell.WebSocket.Response (ResponseMessage)
@@ -46,3 +48,19 @@ messageHeader mime = BSL.singleton size <> mime_bin
 -- \"payload\".
 encodeBinaryWith :: Codec s -> RequestMessage -> BSL.ByteString
 encodeBinaryWith c req = messageHeader (mimeType c) <> encodeWith c req
+
+-- | Decode a message in the \"binary\" format.
+decodeBinary :: BSL.ByteString
+             -> Either ErrorMessage (Text, BSL.ByteString) -- ^ (mimeType, payload)
+decodeBinary raw_msg = do
+  case BSL.uncons raw_msg of
+   Nothing -> Left "Length of MIME type is missing in the header."
+   Just (mime_len, rest) -> decodeMimeAndPayload mime_len rest
+  where
+    decodeMimeAndPayload mime_lenw msg = do
+      when (BSL.length mime_field /= mime_len) $ Left ("Too short MIME field: " <> show mime_field)
+      mime_text <- either (Left . show) Right $ decodeUtf8' $ BSL.toStrict $ mime_field
+      return (mime_text, payload)
+      where
+        (mime_field, payload) = BSL.splitAt mime_len msg
+        mime_len = fromIntegral mime_lenw
