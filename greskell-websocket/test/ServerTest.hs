@@ -2,6 +2,7 @@
 module Main (main,spec) where
 
 import Control.Exception.Safe (bracket, Exception, withException, SomeException, throwString)
+import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (mapConcurrently, Async, withAsync)
 import Data.Aeson (Value(Number), FromJSON(..), ToJSON(toJSON), Object)
 import qualified Data.Aeson as Aeson
@@ -165,7 +166,9 @@ conn_bad_server_spec = do
           exp_ex :: WS.ConnectionException -> Bool
           exp_ex WS.ConnectionClosed = True
           exp_ex _ = False
+          waitForServer = threadDelay 100000
       withAsync server $ \_ -> do
+        waitForServer
         forConn "localhost" port $ \conn -> do
           rh <- sendRequest conn $ opEval "100"
           (inspectException $ getResponse rh) `shouldThrow` exp_ex
