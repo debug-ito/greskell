@@ -23,6 +23,7 @@ library
                         DeriveGeneric, PartialTypeSignatures, FlexibleContexts
   exposed-modules:      Data.Greskell.WebSocket,
                         Data.Greskell.WebSocket.Connection,
+                        Data.Greskell.WebSocket.Connection.Settings,
                         Data.Greskell.WebSocket.Request,
                         Data.Greskell.WebSocket.Request.Common,
                         Data.Greskell.WebSocket.Request.Standard,
@@ -30,7 +31,8 @@ library
                         Data.Greskell.WebSocket.Response,
                         Data.Greskell.WebSocket.Codec,
                         Data.Greskell.WebSocket.Codec.JSON
-  other-modules:        Data.Greskell.WebSocket.Request.Aeson
+  other-modules:        Data.Greskell.WebSocket.Request.Aeson,
+                        Data.Greskell.WebSocket.Connection.Internal
   build-depends:        base,
                         greskell-core,
                         bytestring,

@@ -18,13 +18,12 @@ import System.Environment (lookupEnv)
 import System.IO (stderr, hPutStrLn)
 import Test.Hspec
 
-import Data.Greskell.WebSocket.Codec.JSON (jsonCodec)
-import Data.Greskell.WebSocket.Codec (Codec)
 import Data.Greskell.WebSocket.Connection
   ( Host, Port, Connection, ResponseHandle,
     close, connect, sendRequest', sendRequest, slurpResponses,
     getResponse,
-    RequestException(..)
+    RequestException(..),
+    Settings, defJSONSettings
   )
 import Data.Greskell.WebSocket.Request
   ( RequestMessage(requestId), toRequestMessage, makeRequestMessage
@@ -65,10 +64,13 @@ withEnvForExtServer = before $ do
 withEnvForIntServer :: SpecWith Port -> Spec
 withEnvForIntServer = before $ fmap read $ requireEnv "GRESKELL_TEST_INTERNAL_PORT"
 
+ourSettings :: Settings Value
+ourSettings = defJSONSettings
+
 withConn :: (Connection Value -> IO a) -> (Host, Port) -> IO a
 withConn act (host, port) = bracket makeConn close act
   where
-    makeConn = connect jsonCodec host port
+    makeConn = connect defJSONSettings host port
 
 forConn :: Host -> Port -> (Connection Value -> IO a) -> IO a
 forConn host port act = withConn act (host, port)
@@ -109,7 +111,7 @@ inspectException act = act `withException` printE
 no_external_server_spec :: Spec
 no_external_server_spec = describe "Connection" $ describe "connect" $ do
   it "should throw exception on failure" $ do
-    let act = connect (jsonCodec :: Codec Value) "this.should.not.be.real.server.com" 8000
+    let act = connect ourSettings "this.should.not.be.real.server.com" 8000
         expectSomeEx :: SomeException -> Bool
         expectSomeEx _ = True
     inspectException act `shouldThrow` expectSomeEx
