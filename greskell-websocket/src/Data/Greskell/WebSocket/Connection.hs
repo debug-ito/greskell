@@ -34,7 +34,7 @@ import Control.Concurrent.STM
     TMVar, tryPutTMVar, tryReadTMVar, putTMVar, newEmptyTMVarIO, readTMVar
   )
 import Control.Exception.Safe
-  ( Exception, SomeException, withException, throw, try
+  ( Exception(toException), SomeException, withException, throw, try
   )
 import Control.Monad (when)
 import Data.Aeson (Value)
@@ -148,18 +148,20 @@ runWSConn codec host port path req_pool qreq var_connect_result =
     reportFatalEx :: SomeException -> IO ()
     reportFatalEx cause = do
       reportToConnectCaller cause
-      reportToQReq cause
-      reportToReqPool cause
+      reportToReqPool req_pool cause
+      reportToQReq qreq cause
     reportToConnectCaller cause = void $ atomically $ tryPutTMVar var_connect_result $ Left cause
-    reportToQReq cause = atomically $ do
-      reqpacks <- flushTBQueue qreq
-      forM_ reqpacks $ \reqpack ->
-        writeTQueue (reqOutput reqpack) $ Left cause
-    reportToReqPool cause = HT.mapM_ forEntry req_pool
-      where
-        forEntry (_, qout) = atomically $ writeTQueue qout $ Left cause
-      
-      
+
+reportToReqPool :: ReqPool s -> SomeException -> IO ()
+reportToReqPool req_pool cause = HT.mapM_ forEntry req_pool
+  where
+    forEntry (_, qout) = atomically $ writeTQueue qout $ Left cause
+
+reportToQReq :: TBQueue (ReqPack s) -> SomeException -> IO ()
+reportToQReq qreq cause = atomically $ do
+  reqpacks <- flushTBQueue qreq
+  forM_ reqpacks $ \reqpack ->
+    writeTQueue (reqOutput reqpack) $ Left cause
 
 -- | An exception related to a specific request.
 data RequestException =
@@ -189,7 +191,7 @@ runMuxLoop wsconn req_pool codec qreq qres rx_thread = loop
       case event of
        EvReq req -> handleReq req >> loop
        EvRes res -> handleRes res >> loop
-       EvRxFinish -> undefined -- TODO: what should we do?
+       EvRxFinish -> handleRxFinish
        EvRxError e -> throw e
     getEventSTM = do
       (rxResultToEvent <$> waitCatchSTM rx_thread)
@@ -208,13 +210,21 @@ runMuxLoop wsconn req_pool codec qreq qres rx_thread = loop
       case m_qout of
        Nothing -> undefined -- TODO: handle unknown requestId case.
        Just qout -> atomically $ writeTQueue qout $ Right res_msg
-    abortPendingReq rid ex = do
-      m_qout <- HT.lookup req_pool rid
-      case m_qout of
-       Nothing -> return () -- TODO: we might as well emit warning here.
-       Just qout -> do
-         HT.delete req_pool rid
-         atomically $ writeTQueue qout $ Left ex
+    handleRxFinish = do
+      -- RxFinish is an error for pending requests. If there is no
+      -- pending requests, it's totally normal.
+      let ex = toException ServerClosed
+      reportToReqPool req_pool ex
+      reportToQReq qreq ex
+      -- TODO: we will need to set some flag to indicate the connection is closed already.
+
+    -- abortPendingReq rid ex = do
+    --   m_qout <- HT.lookup req_pool rid
+    --   case m_qout of
+    --    Nothing -> return () -- TODO: we might as well emit warning here.
+    --    Just qout -> do
+    --      HT.delete req_pool rid
+    --      atomically $ writeTQueue qout $ Left ex
 
 -- | Receiver thread. It keeps receiving data from WS until the
 -- connection finishes cleanly. Basically every exception is raised to
