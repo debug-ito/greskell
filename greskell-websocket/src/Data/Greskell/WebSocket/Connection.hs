@@ -203,8 +203,17 @@ runMuxLoop wsconn req_pool codec qreq qres rx_thread = loop
           rxResultToEvent (Right ()) = EvRxFinish
           rxResultToEvent (Left e) = EvRxError e
     handleReq req = do
-      HT.insert req_pool (reqId req) (reqOutput req) -- TODO: if the reqId already exists, it's error.
-      WS.sendBinaryData wsconn $ reqData req
+      insert_ok <- HT.mutate req_pool rid insertNew
+      if insert_ok
+        then WS.sendBinaryData wsconn $ reqData req
+        else reportError
+        where
+          rid = reqId req
+          qout = reqOutput req
+          insertNew Nothing = (Just qout, True)
+          insertNew existing_entry = (existing_entry, False)
+          reportError =
+            atomically $ writeTQueue qout $ Left $ toException $ DuplicateRequestId rid
     handleRes res = case decodeWith codec res of
       Left err -> undefined -- TODO: handle parse error
       Right res_msg -> handleResMsg res_msg
