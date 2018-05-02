@@ -250,11 +250,10 @@ conn_bad_server_spec = do
         forConn "localhost" port $ \conn -> do
           rh <- sendRequest conn $ opEval "100"
           (inspectException $ getResponse rh) `shouldThrow` exp_ex
-    it "should be ok that the server actively closes the connection" $ \port -> do
+    it "should be ok if the server actively closes the connection" $ \port -> do
       let server = wsServer port $ \wsconn -> do
             req <- receiveRequest wsconn
             WS.sendBinaryData wsconn $ simpleRawResponse (requestId (req :: RequestMessage)) 200 "[99]"
-            WS.sendClose wsconn ("" :: Text)
       withAsync server $ \_ -> do
         waitForServer
         forConn "localhost" port $ \conn -> do
