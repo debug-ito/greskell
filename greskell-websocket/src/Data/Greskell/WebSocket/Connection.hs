@@ -71,7 +71,7 @@ type Port = Int
 -- exception.
 connect :: Codec s -> Host -> Port -> IO (Connection s)
 connect codec host port = do
-  req_pool <- HT.new
+  req_pool <- HT.new  -- Do not manipulate req_pool in this thread. It belongs to runWSConn thread.
   qreq <- newTBQueueIO qreq_size
   var_connect_result <- newEmptyTMVarIO
   ws_thread <- async $ runWSConn codec host port ws_path req_pool qreq var_connect_result
