@@ -160,8 +160,8 @@ runMuxLoop wsconn req_pool codec qreq qres rx_thread = loop
        EvRxFinish -> handleRxFinish
        EvRxError e -> throw e
     getEventSTM = do
-      (rxResultToEvent <$> waitCatchSTM rx_thread)
-      <|> (EvReq <$> readTBQueue qreq) <|> (EvRes <$> readTQueue qres)
+      (EvReq <$> readTBQueue qreq) <|> (EvRes <$> readTQueue qres)
+      <|> (rxResultToEvent <$> waitCatchSTM rx_thread)
         where
           rxResultToEvent (Right ()) = EvRxFinish
           rxResultToEvent (Left e) = EvRxError e
