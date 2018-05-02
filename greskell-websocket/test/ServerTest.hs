@@ -8,16 +8,20 @@ import Control.Monad (when)
 import Data.Aeson (Value(Number), FromJSON(..), ToJSON(toJSON), Object)
 import qualified Data.Aeson as Aeson
 import qualified Data.Aeson.Types as Aeson (parseEither)
+import qualified Data.ByteString.Lazy as BSL
 import Data.Monoid ((<>))
 import qualified Data.HashMap.Strict as HM
 import Data.Greskell.GraphSON (GraphSON, gsonValue)
 import Data.Text (Text, pack)
+import Data.UUID (UUID)
+import qualified Data.UUID as UUID
 import Data.UUID.V4 (nextRandom)
 import qualified Network.WebSockets as WS
 import System.Environment (lookupEnv)
 import System.IO (stderr, hPutStrLn)
 import Test.Hspec
 
+import Data.Greskell.WebSocket.Codec (decodeBinary)
 import Data.Greskell.WebSocket.Connection
   ( Host, Port, Connection, ResponseHandle,
     close, connect, sendRequest', sendRequest, slurpResponses,
@@ -188,10 +192,34 @@ wsServer :: Int -- ^ port number
 wsServer p act = WS.runServer "localhost" p $ \pending_conn ->
   act =<< WS.acceptRequest pending_conn
 
+parseRequest :: BSL.ByteString -> Either String RequestMessage
+parseRequest raw_msg = do
+  (_, payload) <- decodeBinary raw_msg
+  Aeson.eitherDecode payload
+
+receiveRequest :: WS.Connection -> IO RequestMessage
+receiveRequest wsconn = do
+  raw_msg <- WS.receiveData wsconn
+  case parseRequest raw_msg of
+   Left e -> throwString e
+   Right r -> return r
+
+simpleRawResponse :: UUID -> Int -> Text -> Text
+simpleRawResponse request_id status_code data_content =
+  "{\"requestId\":\"" <> UUID.toText request_id <> "\","
+  <> "\"status\":{\"code\":" <> (pack $ show status_code) <> ",\"message\":\"\",\"attributes\":{}},"
+  <> "\"result\":{\"data\":" <> data_content <> ",\"meta\":{}}}"
+
+succUUID :: UUID -> UUID
+succUUID orig = UUID.fromWords a b c d'
+  where
+    (a, b, c ,d) = UUID.toWords orig
+    d' = succ d
+
 conn_bad_server_spec :: SpecWith Port
 conn_bad_server_spec = do
+  let waitForServer = threadDelay 100000
   describe "ResponseHandle" $ describe "getResponse" $ do
-    let waitForServer = threadDelay 100000
     it "should throw exception when the server closed unexpectedly" $ \port -> do
       let server = wsServer port $ \wsconn -> do
             _ <- WS.receiveDataMessage wsconn
@@ -222,4 +250,28 @@ conn_bad_server_spec = do
         forConn "localhost" port $ \conn -> do
           rh <- sendRequest conn $ opEval "100"
           (inspectException $ getResponse rh) `shouldThrow` exp_ex
+    it "should be ok that the server actively closes the connection" $ \port -> do
+      let server = wsServer port $ \wsconn -> do
+            req <- receiveRequest wsconn
+            WS.sendBinaryData wsconn $ simpleRawResponse (requestId (req :: RequestMessage)) 200 "[99]"
+            WS.sendClose wsconn ("" :: Text)
+      withAsync server $ \_ -> do
+        waitForServer
+        forConn "localhost" port $ \conn -> do
+          rh <- sendRequest conn $ opEval "99"
+          got <- (fmap . map) responseValues $ slurpParseEval rh :: IO [Either String [Int]]
+          got `shouldBe` [Right [99]]
+  describe "Settings" $ describe "onGeneralException" $ do
+    it "should be called on unexpected requestId" $ \port -> do
+      let server = wsServer port $ \wsconn -> do
+            req <- receiveRequest wsconn
+            let res_id = succUUID $ requestId (req :: RequestMessage)  -- deliberately send wrong requestId.
+                res = simpleRawResponse res_id 200 "[333]"
+            WS.sendBinaryData wsconn res
+      withAsync server $ \_ -> do
+        waitForServer
+        forConn "localhost" port $ \conn -> do
+          rh <- sendRequest conn $ opEval "333"
+          got <- (fmap . map) responseValues $ slurpParseEval rh :: IO [Either String [Int]]
+          got `shouldBe` [Right [333]]
           
