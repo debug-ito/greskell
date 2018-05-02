@@ -89,9 +89,12 @@ responseValues :: ResponseMessage (Either String (GraphSON [GraphSON a])) -> Eit
 responseValues = fmap (map gsonValue . gsonValue) . resultData . result
 
 opSleep :: Int -> OpEval
-opSleep time_ms = opEval ("sleep " <> time_str <> "; " <> time_str)
+opSleep time_ms = opSleep' time_ms time_ms
+
+opSleep' :: Int -> Int -> OpEval
+opSleep' time_ms val = opEval ("sleep " <> tshow time_ms <> "; " <> tshow val)
   where
-    time_str = pack $ show time_ms
+    tshow = pack . show
 
 inspectException :: IO a -> IO a
 inspectException act = act `withException` printE
@@ -142,14 +145,14 @@ conn_basic_spec = do
                      [Right [100]]
                    ]
   specify "make requests from multiple threads" $ withConn $ \conn -> do
-    let reqAndRes t = (fmap . map) responseValues $ slurpParseEval =<< (sendRequest conn $ opSleep t)
-    got <- mapConcurrently reqAndRes $ replicate 5 200
+    let reqAndRes val = (fmap . map) responseValues $ slurpParseEval =<< (sendRequest conn $ opSleep' 200 val)
+    got <- mapConcurrently reqAndRes [1 .. 5]
            :: IO [[Either String [Int]]]
-    got `shouldBe` [ [Right [200]],
-                     [Right [200]],
-                     [Right [200]],
-                     [Right [200]],
-                     [Right [200]]
+    got `shouldBe` [ [Right [1]],
+                     [Right [2]],
+                     [Right [3]],
+                     [Right [4]],
+                     [Right [5]]
                    ]
 
 wsServer :: Int -- ^ port number
