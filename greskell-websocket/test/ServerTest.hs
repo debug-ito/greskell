@@ -224,21 +224,20 @@ conn_bad_server_spec :: SpecWith Port
 conn_bad_server_spec = do
   let waitForServer = threadDelay 100000
   describe "ResponseHandle" $ describe "getResponse" $ do
-    it "should throw exception when the server closed unexpectedly" $ \port -> do
+    it "should throw exception when the server closes the connection while there is a pending request" $ \port -> do
       let server = wsServer port $ \wsconn -> do
             _ <- WS.receiveDataMessage wsconn
             throwString ( "Server connection abort. Seeing this message in a test console is OK."
                           ++ " It's because of WS.runServer internals."
                         )
-          exp_ex :: WS.ConnectionException -> Bool
-          exp_ex WS.ConnectionClosed = True
+          exp_ex ServerClosed = True
           exp_ex _ = False
       withAsync server $ \_ -> do
         waitForServer
         forConn "localhost" port $ \conn -> do
           rh <- sendRequest conn $ opEval "100"
           (inspectException $ getResponse rh) `shouldThrow` exp_ex
-    it "should throw exception when the server cleanly closed connection while there is a pending request" $ \port -> do
+    it "should throw exception when the server sends Close request while there is a pending request" $ \port -> do
       let server = wsServer port $ \wsconn -> do
             _ <- WS.receiveDataMessage wsconn
             WS.sendClose wsconn ("" :: Text)

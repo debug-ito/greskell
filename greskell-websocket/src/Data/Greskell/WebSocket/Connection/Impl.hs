@@ -224,6 +224,8 @@ runRxLoop wsconn qres = loop
           if close_status == 1000 -- "normal closure". See sec. 7.4, RFC 6455.
             then return Nothing
             else throw e
+        -- We allow the server to close the connection without sending Close request message.
+        toMaybe (Left WS.ConnectionClosed) = return Nothing
         toMaybe (Left e) = throw e
   
 
