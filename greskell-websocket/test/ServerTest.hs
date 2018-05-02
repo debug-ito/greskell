@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings, DuplicateRecordFields #-}
 module Main (main,spec) where
 
 import Control.Exception.Safe (bracket, Exception, withException, SomeException, throwString)
@@ -26,12 +26,15 @@ import Data.Greskell.WebSocket.Connection
     getResponse,
     RequestException(..)
   )
-import Data.Greskell.WebSocket.Request (toRequestMessage)
+import Data.Greskell.WebSocket.Request
+  ( RequestMessage(requestId), toRequestMessage, makeRequestMessage
+  )
 import Data.Greskell.WebSocket.Request.Standard (OpEval(..))
 import Data.Greskell.WebSocket.Response
   ( ResponseMessage(requestId, status, result), ResponseStatus(code), ResponseCode(..),
     ResponseResult(resultData)
   )
+import qualified Data.Greskell.WebSocket.Response as Response
 
 main :: IO ()
 main = hspec spec
@@ -121,7 +124,7 @@ conn_basic_spec = do
         exp_val = [123]
     res <- sendRequest' conn $ toRequestMessage rid op
     got <- slurpParseEval res
-    map (requestId) got `shouldBe` [rid]
+    map (Response.requestId) got `shouldBe` [rid]
     map (code . status) got `shouldBe` [Success]
     map responseValues got `shouldBe` [Right exp_val]
   specify "continuous response with bindings" $ withConn $ \conn -> do
@@ -132,7 +135,7 @@ conn_basic_spec = do
         exp_vals :: [Either String [Int]]
         exp_vals = map Right [[1,2], [3,4], [5,6], [7,8], [9,10]]
     got <- slurpParseEval =<< (sendRequest' conn $ toRequestMessage rid op)
-    map (requestId) got `shouldBe` replicate 5 rid
+    map (Response.requestId) got `shouldBe` replicate 5 rid
     map (code . status) got `shouldBe` ((replicate 4 PartialContent) ++ [Success])
     map responseValues got `shouldBe` exp_vals
   specify "concurrent requests" $ withConn $ \conn -> do
@@ -183,8 +186,11 @@ conn_bad_server_spec = do
       let server = wsServer port $ \wsconn -> do
             _ <- WS.receiveDataMessage wsconn
             WS.sendClose wsconn ("" :: Text)
-            (WS.ControlMessage (WS.Close status _)) <- WS.receive wsconn
-            when (status /= 1000) $ throwString ("Fatal: expects status 1000, but got " ++ show status)
+            (WS.ControlMessage (WS.Close wscode _)) <- WS.receive wsconn
+            when (wscode /= 1000) $ do
+              throwString ( "Fatal: expects WebSocket status code 1000, but got "
+                            ++ show wscode
+                          )
           exp_ex ServerClosed = True
           exp_ex _ = False
       withAsync server $ \_ -> do
