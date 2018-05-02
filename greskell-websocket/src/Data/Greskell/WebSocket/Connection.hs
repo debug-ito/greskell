@@ -187,7 +187,7 @@ runMuxLoop wsconn req_pool codec qreq qres rx_thread = loop
        EvReq req -> handleReq req >> loop
        EvRes res -> handleRes res >> loop
        EvRxFinish -> undefined -- TODO: what should we do?
-       EvRxError _ -> undefined -- TODO: what should we do?
+       EvRxError e -> throw e
     getEventSTM = do
       (rxResultToEvent <$> waitCatchSTM rx_thread)
       <|> (EvReq <$> readTBQueue qreq) <|> (EvRes <$> readTQueue qres)
