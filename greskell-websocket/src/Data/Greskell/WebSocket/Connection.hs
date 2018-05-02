@@ -122,23 +122,20 @@ type Path = String
 
 -- | A thread taking care of a WS connection.
 runWSConn :: Codec s -> Host -> Port -> Path -> TBQueue (ReqPack s) -> TMVar (Either SomeException ()) -> IO ()
-runWSConn codec host port path qreq var_connect_result = doConnect `withException` reportException
+runWSConn codec host port path qreq var_connect_result = do
+  req_pool <- HT.new
+  doConnect req_pool `withException` reportFatalEx req_pool
   where
-    doConnect = WS.runClient host port path $ \wsconn -> do
-      is_success <- isConnectSuccess
+    doConnect req_pool = WS.runClient host port path $ \wsconn -> do
+      is_success <- checkAndReportConnectSuccess
       if not is_success
         then return () -- result is already reported at var_connect_result
-        else setupMux wsconn
-    setupMux wsconn = do
+        else setupMux req_pool wsconn
+    setupMux req_pool wsconn = do
       qres <- newTQueueIO
-      req_pool <- HT.new
       withAsync (runRxLoop wsconn qres) $ \_ -> 
         runMuxLoop wsconn req_pool codec qreq qres 
-    reportException :: SomeException -> IO ()
-    reportException cause =
-      -- TODO: exception can be thrown while runMuxLoop runs.
-      void $ atomically $ tryPutTMVar var_connect_result $ Left cause
-    isConnectSuccess = atomically $ do
+    checkAndReportConnectSuccess = atomically $ do
       mret <- tryReadTMVar var_connect_result
       case mret of
        -- usually, mret should be Nothing.
@@ -147,6 +144,10 @@ runWSConn codec host port path qreq var_connect_result = doConnect `withExceptio
          return True
        Just (Right _) -> return True
        Just (Left _) -> return False
+    reportFatalEx :: ReqPool s -> SomeException -> IO ()
+    reportFatalEx req_pool cause =
+      -- TODO: exception can be thrown while runMuxLoop runs.
+      void $ atomically $ tryPutTMVar var_connect_result $ Left cause
 
 -- | An exception related to a specific request.
 data RequestException = SendException SomeException
