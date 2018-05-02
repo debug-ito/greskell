@@ -34,7 +34,7 @@ import Control.Concurrent.STM
     TMVar, tryPutTMVar, tryReadTMVar, putTMVar, newEmptyTMVarIO, readTMVar
   )
 import Control.Exception.Safe
-  ( Exception, SomeException, withException, throw
+  ( Exception, SomeException, withException, throw, try
   )
 import Control.Monad (when)
 import Data.Aeson (Value)
@@ -213,14 +213,27 @@ runMuxLoop wsconn req_pool codec qreq qres rx_thread = loop
          HT.delete req_pool rid
          atomically $ writeTQueue qout $ Left ex
 
--- | Receiver thread.
+-- | Receiver thread. It keeps receiving data from WS until the
+-- connection finishes cleanly. Basically every exception is raised to
+-- the caller.
 runRxLoop :: WS.Connection -> TQueue RawRes -> IO ()
 runRxLoop wsconn qres = loop
   where
     loop = do
-      got <- WS.receiveData wsconn
-      atomically $ writeTQueue qres got
-      loop
+      mgot <- tryReceive
+      case mgot of
+        Nothing -> return ()
+        Just got -> do
+          atomically $ writeTQueue qres got
+          loop
+    tryReceive = toMaybe =<< (try $ WS.receiveData wsconn)
+      where
+        toMaybe (Right d) = return $ Just d
+        toMaybe (Left e@(WS.CloseRequest close_status _)) = do
+          if close_status == 1000 -- "normal closure". See sec. 7.4, RFC 6455.
+            then return Nothing
+            else throw e
+        toMaybe (Left e) = throw e
   
 
 -- | A handle associated in a 'Connection' for a pair of request and
