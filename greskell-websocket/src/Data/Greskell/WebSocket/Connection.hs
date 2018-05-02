@@ -19,7 +19,6 @@ module Data.Greskell.WebSocket.Connection
          getResponse,
          slurpResponses,
          -- * Exceptions
-         ConnectException(..),
          RequestException(..)
        ) where
 
@@ -65,18 +64,12 @@ type Host = String
 -- | TCP port number.
 type Port = Int
 
--- | Exception from 'connect'. It has the 'SomeException' that caused
--- 'ConnectException'.
-data ConnectException = ConnectException SomeException
-                      deriving (Show,Typeable)
-
-instance Exception ConnectException
 
 
 -- | Make a 'Connection' to a Gremlin Server.
 --
--- If it fails to connect to the specified server, it throws
--- 'ConnectException'.
+-- If it fails to connect to the specified server, it throws an
+-- exception.
 connect :: Codec s -> Host -> Port -> IO (Connection s)
 connect codec host port = do
   qreq <- newTBQueueIO qreq_size
@@ -128,7 +121,7 @@ data Connection s =
 type Path = String
 
 -- | A thread taking care of a WS connection.
-runWSConn :: Codec s -> Host -> Port -> Path -> TBQueue (ReqPack s) -> TMVar (Either ConnectException ()) -> IO ()
+runWSConn :: Codec s -> Host -> Port -> Path -> TBQueue (ReqPack s) -> TMVar (Either SomeException ()) -> IO ()
 runWSConn codec host port path qreq var_connect_result = doConnect `withException` reportException
   where
     doConnect = WS.runClient host port path $ \wsconn -> do
@@ -144,7 +137,7 @@ runWSConn codec host port path qreq var_connect_result = doConnect `withExceptio
     reportException :: SomeException -> IO ()
     reportException cause =
       -- TODO: exception can be thrown while runMuxLoop runs.
-      void $ atomically $ tryPutTMVar var_connect_result $ Left $ ConnectException cause
+      void $ atomically $ tryPutTMVar var_connect_result $ Left cause
     isConnectSuccess = atomically $ do
       mret <- tryReadTMVar var_connect_result
       case mret of

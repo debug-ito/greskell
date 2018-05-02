@@ -19,8 +19,7 @@ import Data.Greskell.WebSocket.Codec.JSON (jsonCodec)
 import Data.Greskell.WebSocket.Codec (Codec)
 import Data.Greskell.WebSocket.Connection
   ( Host, Port, Connection, ResponseHandle,
-    close, connect, sendRequest', sendRequest, slurpResponses,
-    ConnectException(..)
+    close, connect, sendRequest', sendRequest, slurpResponses
   )
 import Data.Greskell.WebSocket.Request (toRequestMessage)
 import Data.Greskell.WebSocket.Request.Standard (OpEval(..))
@@ -91,7 +90,9 @@ no_external_server_spec :: Spec
 no_external_server_spec = describe "Connection" $ describe "connect" $ do
   it "should throw exception on failure" $ do
     let act = connect (jsonCodec :: Codec Value) "this.should.not.be.real.server.com" 8000
-    inspectException act `shouldThrow` (\ (ConnectException _) -> True)
+        expectSomeEx :: SomeException -> Bool
+        expectSomeEx _ = True
+    inspectException act `shouldThrow` expectSomeEx
     
   
 
