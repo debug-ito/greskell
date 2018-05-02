@@ -1,12 +1,12 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 -- |
--- Module: Data.Greskell.WebSocket.Connection.Internal
--- Description: Internal implementation of Connection
+-- Module: Data.Greskell.WebSocket.Connection.Impl
+-- Description: internal implementation of Connection
 -- Maintainer: Toshio Ito <debug.ito@gmail.com>
 --
 -- This is an internal module. It deliberately exports everything. The
 -- upper module is responsible to make a proper export list.
-module Data.Greskell.WebSocket.Connection.Internal where
+module Data.Greskell.WebSocket.Connection.Impl where
 
 import Control.Applicative ((<$>), (<|>))
 import Control.Concurrent.Async (withAsync, Async, async, waitCatchSTM)
@@ -35,6 +35,9 @@ import qualified Data.HashTable.IO as HT
 import Data.Greskell.WebSocket.Codec (Codec(decodeWith, encodeWith), encodeBinaryWith)
 import Data.Greskell.WebSocket.Connection.Settings (Settings)
 import qualified Data.Greskell.WebSocket.Connection.Settings as Settings
+import Data.Greskell.WebSocket.Connection.Type
+  ( Connection(..), ResPack, ReqID, ReqPack(..), RawRes
+  )
 import Data.Greskell.WebSocket.Request
   ( RequestMessage(RequestMessage, requestId),
     Operation, makeRequestMessage
@@ -78,33 +81,6 @@ close :: Connection s -> IO ()
 close (Connection { connWSThread = ws_async }) = Async.cancel ws_async
 -- TODO: maybe we need some more clean-up operations...
 -- TODO: specify and test close behavior.
-
-
-type RawReq = BSL.ByteString
-
-type RawRes = BSL.ByteString
-
-type ReqID = UUID
-
-
--- | Package of Response data and related stuff.
-type ResPack s = Either SomeException (ResponseMessage s)
-
--- | Package of request data and related stuff. It's passed from the
--- caller thread into WS handling thread.
-data ReqPack s = ReqPack
-                 { reqData :: !RawReq,
-                   reqId :: !ReqID,
-                   reqOutput :: !(TQueue (ResPack s))
-                 }
-
--- | A WebSocket connection to a Gremlin Server.
-data Connection s =
-  Connection
-  { connQReq :: !(TBQueue (ReqPack s)),
-    connWSThread :: !(Async ()),
-    connCodec :: !(Codec s)
-  }
 
 type Path = String
 

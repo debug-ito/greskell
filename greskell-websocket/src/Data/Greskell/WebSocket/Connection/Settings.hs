@@ -15,6 +15,7 @@ import Data.Aeson (FromJSON)
 
 import Data.Greskell.WebSocket.Codec (Codec)
 import Data.Greskell.WebSocket.Codec.JSON (jsonCodec)
+import Data.Greskell.WebSocket.Connection.Type (Connection)
 
 -- | 'Settings' for making connection to Gremlin Server.
 --

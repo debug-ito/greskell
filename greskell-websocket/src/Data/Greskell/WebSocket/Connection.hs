@@ -22,5 +22,6 @@ module Data.Greskell.WebSocket.Connection
          RequestException(..)
        ) where
 
-import Data.Greskell.WebSocket.Connection.Internal
+import Data.Greskell.WebSocket.Connection.Impl
 import Data.Greskell.WebSocket.Connection.Settings
+import Data.Greskell.WebSocket.Connection.Type
