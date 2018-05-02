@@ -6,16 +6,20 @@
 -- 
 module Data.Greskell.WebSocket.Connection.Settings
   ( -- * Settings
-    Settings(codec, endpointPath, requestQueueSize),
+    Settings,
     defSettings,
-    defJSONSettings
+    defJSONSettings,
+    -- ** accessor functions
+    codec, endpointPath, onGeneralException, requestQueueSize
   ) where
 
 import Data.Aeson (FromJSON)
 
 import Data.Greskell.WebSocket.Codec (Codec)
 import Data.Greskell.WebSocket.Codec.JSON (jsonCodec)
-import Data.Greskell.WebSocket.Connection.Type (Connection)
+import Data.Greskell.WebSocket.Connection.Type (Connection, GeneralException)
+
+import System.IO (stderr, hPutStrLn)
 
 -- | 'Settings' for making connection to Gremlin Server.
 --
@@ -27,6 +31,10 @@ data Settings s =
     -- ^ codec for the connection
     endpointPath :: !String,
     -- ^ Path of the WebSocket endpoint. Default: \"/gremlin\"
+    onGeneralException :: !(Connection s -> GeneralException -> IO ()),
+    -- ^ An exception handler for 'GeneralException'. You don't have
+    -- to re-throw the exception. Default: print the exception to
+    -- stderr.
     requestQueueSize :: !Int
     -- ^ Size of the internal queue of requests. Usually you don't
     -- need to customize the field. Default: 8.
@@ -36,6 +44,7 @@ defSettings :: Codec s -> Settings s
 defSettings c = Settings
                 { codec = c,
                   endpointPath = "/gremlin",
+                  onGeneralException = \_ e -> hPutStrLn stderr $ show e,
                   requestQueueSize = 8
                 }
 

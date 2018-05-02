@@ -23,7 +23,7 @@ import Data.Greskell.WebSocket.Connection
     close, connect, sendRequest', sendRequest, slurpResponses,
     getResponse,
     RequestException(..),
-    Settings, defJSONSettings
+    Settings(onGeneralException), defJSONSettings
   )
 import Data.Greskell.WebSocket.Request
   ( RequestMessage(requestId), toRequestMessage, makeRequestMessage
@@ -66,6 +66,9 @@ withEnvForIntServer = before $ fmap read $ requireEnv "GRESKELL_TEST_INTERNAL_PO
 
 ourSettings :: Settings Value
 ourSettings = defJSONSettings
+              { onGeneralException = \_ e -> error (show e)
+                -- basically we don't expect any GeneralException.
+              }
 
 withConn :: (Connection Value -> IO a) -> (Host, Port) -> IO a
 withConn act (host, port) = bracket makeConn close act

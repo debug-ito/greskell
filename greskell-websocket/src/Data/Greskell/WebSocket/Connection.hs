@@ -19,6 +19,7 @@ module Data.Greskell.WebSocket.Connection
          getResponse,
          slurpResponses,
          -- * Exceptions
+         GeneralException(..),
          RequestException(..)
        ) where
 

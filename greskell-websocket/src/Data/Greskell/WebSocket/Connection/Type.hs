@@ -12,11 +12,12 @@ module Data.Greskell.WebSocket.Connection.Type
     ReqID,
     ResPack,
     ReqPack(..),
-    Connection(..)
+    Connection(..),
+    GeneralException(..)
   ) where
 
 import Control.Concurrent.Async (Async)
-import Control.Exception.Safe (SomeException)
+import Control.Exception.Safe (SomeException, Typeable, Exception)
 import Control.Concurrent.STM (TQueue, TBQueue)
 import qualified Data.ByteString.Lazy as BSL
 import Data.UUID (UUID)
@@ -46,3 +47,12 @@ data Connection s =
     connWSThread :: !(Async ()),
     connCodec :: !(Codec s)
   }
+
+-- | Exception general to a 'Connection'. It's not related to specific
+-- requests.
+data GeneralException =
+  UnexpectedRequestId
+  -- ^ Server sends a 'ResponseMessage' with unknown requestId.
+  deriving (Show,Typeable)
+
+instance Exception GeneralException
