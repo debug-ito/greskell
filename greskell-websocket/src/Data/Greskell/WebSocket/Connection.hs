@@ -170,16 +170,25 @@ instance Exception RequestException
 -- | (requestId of pending request) --> (output channel of the corresponding responses)
 type ReqPool s = HT.BasicHashTable ReqID (TQueue (ResPack s))
 
+-- | Multiplexed event object
+data MuxEvent s = EvReq (ReqPack s)
+                | EvRes RawRes
+                | EvRxFinish
+                | EvRxError SomeException
+
 -- | Multiplexer loop.
 runMuxLoop :: WS.Connection -> ReqPool s -> Codec s -> TBQueue (ReqPack s) -> TQueue RawRes -> IO ()
 runMuxLoop wsconn req_pool codec qreq qres = loop
   where
     loop = do
-      event <- atomically $ (Left <$> readTBQueue qreq) <|> (Right <$> readTQueue qres)
+      event <- atomically getEventSTM
       case event of
-       Left req -> handleReq req
-       Right res -> handleRes res
-      loop
+       EvReq req -> handleReq req >> loop
+       EvRes res -> handleRes res >> loop
+       EvRxFinish -> undefined -- TODO: what should we do?
+       EvRxError _ -> undefined -- TODO: what should we do?
+    getEventSTM = (EvReq <$> readTBQueue qreq)
+                  <|> (EvRes <$> readTQueue qres)
     handleReq req = do
       HT.insert req_pool (reqId req) (reqOutput req) -- TODO: if the reqId already exists, it's error.
       WS.sendBinaryData wsconn $ reqData req
@@ -204,7 +213,7 @@ runRxLoop :: WS.Connection -> TQueue RawRes -> IO ()
 runRxLoop wsconn qres = loop
   where
     loop = do
-      got <- WS.receiveData wsconn -- TODO: handle exception
+      got <- WS.receiveData wsconn
       atomically $ writeTQueue qres got
       loop
   
