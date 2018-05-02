@@ -162,8 +162,11 @@ runWSConn codec host port path req_pool qreq var_connect_result =
       
 
 -- | An exception related to a specific request.
-data RequestException = SendException SomeException
-                      deriving (Show,Typeable)
+data RequestException =
+  ServerClosed
+  -- ^ the server closed the connection cleanly before sending
+  -- response for this request
+  deriving (Show,Typeable)
 
 instance Exception RequestException
 

@@ -4,6 +4,7 @@ module Main (main,spec) where
 import Control.Exception.Safe (bracket, Exception, withException, SomeException, throwString)
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (mapConcurrently, Async, withAsync)
+import Control.Monad (when)
 import Data.Aeson (Value(Number), FromJSON(..), ToJSON(toJSON), Object)
 import qualified Data.Aeson as Aeson
 import qualified Data.Aeson.Types as Aeson (parseEither)
@@ -22,7 +23,8 @@ import Data.Greskell.WebSocket.Codec (Codec)
 import Data.Greskell.WebSocket.Connection
   ( Host, Port, Connection, ResponseHandle,
     close, connect, sendRequest', sendRequest, slurpResponses,
-    getResponse
+    getResponse,
+    RequestException(..)
   )
 import Data.Greskell.WebSocket.Request (toRequestMessage)
 import Data.Greskell.WebSocket.Request.Standard (OpEval(..))
@@ -159,6 +161,7 @@ wsServer p act = WS.runServer "localhost" p $ \pending_conn ->
 conn_bad_server_spec :: SpecWith Port
 conn_bad_server_spec = do
   describe "ResponseHandle" $ describe "getResponse" $ do
+    let waitForServer = threadDelay 100000
     it "should throw exception when the server closed unexpectedly" $ \port -> do
       let server = wsServer port $ \wsconn -> do
             _ <- WS.receiveDataMessage wsconn
@@ -168,9 +171,22 @@ conn_bad_server_spec = do
           exp_ex :: WS.ConnectionException -> Bool
           exp_ex WS.ConnectionClosed = True
           exp_ex _ = False
-          waitForServer = threadDelay 100000
       withAsync server $ \_ -> do
         waitForServer
         forConn "localhost" port $ \conn -> do
           rh <- sendRequest conn $ opEval "100"
           (inspectException $ getResponse rh) `shouldThrow` exp_ex
+    it "should throw exception when the server cleanly closed connection while there is a pending request" $ \port -> do
+      let server = wsServer port $ \wsconn -> do
+            _ <- WS.receiveDataMessage wsconn
+            WS.sendClose wsconn ("" :: Text)
+            (WS.ControlMessage (WS.Close status _)) <- WS.receive wsconn
+            when (status /= 1000) $ throwString ("Fatal: expects status 1000, but got " ++ show status)
+          exp_ex ServerClosed = True
+          exp_ex _ = False
+      withAsync server $ \_ -> do
+        waitForServer
+        forConn "localhost" port $ \conn -> do
+          rh <- sendRequest conn $ opEval "100"
+          (inspectException $ getResponse rh) `shouldThrow` exp_ex
+          
