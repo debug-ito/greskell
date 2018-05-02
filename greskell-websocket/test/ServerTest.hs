@@ -158,6 +158,12 @@ conn_basic_spec = do
                      [Right [4]],
                      [Right [5]]
                    ]
+  specify "requestId should be cleared from the request pool once completed" $ withConn $ \conn -> do
+    req <- makeRequestMessage $ opSleep 30
+    let evalReq = (fmap . map) responseValues $ slurpParseEval =<< sendRequest' conn req :: IO [Either String [Int]]
+    evalReq `shouldReturn` [Right [30]]
+    evalReq `shouldReturn` [Right [30]]
+          
 
 conn_error_spec :: SpecWith (Host, Port)
 conn_error_spec = do

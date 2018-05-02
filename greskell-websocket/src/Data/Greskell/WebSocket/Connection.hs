@@ -53,7 +53,7 @@ import Data.Greskell.WebSocket.Request
   )
 import Data.Greskell.WebSocket.Response
   ( ResponseMessage(ResponseMessage, requestId, status),
-    ResponseStatus(code),
+    ResponseStatus(ResponseStatus, code),
     isTerminating
   )
 
@@ -221,7 +221,10 @@ runMuxLoop wsconn req_pool codec qreq qres rx_thread = loop
       m_qout <- HT.lookup req_pool rid
       case m_qout of
        Nothing -> undefined -- TODO: handle unknown requestId case.
-       Just qout -> atomically $ writeTQueue qout $ Right res_msg
+       Just qout -> do
+         when (isTerminatingResponse res_msg) $ do
+           HT.delete req_pool rid
+         atomically $ writeTQueue qout $ Right res_msg
     handleRxFinish = do
       -- RxFinish is an error for pending requests. If there is no
       -- pending requests, it's totally normal.
@@ -316,9 +319,12 @@ getResponse rh = atomically $ do
          updateTermed res
          return $ Just res
     updateTermed res =
-      when (isTerminating $ code $ status res) $ do
+      when (isTerminatingResponse res) $ do
         writeTVar (rhTerminated rh) True
-        -- TODO: clean up the ReqPack and ReqPool.
+
+isTerminatingResponse :: ResponseMessage s -> Bool
+isTerminatingResponse (ResponseMessage { status = (ResponseStatus { code = c }) }) =
+  isTerminating c
 
 -- | Get all remaining 'ResponseMessage's from 'ResponseHandle'.
 slurpResponses :: ResponseHandle s -> IO [ResponseMessage s]
