@@ -23,7 +23,7 @@ module Data.Greskell.WebSocket.Connection
        ) where
 
 import Control.Applicative ((<$>), (<|>))
-import Control.Concurrent.Async (withAsync, Async, async)
+import Control.Concurrent.Async (withAsync, Async, async, waitCatchSTM)
 import qualified Control.Concurrent.Async as Async
 import Control.Monad (void, forM_)
 import Control.Concurrent.STM
@@ -134,8 +134,8 @@ runWSConn codec host port path req_pool qreq var_connect_result =
         else setupMux wsconn
     setupMux wsconn = do
       qres <- newTQueueIO
-      withAsync (runRxLoop wsconn qres) $ \_ -> 
-        runMuxLoop wsconn req_pool codec qreq qres 
+      withAsync (runRxLoop wsconn qres) $ \rx_thread -> 
+        runMuxLoop wsconn req_pool codec qreq qres rx_thread
     checkAndReportConnectSuccess = atomically $ do
       mret <- tryReadTMVar var_connect_result
       case mret of
@@ -177,8 +177,9 @@ data MuxEvent s = EvReq (ReqPack s)
                 | EvRxError SomeException
 
 -- | Multiplexer loop.
-runMuxLoop :: WS.Connection -> ReqPool s -> Codec s -> TBQueue (ReqPack s) -> TQueue RawRes -> IO ()
-runMuxLoop wsconn req_pool codec qreq qres = loop
+runMuxLoop :: WS.Connection -> ReqPool s -> Codec s
+           -> TBQueue (ReqPack s) -> TQueue RawRes -> Async () -> IO ()
+runMuxLoop wsconn req_pool codec qreq qres rx_thread = loop
   where
     loop = do
       event <- atomically getEventSTM
@@ -187,8 +188,12 @@ runMuxLoop wsconn req_pool codec qreq qres = loop
        EvRes res -> handleRes res >> loop
        EvRxFinish -> undefined -- TODO: what should we do?
        EvRxError _ -> undefined -- TODO: what should we do?
-    getEventSTM = (EvReq <$> readTBQueue qreq)
-                  <|> (EvRes <$> readTQueue qres)
+    getEventSTM = do
+      (rxResultToEvent <$> waitCatchSTM rx_thread)
+      <|> (EvReq <$> readTBQueue qreq) <|> (EvRes <$> readTQueue qres)
+        where
+          rxResultToEvent (Right ()) = EvRxFinish
+          rxResultToEvent (Left e) = EvRxError e
     handleReq req = do
       HT.insert req_pool (reqId req) (reqOutput req) -- TODO: if the reqId already exists, it's error.
       WS.sendBinaryData wsconn $ reqData req
