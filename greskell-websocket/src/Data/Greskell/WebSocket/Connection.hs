@@ -25,17 +25,16 @@ module Data.Greskell.WebSocket.Connection
 import Control.Applicative ((<$>), (<|>))
 import Control.Concurrent.Async (withAsync, Async, async)
 import qualified Control.Concurrent.Async as Async
-import Control.Monad (void)
+import Control.Monad (void, forM_)
 import Control.Concurrent.STM
-  ( TBQueue, readTBQueue, newTBQueueIO, writeTBQueue,
+  ( TBQueue, readTBQueue, newTBQueueIO, writeTBQueue, flushTBQueue,
     TQueue, writeTQueue, newTQueueIO, readTQueue,
     atomically, STM,
     TVar, newTVarIO, readTVar, writeTVar,
     TMVar, tryPutTMVar, tryReadTMVar, putTMVar, newEmptyTMVarIO, readTMVar
   )
 import Control.Exception.Safe
-  ( Exception, SomeException, withException, throw,
-    handleAny
+  ( Exception, SomeException, withException, throw
   )
 import Control.Monad (when)
 import Data.Aeson (Value)
@@ -100,7 +99,7 @@ type ReqID = UUID
 
 
 -- | Package of Response data and related stuff.
-type ResPack s = Either RequestException (ResponseMessage s)
+type ResPack s = Either SomeException (ResponseMessage s)
 
 -- | Package of request data and related stuff. It's passed from the
 -- caller thread into WS handling thread.
@@ -145,9 +144,20 @@ runWSConn codec host port path qreq var_connect_result = do
        Just (Right _) -> return True
        Just (Left _) -> return False
     reportFatalEx :: ReqPool s -> SomeException -> IO ()
-    reportFatalEx req_pool cause =
-      -- TODO: exception can be thrown while runMuxLoop runs.
-      void $ atomically $ tryPutTMVar var_connect_result $ Left cause
+    reportFatalEx req_pool cause = do
+      reportToConnectCaller cause
+      reportToQReq cause
+      reportToReqPool req_pool cause
+    reportToConnectCaller cause = void $ atomically $ tryPutTMVar var_connect_result $ Left cause
+    reportToQReq cause = atomically $ do
+      reqpacks <- flushTBQueue qreq
+      forM_ reqpacks $ \reqpack ->
+        writeTQueue (reqOutput reqpack) $ Left cause
+    reportToReqPool req_pool cause = HT.mapM_ forEntry req_pool
+      where
+        forEntry (_, qout) = atomically $ writeTQueue qout $ Left cause
+      
+      
 
 -- | An exception related to a specific request.
 data RequestException = SendException SomeException
@@ -170,7 +180,7 @@ runMuxLoop wsconn req_pool codec qreq qres = loop
       loop
     handleReq req = do
       HT.insert req_pool (reqId req) (reqOutput req) -- TODO: if the reqId already exists, it's error.
-      handleAny abortAllWith $ WS.sendBinaryData wsconn $ reqData req
+      WS.sendBinaryData wsconn $ reqData req
     handleRes res = case decodeWith codec res of
       Left err -> undefined -- TODO: handle parse error
       Right res_msg -> handleResMsg res_msg
@@ -186,9 +196,6 @@ runMuxLoop wsconn req_pool codec qreq qres = loop
        Just qout -> do
          HT.delete req_pool rid
          atomically $ writeTQueue qout $ Left ex
-    abortAllWith ex = undefined -- TODO: abort everything! close the Connection entirely. what should we do?
-       
-
 
 -- | Receiver thread.
 runRxLoop :: WS.Connection -> TQueue RawRes -> IO ()
