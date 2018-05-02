@@ -1,8 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Main (main,spec) where
 
-import Control.Exception.Safe (bracket, Exception, withException, SomeException)
-import Control.Concurrent.Async (mapConcurrently)
+import Control.Exception.Safe (bracket, Exception, withException, SomeException, throwString)
+import Control.Concurrent.Async (mapConcurrently, Async, withAsync)
 import Data.Aeson (Value(Number), FromJSON(..), ToJSON(toJSON), Object)
 import qualified Data.Aeson as Aeson
 import qualified Data.Aeson.Types as Aeson (parseEither)
@@ -11,6 +11,7 @@ import qualified Data.HashMap.Strict as HM
 import Data.Greskell.GraphSON (GraphSON, gsonValue)
 import Data.Text (Text, pack)
 import Data.UUID.V4 (nextRandom)
+import qualified Network.WebSockets as WS
 import System.Environment (lookupEnv)
 import System.IO (stderr, hPutStrLn)
 import Test.Hspec
@@ -19,7 +20,8 @@ import Data.Greskell.WebSocket.Codec.JSON (jsonCodec)
 import Data.Greskell.WebSocket.Codec (Codec)
 import Data.Greskell.WebSocket.Connection
   ( Host, Port, Connection, ResponseHandle,
-    close, connect, sendRequest', sendRequest, slurpResponses
+    close, connect, sendRequest', sendRequest, slurpResponses,
+    getResponse
   )
 import Data.Greskell.WebSocket.Request (toRequestMessage)
 import Data.Greskell.WebSocket.Request.Standard (OpEval(..))
@@ -34,9 +36,11 @@ main = hspec spec
 spec :: Spec
 spec = do
   no_external_server_spec
-  withEnv $ do
+  withEnvForExtServer $ do
     describe "Connection" $ do
       conn_basic_spec
+  withEnvForIntServer $ do
+    conn_bad_server_spec
 
 requireEnv :: String -> IO String
 requireEnv env_key = maybe bail return =<< lookupEnv env_key
@@ -45,16 +49,22 @@ requireEnv env_key = maybe bail return =<< lookupEnv env_key
       where
         msg = "Set environment variable "++ env_key ++ " for Server test. "
 
-withEnv :: SpecWith (Host, Port) -> Spec
-withEnv = before $ do
+withEnvForExtServer :: SpecWith (Host, Port) -> Spec
+withEnvForExtServer = before $ do
   hostname <- requireEnv "GRESKELL_TEST_HOST"
   port <- fmap read $ requireEnv "GRESKELL_TEST_PORT"
   return (hostname, port)
+
+withEnvForIntServer :: SpecWith Port -> Spec
+withEnvForIntServer = before $ fmap read $ requireEnv "GRESKELL_TEST_INTERNAL_PORT"
 
 withConn :: (Connection Value -> IO a) -> (Host, Port) -> IO a
 withConn act (host, port) = bracket makeConn close act
   where
     makeConn = connect jsonCodec host port
+
+forConn :: Host -> Port -> (Connection Value -> IO a) -> IO a
+forConn host port act = withConn act (host, port)
 
 parseValue :: FromJSON a => Value -> Either String a
 parseValue v = Aeson.parseEither parseJSON v
@@ -138,3 +148,24 @@ conn_basic_spec = do
                      [Right [200]],
                      [Right [200]]
                    ]
+
+wsServer :: Int -- ^ port number
+         -> (WS.Connection -> IO ())
+         -> IO ()
+wsServer p act = WS.runServer "localhost" p $ \pending_conn ->
+  act =<< WS.acceptRequest pending_conn
+
+conn_bad_server_spec :: SpecWith Port
+conn_bad_server_spec = do
+  describe "ResponseHandle" $ describe "getResponse" $ do
+    it "should throw exception when the server closed unexpectedly" $ \port -> do
+      let server = wsServer port $ \wsconn -> do
+            _ <- WS.receiveDataMessage wsconn
+            throwString "server abort."
+          exp_ex :: WS.ConnectionException -> Bool
+          exp_ex WS.ConnectionClosed = True
+          exp_ex _ = False
+      withAsync server $ \_ -> do
+        forConn "localhost" port $ \conn -> do
+          rh <- sendRequest conn $ opEval "100"
+          (inspectException $ getResponse rh) `shouldThrow` exp_ex
