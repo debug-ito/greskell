@@ -101,6 +101,10 @@ slurpParseEval rh = (fmap . fmap . fmap) parseValue $ slurpResponses rh
 responseValues :: ResponseMessage (Either String (GraphSON [GraphSON a])) -> Either String [a]
 responseValues = fmap (map gsonValue . gsonValue) . resultData . result
 
+slurpEvalValues :: FromJSON a => ResponseHandle Value -> IO [Either String [a]]
+slurpEvalValues rh = (fmap . map) responseValues $ slurpParseEval rh
+
+
 opSleep :: Int -> OpEval
 opSleep time_ms = opSleep' time_ms time_ms
 
@@ -150,7 +154,7 @@ conn_basic_spec = do
     map responseValues got `shouldBe` exp_vals
   specify "concurrent requests" $ withConn $ \conn -> do
     handles <- mapM (sendRequest conn) $ map opSleep $ map (* 100) $ reverse [1..5]
-    got <- (fmap . map . map) responseValues $ mapM slurpParseEval handles :: IO [[Either String [Int]]]
+    got <- mapM slurpEvalValues handles :: IO [[Either String [Int]]]
     got `shouldBe` [ [Right [500]],
                      [Right [400]],
                      [Right [300]],
@@ -158,7 +162,7 @@ conn_basic_spec = do
                      [Right [100]]
                    ]
   specify "make requests from multiple threads" $ withConn $ \conn -> do
-    let reqAndRes val = (fmap . map) responseValues $ slurpParseEval =<< (sendRequest conn $ opSleep' 200 val)
+    let reqAndRes val = slurpEvalValues =<< (sendRequest conn $ opSleep' 200 val)
     got <- mapConcurrently reqAndRes [1 .. 5]
            :: IO [[Either String [Int]]]
     got `shouldBe` [ [Right [1]],
@@ -169,7 +173,7 @@ conn_basic_spec = do
                    ]
   specify "requestId should be cleared from the request pool once completed" $ withConn $ \conn -> do
     req <- makeRequestMessage $ opSleep 30
-    let evalReq = (fmap . map) responseValues $ slurpParseEval =<< sendRequest' conn req :: IO [Either String [Int]]
+    let evalReq = slurpEvalValues =<< sendRequest' conn req :: IO [Either String [Int]]
     evalReq `shouldReturn` [Right [30]]
     evalReq `shouldReturn` [Right [30]]
           
@@ -182,7 +186,7 @@ conn_error_spec = do
         expEx _ = False
     ok_rh <- sendRequest' conn req
     ng_rh <- sendRequest' conn req
-    ok_res <- (fmap . map) responseValues $ slurpParseEval ok_rh :: IO [Either String [Int]]
+    ok_res <- slurpEvalValues ok_rh :: IO [Either String [Int]]
     ok_res `shouldBe` [Right [300]]
     getResponse ng_rh `shouldThrow` expEx
 
@@ -258,7 +262,7 @@ conn_bad_server_spec = do
         waitForServer
         forConn "localhost" port $ \conn -> do
           rh <- sendRequest conn $ opEval "99"
-          got <- (fmap . map) responseValues $ slurpParseEval rh :: IO [Either String [Int]]
+          got <- slurpEvalValues rh :: IO [Either String [Int]]
           got `shouldBe` [Right [99]]
   describe "Settings" $ describe "onGeneralException" $ do
     it "should be called on unexpected requestId" $ \port -> do
@@ -271,6 +275,6 @@ conn_bad_server_spec = do
         waitForServer
         forConn "localhost" port $ \conn -> do
           rh <- sendRequest conn $ opEval "333"
-          got <- (fmap . map) responseValues $ slurpParseEval rh :: IO [Either String [Int]]
+          got <- slurpEvalValues rh :: IO [Either String [Int]]
           got `shouldBe` [Right [333]]
           
