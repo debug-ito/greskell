@@ -9,6 +9,7 @@
 module Data.Greskell.WebSocket.Connection.Impl where
 
 import Control.Applicative ((<$>), (<|>))
+import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (withAsync, Async, async, waitCatchSTM)
 import qualified Control.Concurrent.Async as Async
 import Control.Monad (void, forM_)
@@ -119,7 +120,7 @@ runWSConn settings host port path req_pool qreq var_connect_result =
 reportToReqPool :: ReqPool s -> SomeException -> IO ()
 reportToReqPool req_pool cause = HT.mapM_ forEntry req_pool
   where
-    forEntry (_, qout) = atomically $ writeTQueue qout $ Left cause
+    forEntry (_, entry) = atomically $ writeTQueue (rpeOutput entry) $ Left cause
 
 reportToQReq :: TBQueue (ReqPack s) -> SomeException -> IO ()
 reportToQReq qreq cause = atomically $ do
@@ -142,8 +143,14 @@ data RequestException =
 
 instance Exception RequestException
 
--- | (requestId of pending request) --> (output channel of the corresponding responses)
-type ReqPool s = HT.BasicHashTable ReqID (TQueue (ResPack s))
+data ReqPoolEntry s =
+  ReqPoolEntry
+  { rpeOutput :: TQueue (ResPack s),
+    rpeTimer :: Async ReqID
+  }
+
+-- | (requestId of pending request) --> (objects related to that pending request)
+type ReqPool s = HT.BasicHashTable ReqID (ReqPoolEntry s)
 
 -- | Multiplexed event object
 data MuxEvent s = EvReq (ReqPack s)
@@ -151,6 +158,20 @@ data MuxEvent s = EvReq (ReqPack s)
                 | EvRxFinish
                 | EvRxError SomeException
 
+-- | HashTable's mutateIO is available since 1.2.3.0
+tryInsertToReqPool :: ReqPool s
+                   -> ReqID
+                   -> IO (ReqPoolEntry s) -- ^ action to create the new entry.
+                   -> IO Bool -- ^ 'True' if insertion is successful.
+tryInsertToReqPool req_pool rid makeEntry = do
+  mexist_entry <- HT.lookup req_pool rid
+  case mexist_entry of
+   Just _ -> return False
+   Nothing -> do
+     new_entry <- makeEntry
+     HT.insert req_pool rid new_entry
+     return True
+   
 -- | Multiplexer loop.
 runMuxLoop :: WS.Connection -> ReqPool s -> Settings s
            -> TBQueue (ReqPack s) -> TQueue RawRes -> Async () -> IO ()
@@ -171,28 +192,31 @@ runMuxLoop wsconn req_pool settings qreq qres rx_thread = loop
           rxResultToEvent (Right ()) = EvRxFinish
           rxResultToEvent (Left e) = EvRxError e
     handleReq req = do
-      insert_ok <- HT.mutate req_pool rid insertNew
+      insert_ok <- tryInsertToReqPool req_pool rid makeNewEntry
       if insert_ok
         then WS.sendBinaryData wsconn $ reqData req
         else reportError
         where
           rid = reqId req
           qout = reqOutput req
-          insertNew Nothing = (Just qout, True)
-          insertNew existing_entry = (existing_entry, False)
+          makeNewEntry = do
+            timer_thread <- runTimer (Settings.responseTimeout settings) rid
+            return $ ReqPoolEntry { rpeOutput = qout,
+                                    rpeTimer = timer_thread
+                                  }
           reportError =
             atomically $ writeTQueue qout $ Left $ toException $ DuplicateRequestId rid
     handleRes res = case decodeWith codec res of
       Left err -> Settings.onGeneralException settings $ ResponseParseFailure err
       Right res_msg -> handleResMsg res_msg
     handleResMsg res_msg@(ResponseMessage { requestId = rid }) = do
-      m_qout <- HT.lookup req_pool rid
-      case m_qout of
+      m_entry <- HT.lookup req_pool rid
+      case m_entry of
        Nothing -> Settings.onGeneralException settings $ UnexpectedRequestId rid
-       Just qout -> do
+       Just entry -> do
          when (isTerminatingResponse res_msg) $ do
-           HT.delete req_pool rid
-         atomically $ writeTQueue qout $ Right res_msg
+           HT.delete req_pool rid -- TODO: we have to terminate the timer.
+         atomically $ writeTQueue (rpeOutput entry) $ Right res_msg
     handleRxFinish = do
       -- RxFinish is an error for pending requests. If there is no
       -- pending requests, it's totally normal.
@@ -232,6 +256,11 @@ runRxLoop wsconn qres = loop
         -- We allow the server to close the connection without sending Close request message.
         toMaybe (Left WS.ConnectionClosed) = return Nothing
         toMaybe (Left e) = throw e
+
+runTimer :: Int -> ReqID -> IO (Async ReqID)
+runTimer wait_sec rid = async $ do
+  threadDelay $ wait_sec * 1000000
+  return rid
   
 
 -- | A handle associated in a 'Connection' for a pair of request and
