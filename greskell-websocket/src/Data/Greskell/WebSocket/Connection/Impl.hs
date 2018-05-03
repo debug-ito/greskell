@@ -10,7 +10,7 @@ module Data.Greskell.WebSocket.Connection.Impl where
 
 import Control.Applicative ((<$>), (<|>))
 import Control.Concurrent (threadDelay)
-import Control.Concurrent.Async (withAsync, Async, async, waitCatchSTM)
+import Control.Concurrent.Async (withAsync, Async, async, waitCatchSTM, waitAnySTM)
 import qualified Control.Concurrent.Async as Async
 import Control.Concurrent.STM
   ( TBQueue, readTBQueue, newTBQueueIO, writeTBQueue, flushTBQueue,
@@ -186,6 +186,11 @@ cleanupReqPool req_pool = HT.mapM_ forEntry req_pool
   where
     forEntry (_, entry) = cleanupReqPoolEntry entry
 
+getAllResponseTimers :: ReqPool s -> IO [Async ReqID]
+getAllResponseTimers req_pool = (fmap . fmap) toTimer $ HT.toList req_pool
+  where
+    toTimer (_, entry) = rpeTimer entry
+
 -- | Multiplexer loop.
 runMuxLoop :: WS.Connection -> ReqPool s -> Settings s
            -> TBQueue (ReqPack s) -> TQueue RawRes -> Async () -> IO ()
@@ -193,19 +198,22 @@ runMuxLoop wsconn req_pool settings qreq qres rx_thread = loop
   where
     codec = Settings.codec settings
     loop = do
-      event <- atomically getEventSTM
+      res_timers <- getAllResponseTimers req_pool
+      event <- atomically $ getEventSTM res_timers
       case event of
        EvReq req -> handleReq req >> loop
        EvRes res -> handleRes res >> loop
        EvRxFinish -> handleRxFinish
        EvRxError e -> throw e
        EvResponseTimeout rid -> handleResponseTimeout rid >> loop
-    getEventSTM = do
+    getEventSTM res_timers = do
       (EvReq <$> readTBQueue qreq) <|> (EvRes <$> readTQueue qres)
       <|> (rxResultToEvent <$> waitCatchSTM rx_thread)
+      <|> (timeoutToEvent <$> waitAnySTM res_timers)
         where
           rxResultToEvent (Right ()) = EvRxFinish
           rxResultToEvent (Left e) = EvRxError e
+          timeoutToEvent (_, rid) = EvResponseTimeout rid
     handleReq req = do
       insert_ok <- tryInsertToReqPool req_pool rid makeNewEntry
       if insert_ok
