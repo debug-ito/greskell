@@ -180,7 +180,7 @@ runMuxLoop wsconn req_pool settings qreq qres rx_thread = loop
           reportError =
             atomically $ writeTQueue qout $ Left $ toException $ DuplicateRequestId rid
     handleRes res = case decodeWith codec res of
-      Left err -> undefined -- TODO: handle parse error
+      Left err -> Settings.onGeneralException settings $ ResponseParseFailure err
       Right res_msg -> handleResMsg res_msg
     handleResMsg res_msg@(ResponseMessage { requestId = rid }) = do
       m_qout <- HT.lookup req_pool rid
