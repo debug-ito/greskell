@@ -129,12 +129,15 @@ reportToQReq qreq cause = atomically $ do
 
 -- | An exception related to a specific request.
 data RequestException =
-  ServerClosed
-  -- ^ the server closed the connection cleanly before sending
-  -- response for this request
+    ServerClosed
+    -- ^ the server closed the connection before sending response for
+    -- this request
   | DuplicateRequestId UUID
-  -- ^ The requestId (kept in this object) is already pending in the
-  -- connection.
+    -- ^ The requestId (kept in this object) is already pending in the
+    -- connection.
+  | ResponseTimeout
+    -- ^ The server fails to send ResponseMessages within
+    -- 'Settings.responseTimeout'.
   deriving (Show,Eq,Typeable)
 
 instance Exception RequestException

@@ -5,7 +5,7 @@ import Control.Exception.Safe (bracket, Exception, withException, SomeException,
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (mapConcurrently, Async, withAsync)
 import Control.Concurrent.STM (newEmptyTMVarIO, putTMVar, takeTMVar, atomically)
-import Control.Monad (when)
+import Control.Monad (when, forever, forM_)
 import Data.Aeson (Value(Number), FromJSON(..), ToJSON(toJSON), Object)
 import qualified Data.Aeson as Aeson
 import qualified Data.Aeson.Types as Aeson (parseEither)
@@ -28,7 +28,7 @@ import Data.Greskell.WebSocket.Connection
     close, connect, sendRequest', sendRequest, slurpResponses,
     getResponse,
     RequestException(..), GeneralException(..),
-    Settings(onGeneralException), defJSONSettings
+    Settings(onGeneralException, responseTimeout), defJSONSettings
   )
 import Data.Greskell.WebSocket.Request
   ( RequestMessage(requestId), toRequestMessage, makeRequestMessage
@@ -193,6 +193,13 @@ conn_error_spec = do
     ok_res <- slurpEvalValues ok_rh :: IO [Either String [Int]]
     ok_res `shouldBe` [Right [300]]
     getResponse ng_rh `shouldThrow` expEx
+  specify "request timeout" $ \(host, port) -> do
+    let settings = ourSettings { responseTimeout = 1 }
+        expEx ResponseTimeout = True
+        expEx _ = False
+    forConn' settings host port $ \conn -> do
+      rh <- sendRequest conn $ opSleep 2000
+      (getResponse rh) `shouldThrow` expEx
 
 wsServer :: Int -- ^ port number
          -> (WS.Connection -> IO ())
@@ -299,4 +306,22 @@ conn_bad_server_spec = do
           _ <- sendRequest conn $ opEval "100"
           got <- atomically $ takeTMVar report_gex
           got `shouldSatisfy` expEx
+    it "should throw ResponseTimeout exception when the server endlessly sends responses" $ \port -> do
+      let server = wsServer port $ \wsconn -> do
+            req <- receiveRequest wsconn
+            let res_id = requestId (req :: RequestMessage)
+            forever $ do
+              threadDelay 200000
+              WS.sendBinaryData wsconn $ simpleRawResponse res_id 206 "[1]"
+          settings = ourSettings { responseTimeout = 1 }
+          expEx ResponseTimeout = True
+          expEx _ = False
+      withAsync server $ \_ -> do
+        waitForServer
+        forConn' settings "localhost" port $ \conn -> do
+          rh <- sendRequest conn $ opEval "99"
+          forM_ ([1..3] :: [Int]) $ \_ -> do
+            mgot <- (fmap . fmap) (responseValues . fmap parseValue) $ getResponse rh :: IO (Maybe (Either String [Int]))
+            mgot `shouldBe` (Just $ Right [1])
+          slurpResponses rh `shouldThrow` expEx
           
