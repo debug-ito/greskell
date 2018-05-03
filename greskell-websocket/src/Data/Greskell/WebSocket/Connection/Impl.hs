@@ -157,6 +157,7 @@ data MuxEvent s = EvReq (ReqPack s)
                 | EvRes RawRes
                 | EvRxFinish
                 | EvRxError SomeException
+                | EvResponseTimeout ReqID
 
 -- | HashTable's mutateIO is available since 1.2.3.0
 tryInsertToReqPool :: ReqPool s
@@ -184,7 +185,7 @@ cleanupReqPool :: ReqPool s -> IO ()
 cleanupReqPool req_pool = HT.mapM_ forEntry req_pool
   where
     forEntry (_, entry) = cleanupReqPoolEntry entry
-   
+
 -- | Multiplexer loop.
 runMuxLoop :: WS.Connection -> ReqPool s -> Settings s
            -> TBQueue (ReqPack s) -> TQueue RawRes -> Async () -> IO ()
@@ -198,6 +199,7 @@ runMuxLoop wsconn req_pool settings qreq qres rx_thread = loop
        EvRes res -> handleRes res >> loop
        EvRxFinish -> handleRxFinish
        EvRxError e -> throw e
+       EvResponseTimeout rid -> handleResponseTimeout rid >> loop
     getEventSTM = do
       (EvReq <$> readTBQueue qreq) <|> (EvRes <$> readTQueue qres)
       <|> (rxResultToEvent <$> waitCatchSTM rx_thread)
@@ -238,6 +240,13 @@ runMuxLoop wsconn req_pool settings qreq qres rx_thread = loop
       reportToReqPool req_pool ex
       reportToQReq qreq ex
       -- TODO: we will need to set some flag to indicate the connection is closed already.
+    handleResponseTimeout rid = do
+      mentry <- HT.lookup req_pool rid
+      case mentry of
+       Nothing -> return () -- this case may happen if the response came just before the time-out, I think.
+       Just entry -> do
+         atomically $ writeTQueue (rpeOutput entry) $ Left $ toException $ ResponseTimeout
+         removeReqPoolEntry req_pool entry
 
     -- abortPendingReq rid ex = do
     --   m_qout <- HT.lookup req_pool rid
