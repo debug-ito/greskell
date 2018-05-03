@@ -31,7 +31,7 @@ data Settings s =
     -- ^ codec for the connection
     endpointPath :: !String,
     -- ^ Path of the WebSocket endpoint. Default: \"/gremlin\"
-    onGeneralException :: !(Connection s -> GeneralException -> IO ()),
+    onGeneralException :: !(GeneralException -> IO ()),
     -- ^ An exception handler for 'GeneralException'. You don't have
     -- to re-throw the exception. Default: print the exception to
     -- stderr.
@@ -44,7 +44,7 @@ defSettings :: Codec s -> Settings s
 defSettings c = Settings
                 { codec = c,
                   endpointPath = "/gremlin",
-                  onGeneralException = \_ e -> hPutStrLn stderr $ show e,
+                  onGeneralException = \e -> hPutStrLn stderr $ show e,
                   requestQueueSize = 8
                 }
 

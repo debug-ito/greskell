@@ -71,7 +71,7 @@ withEnvForIntServer = before $ fmap read $ requireEnv "GRESKELL_TEST_INTERNAL_PO
 
 ourSettings :: Settings Value
 ourSettings = defJSONSettings
-              { onGeneralException = \_ e -> error (show e)
+              { onGeneralException = \e -> error (show e)
                 -- basically we don't expect any GeneralException.
               }
 
@@ -275,7 +275,7 @@ conn_bad_server_spec = do
             let res_id = succUUID $ requestId (req :: RequestMessage)  -- deliberately send wrong requestId.
                 res = simpleRawResponse res_id 200 "[333]"
             WS.sendBinaryData wsconn res
-          reportEx _ ex = atomically $ putTMVar report_gex ex
+          reportEx ex = atomically $ putTMVar report_gex ex
           settings = defJSONSettings { onGeneralException = reportEx }
       withAsync server $ \_ -> do
         waitForServer
