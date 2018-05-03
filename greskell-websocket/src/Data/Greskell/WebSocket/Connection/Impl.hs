@@ -36,7 +36,8 @@ import Data.Greskell.WebSocket.Codec (Codec(decodeWith, encodeWith), encodeBinar
 import Data.Greskell.WebSocket.Connection.Settings (Settings)
 import qualified Data.Greskell.WebSocket.Connection.Settings as Settings
 import Data.Greskell.WebSocket.Connection.Type
-  ( Connection(..), ResPack, ReqID, ReqPack(..), RawRes
+  ( Connection(..), ResPack, ReqID, ReqPack(..), RawRes,
+    GeneralException(..)
   )
 import Data.Greskell.WebSocket.Request
   ( RequestMessage(RequestMessage, requestId),
@@ -184,7 +185,7 @@ runMuxLoop wsconn req_pool settings qreq qres rx_thread = loop
     handleResMsg res_msg@(ResponseMessage { requestId = rid }) = do
       m_qout <- HT.lookup req_pool rid
       case m_qout of
-       Nothing -> undefined -- TODO: handle unknown requestId case.
+       Nothing -> Settings.onGeneralException settings $ UnexpectedRequestId rid
        Just qout -> do
          when (isTerminatingResponse res_msg) $ do
            HT.delete req_pool rid
