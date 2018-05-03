@@ -280,7 +280,9 @@ conn_bad_server_spec = do
       withAsync server $ \_ -> do
         waitForServer
         forConn' settings "localhost" port $ \conn -> do
-          _ <- sendRequest conn $ opEval "333"
+          req <- makeRequestMessage $ opEval "333"
+          let exp_res_id = succUUID $ requestId (req :: RequestMessage)
+          _ <- sendRequest' conn req
           got <- atomically $ takeTMVar report_gex
-          got `shouldBe` UnexpectedRequestId
+          got `shouldBe` UnexpectedRequestId exp_res_id
           
