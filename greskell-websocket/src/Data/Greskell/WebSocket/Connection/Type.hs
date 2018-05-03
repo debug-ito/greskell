@@ -53,6 +53,6 @@ data Connection s =
 data GeneralException =
   UnexpectedRequestId
   -- ^ Server sends a 'ResponseMessage' with unknown requestId.
-  deriving (Show,Typeable)
+  deriving (Show,Eq,Typeable)
 
 instance Exception GeneralException

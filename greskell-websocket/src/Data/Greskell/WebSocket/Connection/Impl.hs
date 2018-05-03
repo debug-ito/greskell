@@ -134,7 +134,7 @@ data RequestException =
   | DuplicateRequestId UUID
   -- ^ The requestId (kept in this object) is already pending in the
   -- connection.
-  deriving (Show,Typeable)
+  deriving (Show,Eq,Typeable)
 
 instance Exception RequestException
 
