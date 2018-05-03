@@ -4,6 +4,7 @@ module Main (main,spec) where
 import Control.Exception.Safe (bracket, Exception, withException, SomeException, throwString)
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (mapConcurrently, Async, withAsync)
+import Control.Concurrent.STM (newEmptyTMVarIO, putTMVar, takeTMVar, atomically)
 import Control.Monad (when)
 import Data.Aeson (Value(Number), FromJSON(..), ToJSON(toJSON), Object)
 import qualified Data.Aeson as Aeson
@@ -26,7 +27,7 @@ import Data.Greskell.WebSocket.Connection
   ( Host, Port, Connection, ResponseHandle,
     close, connect, sendRequest', sendRequest, slurpResponses,
     getResponse,
-    RequestException(..),
+    RequestException(..), GeneralException(..),
     Settings(onGeneralException), defJSONSettings
   )
 import Data.Greskell.WebSocket.Request
@@ -75,12 +76,15 @@ ourSettings = defJSONSettings
               }
 
 withConn :: (Connection Value -> IO a) -> (Host, Port) -> IO a
-withConn act (host, port) = bracket makeConn close act
-  where
-    makeConn = connect defJSONSettings host port
+withConn act (host, port) = forConn host port act
 
 forConn :: Host -> Port -> (Connection Value -> IO a) -> IO a
-forConn host port act = withConn act (host, port)
+forConn = forConn' defJSONSettings
+
+forConn' :: Settings Value -> Host -> Port -> (Connection Value -> IO a) -> IO a
+forConn' settings host port act = bracket makeConn close act
+  where
+    makeConn = connect settings host port
 
 parseValue :: FromJSON a => Value -> Either String a
 parseValue v = Aeson.parseEither parseJSON v
@@ -265,15 +269,18 @@ conn_bad_server_spec = do
           got `shouldBe` [Right [99]]
   describe "Settings" $ describe "onGeneralException" $ do
     it "should be called on unexpected requestId" $ \port -> do
+      report_gex <- newEmptyTMVarIO
       let server = wsServer port $ \wsconn -> do
             req <- receiveRequest wsconn
             let res_id = succUUID $ requestId (req :: RequestMessage)  -- deliberately send wrong requestId.
                 res = simpleRawResponse res_id 200 "[333]"
             WS.sendBinaryData wsconn res
+          reportEx _ ex = atomically $ putTMVar report_gex ex
+          settings = defJSONSettings { onGeneralException = reportEx }
       withAsync server $ \_ -> do
         waitForServer
-        forConn "localhost" port $ \conn -> do
-          rh <- sendRequest conn $ opEval "333"
-          got <- slurpEvalValues rh :: IO [Either String [Int]]
-          got `shouldBe` [Right [333]]
+        forConn' settings "localhost" port $ \conn -> do
+          _ <- sendRequest conn $ opEval "333"
+          got <- atomically $ takeTMVar report_gex
+          got `shouldBe` UnexpectedRequestId
           

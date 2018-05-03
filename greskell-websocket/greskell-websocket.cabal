@@ -91,7 +91,7 @@ test-suite server-test
   if flag(server-test)
     build-depends:        base, greskell-websocket, greskell-core,
                           aeson, uuid, unordered-containers, text, async, safe-exceptions,
-                          websockets, bytestring,
+                          websockets, bytestring, stm,
                           hspec
                           
   else
