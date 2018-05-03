@@ -63,7 +63,7 @@ connect settings host port = do
   req_pool <- HT.new  -- Do not manipulate req_pool in this thread. It belongs to runWSConn thread.
   qreq <- newTBQueueIO qreq_size
   var_connect_result <- newEmptyTMVarIO
-  ws_thread <- async $ runWSConn codec host port ws_path req_pool qreq var_connect_result
+  ws_thread <- async $ runWSConn settings host port ws_path req_pool qreq var_connect_result
   eret <- atomically $ readTMVar var_connect_result
   case eret of
    Left e -> throw e
@@ -85,9 +85,9 @@ close (Connection { connWSThread = ws_async }) = Async.cancel ws_async
 type Path = String
 
 -- | A thread taking care of a WS connection.
-runWSConn :: Codec s -> Host -> Port -> Path -> ReqPool s
+runWSConn :: Settings s -> Host -> Port -> Path -> ReqPool s
           -> TBQueue (ReqPack s) -> TMVar (Either SomeException ()) -> IO ()
-runWSConn codec host port path req_pool qreq var_connect_result =
+runWSConn settings host port path req_pool qreq var_connect_result =
   doConnect `withException` reportFatalEx
   where
     doConnect = WS.runClient host port path $ \wsconn -> do
@@ -98,7 +98,7 @@ runWSConn codec host port path req_pool qreq var_connect_result =
     setupMux wsconn = do
       qres <- newTQueueIO
       withAsync (runRxLoop wsconn qres) $ \rx_thread -> 
-        runMuxLoop wsconn req_pool codec qreq qres rx_thread
+        runMuxLoop wsconn req_pool settings qreq qres rx_thread
     checkAndReportConnectSuccess = atomically $ do
       mret <- tryReadTMVar var_connect_result
       case mret of
@@ -148,10 +148,11 @@ data MuxEvent s = EvReq (ReqPack s)
                 | EvRxError SomeException
 
 -- | Multiplexer loop.
-runMuxLoop :: WS.Connection -> ReqPool s -> Codec s
+runMuxLoop :: WS.Connection -> ReqPool s -> Settings s
            -> TBQueue (ReqPack s) -> TQueue RawRes -> Async () -> IO ()
-runMuxLoop wsconn req_pool codec qreq qres rx_thread = loop
+runMuxLoop wsconn req_pool settings qreq qres rx_thread = loop
   where
+    codec = Settings.codec settings
     loop = do
       event <- atomically getEventSTM
       case event of
