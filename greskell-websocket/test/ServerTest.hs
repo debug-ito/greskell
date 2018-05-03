@@ -310,9 +310,14 @@ conn_bad_server_spec = do
       let server = wsServer port $ \wsconn -> do
             req <- receiveRequest wsconn
             let res_id = requestId (req :: RequestMessage)
-            forever $ do
-              threadDelay 200000
-              WS.sendBinaryData wsconn $ simpleRawResponse res_id 206 "[1]"
+            sendContinuousRes wsconn res_id 20
+          sendContinuousRes wsconn res_id n = do
+            let finish = n == 0
+            threadDelay 200000
+            WS.sendBinaryData wsconn $ simpleRawResponse res_id (if finish then 200 else 206) "[1]"
+            if finish
+              then return ()
+              else sendContinuousRes wsconn res_id (n - 1)
           settings = ourSettings { responseTimeout = 1 }
           expEx ResponseTimeout = True
           expEx _ = False
