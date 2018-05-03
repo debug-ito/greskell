@@ -285,4 +285,18 @@ conn_bad_server_spec = do
           _ <- sendRequest' conn req
           got <- atomically $ takeTMVar report_gex
           got `shouldBe` UnexpectedRequestId exp_res_id
+    it "should be called on failure to parse response" $ \port -> do
+      report_gex <- newEmptyTMVarIO
+      let server = wsServer port $ \wsconn -> do
+            _ <- receiveRequest wsconn
+            WS.sendBinaryData wsconn ("hoge hoge hoge" :: Text)
+          settings = defJSONSettings { onGeneralException = \e -> atomically $ putTMVar report_gex e }
+      withAsync server $ \_ -> do
+        waitForServer
+        forConn' settings "localhost" port $ \conn -> do
+          let expEx (ResponseParseFailure _) = True
+              expEx _ = False
+          _ <- sendRequest conn $ opEval "100"
+          got <- atomically $ takeTMVar report_gex
+          got `shouldSatisfy` expEx
           

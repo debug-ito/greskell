@@ -51,9 +51,12 @@ data Connection s =
 -- | Exception general to a 'Connection'. It's not related to specific
 -- requests.
 data GeneralException =
-  UnexpectedRequestId UUID
-  -- ^ Server sends a 'ResponseMessage' with unknown requestId, which
-  -- is kept in this exception.
+    UnexpectedRequestId UUID
+    -- ^ Server sends a 'ResponseMessage' with unknown requestId, which
+    -- is kept in this exception.
+  | ResponseParseFailure String
+    -- ^ The 'Connection' fails to parse a data from the server. The
+    -- error message is kept in this exception.
   deriving (Show,Eq,Typeable)
 
 instance Exception GeneralException
