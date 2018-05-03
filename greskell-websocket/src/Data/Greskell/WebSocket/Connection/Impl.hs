@@ -12,7 +12,6 @@ import Control.Applicative ((<$>), (<|>))
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (withAsync, Async, async, waitCatchSTM)
 import qualified Control.Concurrent.Async as Async
-import Control.Monad (void, forM_)
 import Control.Concurrent.STM
   ( TBQueue, readTBQueue, newTBQueueIO, writeTBQueue, flushTBQueue,
     TQueue, writeTQueue, newTQueueIO, readTQueue,
@@ -21,9 +20,9 @@ import Control.Concurrent.STM
     TMVar, tryPutTMVar, tryReadTMVar, putTMVar, newEmptyTMVarIO, readTMVar
   )
 import Control.Exception.Safe
-  ( Exception(toException), SomeException, withException, throw, try
+  ( Exception(toException), SomeException, withException, throw, try, finally
   )
-import Control.Monad (when)
+import Control.Monad (when, void, forM_)
 import Data.Aeson (Value)
 import qualified Data.DList as DL
 import Data.Monoid (mempty, (<>))
@@ -90,7 +89,7 @@ type Path = String
 runWSConn :: Settings s -> Host -> Port -> Path -> ReqPool s
           -> TBQueue (ReqPack s) -> TMVar (Either SomeException ()) -> IO ()
 runWSConn settings host port path req_pool qreq var_connect_result =
-  doConnect `withException` reportFatalEx
+  (doConnect `withException` reportFatalEx) `finally` cleanupReqPool req_pool
   where
     doConnect = WS.runClient host port path $ \wsconn -> do
       is_success <- checkAndReportConnectSuccess
@@ -145,8 +144,9 @@ instance Exception RequestException
 
 data ReqPoolEntry s =
   ReqPoolEntry
-  { rpeOutput :: TQueue (ResPack s),
-    rpeTimer :: Async ReqID
+  { rpeReqId :: !ReqID,
+    rpeOutput :: !(TQueue (ResPack s)),
+    rpeTimer :: !(Async ReqID)
   }
 
 -- | (requestId of pending request) --> (objects related to that pending request)
@@ -171,6 +171,19 @@ tryInsertToReqPool req_pool rid makeEntry = do
      new_entry <- makeEntry
      HT.insert req_pool rid new_entry
      return True
+
+cleanupReqPoolEntry :: ReqPoolEntry s -> IO ()
+cleanupReqPoolEntry entry = Async.cancel $ rpeTimer entry
+
+removeReqPoolEntry :: ReqPool s -> ReqPoolEntry s -> IO ()
+removeReqPoolEntry req_pool entry = do
+  cleanupReqPoolEntry entry
+  HT.delete req_pool $ rpeReqId entry
+
+cleanupReqPool :: ReqPool s -> IO ()
+cleanupReqPool req_pool = HT.mapM_ forEntry req_pool
+  where
+    forEntry (_, entry) = cleanupReqPoolEntry entry
    
 -- | Multiplexer loop.
 runMuxLoop :: WS.Connection -> ReqPool s -> Settings s
@@ -201,7 +214,8 @@ runMuxLoop wsconn req_pool settings qreq qres rx_thread = loop
           qout = reqOutput req
           makeNewEntry = do
             timer_thread <- runTimer (Settings.responseTimeout settings) rid
-            return $ ReqPoolEntry { rpeOutput = qout,
+            return $ ReqPoolEntry { rpeReqId = rid,
+                                    rpeOutput = qout,
                                     rpeTimer = timer_thread
                                   }
           reportError =
@@ -215,7 +229,7 @@ runMuxLoop wsconn req_pool settings qreq qres rx_thread = loop
        Nothing -> Settings.onGeneralException settings $ UnexpectedRequestId rid
        Just entry -> do
          when (isTerminatingResponse res_msg) $ do
-           HT.delete req_pool rid -- TODO: we have to terminate the timer.
+           removeReqPoolEntry req_pool entry
          atomically $ writeTQueue (rpeOutput entry) $ Right res_msg
     handleRxFinish = do
       -- RxFinish is an error for pending requests. If there is no
