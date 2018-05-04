@@ -8,7 +8,7 @@
 -- upper module is responsible to make a proper export list.
 module Data.Greskell.WebSocket.Connection.Impl where
 
-import Control.Applicative ((<$>), (<|>))
+import Control.Applicative ((<$>), (<|>), empty)
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (withAsync, Async, async, waitCatchSTM, waitAnySTM)
 import qualified Control.Concurrent.Async as Async
@@ -206,11 +206,16 @@ runMuxLoop wsconn req_pool settings qreq qres rx_thread = loop
        EvRxFinish -> handleRxFinish
        EvRxError e -> throw e
        EvResponseTimeout rid -> handleResponseTimeout rid >> loop
-    getEventSTM res_timers = do
-      (EvReq <$> readTBQueue qreq) <|> (EvRes <$> readTQueue qres)
-      <|> (rxResultToEvent <$> waitCatchSTM rx_thread)
-      <|> (timeoutToEvent <$> waitAnySTM res_timers)
+    getEventSTM res_timers = getRequest
+                             <|> (EvRes <$> readTQueue qres)
+                             <|> (rxResultToEvent <$> waitCatchSTM rx_thread)
+                             <|> (timeoutToEvent <$> waitAnySTM res_timers)
         where
+          max_concurrency = Settings.concurrency settings
+          cur_concurrency = length res_timers
+          getRequest = if cur_concurrency < max_concurrency
+                       then EvReq <$> readTBQueue qreq
+                       else empty
           rxResultToEvent (Right ()) = EvRxFinish
           rxResultToEvent (Left e) = EvRxError e
           timeoutToEvent (_, rid) = EvResponseTimeout rid
