@@ -9,6 +9,7 @@ module TestUtil.TCounter
          new,
          modify,
          now,
+         waitFor,
          history,
          count
        ) where
@@ -16,7 +17,7 @@ module TestUtil.TCounter
 import Control.Applicative ((<$>), (<*>))
 import Control.Concurrent.STM
   ( TVar, newTVarIO, modifyTVar, readTVar,
-    atomically
+    STM, atomically, retry
   )
 
 -- | Transaction counter.
@@ -34,7 +35,17 @@ modify tc f = atomically $ do
   modifyTVar (tcHistory tc) (conc :)
 
 now :: TCounter -> IO Int
-now tc = atomically $ readTVar $ tcCurrent tc
+now tc = atomically $ nowSTM tc
+
+nowSTM :: TCounter -> STM Int
+nowSTM tc = readTVar $ tcCurrent tc
+
+waitFor :: TCounter -> (Int -> Bool) -> IO ()
+waitFor tc p = atomically $ do
+  cur <- nowSTM tc
+  if p cur
+    then return ()
+    else retry
 
 history :: TCounter -> IO [Int]
 history tc = reverse <$> (atomically $ readTVar $ tcHistory tc)

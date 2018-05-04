@@ -236,8 +236,7 @@ conn_close_spec = describe "close" $ do
           close conn
           return ret
     req_threads <- mapM (async . makeReq) [200, 400, 600]
-    count_running <- TCounter.now tc
-    count_running `shouldSatisfy` (> 0)
+    TCounter.waitFor tc (> 0)
     close conn
     TCounter.now tc `shouldReturn` 0
     got_hist <- TCounter.history tc
