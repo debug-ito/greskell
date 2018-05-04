@@ -78,6 +78,11 @@ connect settings host port = do
     ws_path = Settings.endpointPath settings
 
 -- | Close the 'Connection'.
+--
+-- If there are pending requests in the 'Connection', 'close' function
+-- blocks for them to complete or time out.
+-- 
+-- Calling 'close' on a 'Connection' already closed (or waiting to close) does nothing.
 close :: Connection s -> IO ()
 close (Connection { connWSThread = ws_async }) = Async.cancel ws_async
 -- TODO: maybe we need some more clean-up operations...

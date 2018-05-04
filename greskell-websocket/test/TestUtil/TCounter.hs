@@ -8,6 +8,7 @@ module TestUtil.TCounter
        ( TCounter,
          new,
          modify,
+         now,
          history,
          count
        ) where
@@ -18,7 +19,7 @@ import Control.Concurrent.STM
     atomically
   )
 
--- | Transactional counter
+-- | Transaction counter.
 data TCounter = TCounter { tcCurrent :: TVar Int,
                            tcHistory :: TVar [Int]
                          }
@@ -31,6 +32,9 @@ modify tc f = atomically $ do
   modifyTVar (tcCurrent tc) f
   conc <- readTVar (tcCurrent tc)
   modifyTVar (tcHistory tc) (conc :)
+
+now :: TCounter -> IO Int
+now tc = atomically $ readTVar $ tcCurrent tc
 
 history :: TCounter -> IO [Int]
 history tc = reverse <$> (atomically $ readTVar $ tcHistory tc)

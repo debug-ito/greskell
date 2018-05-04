@@ -3,13 +3,13 @@ module Main (main,spec) where
 
 import Control.Exception.Safe (bracket, Exception, withException, SomeException, throwString)
 import Control.Concurrent (threadDelay)
-import Control.Concurrent.Async (mapConcurrently, Async, withAsync)
+import Control.Concurrent.Async (mapConcurrently, Async, withAsync, async, wait)
 import Control.Concurrent.STM
   ( newEmptyTMVarIO, putTMVar, takeTMVar, atomically,
     TVar, newTVarIO, modifyTVar, readTVar,
     TQueue, newTQueueIO, writeTQueue, flushTQueue
   )
-import Control.Monad (when, forever, forM_)
+import Control.Monad (when, forever, forM_, mapM)
 import Data.Aeson (Value(Number), FromJSON(..), ToJSON(toJSON), Object)
 import qualified Data.Aeson as Aeson
 import qualified Data.Aeson.Types as Aeson (parseEither)
@@ -58,6 +58,7 @@ spec = do
     describe "Connection" $ do
       conn_basic_spec
       conn_error_spec
+      conn_close_spec
   withEnvForIntServer $ do
     conn_bad_server_spec
 
@@ -224,6 +225,26 @@ conn_error_spec = do
     forConn' settings host port $ \conn -> do
       rh <- sendRequest conn $ opSleep 2000
       (getResponse rh) `shouldThrow` expEx
+
+conn_close_spec :: SpecWith (Host, Port)
+conn_close_spec = describe "close" $ do
+  it "should block for all pending requests" $ withConn $ \conn -> do
+    tc <- TCounter.new
+    let makeReq :: Int -> IO [Either String [Int]]
+        makeReq t = do
+          ret <- TCounter.count tc (sendRequest conn $ opSleep t) slurpEvalValues
+          close conn
+          return ret
+    req_threads <- mapM (async . makeReq) [200, 400, 600]
+    count_running <- TCounter.now tc
+    count_running `shouldSatisfy` (> 0)
+    close conn
+    TCounter.now tc `shouldReturn` 0
+    got_hist <- TCounter.history tc
+    length got_hist `shouldBe` 6
+    got <- mapM wait req_threads
+    got `shouldBe` map (\v -> [Right [v]]) [200, 400, 600]
+  
 
 wsServer :: Int -- ^ port number
          -> (WS.Connection -> IO ())
