@@ -66,8 +66,7 @@ connect settings host port = do
   qreq <- newTBQueueIO qreq_size
   var_connect_result <- newEmptyTMVarIO
   var_conn_state <- newTVarIO ConnOpen
-  let set_close = atomically $ writeTVar var_conn_state ConnClosed
-  ws_thread <- async $ runWSConn settings host port ws_path req_pool qreq var_connect_result set_close
+  ws_thread <- async $ runWSConn settings host port ws_path req_pool qreq var_connect_result var_conn_state
   eret <- atomically $ readTMVar var_connect_result
   case eret of
    Left e -> throw e
@@ -95,7 +94,7 @@ close conn = do
      ConnClosed -> return False
      ConnClosing -> return True
      ConnOpen -> do
-       writeTBQueue (connQReq conn) $ ReqPackClose
+       -- writeTBQueue (connQReq conn) $ ReqPackClose ---- close requestを飛ばさない方法をトライ
        writeTVar (connState conn) ConnClosing
        return True
   if need_wait then waitForClose else return ()
@@ -115,9 +114,9 @@ type Path = String
 runWSConn :: Settings s
           -> Host -> Port -> Path
           -> ReqPool s -> TBQueue (ReqPack s)
-          -> TMVar (Either SomeException ()) -> IO ()
+          -> TMVar (Either SomeException ()) -> TVar ConnectionState
           -> IO ()
-runWSConn settings host port path req_pool qreq var_connect_result set_close =
+runWSConn settings host port path req_pool qreq var_connect_result var_conn_state =
   (doConnect `withException` reportFatalEx) `finally` finalize
   where
     doConnect = WS.runClient host port path $ \wsconn -> do
@@ -128,7 +127,7 @@ runWSConn settings host port path req_pool qreq var_connect_result set_close =
     setupMux wsconn = do
       qres <- newTQueueIO
       withAsync (runRxLoop wsconn qres) $ \rx_thread -> 
-        runMuxLoop wsconn req_pool settings qreq qres rx_thread
+        runMuxLoop wsconn req_pool settings qreq qres var_conn_state rx_thread
     checkAndReportConnectSuccess = atomically $ do
       mret <- tryReadTMVar var_connect_result
       case mret of
@@ -146,7 +145,7 @@ runWSConn settings host port path req_pool qreq var_connect_result set_close =
     reportToConnectCaller cause = void $ atomically $ tryPutTMVar var_connect_result $ Left cause
     finalize = do
       cleanupReqPool req_pool
-      set_close
+      atomically $ writeTVar var_conn_state ConnClosed
 
 reportToReqPool :: ReqPool s -> SomeException -> IO ()
 reportToReqPool req_pool cause = HT.mapM_ forEntry req_pool
@@ -189,6 +188,7 @@ type ReqPool s = HT.BasicHashTable ReqID (ReqPoolEntry s)
 -- | Multiplexed event object
 data MuxEvent s = EvReq (ReqPack s)
                 | EvRes RawRes
+                | EvActiveClose
                 | EvRxFinish
                 | EvRxError SomeException
                 | EvResponseTimeout ReqID
@@ -225,10 +225,18 @@ getAllResponseTimers req_pool = (fmap . fmap) toTimer $ HT.toList req_pool
   where
     toTimer (_, entry) = rpeTimer entry
 
+getPendingNum :: ReqPool s -> IO Int
+getPendingNum req_pool = fmap length $ HT.toList req_pool
+
+pendingExists :: ReqPool s -> IO Bool
+pendingExists req_pool = fmap (> 0) $ getPendingNum req_pool
+
 -- | Multiplexer loop.
 runMuxLoop :: WS.Connection -> ReqPool s -> Settings s
-           -> TBQueue (ReqPack s) -> TQueue RawRes -> Async () -> IO ()
-runMuxLoop wsconn req_pool settings qreq qres rx_thread = loop
+           -> TBQueue (ReqPack s) -> TQueue RawRes -> TVar ConnectionState
+           -> Async ()
+           -> IO ()
+runMuxLoop wsconn req_pool settings qreq qres var_conn_state rx_thread = loop
   where
     codec = Settings.codec settings
     loop = do
@@ -236,15 +244,20 @@ runMuxLoop wsconn req_pool settings qreq qres rx_thread = loop
       event <- atomically $ getEventSTM res_timers
       case event of
        EvReq (ReqPackSend req) -> handleReqSend req >> loop
-       EvReq (ReqPackClose) -> do
-         should_finish <- handleClose
+       EvReq (ReqPackClose) -> undefined -- TODO: いらないと思う
+       --   do
+       --   should_finish <- handleClose
+       --   if should_finish then return () else loop
+       EvRes res -> do
+         should_finish <- handleRes res
          if should_finish then return () else loop
-       EvRes res -> handleRes res >> loop
+       EvActiveClose -> return ()
        EvRxFinish -> handleRxFinish
        EvRxError e -> throw e
        EvResponseTimeout rid -> handleResponseTimeout rid >> loop
     getEventSTM res_timers = getRequest
                              <|> (EvRes <$> readTQueue qres)
+                             <|> makeEvActiveClose
                              <|> (rxResultToEvent <$> waitCatchSTM rx_thread)
                              <|> (timeoutToEvent <$> waitAnySTM res_timers)
         where
@@ -256,10 +269,17 @@ runMuxLoop wsconn req_pool settings qreq qres rx_thread = loop
           rxResultToEvent (Right ()) = EvRxFinish
           rxResultToEvent (Left e) = EvRxError e
           timeoutToEvent (_, rid) = EvResponseTimeout rid
-    handleClose = do
-      should_finish <- fmap ((== 0) . length) $ HT.toList req_pool
-      -- TODO: maybe we should send WebSocket close request if should_finish == True
-      return should_finish
+          makeEvActiveClose = do
+            if cur_concurrency > 0
+              then empty
+              else do
+                conn_state <- readTVar var_conn_state
+                if conn_state == ConnOpen then empty else return EvActiveClose
+    -- handleClose = do
+    --   should_finish <- fmap ((== 0) . length) $ HT.toList req_pool
+    --   -- TODO: maybe we should send WebSocket close request if should_finish == True
+    --   -- つか、これReqPackCloseいらねーんじゃね？？？
+    --   return should_finish
     handleReqSend req = do
       insert_ok <- tryInsertToReqPool req_pool rid makeNewEntry
       if insert_ok
@@ -277,23 +297,32 @@ runMuxLoop wsconn req_pool settings qreq qres rx_thread = loop
           reportError =
             atomically $ writeTQueue qout $ Left $ toException $ DuplicateRequestId rid
     handleRes res = case decodeWith codec res of
-      Left err -> Settings.onGeneralException settings $ ResponseParseFailure err
+      Left err -> do
+        Settings.onGeneralException settings $ ResponseParseFailure err
+        return False
       Right res_msg -> handleResMsg res_msg
     handleResMsg res_msg@(ResponseMessage { requestId = rid }) = do
       m_entry <- HT.lookup req_pool rid
       case m_entry of
-       Nothing -> Settings.onGeneralException settings $ UnexpectedRequestId rid
+       Nothing -> do
+         Settings.onGeneralException settings $ UnexpectedRequestId rid
+         return False
        Just entry -> do
          when (isTerminatingResponse res_msg) $ do
            removeReqPoolEntry req_pool entry
          atomically $ writeTQueue (rpeOutput entry) $ Right res_msg
+         pending <- pendingExists req_pool
+         if pending
+           then return False
+           else do
+           conn_state <- atomically $ readTVar var_conn_state
+           return (conn_state /= ConnOpen)
     handleRxFinish = do
       -- RxFinish is an error for pending requests. If there is no
       -- pending requests, it's totally normal.
       let ex = toException ServerClosed
       reportToReqPool req_pool ex
       reportToQReq qreq ex
-      -- TODO: we will need to set some flag to indicate the connection is closed already.
     handleResponseTimeout rid = do
       mentry <- HT.lookup req_pool rid
       case mentry of
