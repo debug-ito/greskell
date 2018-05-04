@@ -86,8 +86,8 @@ test-suite server-test
                         -threaded
   main-is:              ServerTest.hs
   -- default-extensions:   
-  -- other-extensions:     
-  -- other-modules:        
+  --  other-extensions:     
+  other-modules:        TestUtil.TCounter
   if flag(server-test)
     build-depends:        base, greskell-websocket, greskell-core,
                           aeson, uuid, unordered-containers, text, async, safe-exceptions,

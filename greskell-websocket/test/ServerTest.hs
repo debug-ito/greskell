@@ -45,6 +45,9 @@ import Data.Greskell.WebSocket.Response
   )
 import qualified Data.Greskell.WebSocket.Response as Response
 
+import qualified TestUtil.TCounter as TCounter
+
+
 main :: IO ()
 main = hspec spec
 
@@ -193,24 +196,15 @@ conn_basic_spec = do
                                    }
         exp_concurrency_max = input_concurrency + input_qreq_size
     forConn' settings host port $ \conn -> do
-      var_cur_concurrency <- newTVarIO 0 :: IO (TVar Int)
-      concurrency_history <- newTQueueIO :: IO (TQueue Int)
-      let  updateConc f = do
-             modifyTVar var_cur_concurrency f
-             conc <- readTVar var_cur_concurrency
-             writeTQueue concurrency_history conc
-           makeReq v = do
-             rh <- sendRequest conn $ opSleep' 500 v
-             atomically $ updateConc (+ 1)
-             ret <- slurpEvalValues rh :: IO [Either String [Int]]
-             atomically $ updateConc (subtract 1)
-             return ret
+      tcounter <- TCounter.new
+      let makeReq v = TCounter.count tcounter
+                      (sendRequest conn $ opSleep' 500 v)
+                      (\rh -> slurpEvalValues rh :: IO [Either String [Int]])
       got <- mapConcurrently makeReq [1..10]
       got `shouldBe` map (\v -> [Right [v]]) [1..10]
-      got_hist <- atomically $ flushTQueue concurrency_history
+      got_hist <- TCounter.history tcounter
       length got_hist `shouldBe` (2 * 10)
       forM_ got_hist $ \conc -> conc `shouldSatisfy` (<= exp_concurrency_max)
-
 
 conn_error_spec :: SpecWith (Host, Port)
 conn_error_spec = do
