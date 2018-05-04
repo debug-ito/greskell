@@ -4,7 +4,11 @@ module Main (main,spec) where
 import Control.Exception.Safe (bracket, Exception, withException, SomeException, throwString)
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (mapConcurrently, Async, withAsync)
-import Control.Concurrent.STM (newEmptyTMVarIO, putTMVar, takeTMVar, atomically)
+import Control.Concurrent.STM
+  ( newEmptyTMVarIO, putTMVar, takeTMVar, atomically,
+    TVar, newTVarIO, modifyTVar, readTVar,
+    TQueue, newTQueueIO, writeTQueue, flushTQueue
+  )
 import Control.Monad (when, forever, forM_)
 import Data.Aeson (Value(Number), FromJSON(..), ToJSON(toJSON), Object)
 import qualified Data.Aeson as Aeson
@@ -28,7 +32,8 @@ import Data.Greskell.WebSocket.Connection
     close, connect, sendRequest', sendRequest, slurpResponses,
     getResponse,
     RequestException(..), GeneralException(..),
-    Settings(onGeneralException, responseTimeout), defJSONSettings
+    Settings(onGeneralException, responseTimeout, concurrency, requestQueueSize),
+    defJSONSettings
   )
 import Data.Greskell.WebSocket.Request
   ( RequestMessage(requestId), toRequestMessage, makeRequestMessage
@@ -180,7 +185,32 @@ conn_basic_spec = do
     let evalReq = slurpEvalValues =<< sendRequest' conn req :: IO [Either String [Int]]
     evalReq `shouldReturn` [Right [30]]
     evalReq `shouldReturn` [Right [30]]
-          
+  specify "client concurrency should be bounded by 'concurrency' + 'requestQueueSize'" $ \(host, port) -> do
+    let input_concurrency = 2
+        input_qreq_size = 1
+        settings = defJSONSettings { concurrency = input_concurrency,
+                                     requestQueueSize = input_qreq_size
+                                   }
+        exp_concurrency_max = input_concurrency + input_qreq_size
+    forConn' settings host port $ \conn -> do
+      var_cur_concurrency <- newTVarIO 0 :: IO (TVar Int)
+      concurrency_history <- newTQueueIO :: IO (TQueue Int)
+      let  updateConc f = do
+             modifyTVar var_cur_concurrency f
+             conc <- readTVar var_cur_concurrency
+             writeTQueue concurrency_history conc
+           makeReq v = do
+             rh <- sendRequest conn $ opSleep' 2000 v
+             atomically $ updateConc (+ 1)
+             ret <- slurpEvalValues rh :: IO [Either String [Int]]
+             atomically $ updateConc (subtract 1)
+             return ret
+      got <- mapConcurrently makeReq [1..10]
+      got `shouldBe` map (\v -> [Right [v]]) [1..10]
+      got_hist <- atomically $ flushTQueue concurrency_history
+      length got_hist `shouldBe` (2 * 10)
+      forM_ got_hist $ \conc -> conc `shouldSatisfy` (<= exp_concurrency_max)
+
 
 conn_error_spec :: SpecWith (Host, Port)
 conn_error_spec = do
@@ -311,6 +341,7 @@ conn_bad_server_spec = do
             req <- receiveRequest wsconn
             let res_id = requestId (req :: RequestMessage)
             sendContinuousRes wsconn res_id 20
+          sendContinuousRes :: WS.Connection -> UUID -> Int -> IO ()
           sendContinuousRes wsconn res_id n = do
             let finish = n == 0
             threadDelay 200000

@@ -10,7 +10,8 @@ module Data.Greskell.WebSocket.Connection.Settings
     defSettings,
     defJSONSettings,
     -- ** accessor functions
-    codec, endpointPath, onGeneralException, responseTimeout, requestQueueSize
+    codec, endpointPath, onGeneralException, responseTimeout,
+    concurrency, requestQueueSize
   ) where
 
 import Data.Aeson (FromJSON)
@@ -41,9 +42,15 @@ data Settings s =
     -- it sends a request. If the response consists of more than one
     -- ResponseMessages, the timeout applies to the last of the
     -- ResponseMessages. Default: 60
+    concurrency :: !Int,
+    -- ^ Maximum concurrent requests the connection can make to the
+    -- server. If the client tries to make more concurrent requests
+    -- than this value, later requests are queued in the connection or
+    -- the client may be blocked. Default: 4
     requestQueueSize :: !Int
     -- ^ Size of the internal queue of requests. Usually you don't
-    -- need to customize the field. Default: 8.
+    -- need to customize the field. See also 'concurrency'. Default:
+    -- 8.
   }
 
 defSettings :: Codec s -> Settings s
@@ -52,6 +59,7 @@ defSettings c = Settings
                   endpointPath = "/gremlin",
                   onGeneralException = \e -> hPutStrLn stderr $ show e,
                   responseTimeout = 60,
+                  concurrency = 4,
                   requestQueueSize = 8
                 }
 
