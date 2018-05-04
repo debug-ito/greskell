@@ -130,7 +130,7 @@ reportToQReq qreq cause = atomically $ do
 -- | An exception related to a specific request.
 data RequestException =
     ServerClosed
-    -- ^ the server closed the connection before sending response for
+    -- ^ The server closed the connection before sending response for
     -- this request
   | DuplicateRequestId UUID
     -- ^ The requestId (kept in this object) is already pending in the
@@ -261,13 +261,6 @@ runMuxLoop wsconn req_pool settings qreq qres rx_thread = loop
          atomically $ writeTQueue (rpeOutput entry) $ Left $ toException $ ResponseTimeout
          removeReqPoolEntry req_pool entry
 
-    -- abortPendingReq rid ex = do
-    --   m_qout <- HT.lookup req_pool rid
-    --   case m_qout of
-    --    Nothing -> return () -- TODO: we might as well emit warning here.
-    --    Just qout -> do
-    --      HT.delete req_pool rid
-    --      atomically $ writeTQueue qout $ Left ex
 
 -- | Receiver thread. It keeps receiving data from WS until the
 -- connection finishes cleanly. Basically every exception is raised to
@@ -336,9 +329,11 @@ sendRequest' (Connection { connCodec = codec, connQReq = qreq }) req_msg@(Reques
   return rhandle
 
 -- | Get a 'ResponseMessage' from 'ResponseHandle'. If you have
--- already got all responses, it returns 'Nothing'.
+-- already got all responses, it returns 'Nothing'. This function may
+-- block for a new 'ResponseMessage' to come.
 --
--- TODO: define exception spec.
+-- On error, it may throw all sorts of exceptions including
+-- 'RequestException'.
 getResponse :: ResponseHandle s -> IO (Maybe (ResponseMessage s))
 getResponse rh = atomically $ do
   termed <- readTVar $ rhTerminated rh

@@ -25,7 +25,7 @@ import System.IO (stderr, hPutStrLn)
 -- | 'Settings' for making connection to Gremlin Server.
 --
 -- You can get the default 'Settings' by 'defSettings' function, and
--- customize the fields by accessor functions.
+-- customize its fields by accessor functions.
 data Settings s =
   Settings
   { codec :: !(Codec s),
