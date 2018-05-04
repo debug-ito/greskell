@@ -200,7 +200,7 @@ conn_basic_spec = do
              conc <- readTVar var_cur_concurrency
              writeTQueue concurrency_history conc
            makeReq v = do
-             rh <- sendRequest conn $ opSleep' 2000 v
+             rh <- sendRequest conn $ opSleep' 500 v
              atomically $ updateConc (+ 1)
              ret <- slurpEvalValues rh :: IO [Either String [Int]]
              atomically $ updateConc (subtract 1)
