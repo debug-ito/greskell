@@ -15,9 +15,9 @@ import qualified Control.Concurrent.Async as Async
 import Control.Concurrent.STM
   ( TBQueue, readTBQueue, newTBQueueIO, writeTBQueue, flushTBQueue,
     TQueue, writeTQueue, newTQueueIO, readTQueue,
-    atomically, STM,
     TVar, newTVarIO, readTVar, writeTVar,
-    TMVar, tryPutTMVar, tryReadTMVar, putTMVar, newEmptyTMVarIO, readTMVar
+    TMVar, tryPutTMVar, tryReadTMVar, putTMVar, newEmptyTMVarIO, readTMVar,
+    STM, atomically, retry
   )
 import Control.Exception.Safe
   ( Exception(toException), SomeException, withException, throw, try, finally
@@ -36,7 +36,8 @@ import Data.Greskell.WebSocket.Codec (Codec(decodeWith, encodeWith), encodeBinar
 import Data.Greskell.WebSocket.Connection.Settings (Settings)
 import qualified Data.Greskell.WebSocket.Connection.Settings as Settings
 import Data.Greskell.WebSocket.Connection.Type
-  ( Connection(..), ResPack, ReqID, ReqPack(..), ReqSend(..), RawRes,
+  ( Connection(..), ConnectionState(..),
+    ResPack, ReqID, ReqPack(..), ReqSend(..), RawRes,
     GeneralException(..)
   )
 import Data.Greskell.WebSocket.Request
@@ -64,11 +65,14 @@ connect settings host port = do
   req_pool <- HT.new  -- Do not manipulate req_pool in this thread. It belongs to runWSConn thread.
   qreq <- newTBQueueIO qreq_size
   var_connect_result <- newEmptyTMVarIO
-  ws_thread <- async $ runWSConn settings host port ws_path req_pool qreq var_connect_result
+  var_conn_state <- newTVarIO ConnOpen
+  let set_close = atomically $ writeTVar var_conn_state ConnClosed
+  ws_thread <- async $ runWSConn settings host port ws_path req_pool qreq var_connect_result set_close
   eret <- atomically $ readTMVar var_connect_result
   case eret of
    Left e -> throw e
    Right () -> return $ Connection { connQReq = qreq,
+                                     connState = var_conn_state,
                                      connWSThread = ws_thread,
                                      connCodec = codec
                                    }
@@ -84,17 +88,37 @@ connect settings host port = do
 -- 
 -- Calling 'close' on a 'Connection' already closed (or waiting to close) does nothing.
 close :: Connection s -> IO ()
-close (Connection { connWSThread = ws_async }) = Async.cancel ws_async
+close conn = do
+  need_wait <- atomically $ do
+    cur_state <- readTVar $ connState conn
+    case cur_state of
+     ConnClosed -> return False
+     ConnClosing -> return True
+     ConnOpen -> do
+       writeTBQueue (connQReq conn) $ ReqPackClose
+       writeTVar (connState conn) ConnClosing
+       return True
+  if need_wait then waitForClose else return ()
+  where
+    waitForClose = atomically $ do
+      cur_state <- readTVar $ connState conn
+      if cur_state == ConnClosed
+        then return ()
+        else retry
+  
 -- TODO: maybe we need some more clean-up operations...
 -- TODO: specify and test close behavior.
 
 type Path = String
 
 -- | A thread taking care of a WS connection.
-runWSConn :: Settings s -> Host -> Port -> Path -> ReqPool s
-          -> TBQueue (ReqPack s) -> TMVar (Either SomeException ()) -> IO ()
-runWSConn settings host port path req_pool qreq var_connect_result =
-  (doConnect `withException` reportFatalEx) `finally` cleanupReqPool req_pool
+runWSConn :: Settings s
+          -> Host -> Port -> Path
+          -> ReqPool s -> TBQueue (ReqPack s)
+          -> TMVar (Either SomeException ()) -> IO ()
+          -> IO ()
+runWSConn settings host port path req_pool qreq var_connect_result set_close =
+  (doConnect `withException` reportFatalEx) `finally` finalize
   where
     doConnect = WS.runClient host port path $ \wsconn -> do
       is_success <- checkAndReportConnectSuccess
@@ -120,6 +144,9 @@ runWSConn settings host port path req_pool qreq var_connect_result =
       reportToReqPool req_pool cause
       reportToQReq qreq cause
     reportToConnectCaller cause = void $ atomically $ tryPutTMVar var_connect_result $ Left cause
+    finalize = do
+      cleanupReqPool req_pool
+      set_close
 
 reportToReqPool :: ReqPool s -> SomeException -> IO ()
 reportToReqPool req_pool cause = HT.mapM_ forEntry req_pool
@@ -208,7 +235,10 @@ runMuxLoop wsconn req_pool settings qreq qres rx_thread = loop
       res_timers <- getAllResponseTimers req_pool
       event <- atomically $ getEventSTM res_timers
       case event of
-       EvReq req -> handleReq req >> loop
+       EvReq (ReqPackSend req) -> handleReqSend req >> loop
+       EvReq (ReqPackClose) -> do
+         should_finish <- handleClose
+         if should_finish then return () else loop
        EvRes res -> handleRes res >> loop
        EvRxFinish -> handleRxFinish
        EvRxError e -> throw e
@@ -226,8 +256,10 @@ runMuxLoop wsconn req_pool settings qreq qres rx_thread = loop
           rxResultToEvent (Right ()) = EvRxFinish
           rxResultToEvent (Left e) = EvRxError e
           timeoutToEvent (_, rid) = EvResponseTimeout rid
-    handleReq (ReqPackSend req) = handleReqSend req
-    handleReq (ReqPackClose) = undefined -- TODO: handle close request.
+    handleClose = do
+      should_finish <- fmap ((== 0) . length) $ HT.toList req_pool
+      -- TODO: maybe we should send WebSocket close request if should_finish == True
+      return should_finish
     handleReqSend req = do
       insert_ok <- tryInsertToReqPool req_pool rid makeNewEntry
       if insert_ok

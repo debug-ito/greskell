@@ -13,13 +13,14 @@ module Data.Greskell.WebSocket.Connection.Type
     ResPack,
     ReqPack(..),
     ReqSend(..),
+    ConnectionState(..),
     Connection(..),
     GeneralException(..)
   ) where
 
 import Control.Concurrent.Async (Async)
 import Control.Exception.Safe (SomeException, Typeable, Exception)
-import Control.Concurrent.STM (TQueue, TBQueue)
+import Control.Concurrent.STM (TQueue, TBQueue, TVar)
 import qualified Data.ByteString.Lazy as BSL
 import Data.UUID (UUID)
 
@@ -48,11 +49,16 @@ data ReqSend s =
     reqOutput :: !(TQueue (ResPack s))
   }
 
+data ConnectionState = ConnOpen
+                     | ConnClosing
+                     | ConnClosed
+                     deriving (Show,Eq,Ord,Enum,Bounded)
 
 -- | A WebSocket connection to a Gremlin Server.
 data Connection s =
   Connection
   { connQReq :: !(TBQueue (ReqPack s)),
+    connState :: !(TVar ConnectionState),
     connWSThread :: !(Async ()),
     connCodec :: !(Codec s)
   }
