@@ -12,6 +12,7 @@ module Data.Greskell.WebSocket.Connection.Type
     ReqID,
     ResPack,
     ReqPack(..),
+    ReqSend(..),
     Connection(..),
     GeneralException(..)
   ) where
@@ -34,11 +35,19 @@ type ResPack s = Either SomeException (ResponseMessage s)
 
 -- | Package of request data and related stuff. It's passed from the
 -- caller thread into WS handling thread.
-data ReqPack s = ReqPack
-                 { reqData :: !RawReq,
-                   reqId :: !ReqID,
-                   reqOutput :: !(TQueue (ResPack s))
-                 }
+data ReqPack s = ReqPackSend !(ReqSend s)
+                 -- ^ Request to send RequestMessage to the server.
+               | ReqPackClose
+                 -- ^ Request to close the connection.
+
+-- | Request to send RequestMessage.
+data ReqSend s =
+  ReqSend
+  { reqData :: !RawReq,
+    reqId :: !ReqID,
+    reqOutput :: !(TQueue (ResPack s))
+  }
+
 
 -- | A WebSocket connection to a Gremlin Server.
 data Connection s =

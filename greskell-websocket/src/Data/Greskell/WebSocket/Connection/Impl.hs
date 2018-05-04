@@ -36,7 +36,7 @@ import Data.Greskell.WebSocket.Codec (Codec(decodeWith, encodeWith), encodeBinar
 import Data.Greskell.WebSocket.Connection.Settings (Settings)
 import qualified Data.Greskell.WebSocket.Connection.Settings as Settings
 import Data.Greskell.WebSocket.Connection.Type
-  ( Connection(..), ResPack, ReqID, ReqPack(..), RawRes,
+  ( Connection(..), ResPack, ReqID, ReqPack(..), ReqSend(..), RawRes,
     GeneralException(..)
   )
 import Data.Greskell.WebSocket.Request
@@ -129,8 +129,10 @@ reportToReqPool req_pool cause = HT.mapM_ forEntry req_pool
 reportToQReq :: TBQueue (ReqPack s) -> SomeException -> IO ()
 reportToQReq qreq cause = atomically $ do
   reqpacks <- flushTBQueue qreq
-  forM_ reqpacks $ \reqpack ->
-    writeTQueue (reqOutput reqpack) $ Left cause
+  forM_ reqpacks reportToReqPack
+  where
+    reportToReqPack (ReqPackSend reqsend) = writeTQueue (reqOutput reqsend) $ Left cause
+    reportToReqPack _ = return ()
 
 -- | An exception related to a specific request.
 data RequestException =
@@ -224,7 +226,9 @@ runMuxLoop wsconn req_pool settings qreq qres rx_thread = loop
           rxResultToEvent (Right ()) = EvRxFinish
           rxResultToEvent (Left e) = EvRxError e
           timeoutToEvent (_, rid) = EvResponseTimeout rid
-    handleReq req = do
+    handleReq (ReqPackSend req) = handleReqSend req
+    handleReq (ReqPackClose) = undefined -- TODO: handle close request.
+    handleReqSend req = do
       insert_ok <- tryInsertToReqPool req_pool rid makeNewEntry
       if insert_ok
         then WS.sendBinaryData wsconn $ reqData req
@@ -322,10 +326,12 @@ sendRequest conn o = sendRequest' conn =<< makeRequestMessage o
 sendRequest' :: Connection s -> RequestMessage -> IO (ResponseHandle s)
 sendRequest' (Connection { connCodec = codec, connQReq = qreq }) req_msg@(RequestMessage { requestId = rid }) = do
   qout <- newTQueueIO
-  atomically $ writeTBQueue qreq $ ReqPack { reqData = encodeBinaryWith codec req_msg,
-                                             reqId = rid,
-                                             reqOutput = qout
-                                           }
+  let reqsend = ReqSend
+                { reqData = encodeBinaryWith codec req_msg,
+                  reqId = rid,
+                  reqOutput = qout
+                }
+  atomically $ writeTBQueue qreq $ ReqPackSend reqsend
   var_term <- newTVarIO False
   let rhandle = ResponseHandle
                 { rhGetResponse = readTQueue qout,
