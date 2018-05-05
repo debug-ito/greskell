@@ -30,7 +30,7 @@ import Data.Greskell.WebSocket.Codec (decodeBinary)
 import Data.Greskell.WebSocket.Connection
   ( Host, Port, Connection, ResponseHandle,
     close, connect, sendRequest', sendRequest, slurpResponses,
-    getResponse,
+    nextResponse,
     RequestException(..), GeneralException(..),
     Settings(onGeneralException, responseTimeout, concurrency, requestQueueSize),
     defJSONSettings
@@ -217,14 +217,14 @@ conn_error_spec = do
     ng_rh <- sendRequest' conn req
     ok_res <- slurpEvalValues ok_rh :: IO [Either String [Int]]
     ok_res `shouldBe` [Right [300]]
-    getResponse ng_rh `shouldThrow` expEx
+    nextResponse ng_rh `shouldThrow` expEx
   specify "request timeout" $ \(host, port) -> do
     let settings = ourSettings { responseTimeout = 1 }
         expEx ResponseTimeout = True
         expEx _ = False
     forConn' settings host port $ \conn -> do
       rh <- sendRequest conn $ opSleep 2000
-      (getResponse rh) `shouldThrow` expEx
+      (nextResponse rh) `shouldThrow` expEx
 
 conn_close_spec :: SpecWith (Host, Port)
 conn_close_spec = describe "close" $ do
@@ -248,14 +248,14 @@ conn_close_spec = describe "close" $ do
     length got_hist `shouldBe` 6
     got <- mapM wait req_threads
     got `shouldBe` map (\v -> [Right [v]]) [200, 400, 600]
-  it "should make getResponse throw AlreadyClosed exception. getResponse should throw it every time it's called" $ withConn $ \conn -> do
+  it "should make nextResponse throw AlreadyClosed exception. nextResponse should throw it every time it's called" $ withConn $ \conn -> do
     let expEx AlreadyClosed = True
         expEx _ = False
     close conn
     rh <- sendRequest conn $ opEval "999"
-    getResponse rh `shouldThrow` expEx
-    getResponse rh `shouldThrow` expEx 
-    getResponse rh `shouldThrow` expEx
+    nextResponse rh `shouldThrow` expEx
+    nextResponse rh `shouldThrow` expEx 
+    nextResponse rh `shouldThrow` expEx
   
 
 wsServer :: Int -- ^ port number
@@ -291,7 +291,7 @@ succUUID orig = UUID.fromWords a b c d'
 conn_bad_server_spec :: SpecWith Port
 conn_bad_server_spec = do
   let waitForServer = threadDelay 100000
-  describe "ResponseHandle" $ describe "getResponse" $ do
+  describe "ResponseHandle" $ describe "nextResponse" $ do
     it "should throw exception when the server closes the connection while there is a pending request" $ \port -> do
       let server = wsServer port $ \wsconn -> do
             _ <- WS.receiveDataMessage wsconn
@@ -304,7 +304,7 @@ conn_bad_server_spec = do
         waitForServer
         forConn "localhost" port $ \conn -> do
           rh <- sendRequest conn $ opEval "100"
-          (inspectException $ getResponse rh) `shouldThrow` exp_ex
+          (inspectException $ nextResponse rh) `shouldThrow` exp_ex
     it "should throw exception when the server sends Close request while there is a pending request" $ \port -> do
       let server = wsServer port $ \wsconn -> do
             _ <- WS.receiveDataMessage wsconn
@@ -320,7 +320,7 @@ conn_bad_server_spec = do
         waitForServer
         forConn "localhost" port $ \conn -> do
           rh <- sendRequest conn $ opEval "100"
-          (inspectException $ getResponse rh) `shouldThrow` exp_ex
+          (inspectException $ nextResponse rh) `shouldThrow` exp_ex
     it "should be ok if the server actively closes the connection" $ \port -> do
       let server = wsServer port $ \wsconn -> do
             req <- receiveRequest wsconn
@@ -342,7 +342,7 @@ conn_bad_server_spec = do
         forConn "localhost" port $ \conn -> do
           threadDelay 40000
           rh <- sendRequest conn $ opEval "256"
-          getResponse rh `shouldThrow` expEx
+          nextResponse rh `shouldThrow` expEx
   describe "Settings" $ describe "onGeneralException" $ do
     it "should be called on unexpected requestId" $ \port -> do
       report_gex <- newEmptyTMVarIO
@@ -396,7 +396,7 @@ conn_bad_server_spec = do
         forConn' settings "localhost" port $ \conn -> do
           rh <- sendRequest conn $ opEval "99"
           forM_ ([1..3] :: [Int]) $ \_ -> do
-            mgot <- (fmap . fmap) (responseValues . fmap parseValue) $ getResponse rh :: IO (Maybe (Either String [Int]))
+            mgot <- (fmap . fmap) (responseValues . fmap parseValue) $ nextResponse rh :: IO (Maybe (Either String [Int]))
             mgot `shouldBe` (Just $ Right [1])
           slurpResponses rh `shouldThrow` expEx
           

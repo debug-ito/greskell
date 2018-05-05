@@ -394,8 +394,8 @@ sendRequest' conn req_msg = do
 --
 -- On error, it may throw all sorts of exceptions including
 -- 'RequestException'.
-getResponse :: ResponseHandle s -> IO (Maybe (ResponseMessage s))
-getResponse rh = atomically $ do
+nextResponse :: ResponseHandle s -> IO (Maybe (ResponseMessage s))
+nextResponse rh = atomically $ do
   termed <- readTVar $ rhTerminated rh
   if termed
     then return Nothing
@@ -421,7 +421,7 @@ slurpResponses :: ResponseHandle s -> IO [ResponseMessage s]
 slurpResponses h = fmap DL.toList $ go mempty
   where
     go got = do
-      mres <- getResponse h
+      mres <- nextResponse h
       case mres of
        Nothing -> return got
        Just res -> go (got <> DL.singleton res)
