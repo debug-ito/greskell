@@ -127,7 +127,7 @@ runWSConn settings host port path req_pool qreq var_connect_result var_conn_stat
     setupMux wsconn = do
       qres <- newTQueueIO
       withAsync (runRxLoop wsconn qres) $ \rx_thread -> 
-        runMuxLoop wsconn req_pool settings qreq qres var_conn_state rx_thread
+        runMuxLoop wsconn req_pool settings qreq qres (readTVar var_conn_state) rx_thread
     checkAndReportConnectSuccess = atomically $ do
       mret <- tryReadTMVar var_connect_result
       case mret of
@@ -233,10 +233,10 @@ pendingExists req_pool = fmap (> 0) $ getPendingNum req_pool
 
 -- | Multiplexer loop.
 runMuxLoop :: WS.Connection -> ReqPool s -> Settings s
-           -> TBQueue (ReqPack s) -> TQueue RawRes -> TVar ConnectionState
+           -> TBQueue (ReqPack s) -> TQueue RawRes -> STM ConnectionState
            -> Async ()
            -> IO ()
-runMuxLoop wsconn req_pool settings qreq qres var_conn_state rx_thread = loop
+runMuxLoop wsconn req_pool settings qreq qres readConnState rx_thread = loop
   where
     codec = Settings.codec settings
     loop = do
@@ -273,7 +273,7 @@ runMuxLoop wsconn req_pool settings qreq qres var_conn_state rx_thread = loop
             if cur_concurrency > 0
               then empty
               else do
-                conn_state <- readTVar var_conn_state
+                conn_state <- readConnState
                 if conn_state == ConnOpen then empty else return EvActiveClose
     -- handleClose = do
     --   should_finish <- fmap ((== 0) . length) $ HT.toList req_pool
@@ -315,7 +315,7 @@ runMuxLoop wsconn req_pool settings qreq qres var_conn_state rx_thread = loop
          if pending
            then return False
            else do
-           conn_state <- atomically $ readTVar var_conn_state
+           conn_state <- atomically $ readConnState
            return (conn_state /= ConnOpen)
     handleRxFinish = do
       -- RxFinish is an error for pending requests. If there is no
