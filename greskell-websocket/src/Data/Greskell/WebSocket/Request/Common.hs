@@ -53,7 +53,7 @@ instance FromJSON SASLMechanism where
     _ -> fail ("Unknown SASLMechanism: " ++ unpack s)
   parseJSON _ = empty
 
--- | A raw 'ByteString' encoded to/decoded from a base64 text.
+-- | A raw 'ByteString' encoded to\/decoded from a base64 text.
 --
 -- 'ToJSON' instance encodes the raw 'ByteString' to a base64-encoded
 -- 'Text'. 'FromJSON' is its inverse.

@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 -- |
 -- Module: Data.Greskell.WebSocket.Codec.JSON
--- Description: application/json codec
+-- Description: application\/json codec
 -- Maintainer: Toshio Ito <debug.ito@gmail.com>
 --
 -- 
@@ -14,7 +14,7 @@ import qualified Data.Aeson as A
 
 import Data.Greskell.WebSocket.Codec (Codec(..))
 
--- | Simple \"application/json\" codec.
+-- | Simple \"application\/json\" codec.
 --
 -- The encoder uses GraphSON v1 format. The decoder supports all
 -- GraphSON v1, v2 and v3.

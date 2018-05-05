@@ -124,6 +124,8 @@ instance Functor ResponseResult where
   fmap f rr = rr { resultData = f $ resultData rr }
 
 -- | ResponseMessage object from Gremlin Server.
+--
+-- Type @s@ is the type of the response data.
 data ResponseMessage s =
   ResponseMessage
   { requestId :: !UUID,

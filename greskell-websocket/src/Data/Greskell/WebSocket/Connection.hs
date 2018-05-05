@@ -11,6 +11,7 @@ module Data.Greskell.WebSocket.Connection
          Connection,
          Host,
          Port,
+         -- ** Settings for Connection
          module Data.Greskell.WebSocket.Connection.Settings,
          -- * Make a request
          sendRequest,

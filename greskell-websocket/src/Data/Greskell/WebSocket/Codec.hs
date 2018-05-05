@@ -1,6 +1,6 @@
 -- |
 -- Module: Data.Greskell.WebSocket.Codec
--- Description: Encoder/decoder of Request/Response
+-- Description: Encoder\/decoder of Request\/Response
 -- Maintainer: Toshio Ito <debug.ito@gmail.com>
 --
 -- 
@@ -25,6 +25,8 @@ type ErrorMessage = String
 
 -- | Encoder of 'RequestMessage' and decoder of 'ResponseMessage',
 -- associated with a MIME type.
+--
+-- Type @s@ is the type of response data.
 data Codec s =
   Codec
   { mimeType :: Text,
@@ -43,13 +45,14 @@ messageHeader mime = BSL.singleton size <> mime_bin
     size = fromIntegral $ BSL.length mime_bin -- what if 'mime' is too long??
     mime_bin = BSL.fromStrict $ encodeUtf8 mime
 
--- | Encode a 'ResponseMessage' into a \"binary\" format of Gremlin
+-- | Encode a 'RequestMessage' into a \"binary\" format of Gremlin
 -- Server. The result includes the message \"header\" and the
 -- \"payload\".
 encodeBinaryWith :: Codec s -> RequestMessage -> BSL.ByteString
 encodeBinaryWith c req = messageHeader (mimeType c) <> encodeWith c req
 
--- | Decode a message in the \"binary\" format.
+-- | Decode a message in the \"binary\" format. This is mainly for
+-- testing purposes.
 decodeBinary :: BSL.ByteString
              -> Either ErrorMessage (Text, BSL.ByteString) -- ^ (mimeType, payload)
 decodeBinary raw_msg = do
