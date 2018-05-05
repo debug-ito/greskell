@@ -329,6 +329,18 @@ conn_bad_server_spec = do
           rh <- sendRequest conn $ opEval "99"
           got <- slurpEvalValues rh :: IO [Either String [Int]]
           got `shouldBe` [Right [99]]
+    it "should throw AlreadyClosed exception after the server actively closes the connection" $ \port -> do
+      let server = wsServer port $ \wsconn -> do
+            threadDelay 10000
+            WS.sendClose wsconn ("" :: Text)
+          expEx AlreadyClosed = True
+          expEx _ = False
+      withAsync server $ \_ -> do
+        waitForServer
+        forConn "localhost" port $ \conn -> do
+          threadDelay 40000
+          rh <- sendRequest conn $ opEval "256"
+          getResponse rh `shouldThrow` expEx
   describe "Settings" $ describe "onGeneralException" $ do
     it "should be called on unexpected requestId" $ \port -> do
       report_gex <- newEmptyTMVarIO
