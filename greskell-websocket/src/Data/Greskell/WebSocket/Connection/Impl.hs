@@ -161,7 +161,9 @@ reportToQReq qreq cause = atomically $ do
 
 -- | An exception related to a specific request.
 data RequestException =
-    ServerClosed
+    AlreadyClosed
+    -- ^ The connection is already closed before sending the request.
+  | ServerClosed
     -- ^ The server closed the connection before sending response for
     -- this request
   | DuplicateRequestId UUID
