@@ -404,7 +404,7 @@ getResponse rh = atomically $ do
     readResponse = do
       eres <- rhGetResponse rh
       case eres of
-       Left ex -> throw ex
+       Left ex -> throw ex -- throw in STM. The eres is put back to the queue.
        Right res -> do
          updateTermed res
          return $ Just res

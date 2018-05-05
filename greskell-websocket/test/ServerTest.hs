@@ -248,11 +248,13 @@ conn_close_spec = describe "close" $ do
     length got_hist `shouldBe` 6
     got <- mapM wait req_threads
     got `shouldBe` map (\v -> [Right [v]]) [200, 400, 600]
-  it "should make getResponse throw AlreadyClosed exception" $ withConn $ \conn -> do
+  it "should make getResponse throw AlreadyClosed exception. getResponse should throw it every time it's called" $ withConn $ \conn -> do
     let expEx AlreadyClosed = True
         expEx _ = False
     close conn
     rh <- sendRequest conn $ opEval "999"
+    getResponse rh `shouldThrow` expEx
+    getResponse rh `shouldThrow` expEx 
     getResponse rh `shouldThrow` expEx
   
 
