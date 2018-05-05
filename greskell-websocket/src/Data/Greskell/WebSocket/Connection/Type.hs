@@ -12,7 +12,6 @@ module Data.Greskell.WebSocket.Connection.Type
     ReqID,
     ResPack,
     ReqPack(..),
-    ReqSend(..),
     ConnectionState(..),
     Connection(..),
     GeneralException(..)
@@ -36,23 +35,29 @@ type ResPack s = Either SomeException (ResponseMessage s)
 
 -- | Package of request data and related stuff. It's passed from the
 -- caller thread into WS handling thread.
-data ReqPack s = ReqPackSend !(ReqSend s)
-                 -- ^ Request to send RequestMessage to the server.
-               | ReqPackClose
-                 -- ^ Request to close the connection.
-
--- | Request to send RequestMessage.
-data ReqSend s =
-  ReqSend
+data ReqPack s = 
+  ReqPack
   { reqData :: !RawReq,
+    -- ^ Encoded request data
     reqId :: !ReqID,
+    -- ^ request ID
     reqOutput :: !(TQueue (ResPack s))
+    -- ^ the output queue for incoming response for this request.
   }
 
-data ConnectionState = ConnOpen
-                     | ConnClosing
-                     | ConnClosed
-                     deriving (Show,Eq,Ord,Enum,Bounded)
+-- | State of the 'Connection'.
+data ConnectionState =
+    ConnOpen
+    -- ^ Connection is open and ready to use.
+  | ConnClosing
+    -- ^ Connection is closing. It rejects new requests, but keeps
+    -- receiving responses for pending requests. When there is no
+    -- pending requests, it goes to 'ConnClosed'.
+  | ConnClosed
+    -- ^ Connection is closed. It rejects requests, and it doesn't
+    -- expect any responses. It can close the underlying WebSocket
+    -- connection.
+  deriving (Show,Eq,Ord,Enum,Bounded)
 
 -- | A WebSocket connection to a Gremlin Server.
 data Connection s =

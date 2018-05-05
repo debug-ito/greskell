@@ -37,7 +37,7 @@ import Data.Greskell.WebSocket.Connection.Settings (Settings)
 import qualified Data.Greskell.WebSocket.Connection.Settings as Settings
 import Data.Greskell.WebSocket.Connection.Type
   ( Connection(..), ConnectionState(..),
-    ResPack, ReqID, ReqPack(..), ReqSend(..), RawRes,
+    ResPack, ReqID, ReqPack(..), RawRes,
     GeneralException(..)
   )
 import Data.Greskell.WebSocket.Request
@@ -157,8 +157,7 @@ reportToQReq qreq cause = atomically $ do
   reqpacks <- flushTBQueue qreq
   forM_ reqpacks reportToReqPack
   where
-    reportToReqPack (ReqPackSend reqsend) = writeTQueue (reqOutput reqsend) $ Left cause
-    reportToReqPack _ = return ()
+    reportToReqPack reqp = writeTQueue (reqOutput reqp) $ Left cause
 
 -- | An exception related to a specific request.
 data RequestException =
@@ -237,11 +236,7 @@ runMuxLoop wsconn req_pool settings qreq qres readConnState rx_thread = loop
       res_timers <- getAllResponseTimers req_pool
       event <- atomically $ getEventSTM res_timers
       case event of
-       EvReq (ReqPackSend req) -> handleReqSend req >> loop
-       EvReq (ReqPackClose) -> undefined -- TODO: いらないと思う
-       --   do
-       --   should_finish <- handleClose
-       --   if should_finish then return () else loop
+       EvReq req -> handleReq req >> loop
        EvRes res -> handleRes res >> loop
        EvActiveClose -> return ()
        EvRxFinish -> handleRxFinish
@@ -267,12 +262,7 @@ runMuxLoop wsconn req_pool settings qreq qres readConnState rx_thread = loop
               else do
                 conn_state <- readConnState
                 if conn_state == ConnOpen then empty else return EvActiveClose
-    -- handleClose = do
-    --   should_finish <- fmap ((== 0) . length) $ HT.toList req_pool
-    --   -- TODO: maybe we should send WebSocket close request if should_finish == True
-    --   -- つか、これReqPackCloseいらねーんじゃね？？？
-    --   return should_finish
-    handleReqSend req = do
+    handleReq req = do
       insert_ok <- tryInsertToReqPool req_pool rid makeNewEntry
       if insert_ok
         then WS.sendBinaryData wsconn $ reqData req
@@ -364,17 +354,21 @@ instance Functor ResponseHandle where
 sendRequest :: Operation o => Connection s -> o -> IO (ResponseHandle s)
 sendRequest conn o = sendRequest' conn =<< makeRequestMessage o
 
+-- TODO: conn_stateをチェックしてsendを判定
+
+-- TODO: もう一度conn_stateのロジックをチェックするか。。動作パターンをテストできるか？
+
 -- | Like 'sendRequest', but you can pass a 'RequestMessage' directly
 -- to this function.
 sendRequest' :: Connection s -> RequestMessage -> IO (ResponseHandle s)
 sendRequest' (Connection { connCodec = codec, connQReq = qreq }) req_msg@(RequestMessage { requestId = rid }) = do
   qout <- newTQueueIO
-  let reqsend = ReqSend
+  let reqpack = ReqPack
                 { reqData = encodeBinaryWith codec req_msg,
                   reqId = rid,
                   reqOutput = qout
                 }
-  atomically $ writeTBQueue qreq $ ReqPackSend reqsend
+  atomically $ writeTBQueue qreq reqpack
   var_term <- newTVarIO False
   let rhandle = ResponseHandle
                 { rhGetResponse = readTQueue qout,
