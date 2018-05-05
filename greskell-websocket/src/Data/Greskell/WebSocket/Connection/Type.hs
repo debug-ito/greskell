@@ -63,8 +63,10 @@ data ConnectionState =
 data Connection s =
   Connection
   { connQReq :: !(TBQueue (ReqPack s)),
+    -- ^ Request queue to WS (Mux) thread.
     connState :: !(TVar ConnectionState),
     connWSThread :: !(Async ()),
+    -- ^ WS (Mux) thread
     connCodec :: !(Codec s)
   }
 
