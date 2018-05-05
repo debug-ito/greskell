@@ -366,6 +366,7 @@ sendRequest' conn req_msg = do
   if is_open
     then sendReqPack qout
     else reportAlreadyClosed qout
+  makeResHandle qout
   where
     codec = connCodec conn
     qreq = connQReq conn
@@ -374,22 +375,20 @@ sendRequest' conn req_msg = do
     getConnectionOpen = fmap (== ConnOpen) $ atomically $ readTVar var_conn_state
     sendReqPack qout = do
       atomically $ writeTBQueue qreq reqpack
-      makeResHandle qout False
       where
         reqpack = ReqPack
                   { reqData = encodeBinaryWith codec req_msg,
                     reqId = rid,
                     reqOutput = qout
                   }
-    makeResHandle qout init_term = do
-      var_term <- newTVarIO init_term
+    makeResHandle qout = do
+      var_term <- newTVarIO False
       return $ ResponseHandle
                { rhGetResponse = readTQueue qout,
                  rhTerminated = var_term
                }
     reportAlreadyClosed qout = do
       atomically $ writeTQueue qout $ Left $ toException $ AlreadyClosed
-      makeResHandle qout True
     
 
 -- | Get a 'ResponseMessage' from 'ResponseHandle'. If you have
