@@ -357,27 +357,40 @@ instance Functor ResponseHandle where
 sendRequest :: Operation o => Connection s -> o -> IO (ResponseHandle s)
 sendRequest conn o = sendRequest' conn =<< makeRequestMessage o
 
--- TODO: conn_stateをチェックしてsendを判定
-
--- TODO: もう一度conn_stateのロジックをチェックするか。。動作パターンをテストできるか？
-
 -- | Like 'sendRequest', but you can pass a 'RequestMessage' directly
 -- to this function.
 sendRequest' :: Connection s -> RequestMessage -> IO (ResponseHandle s)
-sendRequest' (Connection { connCodec = codec, connQReq = qreq }) req_msg@(RequestMessage { requestId = rid }) = do
+sendRequest' conn req_msg = do
   qout <- newTQueueIO
-  let reqpack = ReqPack
-                { reqData = encodeBinaryWith codec req_msg,
-                  reqId = rid,
-                  reqOutput = qout
-                }
-  atomically $ writeTBQueue qreq reqpack
-  var_term <- newTVarIO False
-  let rhandle = ResponseHandle
-                { rhGetResponse = readTQueue qout,
-                  rhTerminated = var_term
-                }
-  return rhandle
+  is_open <- getConnectionOpen
+  if is_open
+    then sendReqPack qout
+    else reportAlreadyClosed qout
+  where
+    codec = connCodec conn
+    qreq = connQReq conn
+    var_conn_state = connState conn
+    rid = requestId (req_msg :: RequestMessage)
+    getConnectionOpen = fmap (== ConnOpen) $ atomically $ readTVar var_conn_state
+    sendReqPack qout = do
+      atomically $ writeTBQueue qreq reqpack
+      makeResHandle qout False
+      where
+        reqpack = ReqPack
+                  { reqData = encodeBinaryWith codec req_msg,
+                    reqId = rid,
+                    reqOutput = qout
+                  }
+    makeResHandle qout init_term = do
+      var_term <- newTVarIO init_term
+      return $ ResponseHandle
+               { rhGetResponse = readTQueue qout,
+                 rhTerminated = var_term
+               }
+    reportAlreadyClosed qout = do
+      atomically $ writeTQueue qout $ Left $ toException $ AlreadyClosed
+      makeResHandle qout True
+    
 
 -- | Get a 'ResponseMessage' from 'ResponseHandle'. If you have
 -- already got all responses, it returns 'Nothing'. This function may
