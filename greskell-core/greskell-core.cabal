@@ -24,7 +24,8 @@ library
   other-extensions:     OverloadedStrings, TypeFamilies
   exposed-modules:      Data.Greskell.Greskell,
                         Data.Greskell.GraphSON,
-                        Data.Greskell.GMap
+                        Data.Greskell.GMap,
+                        Data.Greskell.IteratorItem
   -- other-modules:        
   build-depends:        base >=4.9.0.0 && <4.12,
                         aeson >=0.11.2.1 && <1.4,
