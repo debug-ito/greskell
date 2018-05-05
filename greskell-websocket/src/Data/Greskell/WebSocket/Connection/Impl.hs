@@ -225,12 +225,6 @@ getAllResponseTimers req_pool = (fmap . fmap) toTimer $ HT.toList req_pool
   where
     toTimer (_, entry) = rpeTimer entry
 
-getPendingNum :: ReqPool s -> IO Int
-getPendingNum req_pool = fmap length $ HT.toList req_pool
-
-pendingExists :: ReqPool s -> IO Bool
-pendingExists req_pool = fmap (> 0) $ getPendingNum req_pool
-
 -- | Multiplexer loop.
 runMuxLoop :: WS.Connection -> ReqPool s -> Settings s
            -> TBQueue (ReqPack s) -> TQueue RawRes -> STM ConnectionState
@@ -248,9 +242,7 @@ runMuxLoop wsconn req_pool settings qreq qres readConnState rx_thread = loop
        --   do
        --   should_finish <- handleClose
        --   if should_finish then return () else loop
-       EvRes res -> do
-         should_finish <- handleRes res
-         if should_finish then return () else loop
+       EvRes res -> handleRes res >> loop
        EvActiveClose -> return ()
        EvRxFinish -> handleRxFinish
        EvRxError e -> throw e
@@ -297,26 +289,16 @@ runMuxLoop wsconn req_pool settings qreq qres readConnState rx_thread = loop
           reportError =
             atomically $ writeTQueue qout $ Left $ toException $ DuplicateRequestId rid
     handleRes res = case decodeWith codec res of
-      Left err -> do
-        Settings.onGeneralException settings $ ResponseParseFailure err
-        return False
+      Left err -> Settings.onGeneralException settings $ ResponseParseFailure err
       Right res_msg -> handleResMsg res_msg
     handleResMsg res_msg@(ResponseMessage { requestId = rid }) = do
       m_entry <- HT.lookup req_pool rid
       case m_entry of
-       Nothing -> do
-         Settings.onGeneralException settings $ UnexpectedRequestId rid
-         return False
+       Nothing -> Settings.onGeneralException settings $ UnexpectedRequestId rid
        Just entry -> do
          when (isTerminatingResponse res_msg) $ do
            removeReqPoolEntry req_pool entry
          atomically $ writeTQueue (rpeOutput entry) $ Right res_msg
-         pending <- pendingExists req_pool
-         if pending
-           then return False
-           else do
-           conn_state <- atomically $ readConnState
-           return (conn_state /= ConnOpen)
     handleRxFinish = do
       -- RxFinish is an error for pending requests. If there is no
       -- pending requests, it's totally normal.
