@@ -85,7 +85,8 @@ connect settings host port = do
 -- If there are pending requests in the 'Connection', 'close' function
 -- blocks for them to complete or time out.
 -- 
--- Calling 'close' on a 'Connection' already closed (or waiting to close) does nothing.
+-- Calling 'close' on a 'Connection' already closed (or waiting to
+-- close) does nothing.
 close :: Connection s -> IO ()
 close conn = do
   need_wait <- atomically $ do
@@ -94,7 +95,6 @@ close conn = do
      ConnClosed -> return False
      ConnClosing -> return True
      ConnOpen -> do
-       -- writeTBQueue (connQReq conn) $ ReqPackClose ---- close requestを飛ばさない方法をトライ
        writeTVar (connState conn) ConnClosing
        return True
   if need_wait then waitForClose else return ()
@@ -105,9 +105,6 @@ close conn = do
         then return ()
         else retry
   
--- TODO: maybe we need some more clean-up operations...
--- TODO: specify and test close behavior.
-
 type Path = String
 
 -- | A thread taking care of a WS connection.
@@ -162,10 +159,10 @@ reportToQReq qreq cause = atomically $ do
 -- | An exception related to a specific request.
 data RequestException =
     AlreadyClosed
-    -- ^ The connection is already closed before sending the request.
+    -- ^ The connection is already closed before it sends the request.
   | ServerClosed
-    -- ^ The server closed the connection before sending response for
-    -- this request
+    -- ^ The server closed the connection before it sends response for
+    -- this request.
   | DuplicateRequestId UUID
     -- ^ The requestId (kept in this object) is already pending in the
     -- connection.

@@ -66,7 +66,9 @@ data Connection s =
     -- ^ Request queue to WS (Mux) thread.
     connState :: !(TVar ConnectionState),
     connWSThread :: !(Async ()),
-    -- ^ WS (Mux) thread
+    -- ^ WS (Mux) thread. It keeps the underlying WebSocket
+    -- connection, watches various types of events and responds to
+    -- those events.
     connCodec :: !(Codec s)
   }
 

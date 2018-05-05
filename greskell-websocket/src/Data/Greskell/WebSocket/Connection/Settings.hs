@@ -29,13 +29,14 @@ import System.IO (stderr, hPutStrLn)
 data Settings s =
   Settings
   { codec :: !(Codec s),
-    -- ^ codec for the connection
+    -- ^ codec for the connection.
     endpointPath :: !String,
     -- ^ Path of the WebSocket endpoint. Default: \"/gremlin\"
     onGeneralException :: !(GeneralException -> IO ()),
-    -- ^ An exception handler for 'GeneralException'. You don't have
-    -- to re-throw the exception. Default: print the exception to
-    -- stderr.
+    -- ^ An exception handler for 'GeneralException'. This exception
+    -- is not fatal, so the connection survives after this handler is
+    -- called. You don't have to re-throw the exception. Default:
+    -- print the exception to stderr.
     responseTimeout :: !Int,
     -- ^ Time out (in seconds) for responses. It is the maximum time
     -- for which the connection waits for a response to complete after
