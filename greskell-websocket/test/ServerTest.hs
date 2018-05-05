@@ -228,6 +228,11 @@ conn_error_spec = do
 
 conn_close_spec :: SpecWith (Host, Port)
 conn_close_spec = describe "close" $ do
+  it "should wait for a pending request to finish" $ withConn $ \conn -> do
+    rh <- sendRequest conn $ opSleep 100
+    close conn
+    got <- slurpEvalValues rh :: IO [Either String [Int]]
+    got `shouldBe` [Right [100]]
   it "should block for all pending requests" $ withConn $ \conn -> do
     tc <- TCounter.new
     let makeReq :: Int -> IO [Either String [Int]]
