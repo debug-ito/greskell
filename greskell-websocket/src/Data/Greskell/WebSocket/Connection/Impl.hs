@@ -179,6 +179,7 @@ data ReqPoolEntry s =
   { rpeReqId :: !ReqID,
     rpeOutput :: !(TQueue (ResPack s)),
     rpeTimer :: !(Async ReqID)
+    -- ^ timer thread to time out response.
   }
 
 -- | (requestId of pending request) --> (objects related to that pending request)
