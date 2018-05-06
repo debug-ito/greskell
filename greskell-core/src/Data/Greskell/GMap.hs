@@ -8,14 +8,18 @@
 module Data.Greskell.GMap
        ( -- * FlattenedMap
          FlattenedMap(..),
-         -- * GraphSONObject
-         GraphSONObject(..),
-         gsonObject
+         -- * GMap
+         GMap(..),
+         unGMap
        ) where
 
-import Control.Applicative ((<$>), (<*>), (<|>))
-import Data.Aeson (FromJSON(..), ToJSON(..), Value(..))
+import Control.Applicative ((<$>), (<*>), (<|>), empty)
+import Data.Aeson
+  ( FromJSON(..), ToJSON(..), Value(..),
+    FromJSONKey, ToJSONKey
+  )
 import Data.Foldable (length)
+import Data.Hashable (Hashable)
 import Data.HashMap.Strict (HashMap)
 import Data.Text (Text)
 import Data.Vector ((!))
@@ -31,11 +35,11 @@ import Data.Greskell.GraphSON
 -- >>> import Data.List (sort)
 -- >>> import Data.Either (isLeft, fromLeft)
 
--- | JSON encoding of a map as a flattened list of key-value pairs.
+-- | JSON encoding of a map as an array of flattened key-value pairs.
 -- 
--- 'ToJSON' instance of this type encodes the internal map as a list
+-- 'ToJSON' instance of this type encodes the internal map as an array
 -- of keys and values. 'FromJSON' instance of this type parses that
--- flattened list.
+-- flattened map.
 --
 -- - type @c@: container type for a map (e.g. 'Data.Map.Map' and
 --   'Data.HashMap.Strict.HashMap').
@@ -76,48 +80,47 @@ instance (ToJSON k, ToJSON v, IsList (c k v), Item (c k v) ~ (k,v)) => ToJSON (F
 instance GraphSONTyped (FlattenedMap c k v) where
   gsonTypeFor _ = "g:Map"
 
--- | If key type of a @g:Map@ is Text, the @g:Map@ type can be
--- expressed as a plain JSON object (in GraphSON v1 and v2) as well as
--- a @g:Map@ object (in GraphSON v3). 'GraphSONObject' parses and
--- formats both cases.
+
+
+
+-- | Haskell representation of @g:Map@ type.
 --
--- Note that 'FromJSON' instance of this type tries to parse the
--- GraphSON \"typed\" object (i.e. \"{\"\@type\": ...}\" stuff), so
--- enclosing 'GraphSONObject' with 'GraphSON' type is usually a bad
--- idea.
+-- GraphSON v1 and v2 encode Java @Map@ type as a JSON Object, while
+-- GraphSON v3 encodes it as an array of flattened keys and values
+-- (like 'FlattenedMap'.)  'GMap' type handles both encoding schemes.
 --
--- >>> Aeson.eitherDecode "{\"ten\": 10}" :: Either String (GraphSONObject Int)
--- Right (GraphSONObject (fromList [("ten",10)]))
--- >>> Aeson.eitherDecode "{\"@type\": \"g:Map\", \"@value\": [\"ten\", 10]}" :: Either String (GraphSONObject Int)
--- Right (GraphSONGMap (fromList [("ten",10)]))
--- >>> Aeson.encode $ GraphSONObject (fromList [("ten", 10)] :: HashMap Text Int)
--- "{\"ten\":10}"
--- >>> let result = Aeson.encode $ GraphSONGMap (fromList [("ten", 10)] :: HashMap Text Int)
--- >>> result
--- ...\"@type\":\"g:Map\"...
--- >>> result
--- ...\"@value\":[\"ten\",10]...
-data GraphSONObject v = GraphSONObject (HashMap Text v)
-                        -- ^ the 'HashMap' is encoded as a plain JSON object.
-                      | GraphSONGMap (HashMap Text v)
-                        -- ^ the 'HashMap' is encoded as a @g:Map@ object.
-                      deriving (Show,Eq)
+-- >>> Aeson.eitherDecode "{\"ten\": 10}" :: Either String (GMap Text Int)
+-- Right (GMap {gmapFlat = False, gmapValue = fromList [("ten",10)]})
+-- >>> Aeson.eitherDecode "[\"ten\", 10]" :: Either String (GMap Text Int)
+-- Right (GMap {gmapFlat = True, gmapValue = fromList [("ten",10)]})
+-- >>> Aeson.encode $ GMap False (fromList [(9, "nine")] :: HashMap Int Text)
+-- "{\"9\":\"nine\"}"
+-- >>> Aeson.encode $ GMap True (fromList [(9, "nine")] :: HashMap Int Text)
+-- "[9,\"nine\"]"
+data GMap k v =
+  GMap
+  { gmapFlat :: !Bool,
+    -- ^ If 'True', the map is encoded as an array. If 'False', it's
+    -- encoded as a JSON Object.
+    gmapValue :: !(HashMap k v)
+    -- ^ Map implementation.
+  }
+  deriving (Show,Eq)
+
+instance (FromJSON k, FromJSONKey k, Eq k, Hashable k, FromJSON v) => FromJSON (GMap k v) where
+  parseJSON v@(Object _) = GMap False <$> parseJSON v
+  parseJSON v@(Array _) = (GMap True .unFlattenedMap) <$> parseJSON v
+  parseJSON _ = empty
+
+instance (ToJSON k, ToJSONKey k, Eq k, Hashable k, ToJSON v) => ToJSON (GMap k v) where
+  toJSON gm = if gmapFlat gm
+              then toJSON $ FlattenedMap $ unGMap gm
+              else toJSON $ unGMap gm
 
 -- | Map to \"g:Map\".
-instance GraphSONTyped (GraphSONObject v) where
+instance GraphSONTyped (GMap k v) where
   gsonTypeFor _ = "g:Map"
 
-instance (FromJSON v) => FromJSON (GraphSONObject v) where
-  parseJSON v = either toObject toGMap =<< parseTypedGraphSON' v
-    where
-      toObject _ = GraphSONObject <$> parseJSON v
-      toGMap = return . GraphSONGMap . unFlattenedMap . gsonValue
-
-instance (ToJSON v) => ToJSON (GraphSONObject v) where
-  toJSON (GraphSONObject hm) = toJSON hm
-  toJSON (GraphSONGMap hm) = toJSON $ typedGraphSON $ FlattenedMap hm
-
--- | Extract 'HashMap' from 'GraphSONObject'.
-gsonObject :: GraphSONObject v -> HashMap Text v
-gsonObject (GraphSONObject hm) = hm
-gsonObject (GraphSONGMap hm) = hm
+-- | Get 'HashMap' from 'GMap'.
+unGMap :: GMap k v -> HashMap k v
+unGMap = gmapValue
