@@ -45,9 +45,10 @@ test-suite spec
   -- default-extensions:   
   other-extensions:     OverloadedStrings, NoMonomorphismRestriction
   other-modules:        Data.Greskell.GreskellSpec,
-                        Data.Greskell.GraphSONSpec
+                        Data.Greskell.GraphSONSpec,
+                        Data.Greskell.GMapSpec,
                         Data.Greskell.Test.QuickCheck
-  build-depends:        base, text, aeson, unordered-containers,
+  build-depends:        base, text, aeson, unordered-containers, vector,
                         greskell-core,
                         hspec >=2.2.3,
                         QuickCheck >=2.8.2 && <2.12
