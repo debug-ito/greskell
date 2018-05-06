@@ -6,8 +6,8 @@
 --
 -- 
 module Data.Greskell.GMap
-       ( -- * GMap
-         GMap(..),
+       ( -- * FlattenedMap
+         FlattenedMap(..),
          -- * GraphSONObject
          GraphSONObject(..),
          gsonObject
@@ -31,33 +31,34 @@ import Data.Greskell.GraphSON
 -- >>> import Data.List (sort)
 -- >>> import Data.Either (isLeft, fromLeft)
 
--- | Haskell representation of @g:Map@ type in GraphSON v3.
+-- | JSON encoding of a map as a flattened list of key-value pairs.
 -- 
--- In GraphSON v3, @g:Map@ is encoded as a flattened list of keys and
--- values. 'FromJSON' and 'ToJSON' instances of 'GMap' implements this
--- encoding.
+-- 'ToJSON' instance of this type encodes the internal map as a list
+-- of keys and values. 'FromJSON' instance of this type parses that
+-- flattened list.
 --
 -- - type @c@: container type for a map (e.g. 'Data.Map.Map' and
 --   'Data.HashMap.Strict.HashMap').
 -- - type @k@: key of the map.
 -- - type @v@: value of the map.
 --
--- >>> fmap (sort . toList . unGMap) $ (Aeson.eitherDecode "[10, \"ten\", 11, \"eleven\"]" :: Either String (GMap HashMap Int String))
+-- >>> let decode s = Aeson.eitherDecode s :: Either String (FlattenedMap HashMap Int String)
+-- >>> fmap (sort . toList . unFlattenedMap) $ decode "[10, \"ten\", 11, \"eleven\"]"
 -- Right [(10,"ten"),(11,"eleven")]
--- >>> fmap (sort . toList . unGMap) $ (Aeson.eitherDecode "[]" :: Either String (GMap HashMap String String))
+-- >>> fmap (sort . toList . unFlattenedMap) $ decode "[]"
 -- Right []
--- >>> let (Left err_msg) = (Aeson.eitherDecode "[10, \"ten\", 11]" :: Either String (GMap HashMap Int String))
+-- >>> let (Left err_msg) = decode "[10, \"ten\", 11]"
 -- >>> err_msg
 -- ...odd number of elements...
--- >>> Aeson.encode $ GMap $ (fromList [(10, "ten")] :: HashMap Int String)
+-- >>> Aeson.encode $ FlattenedMap $ (fromList [(10, "ten")] :: HashMap Int String)
 -- "[10,\"ten\"]"
-newtype GMap c k v = GMap { unGMap :: c k v }
+newtype FlattenedMap c k v = FlattenedMap { unFlattenedMap :: c k v }
                    deriving (Show,Eq,Ord)
 
-instance (FromJSON k, FromJSON v, IsList (c k v), Item (c k v) ~ (k,v)) => FromJSON (GMap c k v) where
+instance (FromJSON k, FromJSON v, IsList (c k v), Item (c k v) ~ (k,v)) => FromJSON (FlattenedMap c k v) where
   parseJSON (Array v) = if odd vlen
-                        then fail "Fail to parse a list into GMap because there are odd number of elements."
-                        else fmap (GMap . fromList) pairs
+                        then fail "Fail to parse a list into FlattenedMap because there are odd number of elements."
+                        else fmap (FlattenedMap . fromList) pairs
     where
       vlen = length v
       pairList = map (\i -> (v ! (i * 2), v ! (i * 2 + 1))) [0 .. ((vlen `div` 2) - 1)]
@@ -65,14 +66,14 @@ instance (FromJSON k, FromJSON v, IsList (c k v), Item (c k v) ~ (k,v)) => FromJ
       pairs = mapM parsePair pairList
   parseJSON _ = fail "Expects Array"
 
-instance (ToJSON k, ToJSON v, IsList (c k v), Item (c k v) ~ (k,v)) => ToJSON (GMap c k v) where
-  toJSON (GMap m) = toJSON $ flatten $ map toValuePair $ toList m
+instance (ToJSON k, ToJSON v, IsList (c k v), Item (c k v) ~ (k,v)) => ToJSON (FlattenedMap c k v) where
+  toJSON (FlattenedMap m) = toJSON $ flatten $ map toValuePair $ toList m
     where
       toValuePair (k, v) = (toJSON k, toJSON v)
       flatten pl = (\(k, v) -> [k, v]) =<< pl
 
 -- | Map to \"g:Map\".
-instance GraphSONTyped (GMap c k v) where
+instance GraphSONTyped (FlattenedMap c k v) where
   gsonTypeFor _ = "g:Map"
 
 -- | If key type of a @g:Map@ is Text, the @g:Map@ type can be
@@ -110,11 +111,11 @@ instance (FromJSON v) => FromJSON (GraphSONObject v) where
   parseJSON v = either toObject toGMap =<< parseTypedGraphSON' v
     where
       toObject _ = GraphSONObject <$> parseJSON v
-      toGMap = return . GraphSONGMap . unGMap . gsonValue
+      toGMap = return . GraphSONGMap . unFlattenedMap . gsonValue
 
 instance (ToJSON v) => ToJSON (GraphSONObject v) where
   toJSON (GraphSONObject hm) = toJSON hm
-  toJSON (GraphSONGMap hm) = toJSON $ typedGraphSON $ GMap hm
+  toJSON (GraphSONGMap hm) = toJSON $ typedGraphSON $ FlattenedMap hm
 
 -- | Extract 'HashMap' from 'GraphSONObject'.
 gsonObject :: GraphSONObject v -> HashMap Text v
