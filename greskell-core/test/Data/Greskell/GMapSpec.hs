@@ -3,18 +3,24 @@ module Data.Greskell.GMapSpec (main,spec) where
 
 import Data.Aeson (eitherDecode, object, (.=), toJSON, Value(..))
 import qualified Data.HashMap.Strict as HM
+import Data.List (isInfixOf)
 import Data.Vector ((!), Vector)
 import qualified Data.Vector as Vec
 import Test.Hspec
 
 import Data.Greskell.GraphSON (GraphSON(..), typedGraphSON, nonTypedGraphSON)
-import Data.Greskell.GMap (GMap(..))
+import Data.Greskell.GMap (GMap(..), GMapEntry(..))
 
 main :: IO ()
 main = hspec spec
 
 spec :: Spec
-spec = describe "GraphSON GMap" $ do
+spec = do
+  spec_GMap
+  spec_GMapEntry
+
+spec_GMap :: Spec
+spec_GMap = describe "GraphSON GMap" $ do
   describe "non-flat" $ do
     let val :: GraphSON (GMap String Int)
         val = nonTypedGraphSON $ GMap False $ HM.fromList [("foo", 3), ("bar", 5), ("a", 1)]
@@ -48,3 +54,18 @@ pairList a = map toPair $ [0 .. imax]
   where
     imax = (Vec.length a `div` 2) - 1
     toPair i = (a ! (i*2), a ! (i*2 + 1))
+
+expLeft :: Show a => Either String a -> (String -> Bool) -> IO ()
+expLeft e@(Right _) _ = expectationFailure ("expects Left, but got " ++ show e)
+expLeft (Left e)    p = e `shouldSatisfy` p
+
+spec_GMapEntry :: Spec
+spec_GMapEntry = describe "GMapEntry" $ do
+  specify "zero entry" $ do
+    let got :: Either String (GMapEntry String Int)
+        got = eitherDecode "[]"
+    got `expLeft` ("it has 0 entries" `isInfixOf`)
+  specify "two entries" $ do
+    let got :: Either String (GMapEntry String Int)
+        got = eitherDecode "{\"foo\": 10, \"bar\": 20}"
+    got `expLeft` ("it has 2 entries" `isInfixOf`)
