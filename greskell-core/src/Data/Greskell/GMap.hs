@@ -10,7 +10,11 @@ module Data.Greskell.GMap
          FlattenedMap(..),
          -- * GMap
          GMap(..),
-         unGMap
+         unGMap,
+         singleton,
+         -- * GMapEntry
+         GMapEntry(..),
+         unGMapEntry
        ) where
 
 import Control.Applicative ((<$>), (<*>), (<|>), empty)
@@ -21,6 +25,7 @@ import Data.Aeson
 import Data.Foldable (length)
 import Data.Hashable (Hashable)
 import Data.HashMap.Strict (HashMap)
+import qualified Data.HashMap.Strict as HM
 import Data.Text (Text)
 import Data.Vector ((!))
 import GHC.Exts (IsList(Item, fromList, toList))
@@ -81,8 +86,6 @@ instance GraphSONTyped (FlattenedMap c k v) where
   gsonTypeFor _ = "g:Map"
 
 
-
-
 -- | Haskell representation of @g:Map@ type.
 --
 -- GraphSON v1 and v2 encode Java @Map@ type as a JSON Object, while
@@ -124,3 +127,52 @@ instance GraphSONTyped (GMap k v) where
 -- | Get 'HashMap' from 'GMap'.
 unGMap :: GMap k v -> HashMap k v
 unGMap = gmapValue
+
+-- | Haskell representation of @Map.Entry@ type.
+--
+-- GraphSON encodes Java's @Map.Entry@ type as if it were a @Map@ with
+-- a single entry. Thus its encoded form is either a JSON object or a
+-- flattened key-values, as explained in 'GMap'.
+--
+-- >>> Aeson.eitherDecode "{\"1\": \"one\"}" :: Either String (GMapEntry Int Text)
+-- Right (GMapEntry {gmapEntryFlat = False, gmapEntryKey = 1, gmapEntryValue = "one"})
+-- >>> Aeson.eitherDecode "[1, \"one\"]" :: Either String (GMapEntry Int Text)
+-- Right (GMapEntry {gmapEntryFlat = True, gmapEntryKey = 1, gmapEntryValue = "one"})
+-- >>> Aeson.encode (GMapEntry False "one" 1 :: GMapEntry Text Int)
+-- "{\"one\":1}"
+-- >>> Aeson.encode (GMapEntry True "one" 1 :: GMapEntry Text Int)
+-- "[\"one\",1]"
+data GMapEntry k v =
+  GMapEntry
+  { gmapEntryFlat :: !Bool,
+    gmapEntryKey :: !k,
+    gmapEntryValue :: !v
+  }
+  deriving (Show,Eq,Ord)
+
+-- | Map to \"g:Map\".
+instance GraphSONTyped (GMapEntry k v) where
+  gsonTypeFor _ = "g:Map"
+
+instance (FromJSON k, FromJSONKey k, Eq k, Hashable k, FromJSON v) => FromJSON (GMapEntry k v) where
+  parseJSON val = toEntry =<< parseJSON val
+    where
+      toEntry gm = case HM.toList $ gmapValue gm of
+        [(k,v)] -> return $ GMapEntry { gmapEntryFlat = gmapFlat gm,
+                                        gmapEntryKey = k,
+                                        gmapEntryValue = v
+                                      }
+        l -> fail ("Expects a single entry map, but it has " ++ (show $ length l) ++ " entries.")
+
+instance (ToJSON k, ToJSONKey k, Eq k, Hashable k, ToJSON v) => ToJSON (GMapEntry k v) where
+  toJSON e = toJSON $ singleton e
+  
+-- | Get the key-value pair from 'GMapEntry'.
+unGMapEntry :: GMapEntry k v -> (k, v)
+unGMapEntry e = (gmapEntryKey e, gmapEntryValue e)
+
+singleton :: Hashable k => GMapEntry k v -> GMap k v
+singleton e = GMap { gmapFlat = gmapEntryFlat e,
+                     gmapValue = HM.singleton (gmapEntryKey e) (gmapEntryValue e)
+                   }
+
