@@ -4,6 +4,7 @@ module Data.Greskell.GMapSpec (main,spec) where
 import Data.Aeson (eitherDecode, object, (.=), toJSON, Value(..))
 import qualified Data.HashMap.Strict as HM
 import Data.List (isInfixOf)
+import Data.Monoid (mempty)
 import Data.Vector ((!), Vector)
 import qualified Data.Vector as Vec
 import Test.Hspec
@@ -33,6 +34,10 @@ spec_GMap = describe "GraphSON GMap" $ do
                               "a"   .= Number 1
                             ]
       toJSON val `shouldBe` expected
+    specify "FromJSON empty" $ do
+      let val_empty :: GraphSON (GMap String Int)
+          val_empty = nonTypedGraphSON $ GMap False mempty
+      eitherDecode "{}" `shouldBe` Right val_empty
   describe "flat" $ do
     let val :: GraphSON (GMap String Int)
         val = typedGraphSON $ GMap True $ HM.fromList [("foo", 3), ("bar", 5), ("a", 1)]
@@ -48,6 +53,10 @@ spec_GMap = describe "GraphSON GMap" $ do
       HM.lookup "@type" got `shouldBe` (Just $ String "g:Map")
       let (Just (Array got_flat)) = HM.lookup "@value" got
       pairList got_flat `shouldMatchList` pairList exp_flat
+    specify "FromJSON empty" $ do
+      let val_empty :: GraphSON (GMap String Int)
+          val_empty = typedGraphSON $ GMap True mempty
+      eitherDecode "{\"@type\": \"g:Map\", \"@value\": []}" `shouldBe` Right val_empty
 
 pairList :: Vector Value -> [(Value,Value)]
 pairList a = map toPair $ [0 .. imax]
