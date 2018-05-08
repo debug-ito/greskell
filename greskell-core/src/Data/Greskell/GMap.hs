@@ -12,6 +12,7 @@ module Data.Greskell.GMap
          GMap(..),
          unGMap,
          singleton,
+         toList,
          -- * GMapEntry
          GMapEntry(..),
          unGMapEntry
@@ -28,7 +29,8 @@ import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as HM
 import Data.Text (Text)
 import Data.Vector ((!))
-import GHC.Exts (IsList(Item, fromList, toList))
+import GHC.Exts (IsList(Item))
+import qualified GHC.Exts as List (IsList(fromList, toList))
 
 import Data.Greskell.GraphSON
   (GraphSON(gsonValue), GraphSONTyped(..), parseTypedGraphSON', typedGraphSON)
@@ -37,6 +39,7 @@ import Data.Greskell.GraphSON
 -- >>> :set -XOverloadedStrings
 -- >>> import qualified Data.Aeson as Aeson
 -- >>> import Data.HashMap.Strict (HashMap)
+-- >>> import qualified Data.HashMap.Strict as HashMap
 -- >>> import Data.List (sort)
 -- >>> import Data.Either (isLeft, fromLeft)
 
@@ -52,14 +55,15 @@ import Data.Greskell.GraphSON
 -- - type @v@: value of the map.
 --
 -- >>> let decode s = Aeson.eitherDecode s :: Either String (FlattenedMap HashMap Int String)
--- >>> fmap (sort . toList . unFlattenedMap) $ decode "[10, \"ten\", 11, \"eleven\"]"
+-- >>> let toSortedList = sort . HashMap.toList . unFlattenedMap
+-- >>> fmap toSortedList $ decode "[10, \"ten\", 11, \"eleven\"]"
 -- Right [(10,"ten"),(11,"eleven")]
--- >>> fmap (sort . toList . unFlattenedMap) $ decode "[]"
+-- >>> fmap toSortedList $ decode "[]"
 -- Right []
 -- >>> let (Left err_msg) = decode "[10, \"ten\", 11]"
 -- >>> err_msg
 -- ...odd number of elements...
--- >>> Aeson.encode $ FlattenedMap $ (fromList [(10, "ten")] :: HashMap Int String)
+-- >>> Aeson.encode $ FlattenedMap $ (HashMap.fromList [(10, "ten")] :: HashMap Int String)
 -- "[10,\"ten\"]"
 newtype FlattenedMap c k v = FlattenedMap { unFlattenedMap :: c k v }
                    deriving (Show,Eq,Ord)
@@ -67,7 +71,7 @@ newtype FlattenedMap c k v = FlattenedMap { unFlattenedMap :: c k v }
 instance (FromJSON k, FromJSON v, IsList (c k v), Item (c k v) ~ (k,v)) => FromJSON (FlattenedMap c k v) where
   parseJSON (Array v) = if odd vlen
                         then fail "Fail to parse a list into FlattenedMap because there are odd number of elements."
-                        else fmap (FlattenedMap . fromList) pairs
+                        else fmap (FlattenedMap . List.fromList) pairs
     where
       vlen = length v
       pairList = map (\i -> (v ! (i * 2), v ! (i * 2 + 1))) [0 .. ((vlen `div` 2) - 1)]
@@ -76,7 +80,7 @@ instance (FromJSON k, FromJSON v, IsList (c k v), Item (c k v) ~ (k,v)) => FromJ
   parseJSON _ = fail "Expects Array"
 
 instance (ToJSON k, ToJSON v, IsList (c k v), Item (c k v) ~ (k,v)) => ToJSON (FlattenedMap c k v) where
-  toJSON (FlattenedMap m) = toJSON $ flatten $ map toValuePair $ toList m
+  toJSON (FlattenedMap m) = toJSON $ flatten $ map toValuePair $ List.toList m
     where
       toValuePair (k, v) = (toJSON k, toJSON v)
       flatten pl = (\(k, v) -> [k, v]) =<< pl
@@ -96,9 +100,9 @@ instance GraphSONTyped (FlattenedMap c k v) where
 -- Right (GMap {gmapFlat = False, gmapValue = fromList [("ten",10)]})
 -- >>> Aeson.eitherDecode "[\"ten\", 10]" :: Either String (GMap Text Int)
 -- Right (GMap {gmapFlat = True, gmapValue = fromList [("ten",10)]})
--- >>> Aeson.encode $ GMap False (fromList [(9, "nine")] :: HashMap Int Text)
+-- >>> Aeson.encode $ GMap False (HashMap.fromList [(9, "nine")] :: HashMap Int Text)
 -- "{\"9\":\"nine\"}"
--- >>> Aeson.encode $ GMap True (fromList [(9, "nine")] :: HashMap Int Text)
+-- >>> Aeson.encode $ GMap True (HashMap.fromList [(9, "nine")] :: HashMap Int Text)
 -- "[9,\"nine\"]"
 data GMap k v =
   GMap
@@ -176,3 +180,7 @@ singleton e = GMap { gmapFlat = gmapEntryFlat e,
                      gmapValue = HM.singleton (gmapEntryKey e) (gmapEntryValue e)
                    }
 
+toList :: GMap k v -> [GMapEntry k v]
+toList gm = map toEntry $ HM.toList $ gmapValue gm
+  where
+    toEntry (k, v) = GMapEntry (gmapFlat gm) k v
