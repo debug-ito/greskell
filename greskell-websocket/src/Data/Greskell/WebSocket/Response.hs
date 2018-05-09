@@ -25,7 +25,8 @@ import GHC.Generics (Generic)
 import Data.Text (Text)
 import Data.UUID (UUID)
 
-import Data.Greskell.GMap (gsonObject)
+import Data.Greskell.GraphSON (gsonValue)
+import Data.Greskell.GMap (unGMap)
 
 
 -- | Response status code
@@ -100,7 +101,7 @@ instance FromJSON ResponseStatus where
     ResponseStatus
     <$> o .: "code"
     <*> o .: "message"
-    <*> (gsonObject <$> o .: "attributes")
+    <*> (unGMap <$> gsonValue <$> o .: "attributes")
   parseJSON _ = empty
 
 
@@ -117,7 +118,7 @@ instance FromJSON s => FromJSON (ResponseResult s) where
   parseJSON (Object o) =
     ResponseResult
     <$> o .: "data"
-    <*> (gsonObject <$> o .: "meta")
+    <*> (unGMap <$> gsonValue <$> o .: "meta")
   parseJSON _ = empty
 
 instance Functor ResponseResult where
