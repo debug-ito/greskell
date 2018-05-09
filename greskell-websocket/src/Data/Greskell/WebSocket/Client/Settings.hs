@@ -8,4 +8,11 @@ module Data.Greskell.WebSocket.Client.Settings
        ( Settings(..)
        ) where
 
-data Settings = Settings
+import Data.Aeson (Value)
+
+import qualified Data.Greskell.WebSocket.Connection.Settings as ConnSet
+
+data Settings =
+  Settings
+  { connectionSettings :: ConnSet.Settings Value
+  }
