@@ -8,12 +8,15 @@ module Data.Greskell.WebSocket.Client
        ( Client,
          connect,
          close,
+         submit,
          submitRaw,
          nextResult,
          ResultHandle
        ) where
 
-import Data.Aeson (Object, Value)
+import Data.Aeson (Object, Value, FromJSON)
+import Data.Greskell.Greskell (ToGreskell(GreskellReturn))
+import Data.Greskell.IteratorItem (IteratorItem)
 import Data.Text (Text)
 
 import Data.Greskell.WebSocket.Client.Settings (Settings)
@@ -39,6 +42,13 @@ close = undefined
 -- from the server.
 data ResultHandle v
 
+submit :: ToGreskell g
+       => Client
+       -> g -- ^ Gresmlin script
+       -> Maybe Object -- ^ bindings
+       -> IO (ResultHandle (IteratorItem (GreskellReturn g)))
+submit = undefined
+
 -- | Less type-safe version of 'submit'.
 submitRaw :: Client
           -> Text -- ^ Gremlin script
@@ -48,5 +58,5 @@ submitRaw = undefined
 
 -- | Get the next value from the 'ResultHandle'. If you have got all
 -- values, it returns 'Nothing'.
-nextResult :: ResultHandle v -> IO (Maybe v)
+nextResult :: FromJSON v => ResultHandle v -> IO (Maybe v)
 nextResult = undefined
