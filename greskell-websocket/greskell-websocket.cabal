@@ -32,7 +32,7 @@ library
                         Data.Greskell.WebSocket.Codec,
                         Data.Greskell.WebSocket.Codec.JSON
                         Data.Greskell.WebSocket.Client,
-                        Data.Greskell.WebSocket.Client.Settings
+                        Data.Greskell.WebSocket.Client.Options
   other-modules:        Data.Greskell.WebSocket.Request.Aeson,
                         Data.Greskell.WebSocket.Connection.Impl,
                         Data.Greskell.WebSocket.Connection.Type

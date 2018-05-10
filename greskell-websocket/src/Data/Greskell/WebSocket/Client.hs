@@ -21,7 +21,7 @@ import Data.Greskell.Greskell (ToGreskell(GreskellReturn), toGremlin)
 import Data.Greskell.IteratorItem (IteratorItem)
 import Data.Text (Text)
 
-import Data.Greskell.WebSocket.Client.Settings (Settings(..))
+import Data.Greskell.WebSocket.Client.Options (Options(..))
 import Data.Greskell.WebSocket.Connection
   ( Host, Port, Connection
   )
@@ -33,15 +33,15 @@ import qualified Data.Greskell.WebSocket.Request.Standard as ReqStd
 -- can send Gremlin expression for evaluation by 'submit' function.
 data Client =
   Client
-  { clientSettings :: Settings,
+  { clientOpts :: Options,
     clientConn :: Connection Value
   }
 
 -- | Create a 'Client' to a Gremlin Server.
-connect :: Settings -> Host -> Port -> IO Client
-connect s host port = do
-  conn <- Conn.connect (connectionSettings s) host port
-  return $ Client { clientSettings = s,
+connect :: Options -> Host -> Port -> IO Client
+connect opts host port = do
+  conn <- Conn.connect (connectionSettings opts) host port
+  return $ Client { clientOpts = opts,
                     clientConn = conn
                   }
 
