@@ -63,6 +63,9 @@ data ResultHandle v =
     rhParseValue :: Value -> Either String v
   }
 
+instance Functor ResultHandle where
+  fmap f rh = rh { rhParseValue = (fmap . fmap) f $ rhParseValue rh }
+
 submit :: (ToGreskell g, r ~ IteratorItem (GreskellReturn g), FromJSON r)
        => Client
        -> g -- ^ Gresmlin script
