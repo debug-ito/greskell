@@ -12,9 +12,12 @@ module Data.Greskell.WebSocket.Client
          submit,
          submitRaw,
          nextResult,
-         ResultHandle
+         ResultHandle,
+         withParser,
+         SubmitException(..)
        ) where
 
+import Control.Exception.Safe (throw, Typeable, Exception)
 import Data.Aeson (Object, Value, FromJSON)
 import qualified Data.Aeson as Aeson
 import Data.Greskell.Greskell (ToGreskell(GreskellReturn), toGremlin)
@@ -23,10 +26,12 @@ import Data.Text (Text)
 
 import Data.Greskell.WebSocket.Client.Options (Options(..))
 import Data.Greskell.WebSocket.Connection
-  ( Host, Port, Connection
+  ( Host, Port, Connection, ResponseHandle
   )
 import qualified Data.Greskell.WebSocket.Connection as Conn
 import qualified Data.Greskell.WebSocket.Request.Standard as ReqStd
+import Data.Greskell.WebSocket.Response (ResponseCode, ResponseMessage)
+import qualified Data.Greskell.WebSocket.Response as Res
 
 
 -- | A client that establishes a connection to the Gremlin Server. You
@@ -54,7 +59,8 @@ close c = Conn.close $ clientConn c
 -- from the server.
 data ResultHandle v =
   ResultHandle
-  { rhResHandle :: Conn.ResponseHandle (Either String v)
+  { rhResHandle :: ResponseHandle Value,
+    rhParseValue :: Value -> Either String v
   }
 
 submit :: (ToGreskell g, r ~ IteratorItem (GreskellReturn g), FromJSON r)
@@ -62,11 +68,9 @@ submit :: (ToGreskell g, r ~ IteratorItem (GreskellReturn g), FromJSON r)
        -> g -- ^ Gresmlin script
        -> Maybe Object -- ^ bindings
        -> IO (ResultHandle r)
-submit client greskell bindings = fmap parseResult $ submitRaw client script bindings
+submit client greskell bindings = fmap (withParser decodeValue) $ submitRaw client script bindings
   where
     script = toGremlin greskell
-    parseResult ret_handle = ret_handle { rhResHandle = fmap (decodeValue =<<) $ rhResHandle ret_handle
-                                        }
     decodeValue = resultToEither . Aeson.fromJSON
     resultToEither (Aeson.Error s) = Left s
     resultToEither (Aeson.Success a) = Right a
@@ -78,7 +82,8 @@ submitRaw :: Client
           -> IO (ResultHandle Value)
 submitRaw client script bindings = do
   rh <- Conn.sendRequest conn op
-  return $ ResultHandle { rhResHandle = fmap Right rh
+  return $ ResultHandle { rhResHandle = rh,
+                          rhParseValue = Right
                         }
   where
     conn = clientConn client
@@ -91,7 +96,34 @@ submitRaw client script bindings = do
                          ReqStd.scriptEvaluationTimeout = Nothing
                        }
 
+withParser :: (a -> Either String b) -> ResultHandle a -> ResultHandle b
+withParser f rh = rh { rhParseValue = new_parser }
+  where
+    new_parser v = f =<< rhParseValue rh v
+
+-- | Exception about 'submit' operation and getting its result.
+data SubmitException =
+    ResponseError (ResponseMessage Value)
+    -- ^ The server returns a 'ResponseMessage' with error 'ResponseCode'.
+  | ParseError (ResponseMessage Value) String
+    -- ^ The client fails to parse the \"data\" field of the
+    -- 'ResponseMessage'. The error message is kept in the 'String'
+    -- field.
+  deriving (Show,Typeable)
+
+instance Exception SubmitException
+
+
 -- | Get the next value from the 'ResultHandle'. If you have got all
 -- values, it returns 'Nothing'.
 nextResult :: ResultHandle v -> IO (Maybe v)
-nextResult = undefined -- TODO
+nextResult rh = parseResponse =<< (Conn.nextResponse $ rhResHandle rh)
+  where
+    parseResponse Nothing = return Nothing
+    parseResponse (Just res) =
+      case Res.code $ Res.status res of
+       Res.Success -> parseData res
+       Res.NoContent -> return Nothing
+       Res.PartialContent -> parseData res
+       error_code -> throw $ ResponseError res -- TODO: handle Authenticate code
+    parseData = undefined -- TODO
