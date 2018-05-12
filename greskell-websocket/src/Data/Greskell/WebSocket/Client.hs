@@ -12,11 +12,16 @@ module Data.Greskell.WebSocket.Client
          submit,
          submitRaw,
          nextResult,
+         nextResultSTM,
          ResultHandle,
-         withParser,
          SubmitException(..)
        ) where
 
+import Control.Applicative ((<$>), (<*>))
+import Control.Concurrent.STM
+  ( STM, atomically,
+    TVar, newTVarIO, readTVar, writeTVar
+  )
 import Control.Exception.Safe (throw, Typeable, Exception)
 import Data.Aeson (Object, Value, FromJSON)
 import qualified Data.Aeson as Aeson
@@ -24,7 +29,8 @@ import qualified Data.Aeson.Types as Aeson (Parser)
 import Data.Greskell.Greskell (ToGreskell(GreskellReturn), toGremlin)
 import Data.Greskell.GraphSON (GraphSON, gsonValue)
 import Data.Greskell.IteratorItem (IteratorItem)
-import Data.Vector (Vector)
+import Data.Monoid (mempty)
+import Data.Vector (Vector, (!))
 import Data.Text (Text)
 import Data.Traversable (traverse)
 
@@ -64,11 +70,10 @@ close c = Conn.close $ clientConn c
 data ResultHandle v =
   ResultHandle
   { rhResHandle :: ResponseHandle Value,
-    rhParseValue :: Value -> Either String (Vector v)
+    rhParseValue :: Value -> Either String (Vector v),
+    rhResultCache :: TVar (Vector v),
+    rhNextResultIndex :: TVar Int
   }
-
-instance Functor ResultHandle where
-  fmap f rh = rh { rhParseValue = (fmap . fmap . fmap) f $ rhParseValue rh }
 
 unwrapGraphSONResult :: GraphSON (Vector (GraphSON v)) -> Vector v
 unwrapGraphSONResult = fmap gsonValue . gsonValue
@@ -76,8 +81,11 @@ unwrapGraphSONResult = fmap gsonValue . gsonValue
 submitBase :: FromJSON r => Client -> Text -> Maybe Object -> IO (ResultHandle r)
 submitBase client script bindings = do
   rh <- Conn.sendRequest conn op
+  (cache, index) <- (,) <$> newTVarIO mempty <*> newTVarIO 0
   return $ ResultHandle { rhResHandle = rh,
-                          rhParseValue = parser
+                          rhParseValue = parser,
+                          rhResultCache = cache,
+                          rhNextResultIndex = index
                         }
   where
     conn = clientConn client
@@ -107,13 +115,6 @@ submitRaw :: Client
           -> IO (ResultHandle Value)
 submitRaw = submitBase
 
-
--- | Add a parser function to 'ResultHandle'.
-withParser :: (a -> Either String b) -> ResultHandle a -> ResultHandle b
-withParser f rh = rh { rhParseValue = new_parser }
-  where
-    new_parser v = traverse f =<< rhParseValue rh v
-
 -- | Exception about 'submit' operation and getting its result.
 data SubmitException =
     ResponseError (ResponseMessage Value)
@@ -130,10 +131,33 @@ instance Exception SubmitException
 -- | Get the next value from the 'ResultHandle'. If you have got all
 -- values, it returns 'Nothing'.
 nextResult :: ResultHandle v -> IO (Maybe v)
-nextResult rh = parseResponse =<< (Conn.nextResponse $ rhResHandle rh)
+nextResult = atomically . nextResultSTM
+
+-- | 'STM' version of 'nextResult'.
+nextResultSTM :: ResultHandle v -> STM (Maybe v)
+nextResultSTM rh = do
+  mnext <- getNextCachedResult rh
+  case mnext of
+   Just v -> return $ Just v
+   Nothing -> loadResponse rh
+
+getNextCachedResult :: ResultHandle v -> STM (Maybe v)
+getNextCachedResult rh = do
+  (cache, index) <- (,) <$> (readTVar $ rhResultCache rh) <*> (readTVar $ rhNextResultIndex rh)
+  if index < length cache
+    then fromCache cache index
+    else return Nothing
+  where
+    fromCache cache index = do
+      writeTVar (rhNextResultIndex rh) $ index + 1
+      return $ Just (cache ! index)
+
+-- TODO: maybe we should cache the exception/Nothing returned from nextResponseSTM
+loadResponse :: ResultHandle v -> STM (Maybe v)
+loadResponse rh = parseResponse =<< (Conn.nextResponseSTM $ rhResHandle rh)
   where
     parseResponse Nothing = return Nothing
-    parseResponse (Just res) =
+    parseResponse (Just res) = 
       case Res.code $ Res.status res of
        Res.Success -> parseData res
        Res.NoContent -> return Nothing
@@ -142,8 +166,16 @@ nextResult rh = parseResponse =<< (Conn.nextResponse $ rhResHandle rh)
     parseData res =
       case rhParseValue rh $ Res.resultData $ Res.result res of
        Left err -> throw $ ParseError res err
-       Right parsed -> undefined -- TODO: we will need a cache to hold the received data vector.
-
+       Right parsed -> do
+         writeTVar (rhResultCache rh) parsed
+         if length parsed == 0
+           then do
+             writeTVar (rhNextResultIndex rh) 0
+             return Nothing
+           else do
+             writeTVar (rhNextResultIndex rh) 1
+             return $ Just (parsed ! 0)
+      
 
 -- nextResponseと同様、throwしたあと連続してnextResultしても引き続きthrowさせないといけない。
 
