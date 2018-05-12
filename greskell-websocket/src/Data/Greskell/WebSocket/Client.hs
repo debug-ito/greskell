@@ -162,7 +162,7 @@ loadResponse rh = parseResponse =<< (Conn.nextResponseSTM $ rhResHandle rh)
        Res.Success -> parseData res
        Res.NoContent -> return Nothing
        Res.PartialContent -> parseData res
-       error_code -> throw $ ResponseError res -- TODO: handle Authenticate code
+       _ -> throw $ ResponseError res -- TODO: handle Authenticate code
     parseData res =
       case rhParseValue rh $ Res.resultData $ Res.result res of
        Left err -> throw $ ParseError res err
