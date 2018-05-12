@@ -90,7 +90,9 @@ test-suite server-test
   main-is:              ServerTest.hs
   -- default-extensions:   
   --  other-extensions:     
-  other-modules:        TestUtil.TCounter
+  other-modules:        TestUtil.TCounter,
+                        TestUtil.Env,
+                        ServerTest.Connection
   if flag(server-test)
     build-depends:        base, greskell-websocket, greskell-core,
                           aeson, uuid, unordered-containers, text, async, safe-exceptions,
