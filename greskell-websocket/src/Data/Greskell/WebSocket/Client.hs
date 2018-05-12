@@ -20,9 +20,13 @@ module Data.Greskell.WebSocket.Client
 import Control.Exception.Safe (throw, Typeable, Exception)
 import Data.Aeson (Object, Value, FromJSON)
 import qualified Data.Aeson as Aeson
+import qualified Data.Aeson.Types as Aeson (Parser)
 import Data.Greskell.Greskell (ToGreskell(GreskellReturn), toGremlin)
+import Data.Greskell.GraphSON (GraphSON, gsonValue)
 import Data.Greskell.IteratorItem (IteratorItem)
+import Data.Vector (Vector)
 import Data.Text (Text)
+import Data.Traversable (traverse)
 
 import Data.Greskell.WebSocket.Client.Options (Options(..))
 import Data.Greskell.WebSocket.Connection
@@ -60,33 +64,20 @@ close c = Conn.close $ clientConn c
 data ResultHandle v =
   ResultHandle
   { rhResHandle :: ResponseHandle Value,
-    rhParseValue :: Value -> Either String v
+    rhParseValue :: Value -> Either String (Vector v)
   }
 
 instance Functor ResultHandle where
-  fmap f rh = rh { rhParseValue = (fmap . fmap) f $ rhParseValue rh }
+  fmap f rh = rh { rhParseValue = (fmap . fmap . fmap) f $ rhParseValue rh }
 
-submit :: (ToGreskell g, r ~ IteratorItem (GreskellReturn g), FromJSON r)
-       => Client
-       -> g -- ^ Gresmlin script
-       -> Maybe Object -- ^ bindings
-       -> IO (ResultHandle r)
-submit client greskell bindings = fmap (withParser decodeValue) $ submitRaw client script bindings
-  where
-    script = toGremlin greskell
-    decodeValue = resultToEither . Aeson.fromJSON
-    resultToEither (Aeson.Error s) = Left s
-    resultToEither (Aeson.Success a) = Right a
+unwrapGraphSONResult :: GraphSON (Vector (GraphSON v)) -> Vector v
+unwrapGraphSONResult = fmap gsonValue . gsonValue
 
--- | Less type-safe version of 'submit'.
-submitRaw :: Client
-          -> Text -- ^ Gremlin script
-          -> Maybe Object -- ^ bindings
-          -> IO (ResultHandle Value)
-submitRaw client script bindings = do
+submitBase :: FromJSON r => Client -> Text -> Maybe Object -> IO (ResultHandle r)
+submitBase client script bindings = do
   rh <- Conn.sendRequest conn op
   return $ ResultHandle { rhResHandle = rh,
-                          rhParseValue = Right
+                          rhParseValue = parser
                         }
   where
     conn = clientConn client
@@ -98,11 +89,30 @@ submitRaw client script bindings = do
                          ReqStd.aliases = Nothing,
                          ReqStd.scriptEvaluationTimeout = Nothing
                        }
+    parser val = resultToEither $ fmap unwrapGraphSONResult $ Aeson.fromJSON val
+    resultToEither (Aeson.Error s) = Left s
+    resultToEither (Aeson.Success a) = Right a
 
+submit :: (ToGreskell g, r ~ IteratorItem (GreskellReturn g), FromJSON r)
+       => Client
+       -> g -- ^ Gresmlin script
+       -> Maybe Object -- ^ bindings
+       -> IO (ResultHandle r)
+submit client greskell bindings = submitBase client (toGremlin greskell) bindings
+
+-- | Less type-safe version of 'submit'.
+submitRaw :: Client
+          -> Text -- ^ Gremlin script
+          -> Maybe Object -- ^ bindings
+          -> IO (ResultHandle Value)
+submitRaw = submitBase
+
+
+-- | Add a parser function to 'ResultHandle'.
 withParser :: (a -> Either String b) -> ResultHandle a -> ResultHandle b
 withParser f rh = rh { rhParseValue = new_parser }
   where
-    new_parser v = f =<< rhParseValue rh v
+    new_parser v = traverse f =<< rhParseValue rh v
 
 -- | Exception about 'submit' operation and getting its result.
 data SubmitException =
@@ -129,4 +139,12 @@ nextResult rh = parseResponse =<< (Conn.nextResponse $ rhResHandle rh)
        Res.NoContent -> return Nothing
        Res.PartialContent -> parseData res
        error_code -> throw $ ResponseError res -- TODO: handle Authenticate code
-    parseData = undefined -- TODO
+    parseData res =
+      case rhParseValue rh $ Res.resultData $ Res.result res of
+       Left err -> throw $ ParseError res err
+       Right parsed -> undefined -- TODO: we will need a cache to hold the received data vector.
+
+
+-- nextResponseと同様、throwしたあと連続してnextResultしても引き続きthrowさせないといけない。
+
+-- そもそも1つのResponseHandleまたはResultHandleを複数スレッドからnextするテスト書かないといけなくね。

@@ -49,7 +49,8 @@ library
                         websockets,
                         hashtables,
                         dlist,
-                        safe-exceptions
+                        safe-exceptions,
+                        vector
 
 -- executable greskell-websocket
 --   default-language:     Haskell2010
