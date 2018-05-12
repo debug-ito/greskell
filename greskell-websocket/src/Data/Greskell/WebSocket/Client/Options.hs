@@ -10,11 +10,17 @@ module Data.Greskell.WebSocket.Client.Options
          defOptions,
          -- ** accessor functions
          connectionSettings,
+         batchSize,
+         language,
+         aliases,
+         scriptEvaluationTimeout,
          -- * Settings
          module Data.Greskell.WebSocket.Connection.Settings
        ) where
 
 import Data.Aeson (Value)
+import Data.HashMap.Strict (HashMap)
+import Data.Text (Text)
 
 import Data.Greskell.WebSocket.Connection (Connection)
 import Data.Greskell.WebSocket.Connection.Settings
@@ -25,13 +31,28 @@ import Data.Greskell.WebSocket.Connection.Settings
 -- customize its fields by accessor functions.
 data Options =
   Options
-  { connectionSettings :: Settings Value
+  { connectionSettings :: !(Settings Value),
     -- ^ Settings for the underlying 'Connection'. Default:
     -- 'defJSONSettings'.
+    batchSize :: !(Maybe Int),
+    -- ^ \"batchSize\" field for \"eval\" operation. Default:
+    -- 'Nothing'.
+    language :: !(Maybe Text),
+    -- ^ \"language\" field for \"eval\" operation. Default:
+    -- 'Nothing'.
+    aliases :: !(Maybe (HashMap Text Text)),
+    -- ^ \"aliases\" field for \"eval\" operation. Default: 'Nothing'.
+    scriptEvaluationTimeout :: !(Maybe Int)
+    -- ^ \"scriptEvaluationTimeout\" field for \"eval\"
+    -- operation. Default: 'Nothing'.
   }
 
 defOptions :: Options
 defOptions =
   Options
-  { connectionSettings = defJSONSettings
+  { connectionSettings = defJSONSettings,
+    batchSize = Nothing,
+    language = Nothing,
+    aliases = Nothing,
+    scriptEvaluationTimeout = Nothing
   }

@@ -34,7 +34,8 @@ import Data.Vector (Vector, (!))
 import Data.Text (Text)
 import Data.Traversable (traverse)
 
-import Data.Greskell.WebSocket.Client.Options (Options(..))
+import Data.Greskell.WebSocket.Client.Options (Options)
+import qualified Data.Greskell.WebSocket.Client.Options as Opt
 import Data.Greskell.WebSocket.Connection
   ( Host, Port, Connection, ResponseHandle
   )
@@ -55,7 +56,7 @@ data Client =
 -- | Create a 'Client' to a Gremlin Server.
 connect :: Options -> Host -> Port -> IO Client
 connect opts host port = do
-  conn <- Conn.connect (connectionSettings opts) host port
+  conn <- Conn.connect (Opt.connectionSettings opts) host port
   return $ Client { clientOpts = opts,
                     clientConn = conn
                   }
@@ -89,13 +90,13 @@ submitBase client script bindings = do
                         }
   where
     conn = clientConn client
-    -- TODO: make these fields configurable
-    op = ReqStd.OpEval { ReqStd.batchSize = Nothing,
+    opts = clientOpts client
+    op = ReqStd.OpEval { ReqStd.batchSize = Opt.batchSize opts,
                          ReqStd.gremlin = script,
                          ReqStd.bindings = bindings,
-                         ReqStd.language = Nothing,
-                         ReqStd.aliases = Nothing,
-                         ReqStd.scriptEvaluationTimeout = Nothing
+                         ReqStd.language = Opt.language opts,
+                         ReqStd.aliases = Opt.aliases opts,
+                         ReqStd.scriptEvaluationTimeout = Opt.scriptEvaluationTimeout opts
                        }
     parser val = resultToEither $ fmap unwrapGraphSONResult $ Aeson.fromJSON val
     resultToEither (Aeson.Error s) = Left s
