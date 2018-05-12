@@ -395,7 +395,11 @@ sendRequest' conn req_msg = do
 -- On error, it may throw all sorts of exceptions including
 -- 'RequestException'.
 nextResponse :: ResponseHandle s -> IO (Maybe (ResponseMessage s))
-nextResponse rh = atomically $ do
+nextResponse = atomically . nextResponseSTM
+
+-- | 'STM' version of 'nextResponse'.
+nextResponseSTM :: ResponseHandle s -> STM (Maybe (ResponseMessage s))
+nextResponseSTM rh = do
   termed <- readTVar $ rhTerminated rh
   if termed
     then return Nothing

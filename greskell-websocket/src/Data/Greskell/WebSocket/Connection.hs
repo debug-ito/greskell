@@ -18,6 +18,7 @@ module Data.Greskell.WebSocket.Connection
          sendRequest',
          ResponseHandle,
          nextResponse,
+         nextResponseSTM,
          slurpResponses,
          -- * Exceptions
          GeneralException(..),
