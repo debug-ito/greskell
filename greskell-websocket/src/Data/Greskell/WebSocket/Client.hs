@@ -7,6 +7,7 @@
 module Data.Greskell.WebSocket.Client
        ( -- * Make a Client
          connect,
+         connectWith,
          close,
          Client,
          Host,

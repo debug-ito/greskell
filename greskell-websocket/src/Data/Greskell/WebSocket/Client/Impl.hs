@@ -4,7 +4,8 @@
 -- Description: 
 -- Maintainer: Toshio Ito <debug.ito@gmail.com>
 --
--- __Internal module__.
+-- __Internal module__. It's like
+-- "Data.Greskell.WebSocket.Connection.Impl".
 module Data.Greskell.WebSocket.Client.Impl
        where
 
@@ -44,9 +45,13 @@ data Client =
     clientConn :: Connection Value
   }
 
+-- | Create a 'Client' to a Gremlin Server, with the default 'Options'.
+connect :: Host -> Port -> IO Client
+connect = connectWith Opt.defOptions
+
 -- | Create a 'Client' to a Gremlin Server.
-connect :: Options -> Host -> Port -> IO Client
-connect opts host port = do
+connectWith :: Options -> Host -> Port -> IO Client
+connectWith opts host port = do
   conn <- Conn.connect (Opt.connectionSettings opts) host port
   return $ Client { clientOpts = opts,
                     clientConn = conn
