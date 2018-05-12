@@ -14,6 +14,7 @@ import Data.Aeson (Value(Number), FromJSON(..), ToJSON(toJSON), Object)
 import qualified Data.Aeson as Aeson
 import qualified Data.Aeson.Types as Aeson (parseEither)
 import qualified Data.ByteString.Lazy as BSL
+import Data.Maybe (isNothing, isJust, fromJust)
 import Data.Monoid ((<>))
 import qualified Data.HashMap.Strict as HM
 import Data.Greskell.GraphSON (GraphSON, gsonValue)
@@ -206,6 +207,17 @@ conn_basic_spec = do
       got_hist <- TCounter.history tcounter
       length got_hist `shouldBe` (2 * 10)
       forM_ got_hist $ \conc -> conc `shouldSatisfy` (<= exp_concurrency_max)
+  specify "multiple threads reading a single ResponseHandle" $ withConn $ \conn -> do
+    let op = (opEval "[1,2,3,4,5,6,7,8,9,10]")
+             { batchSize = Just 1
+             }
+    rh <- sendRequest conn op
+    mgot <- mapConcurrently (const $ nextResponse rh) ([1..15] :: [Int])
+    (length $ filter isNothing mgot) `shouldBe` 5
+    let got = map fromJust $ filter isJust mgot
+        got_data = map (responseValues . fmap parseValue) got :: [Either String [Int]]
+    map (code . status) got `shouldMatchList` (Success : replicate 9 PartialContent)
+    got_data `shouldMatchList` map (\v -> Right [v]) [1..10]
 
 conn_error_spec :: SpecWith (Host, Port)
 conn_error_spec = do
