@@ -93,7 +93,8 @@ test-suite server-test
   --  other-extensions:     
   other-modules:        TestUtil.TCounter,
                         TestUtil.Env,
-                        ServerTest.Connection
+                        ServerTest.Connection,
+                        ServerTest.Client
   if flag(server-test)
     build-depends:        base, greskell-websocket, greskell-core,
                           aeson, uuid, unordered-containers, text, async, safe-exceptions,
