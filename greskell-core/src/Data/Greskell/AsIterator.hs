@@ -1,11 +1,11 @@
 {-# LANGUAGE TypeFamilies #-}
 -- |
--- Module: Data.Greskell.IteratorItem
+-- Module: Data.Greskell.AsIterator
 -- Description: Conversion from Object to Iterator in Gremlin
 -- Maintainer: Toshio Ito <debug.ito@gmail.com>
 --
 -- 
-module Data.Greskell.IteratorItem
+module Data.Greskell.AsIterator
        ( AsIterator(..)
        ) where
 
@@ -21,14 +21,15 @@ import Data.Vector (Vector)
 
 import Data.Greskell.GMap (GMap, GMapEntry)
 
--- | 'IteratorItem' type family is association of type @a@ and the
--- type of its item when type @a@ is seen as an iterator.
---
--- In Gremlin, the conversion is done by
+-- | Types that are converted to an iterator by
 -- @org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils.asIterator@
--- method.
+-- method. In fact, that method can convert any type to an iterator.
 --
--- Conversion rule of thumb:
+-- Associated with this type-class is 'IteratorItem'. 'IteratorItem'
+-- type family is association of type @a@ and the type of its item
+-- when type @a@ is converted to an iterator.
+--
+-- 'IteratorItem' rule of thumb:
 --
 -- - @Iterator@ and @Iterable@ types like @List@, @Stream@ and
 --   @GraphTraversal@ are converted to their element types.
@@ -96,7 +97,6 @@ instance AsIterator (GMap k v) where
 instance AsIterator (HashMap k v) where
   type IteratorItem (HashMap k v) = GMapEntry k v
 
--- Integral a => type instance IteratorItem (Ratio a) = Ratio a
 -- Maybe?
 
 
