@@ -22,7 +22,6 @@ import qualified Data.Aeson as Aeson
 import qualified Data.Aeson.Types as Aeson (Parser)
 import Data.Greskell.Greskell (ToGreskell(GreskellReturn), toGremlin)
 import Data.Greskell.GraphSON (GraphSON, gsonValue)
--- import Data.Greskell.IteratorItem (IteratorItem)
 import Data.Greskell.AsIterator (AsIterator(IteratorItem))
 import Data.Monoid (mempty)
 import Data.Vector (Vector, (!))
@@ -110,9 +109,16 @@ submitBase client script bindings = do
     resultToEither (Aeson.Error s) = Left s
     resultToEither (Aeson.Success a) = Right a
 
+-- | Submit a Gremlin script to the server. You can get its results by
+-- 'ResultHandle'. The result type @v@ is determined by the script
+-- type @g@.
+-- 
+-- Usually this function does not throw any exception. Exceptions
+-- about sending requests are reported when you operate on
+-- 'ResultHandle'.
 submit :: (ToGreskell g, r ~ GreskellReturn g, AsIterator r, v ~ IteratorItem r, FromJSON v)
        => Client
-       -> g -- ^ Gresmlin script
+       -> g -- ^ Gremlin script
        -> Maybe Object -- ^ bindings
        -> IO (ResultHandle v)
 submit client greskell bindings = submitBase client (toGremlin greskell) bindings
@@ -138,7 +144,11 @@ instance Exception SubmitException
 
 
 -- | Get the next value from the 'ResultHandle'. If you have got all
--- values, it returns 'Nothing'.
+-- values, it returns 'Nothing'.  This function may block for a new
+-- response to come.
+--
+-- On error, it may throw all sorts of exceptions including
+-- 'SubmitException' and 'Conn.RequestException'.
 nextResult :: ResultHandle v -> IO (Maybe v)
 nextResult = atomically . nextResultSTM
 

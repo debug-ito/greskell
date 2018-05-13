@@ -17,11 +17,11 @@ module Data.Greskell.WebSocket.Client
          -- * Submit evaluation requests
          submit,
          submitRaw,
+         ResultHandle,
          nextResult,
          nextResultSTM,
          slurpResults,
          -- * Exceptions
-         ResultHandle,
          SubmitException(..)
        ) where
 
