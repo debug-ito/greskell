@@ -97,7 +97,8 @@ instance AsIterator (GMap k v) where
 instance AsIterator (HashMap k v) where
   type IteratorItem (HashMap k v) = GMapEntry k v
 
--- Maybe?
+instance AsIterator a => AsIterator (Maybe a) where
+  type IteratorItem (Maybe a) = Maybe (IteratorItem a)
 
 
 -- About encoding of Map.Entry

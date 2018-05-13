@@ -60,3 +60,8 @@ client_basic_spec = do
     rh <- submit client g Nothing
     got <- fmap (map unGMapEntry) $ slurpResults rh
     got `shouldMatchList` [(100, "hoge"), (200, "foo"), (300, "bar")]
+  specify "eval (Maybe Int)" $ withClient $ \client -> do
+    let g :: Greskell (Maybe Int)
+        g = G.unsafeGreskell "100"
+    rh <- submit client g Nothing
+    slurpResults rh `shouldReturn` [Just 100]
