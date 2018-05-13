@@ -35,6 +35,7 @@ import qualified Data.Greskell.WebSocket.Connection as Conn
 import qualified Data.Greskell.WebSocket.Request.Standard as ReqStd
 import Data.Greskell.WebSocket.Response (ResponseCode, ResponseMessage)
 import qualified Data.Greskell.WebSocket.Response as Res
+import Data.Greskell.WebSocket.Util (slurp)
 
 
 -- | A client that establishes a connection to the Gremlin Server. You
@@ -172,6 +173,10 @@ loadResponse rh = parseResponse =<< (Conn.nextResponseSTM $ rhResHandle rh)
            else do
              writeTVar (rhNextResultIndex rh) 1
              return $ Just (parsed ! 0)
+
+-- | Get all remaining results from 'ResultHandle'.
+slurpResults :: ResultHandle v -> IO [v]
+slurpResults h = slurp $ nextResult h
       
 -- nextResponseと同様、throwしたあと連続してnextResultしても引き続きthrowさせないといけない。
 

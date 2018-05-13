@@ -19,6 +19,7 @@ module Data.Greskell.WebSocket.Client
          submitRaw,
          nextResult,
          nextResultSTM,
+         slurpResults,
          -- * Exceptions
          ResultHandle,
          SubmitException(..)
