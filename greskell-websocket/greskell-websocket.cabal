@@ -36,7 +36,8 @@ library
   other-modules:        Data.Greskell.WebSocket.Request.Aeson,
                         Data.Greskell.WebSocket.Connection.Impl,
                         Data.Greskell.WebSocket.Connection.Type,
-                        Data.Greskell.WebSocket.Client.Impl
+                        Data.Greskell.WebSocket.Client.Impl,
+                        Data.Greskell.WebSocket.Util
   build-depends:        base,
                         greskell-core,
                         bytestring,

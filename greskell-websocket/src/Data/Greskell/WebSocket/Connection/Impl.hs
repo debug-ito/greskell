@@ -24,8 +24,7 @@ import Control.Exception.Safe
   )
 import Control.Monad (when, void, forM_)
 import Data.Aeson (Value)
-import qualified Data.DList as DL
-import Data.Monoid (mempty, (<>))
+import Data.Monoid (mempty)
 import Data.Typeable (Typeable)
 import Data.UUID (UUID)
 import qualified Network.WebSockets as WS
@@ -49,6 +48,7 @@ import Data.Greskell.WebSocket.Response
     ResponseStatus(ResponseStatus, code),
     isTerminating
   )
+import Data.Greskell.WebSocket.Util (slurp)
 
 -- | Host name or an IP address.
 type Host = String
@@ -422,10 +422,4 @@ isTerminatingResponse (ResponseMessage { status = (ResponseStatus { code = c }) 
 
 -- | Get all remaining 'ResponseMessage's from 'ResponseHandle'.
 slurpResponses :: ResponseHandle s -> IO [ResponseMessage s]
-slurpResponses h = fmap DL.toList $ go mempty
-  where
-    go got = do
-      mres <- nextResponse h
-      case mres of
-       Nothing -> return got
-       Just res -> go (got <> DL.singleton res)
+slurpResponses h = slurp $ nextResponse h
