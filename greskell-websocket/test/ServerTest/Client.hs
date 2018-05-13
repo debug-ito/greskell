@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 module ServerTest.Client (main,spec) where
 
+import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (withAsync)
 import Control.Exception.Safe (bracket)
 import Control.Monad (forM_)
@@ -15,10 +16,12 @@ import Data.Greskell.GMap (GMap, GMapEntry, unGMapEntry)
 import Data.Greskell.WebSocket.Client
   ( Host, Port, Client, Options,
     connectWith, close, submit,
-    defOptions, batchSize,
+    defOptions, batchSize, connectionSettings, responseTimeout,
     nextResult, slurpResults,
-    SubmitException(ResponseError)
+    SubmitException(ResponseError, ParseError)
   )
+import Data.Greskell.WebSocket.Connection
+  (RequestException(ResponseTimeout))
 import Data.Greskell.WebSocket.Request (RequestMessage(requestId))
 import qualified Data.Greskell.WebSocket.Response as Res
 
@@ -85,6 +88,14 @@ client_basic_spec = do
     forClient' opt host port $ \client -> do
       rh <- submit client g Nothing
       slurpResults rh `shouldReturn` [1..31]
+  specify "ParseError exception" $ withClient $ \client -> do
+    let g :: Greskell Int
+        g = G.unsafeGreskell "\"some string\""
+        expEx (ParseError _ _) = True
+        expEx _ = False
+    rh <- submit client g Nothing
+    nextResult rh `shouldThrow` expEx
+    nextResult rh `shouldThrow` expEx
 
 bad_server_spec :: SpecWith Port
 bad_server_spec = do
@@ -102,4 +113,24 @@ bad_server_spec = do
         nextResult rh `shouldThrow` expEx
         nextResult rh `shouldThrow` expEx
         nextResult rh `shouldThrow` expEx
-    
+  specify "response timeout" $ \port -> do
+    let server = wsServer port $ \wsconn -> do
+          req <- receiveRequest wsconn
+          WS.sendBinaryData wsconn $ simpleRawResponse (requestId req) 206 "[99]"
+          threadDelay 10000000
+        opt = defOptions { connectionSettings = sett
+                         }
+        sett = (connectionSettings defOptions)
+               { responseTimeout = 1
+               }
+        expEx ResponseTimeout = True
+        expEx _ = False
+    withAsync server $ \_ -> do
+      waitForServer
+      forClient' opt "localhost" port $ \client -> do
+        let g = G.list [99, 100, 101, 102] :: Greskell [Int]
+        rh <- submit client g Nothing
+        nextResult rh `shouldReturn` Just 99
+        nextResult rh `shouldThrow` expEx
+        nextResult rh `shouldThrow` expEx
+        
