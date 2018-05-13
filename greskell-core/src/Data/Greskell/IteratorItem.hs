@@ -11,6 +11,7 @@ module Data.Greskell.IteratorItem
 
 import Data.HashMap.Strict (HashMap)
 import Data.Text (Text)
+import Data.Vector (Vector)
 
 import Data.Greskell.GMap (GMap, GMapEntry)
 
@@ -40,6 +41,8 @@ type instance IteratorItem Int = Int
 type instance IteratorItem Text = Text
 
 type instance IteratorItem [a] = a
+
+type instance IteratorItem (Vector a) = a
 
 -- | @asIterator@ converts a @Map@ to @Iterator<Map.Entry>@.
 type instance IteratorItem (GMap k v) = GMapEntry k v

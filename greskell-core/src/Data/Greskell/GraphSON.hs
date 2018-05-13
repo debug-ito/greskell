@@ -30,6 +30,7 @@ import Data.Int (Int8, Int16, Int32, Int64)
 import Data.Scientific (Scientific)
 import Data.Text (Text)
 import Data.Traversable (Traversable(traverse))
+import Data.Vector (Vector)
 
 -- $
 -- >>> :set -XOverloadedStrings
@@ -141,6 +142,9 @@ instance GraphSONTyped Double where
   gsonTypeFor _ = "g:Double"
 
 instance GraphSONTyped [a] where
+  gsonTypeFor _ = "g:List"
+
+instance GraphSONTyped (Vector a) where
   gsonTypeFor _ = "g:List"
 
 -- | Map to \"g:Double\".
