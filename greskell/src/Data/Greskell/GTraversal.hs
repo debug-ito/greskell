@@ -147,6 +147,7 @@ import Data.Greskell.Greskell
   ( Greskell, ToGreskell(..), unsafeGreskellLazy, unsafeGreskell, unsafeFunCall,
     toGremlinLazy, toGremlin
   )
+import Data.Greskell.AsIterator (AsIterator(IteratorItem))
 
 -- $setup
 --
@@ -185,7 +186,11 @@ instance ToGreskell (GTraversal c s e) where
 -- use 'GTraversal' instead of 'Greskell' 'GraphTraversal'.
 data GraphTraversal c s e = GraphTraversal
                           deriving (Show)
-                                  
+
+-- | 'GraphTraversal' is an Iterator.
+instance AsIterator (GraphTraversal c s e) where
+  type IteratorItem (GraphTraversal c s e) = e
+
 -- | Unsafely convert output type.
 instance Functor (GraphTraversal c s) where
   fmap _ GraphTraversal = GraphTraversal
