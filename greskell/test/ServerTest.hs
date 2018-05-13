@@ -1,23 +1,26 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings, TypeFamilies #-}
 module Main (main,spec) where
 
 import Control.Category ((<<<))
+import Control.Exception.Safe (bracket)
 import qualified Data.Aeson as Aeson
 import Data.Either (isRight)
+import qualified Data.Greskell.WebSocket.Client as WS
 import Data.Monoid (mempty, (<>))
 import Data.Scientific (Scientific)
 import Data.Text (unpack, Text)
-import qualified Database.TinkerPop as TP
-import qualified Database.TinkerPop.Types as TP (Connection)
 import System.Environment (lookupEnv)
 import Test.Hspec
 
+import Data.Greskell.AsIterator
+  ( AsIterator(IteratorItem)
+  )
 import Data.Greskell.Gremlin
   ( oIncr, oDecr, cCompare, Order,
     Predicate(..), pLt, pAnd, pGte, pNot, pEq, pTest
   )
 import Data.Greskell.Greskell
-  ( toGremlin, Greskell,
+  ( toGremlin, Greskell, toGreskell,
     true, false, list, value, single, number,
     unsafeMethodCall
   )
@@ -45,8 +48,6 @@ spec = withEnv $ do
 
 spec_basics :: SpecWith (String,Int)
 spec_basics = do
-  ---- Note: Currently these tests do not support GraphSON 2.0 or
-  ---- later. Try them with GraphSON 1.0 serializer.
   describe "Num" $ do
     let checkInt :: Greskell Int -> Int -> SpecWith (String,Int)
         checkInt = checkOne
@@ -98,16 +99,18 @@ spec_basics = do
     let array_in_obj = Aeson.object [("foo", Aeson.toJSON [(3 :: Int), 2, 1]), ("hoge", Aeson.toJSON [("a" :: Text), "b", "c"])]
     checkV (value array_in_obj) array_in_obj
 
-shouldReturnA :: (Aeson.ToJSON a, Show e, Eq e) => IO (Either e [Aeson.Value]) -> [a] -> IO ()
-shouldReturnA act expected = act `shouldReturn` Right (map Aeson.toJSON expected)
-
-checkRaw :: Aeson.ToJSON b => Greskell a -> [b] -> SpecWith (String, Int)
-checkRaw  input expected = specify label $ withConn $ \conn -> do
-  TP.submit conn (toGremlin input) Nothing `shouldReturnA` expected
+checkRaw :: (AsIterator a, b ~ IteratorItem a, Aeson.FromJSON b, Eq b, Show b)
+         => Greskell a
+         -> [b]
+         -> SpecWith (String, Int)
+checkRaw  input expected = specify label $ withClient $ \client -> do
+  got <- WS.slurpResults =<< WS.submit client input Nothing
+  got `shouldBe` expected
   where
     label = unpack $ toGremlin input
 
-checkOne :: Aeson.ToJSON a => Greskell a -> a -> SpecWith (String, Int)
+checkOne :: (AsIterator a, b ~ IteratorItem a, Aeson.FromJSON b, Eq b, Show b)
+         => Greskell a -> b -> SpecWith (String, Int)
 checkOne input expected = checkRaw input [expected]
 
 requireEnv :: String -> IO String
@@ -123,8 +126,8 @@ withEnv = before $ do
   port <- fmap read $ requireEnv "GRESKELL_TEST_PORT"
   return (hostname, port)
 
-withConn :: (TP.Connection -> IO ()) -> (String, Int) -> IO ()
-withConn act (host, port) = TP.run host port act
+withClient :: (WS.Client -> IO ()) -> (String, Int) -> IO ()
+withClient act (host, port) = bracket (WS.connect host port) WS.close act
 
 spec_comparator :: SpecWith (String,Int)
 spec_comparator = do
@@ -155,20 +158,24 @@ spec_T = describe "T enum" $ do
   where
     gMapT :: Greskell (T a b) -> Walk Transform a b
     gMapT t = unsafeWalk "map" ["{ " <> toGremlin (unsafeMethodCall t "apply" ["it.get()"]) <> " }"]
-    specFor :: Aeson.ToJSON a => String -> Walk Transform AVertex a -> [a] -> SpecWith (String,Int)
-    specFor desc mapper expected = specify desc $ withConn $ \conn -> do
-      let prelude = 
-            ( "graph = org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph.open(); "
-              <> "v = graph.addVertex(id, 10, label, \"VLABEL\"); "
-              <> "v.property(\"vprop\", 400, \"a\", \"A\", \"b\", \"B\"); "
-              <> "g = graph.traversal(); "
-            )
-          body = toGremlin $ mapper $. sV' [] $ source "g"
-      TP.submit conn (prelude <> body) Nothing `shouldReturnA` expected
+    prefixedTraversal :: Walk Transform AVertex a -> GTraversal Transform () a
+    prefixedTraversal mapper = unsafeGTraversal (prelude <> body)
+      where
+        prelude = 
+          ( "graph = org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph.open(); "
+            <> "v = graph.addVertex(id, 10, label, \"VLABEL\"); "
+            <> "v.property(\"vprop\", 400, \"a\", \"A\", \"b\", \"B\"); "
+            <> "g = graph.traversal(); "
+          )
+        body = toGremlin $ mapper $. sV' [] $ source "g"
+    specFor :: (Aeson.FromJSON a, Eq a, Show a) => String -> Walk Transform AVertex a -> [a] -> SpecWith (String,Int)
+    specFor desc mapper expected = specify desc $ withClient $ \client -> do
+      got <- WS.slurpResults =<< WS.submit client (prefixedTraversal mapper) Nothing
+      got `shouldBe` expected
 
 spec_P :: SpecWith (String,Int)
-spec_P = describe "P class" $ specify "pNot, pEq, pTest" $ withConn $ \conn -> do
+spec_P = describe "P class" $ specify "pNot, pEq, pTest" $ withClient $ \client -> do
   let p = pNot $ pEq $ number 10
-      test v = toGremlin $ pTest p $ v
-  TP.submit conn (test $ number 10) Nothing `shouldReturnA` [False]
-  TP.submit conn (test $ number 15) Nothing `shouldReturnA` [True]
+      test v = WS.slurpResults =<< WS.submit client (pTest p $ v) Nothing
+  test (number 10) `shouldReturn` [False]
+  test (number 15) `shouldReturn` [True]

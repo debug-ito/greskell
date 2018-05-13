@@ -96,14 +96,15 @@ test-suite server-test-suite
   ghc-options:          -Wall -fno-warn-unused-imports "-with-rtsopts=-M512m"
   main-is:              ServerTest.hs
   -- default-extensions:   
-  other-extensions:     OverloadedStrings
+  other-extensions:     OverloadedStrings, TypeFamilies
   -- other-modules:
   if flag(server-test)
     -- Explicitly remove dependency. See https://github.com/haskell/cabal/issues/1725
     build-depends:        base, aeson, hspec, text,
                           greskell, greskell-core,
                           scientific >=0.3.4.9 && <0.4,
-                          gremlin-haskell >=0.1.0.2 && <0.2
+                          greskell-websocket,
+                          safe-exceptions
   else
     buildable: False
 
