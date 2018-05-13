@@ -10,7 +10,12 @@ module Data.Greskell.IteratorItem
        ) where
 
 import Data.HashMap.Strict (HashMap)
+import Data.Int (Int8, Int16, Int32, Int64)
+import Data.Word (Word8, Word16, Word32, Word64)
+import Numeric.Natural (Natural)
+import Data.Scientific (Scientific)
 import Data.Text (Text)
+import qualified Data.Text.Lazy as TL
 import Data.Vector (Vector)
 
 import Data.Greskell.GMap (GMap, GMapEntry)
@@ -37,16 +42,35 @@ import Data.Greskell.GMap (GMap, GMapEntry)
 type family IteratorItem a
 
 type instance IteratorItem Int = Int
-
 type instance IteratorItem Text = Text
 
-type instance IteratorItem [a] = a
+type instance IteratorItem TL.Text = TL.Text
+type instance IteratorItem Bool = Bool
+type instance IteratorItem Char = Char
+type instance IteratorItem Double = Double
+type instance IteratorItem Float = Float
+type instance IteratorItem Int8 = Int8
+type instance IteratorItem Int16 = Int16
+type instance IteratorItem Int32 = Int32
+type instance IteratorItem Int64 = Int64
+type instance IteratorItem Integer = Integer
+type instance IteratorItem Natural = Natural
+type instance IteratorItem Word = Word
+type instance IteratorItem Word8 = Word8
+type instance IteratorItem Word16 = Word16
+type instance IteratorItem Word32 = Word32
+type instance IteratorItem Word64 = Word64
+type instance IteratorItem Scientific = Scientific
 
+-- Integral a => type instance IteratorItem (Ratio a) = Ratio a
+-- Maybe?
+
+
+type instance IteratorItem [a] = a
 type instance IteratorItem (Vector a) = a
 
 -- | @asIterator@ converts a @Map@ to @Iterator<Map.Entry>@.
 type instance IteratorItem (GMap k v) = GMapEntry k v
-
 type instance IteratorItem (HashMap k v) = GMapEntry k v
 
 -- About encoding of Map.Entry
