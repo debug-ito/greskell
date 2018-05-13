@@ -13,7 +13,7 @@ import Data.Greskell.GMap (GMap, GMapEntry, unGMapEntry)
 import Data.Greskell.WebSocket.Client
   ( Host, Port, Client, Options,
     connectWith, close, submit,
-    defOptions,
+    defOptions, batchSize,
     nextResult, slurpResults
   )
 
@@ -65,3 +65,10 @@ client_basic_spec = do
         g = G.unsafeGreskell "100"
     rh <- submit client g Nothing
     slurpResults rh `shouldReturn` [Just 100]
+  specify "multiple response messages" $ \(host, port) -> do
+    let opt = defOptions { batchSize = Just 3
+                         }
+        g = G.list $ map fromInteger [1..31] :: Greskell [Int]
+    forClient' opt host port $ \client -> do
+      rh <- submit client g Nothing
+      slurpResults rh `shouldReturn` [1..31]
