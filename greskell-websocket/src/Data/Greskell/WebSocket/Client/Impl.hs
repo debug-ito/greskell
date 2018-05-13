@@ -179,7 +179,3 @@ loadResponse rh = parseResponse =<< (Conn.nextResponseSTM $ rhResHandle rh)
 slurpResults :: ResultHandle v -> IO [v]
 slurpResults h = slurp $ nextResult h
       
--- nextResponseと同様、throwしたあと連続してnextResultしても引き続きthrowさせないといけない。
-
--- そもそも1つのResponseHandleまたはResultHandleを複数スレッドからnextするテスト書かないといけなくね。
-

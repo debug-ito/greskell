@@ -2,11 +2,12 @@
 module ServerTest.Client (main,spec) where
 
 import Control.Concurrent (threadDelay)
-import Control.Concurrent.Async (withAsync)
+import Control.Concurrent.Async (withAsync, mapConcurrently)
 import Control.Exception.Safe (bracket)
 import Control.Monad (forM_)
 import Data.Aeson (Value(Number))
 import qualified Data.HashMap.Strict as HM
+import Data.Maybe (isNothing, isJust, fromJust)
 import Data.Text (Text)
 import qualified Network.WebSockets as WS
 import Test.Hspec
@@ -104,6 +105,19 @@ client_basic_spec = do
     rh <- submit client g Nothing
     nextResult rh `shouldThrow` expEx
     nextResult rh `shouldThrow` expEx
+  specify "multiple threads reading on a single ResultHandle" $ \(host, port) -> do
+    let opt = defOptions { batchSize = Just 3
+                         }
+        g = G.list $ map fromInteger [1..50] :: Greskell [Int]
+    forClient' opt host port $ \client -> do
+      rh <- submit client g Nothing
+      mgot <- mapConcurrently (const $ nextResult rh) ([1..52] :: [Int])
+      nextResult rh `shouldReturn` Nothing
+      (length $ filter isNothing mgot) `shouldBe` 2
+      let got = map fromJust $ filter isJust mgot
+      got `shouldMatchList` [1..50]
+    
+    
 
 bad_server_spec :: SpecWith Port
 bad_server_spec = do
