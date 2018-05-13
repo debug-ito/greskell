@@ -94,6 +94,7 @@ test-suite server-test
   --  other-extensions:     
   other-modules:        TestUtil.TCounter,
                         TestUtil.Env,
+                        TestUtil.MockServer,
                         ServerTest.Connection,
                         ServerTest.Client
   if flag(server-test)
