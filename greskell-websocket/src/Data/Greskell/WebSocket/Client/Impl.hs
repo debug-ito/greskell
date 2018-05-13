@@ -14,7 +14,9 @@ import Control.Concurrent.STM
   ( STM, atomically,
     TVar, newTVarIO, readTVar, writeTVar
   )
-import Control.Exception.Safe (throw, Typeable, Exception)
+import Control.Exception.Safe
+  ( throw, Typeable, Exception, SomeException, catch
+  )
 import Data.Aeson (Object, Value, FromJSON)
 import qualified Data.Aeson as Aeson
 import qualified Data.Aeson.Types as Aeson (Parser)
@@ -64,6 +66,12 @@ connectWith opts host port = do
 close :: Client -> IO ()
 close c = Conn.close $ clientConn c
 
+data HandleState =
+    HandleOpen
+  | HandleClose
+  | HandleError SomeException
+  deriving (Show)
+
 -- | A handle to receive the result of evaluation of a Gremlin script
 -- from the server.
 data ResultHandle v =
@@ -71,7 +79,8 @@ data ResultHandle v =
   { rhResHandle :: ResponseHandle Value,
     rhParseValue :: Value -> Either String (Vector v),
     rhResultCache :: TVar (Vector v),
-    rhNextResultIndex :: TVar Int
+    rhNextResultIndex :: TVar Int,
+    rhState :: TVar HandleState
   }
 
 unwrapGraphSONResult :: GraphSON (Vector (GraphSON v)) -> Vector v
@@ -80,11 +89,12 @@ unwrapGraphSONResult = fmap gsonValue . gsonValue
 submitBase :: FromJSON r => Client -> Text -> Maybe Object -> IO (ResultHandle r)
 submitBase client script bindings = do
   rh <- Conn.sendRequest conn op
-  (cache, index) <- (,) <$> newTVarIO mempty <*> newTVarIO 0
+  (cache, index, state) <- (,,) <$> newTVarIO mempty <*> newTVarIO 0 <*> newTVarIO HandleOpen
   return $ ResultHandle { rhResHandle = rh,
                           rhParseValue = parser,
                           rhResultCache = cache,
-                          rhNextResultIndex = index
+                          rhNextResultIndex = index,
+                          rhState = state
                         }
   where
     conn = clientConn client
@@ -135,10 +145,29 @@ nextResult = atomically . nextResultSTM
 -- | 'STM' version of 'nextResult'.
 nextResultSTM :: ResultHandle v -> STM (Maybe v)
 nextResultSTM rh = do
-  mnext <- getNextCachedResult rh
-  case mnext of
-   Just v -> return $ Just v
-   Nothing -> loadResponse rh
+  cur_state <- readTVar $ rhState rh
+  case cur_state of
+   HandleError err -> throw err
+   HandleClose -> return Nothing
+   HandleOpen -> doNext `withExceptionSTM` gotoError
+  where
+    doNext = do
+      mret <- getNext
+      case mret of
+       Nothing -> writeTVar (rhState rh) HandleClose
+       _ -> return ()
+      return mret
+    getNext = do
+      mnext <- getNextCachedResult rh
+      case mnext of
+       Just v -> return $ Just v
+       Nothing -> loadResponse rh
+    -- 'withException' function is for MonadMask and STM is not a
+    -- MonadMask. So we use catch-and-rethrow by hand.
+    withExceptionSTM main finish =
+      main `catch` (\ex -> finish ex >> throw ex)
+    gotoError ex = writeTVar (rhState rh) $ HandleError ex
+    
 
 getNextCachedResult :: ResultHandle v -> STM (Maybe v)
 getNextCachedResult rh = do
@@ -151,7 +180,6 @@ getNextCachedResult rh = do
       writeTVar (rhNextResultIndex rh) $ index + 1
       return $ Just (cache ! index)
 
--- TODO: maybe we should cache the exception/Nothing returned from nextResponseSTM
 loadResponse :: ResultHandle v -> STM (Maybe v)
 loadResponse rh = parseResponse =<< (Conn.nextResponseSTM $ rhResHandle rh)
   where
