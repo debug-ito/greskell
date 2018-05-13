@@ -113,7 +113,7 @@ checkOne input expected = checkRaw input [expected]
 requireEnv :: String -> IO String
 requireEnv env_key = maybe bail return =<< lookupEnv env_key
   where
-    bail = pendingWith msg >> return ""
+    bail = expectationFailure msg >> return ""
       where
         msg = "Set environment variable "++ env_key ++ " for Server test. "
 
