@@ -20,7 +20,8 @@ import qualified Data.Aeson as Aeson
 import qualified Data.Aeson.Types as Aeson (Parser)
 import Data.Greskell.Greskell (ToGreskell(GreskellReturn), toGremlin)
 import Data.Greskell.GraphSON (GraphSON, gsonValue)
-import Data.Greskell.IteratorItem (IteratorItem)
+-- import Data.Greskell.IteratorItem (IteratorItem)
+import Data.Greskell.IteratorItem (AsIterator(IteratorItem))
 import Data.Monoid (mempty)
 import Data.Vector (Vector, (!))
 import Data.Text (Text)
@@ -99,11 +100,11 @@ submitBase client script bindings = do
     resultToEither (Aeson.Error s) = Left s
     resultToEither (Aeson.Success a) = Right a
 
-submit :: (ToGreskell g, r ~ IteratorItem (GreskellReturn g), FromJSON r)
+submit :: (ToGreskell g, r ~ GreskellReturn g, AsIterator r, v ~ IteratorItem r, FromJSON v)
        => Client
        -> g -- ^ Gresmlin script
        -> Maybe Object -- ^ bindings
-       -> IO (ResultHandle r)
+       -> IO (ResultHandle v)
 submit client greskell bindings = submitBase client (toGremlin greskell) bindings
 
 -- | Less type-safe version of 'submit'.

@@ -6,11 +6,12 @@
 --
 -- 
 module Data.Greskell.IteratorItem
-       ( IteratorItem
+       ( AsIterator(..)
        ) where
 
 import Data.HashMap.Strict (HashMap)
 import Data.Int (Int8, Int16, Int32, Int64)
+import Data.Ratio (Ratio)
 import Data.Word (Word8, Word16, Word32, Word64)
 import Numeric.Natural (Natural)
 import Data.Scientific (Scientific)
@@ -39,39 +40,65 @@ import Data.Greskell.GMap (GMap, GMapEntry)
 -- - Because Haskell's 'String' is '[Char]', @IteratorItem String@
 --   returns 'Char', which is incorrect. Use 'Text' if you want to
 --   deal with @String@s in Gremlin.
-type family IteratorItem a
+class AsIterator a where
+  type IteratorItem a
 
-type instance IteratorItem Int = Int
-type instance IteratorItem Text = Text
+instance Integral a => AsIterator (Ratio a) where
+  type IteratorItem (Ratio a) = Ratio a
 
-type instance IteratorItem TL.Text = TL.Text
-type instance IteratorItem Bool = Bool
-type instance IteratorItem Char = Char
-type instance IteratorItem Double = Double
-type instance IteratorItem Float = Float
-type instance IteratorItem Int8 = Int8
-type instance IteratorItem Int16 = Int16
-type instance IteratorItem Int32 = Int32
-type instance IteratorItem Int64 = Int64
-type instance IteratorItem Integer = Integer
-type instance IteratorItem Natural = Natural
-type instance IteratorItem Word = Word
-type instance IteratorItem Word8 = Word8
-type instance IteratorItem Word16 = Word16
-type instance IteratorItem Word32 = Word32
-type instance IteratorItem Word64 = Word64
-type instance IteratorItem Scientific = Scientific
+instance AsIterator Int where
+  type IteratorItem Int = Int
+instance AsIterator Text where
+  type IteratorItem Text = Text
+instance AsIterator TL.Text where
+  type IteratorItem TL.Text = TL.Text
+instance AsIterator Bool where
+  type IteratorItem Bool = Bool
+instance AsIterator Char where
+  type IteratorItem Char = Char
+instance AsIterator Double where
+  type IteratorItem Double = Double
+instance AsIterator Float where
+  type IteratorItem Float = Float
+instance AsIterator Int8 where
+  type IteratorItem Int8 = Int8
+instance AsIterator Int16 where
+  type IteratorItem Int16 = Int16
+instance AsIterator Int32 where
+  type IteratorItem Int32 = Int32
+instance AsIterator Int64 where
+  type IteratorItem Int64 = Int64
+instance AsIterator Integer where
+  type IteratorItem Integer = Integer
+instance AsIterator Natural where
+  type IteratorItem Natural = Natural
+instance AsIterator Word where
+  type IteratorItem Word = Word
+instance AsIterator Word8 where
+  type IteratorItem Word8 = Word8
+instance AsIterator Word16 where
+  type IteratorItem Word16 = Word16
+instance AsIterator Word32 where
+  type IteratorItem Word32 = Word32
+instance AsIterator Word64 where
+  type IteratorItem Word64 = Word64
+instance AsIterator Scientific where
+  type IteratorItem Scientific = Scientific
+
+instance AsIterator [a] where
+  type IteratorItem [a] = a
+instance AsIterator (Vector a) where
+  type IteratorItem (Vector a) = a
+
+-- | @asIterator@ converts a @Map@ to @Iterator<Map.Entry>@.
+instance AsIterator (GMap k v) where
+  type IteratorItem (GMap k v) = GMapEntry k v
+instance AsIterator (HashMap k v) where
+  type IteratorItem (HashMap k v) = GMapEntry k v
 
 -- Integral a => type instance IteratorItem (Ratio a) = Ratio a
 -- Maybe?
 
-
-type instance IteratorItem [a] = a
-type instance IteratorItem (Vector a) = a
-
--- | @asIterator@ converts a @Map@ to @Iterator<Map.Entry>@.
-type instance IteratorItem (GMap k v) = GMapEntry k v
-type instance IteratorItem (HashMap k v) = GMapEntry k v
 
 -- About encoding of Map.Entry
 --
