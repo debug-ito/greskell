@@ -10,6 +10,7 @@ module Data.Greskell.IteratorItem
        ) where
 
 import Data.HashMap.Strict (HashMap)
+import Data.Text (Text)
 
 import Data.Greskell.GMap (GMap, GMapEntry)
 
@@ -22,6 +23,8 @@ import Data.Greskell.GMap (GMap, GMapEntry)
 type family IteratorItem a
 
 type instance IteratorItem Int = Int
+
+type instance IteratorItem Text = Text
 
 type instance IteratorItem [a] = a
 

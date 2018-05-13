@@ -3,6 +3,7 @@ module ServerTest.Client (main,spec) where
 
 import Control.Exception.Safe (bracket)
 import Control.Monad (forM_)
+import Data.Text (Text)
 import Test.Hspec
 
 import Data.Greskell.Greskell (Greskell)
@@ -38,6 +39,12 @@ client_basic_spec = do
     let g = 108 :: Greskell Int
     rh <- submit client g Nothing
     nextResult rh `shouldReturn` Just 108
+    nextResult rh `shouldReturn` Nothing
+    nextResult rh `shouldReturn` Nothing
+  specify "eval Text" $ withClient $ \client -> do
+    let g = "hoge" :: Greskell Text
+    rh <- submit client g Nothing
+    nextResult rh `shouldReturn` Just "hoge"
     nextResult rh `shouldReturn` Nothing
     nextResult rh `shouldReturn` Nothing
   specify "eval [Int]" $ withClient $ \client -> do
