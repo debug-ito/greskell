@@ -5,6 +5,8 @@ import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (withAsync)
 import Control.Exception.Safe (bracket)
 import Control.Monad (forM_)
+import Data.Aeson (Value(Number))
+import qualified Data.HashMap.Strict as HM
 import Data.Text (Text)
 import qualified Network.WebSockets as WS
 import Test.Hspec
@@ -81,6 +83,12 @@ client_basic_spec = do
         g = G.unsafeGreskell "100"
     rh <- submit client g Nothing
     slurpResults rh `shouldReturn` [Just 100]
+  specify "eval (bound Double)" $ withClient $ \client -> do
+    let gx = G.unsafeGreskell "x"
+        g = 92.125 + gx :: Greskell Double
+        b = HM.fromList [("x", Number 22.25)]
+    rh <- submit client g (Just b)
+    slurpResults rh `shouldReturn` [114.375]
   specify "multiple response messages" $ \(host, port) -> do
     let opt = defOptions { batchSize = Just 3
                          }
