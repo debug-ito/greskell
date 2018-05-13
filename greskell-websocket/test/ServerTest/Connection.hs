@@ -46,7 +46,7 @@ import qualified Data.Greskell.WebSocket.Response as Response
 
 import qualified TestUtil.TCounter as TCounter
 import TestUtil.Env (withEnvForExtServer, withEnvForIntServer)
-import TestUtil.MockServer (wsServer, receiveRequest, simpleRawResponse)
+import TestUtil.MockServer (wsServer, receiveRequest, simpleRawResponse, waitForServer)
 
 
 main :: IO ()
@@ -261,7 +261,6 @@ succUUID orig = UUID.fromWords a b c d'
 
 conn_bad_server_spec :: SpecWith Port
 conn_bad_server_spec = do
-  let waitForServer = threadDelay 100000
   describe "ResponseHandle" $ describe "nextResponse" $ do
     it "should throw exception when the server closes the connection while there is a pending request" $ \port -> do
       let server = wsServer port $ \wsconn -> do

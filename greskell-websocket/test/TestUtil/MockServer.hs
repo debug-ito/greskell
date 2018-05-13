@@ -3,9 +3,11 @@ module TestUtil.MockServer
        ( wsServer,
          parseRequest,
          receiveRequest,
-         simpleRawResponse
+         simpleRawResponse,
+         waitForServer
        ) where
 
+import Control.Concurrent (threadDelay)
 import Control.Exception.Safe (throwString)
 import qualified Data.Aeson as Aeson
 import qualified Data.ByteString.Lazy as BSL
@@ -43,3 +45,5 @@ simpleRawResponse request_id status_code data_content =
   <> "\"status\":{\"code\":" <> (pack $ show status_code) <> ",\"message\":\"\",\"attributes\":{}},"
   <> "\"result\":{\"data\":" <> data_content <> ",\"meta\":{}}}"
 
+waitForServer :: IO ()
+waitForServer = threadDelay 100000

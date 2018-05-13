@@ -1,9 +1,11 @@
 {-# LANGUAGE OverloadedStrings #-}
 module ServerTest.Client (main,spec) where
 
+import Control.Concurrent.Async (withAsync)
 import Control.Exception.Safe (bracket)
 import Control.Monad (forM_)
 import Data.Text (Text)
+import qualified Network.WebSockets as WS
 import Test.Hspec
 
 import Data.Greskell.Greskell (Greskell)
@@ -14,10 +16,16 @@ import Data.Greskell.WebSocket.Client
   ( Host, Port, Client, Options,
     connectWith, close, submit,
     defOptions, batchSize,
-    nextResult, slurpResults
+    nextResult, slurpResults,
+    SubmitException(ResponseError)
   )
+import Data.Greskell.WebSocket.Request (RequestMessage(requestId))
+import qualified Data.Greskell.WebSocket.Response as Res
 
-import TestUtil.Env (withEnvForExtServer)
+import TestUtil.Env (withEnvForExtServer, withEnvForIntServer)
+import TestUtil.MockServer
+  ( wsServer, receiveRequest, simpleRawResponse, waitForServer
+  )
 
 main :: IO ()
 main = hspec spec
@@ -26,9 +34,14 @@ spec :: Spec
 spec = describe "Client" $ do
   withEnvForExtServer $ do
     client_basic_spec
+  withEnvForIntServer $ do
+    bad_server_spec
 
 withClient :: (Client -> IO a) -> (Host, Port) -> IO a
 withClient act (host, port) = forClient' defOptions host port act
+
+forClient :: Host -> Port -> (Client -> IO a) -> IO a
+forClient = forClient' defOptions
 
 forClient' :: Options -> Host -> Port -> (Client -> IO a) -> IO a
 forClient' opt host port act = bracket (connectWith opt host port) close act
@@ -72,3 +85,21 @@ client_basic_spec = do
     forClient' opt host port $ \client -> do
       rh <- submit client g Nothing
       slurpResults rh `shouldReturn` [1..31]
+
+bad_server_spec :: SpecWith Port
+bad_server_spec = do
+  specify "error ResponseMessage" $ \port -> do
+    let server = wsServer port $ \wsconn -> do
+          req <- receiveRequest wsconn
+          WS.sendBinaryData wsconn $ simpleRawResponse (requestId req) 500 "null"
+        expEx (ResponseError res) = (Res.code $ Res.status res) == Res.ServerError
+        expEx _ = False
+    withAsync server $ \_ -> do
+      waitForServer
+      forClient "localhost" port $ \client -> do
+        let g = 100 :: Greskell Int
+        rh <- submit client g Nothing
+        nextResult rh `shouldThrow` expEx
+        nextResult rh `shouldThrow` expEx
+        nextResult rh `shouldThrow` expEx
+    
