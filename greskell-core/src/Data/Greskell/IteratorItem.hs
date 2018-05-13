@@ -31,3 +31,12 @@ type instance IteratorItem (GMap k v) = GMapEntry k v
 type instance IteratorItem (HashMap k v) = GMapEntry k v
 
 -- TODO: add more type instances (mostly for scalar types)
+
+-- Map -> Iterator<Map.Entry>なんだけど、Map.Entryは1要素Mapとしてエンコードされて返されるようだ。
+-- しかしこのエンコードをやってるやつは誰だ？
+-- jacksonがやってるのかな。
+-- https://github.com/fasterxml/jackson-databind/issues/565
+-- これか？ でも時期が近すぎるような
+-- https://fasterxml.github.io/jackson-databind/javadoc/2.8/com/fasterxml/jackson/databind/ser/impl/MapEntrySerializer.html
+
+-- ま、いいか。
