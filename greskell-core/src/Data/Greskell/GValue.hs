@@ -8,18 +8,19 @@
 module Data.Greskell.GValue
        ( GValue(..),
          GValueBody(..),
-         toGValue,
-         fromGValue,
          unwrapGraphSON
        ) where
 
-import Data.Aeson (Value, FromJSON(..), ToJSON(..))
+import Control.Applicative ((<$>))
+import Data.Aeson (Value(..), FromJSON(..), ToJSON(..))
+import qualified Data.Aeson.Types as Aeson (Parser)
 import Data.Foldable (foldl')
 import Data.HashMap.Strict (HashMap)
-import Data.Greskell.GraphSON (GraphSON)
+import Data.Greskell.GraphSON (GraphSON(..))
 import Data.Hashable (Hashable(..))
 import Data.Scientific (Scientific)
 import Data.Text (Text)
+import Data.Traversable (traverse)
 import Data.Vector (Vector)
 import GHC.Generics (Generic)
 
@@ -48,22 +49,25 @@ instance Hashable GValueBody where
   hashWithSalt s (GBool b) = s `hashWithSalt` (4::Int) `hashWithSalt` b
   hashWithSalt s GNull = s `hashWithSalt` (5::Int)
 
-instance FromJSON GValue where
-  parseJSON = return . toGValue
-
-instance ToJSON GValue where
-  toJSON = fromGValue
-
 -- | Parse 'GraphSON' wrappers recursively in 'Value', making it into
 -- 'GValue'.
-toGValue :: Value -> GValue
-toGValue = undefined
-
+instance FromJSON GValue where
+  parseJSON input = do
+    gv <- parseJSON input
+    recursed_value <- recurse $ gsonValue gv
+    return $ GValue $ gv { gsonValue = recursed_value }
+    where
+      recurse :: Value -> Aeson.Parser GValueBody
+      recurse (Object o) = GObject <$> traverse parseJSON o
+      recurse (Array a) = GArray <$> traverse parseJSON a
+      recurse (String s) = return $ GString s
+      recurse (Number n) = return $ GNumber n
+      recurse (Bool b) = return $ GBool b
+      recurse Null = return GNull
+    
 -- | Reconstruct 'Value' from 'GValue'.
---
--- prop> toGValue . fromGValue == id
-fromGValue :: GValue -> Value
-fromGValue = undefined
+instance ToJSON GValue where
+  toJSON = undefined
 
 -- | Just remove 'GraphSON' wrappers from 'GValue'.
 unwrapGraphSON :: GValue -> Value
