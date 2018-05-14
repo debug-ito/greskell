@@ -88,6 +88,7 @@ spec_basics = do
     checkN (number 3.1415) (3.1415)
     checkN (number 2.31e12) (2.31e12)
     checkN (number (-434.23e-19)) (-434.23e-19)
+  -- Now failing.. We need a way to unwrap GraphSON wrapper recursively.
   describe "value (object)" $ do
     let checkV :: Greskell Aeson.Value -> Aeson.Value -> SpecWith (String,Int)
         checkV i e = checkRaw (single i) [e]
