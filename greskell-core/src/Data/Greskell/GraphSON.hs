@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings, DeriveGeneric #-}
 -- |
 -- Module: Data.Greskell.GraphSON
 -- Description: Encoding and decoding GraphSON
@@ -25,12 +25,14 @@ import qualified Data.Aeson as Aeson
 import Data.Aeson.Types (Parser)
 import Data.Foldable (Foldable(foldr))
 import qualified Data.HashMap.Lazy as HML
+import Data.Hashable (Hashable)
 import Data.HashSet (HashSet)
 import Data.Int (Int8, Int16, Int32, Int64)
 import Data.Scientific (Scientific)
 import Data.Text (Text)
 import Data.Traversable (Traversable(traverse))
 import Data.Vector (Vector)
+import GHC.Generics (Generic)
 
 -- $
 -- >>> :set -XOverloadedStrings
@@ -55,7 +57,7 @@ data GraphSON v =
     gsonValue :: v
     -- ^ Value, correspoding to @\@value@ field.
   }
-  deriving (Show,Eq,Ord)
+  deriving (Show,Eq,Ord,Generic)
 
 instance Functor GraphSON where
   fmap f gs = gs { gsonValue = f $ gsonValue gs }
@@ -65,6 +67,8 @@ instance Foldable GraphSON where
 
 instance Traversable GraphSON where
   traverse f gs = fmap (\v -> gs { gsonValue = v }) $ f $ gsonValue gs
+
+instance Hashable v => Hashable (GraphSON v)
 
 -- | Create a 'GraphSON' without 'gsonType'.
 --
