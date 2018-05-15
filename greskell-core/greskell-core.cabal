@@ -48,11 +48,13 @@ test-suite spec
   other-modules:        Data.Greskell.GreskellSpec,
                         Data.Greskell.GraphSONSpec,
                         Data.Greskell.GMapSpec,
+                        Data.Greskell.GValueSpec,
                         Data.Greskell.Test.QuickCheck
   build-depends:        base, text, aeson, unordered-containers, vector,
                         greskell-core,
                         hspec >=2.2.3,
-                        QuickCheck >=2.8.2 && <2.12
+                        QuickCheck >=2.8.2 && <2.12,
+                        bytestring
 
 test-suite doctest
   type:                 exitcode-stdio-1.0
