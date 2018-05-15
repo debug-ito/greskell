@@ -20,7 +20,7 @@ module Data.Greskell.GraphSON
 
 import Control.Applicative ((<$>), (<*>))
 import Control.Monad (when)
-import Data.Aeson (ToJSON(toJSON), FromJSON(parseJSON), object, (.=), Value(Object), (.:?))
+import Data.Aeson (ToJSON(toJSON), FromJSON(parseJSON), object, (.=), Value(Object), (.:!))
 import qualified Data.Aeson as Aeson
 import Data.Aeson.Types (Parser)
 import Data.Foldable (Foldable(foldr))
@@ -109,9 +109,9 @@ instance FromJSON v => FromJSON (GraphSON v) where
     if length o /= 2
       then parseDirect v
       else do
-      mtype <- o .:? "@type"
-      mvalue <- o .:? "@value"
-      maybe (parseDirect v) return $ typedGraphSON'  <$> mtype <*> mvalue
+      mtype <- o .:! "@type"
+      mvalue <- o .:! "@value"
+      maybe (parseDirect v) return $ typedGraphSON' <$> mtype <*> mvalue
   parseJSON v = parseDirect v
     
 parseDirect :: FromJSON v => Value -> Parser (GraphSON v)
