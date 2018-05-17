@@ -65,7 +65,7 @@ instance FromJSON GValue where
       recurse (Bool b) = return $ GBool b
       recurse Null = return GNull
 
--- TODO: implement tests for FromJSON, ToJSON, and unwrapGraphSON.
+-- TODO: implement tests for unwrapGraphSON.
 
 -- TODO: make FromGraphSON class
     
@@ -83,4 +83,11 @@ instance ToJSON GValueBody where
 
 -- | Just remove 'GraphSON' wrappers from 'GValue'.
 unwrapGraphSON :: GValue -> Value
-unwrapGraphSON = undefined -- TODO.
+unwrapGraphSON (GValue gson_body) = unwrapBody $ gsonValue gson_body
+  where
+    unwrapBody GNull = Null
+    unwrapBody (GBool b) = Bool b
+    unwrapBody (GNumber n) = Number n
+    unwrapBody (GString s) = String s
+    unwrapBody (GArray a) = Array $ fmap unwrapGraphSON a
+    unwrapBody (GObject o) = Object $ fmap unwrapGraphSON o
