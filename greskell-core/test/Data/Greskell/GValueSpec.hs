@@ -4,7 +4,9 @@ module Data.Greskell.GValueSpec (main,spec) where
 import Data.Aeson (FromJSON)
 import qualified Data.Aeson as Aeson
 import qualified Data.ByteString.Lazy as BSL
+import Data.Either (isLeft)
 import qualified Data.HashMap.Strict as HM
+import Data.List (isInfixOf)
 import Data.Monoid ((<>))
 import Data.Text (Text)
 import qualified Data.Vector as V
@@ -37,6 +39,7 @@ spec = do
       (wrapped "g:Map" $ GObject $ fmap bare $ HM.fromList [("foo", GString "bar"), ("hoge", GNumber 99), ("quux", GNull)])
     nested_spec
     double_wrap_spec
+    decode_error_spec
 
 nested_spec :: Spec
 nested_spec = fromToJSON "mixed nested" input expected
@@ -73,7 +76,18 @@ double_wrap_spec = fromToJSON "double wrapped" input expected
                  ("@value", bare $ GNumber 100)
                ]
 
-    -- TODO: decode error case.
+decode_error_spec :: Spec
+decode_error_spec = do
+  specify "wrong @type type" $ do
+    let got :: Either String GValue
+        got = Aeson.eitherDecode "{\"@type\": 200, \"@value\": 100}"
+    got `shouldSatisfy` isLeft
+    fromLeft' got `shouldSatisfy` (isInfixOf "@type")
+  specify "null @type" $ do
+    let got :: Either String GValue
+        got = Aeson.eitherDecode "{\"@type\": null, \"@value\": 100}"
+    got `shouldSatisfy` isLeft
+    fromLeft' got `shouldSatisfy` (isInfixOf "@type")
 
 forceDecode :: FromJSON a => BSL.ByteString -> a
 forceDecode json = case Aeson.eitherDecode json of
@@ -97,3 +111,7 @@ wrapped t b = GValue $ typedGraphSON' t b
 
 gson :: BSL.ByteString -> BSL.ByteString -> BSL.ByteString
 gson ftype fvalue = "{\"@type\":\"" <> ftype <> "\",\"@value\":" <> fvalue <> "}"
+
+fromLeft' :: (Show a, Show b) => Either a b -> a
+fromLeft' (Left a) = a
+fromLeft' e = error ("Expecting Left, but got " ++ show e)
