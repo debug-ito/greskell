@@ -19,7 +19,8 @@ module Data.Greskell.GraphSON
          -- * GValue
          GValue(..),
          GValueBody(..),
-         unwrapGraphSON
+         unwrapAll,
+         unwrapOne
        ) where
 
 import Control.Applicative ((<$>), (<*>))
@@ -261,13 +262,22 @@ instance ToJSON GValueBody where
   toJSON (GBool b) = Bool b
   toJSON GNull = Null
 
--- | Just remove 'GraphSON' wrappers from 'GValue'.
-unwrapGraphSON :: GValue -> Value
-unwrapGraphSON (GValue gson_body) = unwrapBody $ gsonValue gson_body
+-- | Remove all 'GraphSON' wrappers recursively from 'GValue'.
+unwrapAll :: GValue -> Value
+unwrapAll = unwrapBase unwrapAll
+
+-- | Remove the top-level 'GraphSON' wrapper, but leave other wrappers
+-- as-is. The remaining wrappers are reconstructed by 'toJSON' to make
+-- them into 'Value'.
+unwrapOne :: GValue -> Value
+unwrapOne = unwrapBase toJSON
+
+unwrapBase :: (GValue -> Value) -> GValue -> Value
+unwrapBase mapChild (GValue gson_body) = unwrapBody $ gsonValue gson_body
   where
     unwrapBody GNull = Null
     unwrapBody (GBool b) = Bool b
     unwrapBody (GNumber n) = Number n
     unwrapBody (GString s) = String s
-    unwrapBody (GArray a) = Array $ fmap unwrapGraphSON a
-    unwrapBody (GObject o) = Object $ fmap unwrapGraphSON o
+    unwrapBody (GArray a) = Array $ fmap mapChild a
+    unwrapBody (GObject o) = Object $ fmap mapChild o

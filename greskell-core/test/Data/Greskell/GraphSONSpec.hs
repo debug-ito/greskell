@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings, NoMonomorphismRestriction #-}
 module Data.Greskell.GraphSONSpec (main,spec) where
 
-import Data.Aeson (object, (.=), ToJSON(..), FromJSON(..))
+import Data.Aeson (object, (.=), ToJSON(..), FromJSON(..), Value(..))
 import qualified Data.Aeson as Aeson
 import Data.Aeson.Types (parseEither, Value(..), Parser)
 import qualified Data.ByteString.Lazy as BSL
@@ -18,7 +18,8 @@ import Test.Hspec
 import Data.Greskell.GraphSON
   ( GraphSON, parseTypedGraphSON, parseTypedGraphSON',
     typedGraphSON', nonTypedGraphSON,
-    GValue(..), GValueBody(..)
+    GValue(..), GValueBody(..),
+    unwrapAll, unwrapOne
   )
 
 main :: IO ()
@@ -157,8 +158,6 @@ parseTypedGraphSON'_spec = describe "parseTypedGraphSON'" $ do
       got `shouldBe` (Right $ Right $ typedGraphSON' "g:Map" $ HM.fromList [("hoge", "HOGE"), ("foo", "FOO")])
 
 
-
-
 gvalue_spec :: Spec
 gvalue_spec = do
   describe "FromJSON and ToJSON" $ do
@@ -181,14 +180,18 @@ gvalue_spec = do
     nested_spec
     double_wrap_spec
     decode_error_spec
+  unwrap_spec
 
-nested_spec :: Spec
-nested_spec = fromToJSON "mixed nested" input expected
+nestedSample :: BSL.ByteString
+nestedSample = gson "g:List" ("[100, " <> elem_a <> ", " <> elem_b <> "]")
   where
-    input = gson "g:List" ("[100, " <> elem_a <> ", " <> elem_b <> "]")
     elem_a = gson "g:Map" ("{\"foo\": 100, \"bar\":" <> (gson "g:Int" "200") <> "}")
     elem_b = gson "g:List" ("[null, " <> (gson "g:Object" "null") <> ", " <> elem_c <> ", " <> (gson "g:Boolean" "false") <> "]")
     elem_c = "{\"xxx\": " <> (gson "g:Int" "200") <> ", \"yyy\": true}"
+
+nested_spec :: Spec
+nested_spec = fromToJSON "mixed nested" nestedSample expected
+  where
     expected = wrapped "g:List" $ GArray $ V.fromList [ bare $ GNumber 100, exp_a, exp_b ]
     exp_a = wrapped "g:Map" $ GObject $ HM.fromList
             [ ("foo", bare $ GNumber 100),
@@ -258,4 +261,34 @@ fromLeft' :: (Show a, Show b) => Either a b -> a
 fromLeft' (Left a) = a
 fromLeft' e = error ("Expecting Left, but got " ++ show e)
 
--- TODO: tests for unwrapGraphSON
+unwrap_spec :: Spec
+unwrap_spec = do
+  specify "unwrapAll" $ do
+    let expected = Array $ V.fromList [Number 100, exp_a, exp_b]
+        exp_a = object ["foo" .= Number 100, "bar" .= Number 200]
+        exp_b = Array $ V.fromList [Null, Null, exp_c, Bool False]
+        exp_c = object ["xxx" .= Number 200, "yyy" .= Bool True]
+    (unwrapAll $ forceDecode nestedSample) `shouldBe` expected
+  specify "unwrapOne" $ do
+    let expected = Array $ V.fromList [Number 100, exp_a, exp_b]
+        exp_a = object [ "@type" .= String "g:Map",
+                         "@value" .= object ["foo" .= Number 100,
+                                             "bar" .= object [ "@type" .= String "g:Int",
+                                                               "@value" .= Number 200
+                                                             ]
+                                            ]
+                       ]
+        exp_b = object
+                [ "@type" .= String "g:List",
+                  "@value" .= ( Array $ V.fromList [ Null,
+                                                     object ["@type" .= String "g:Object", "@value" .= Null],
+                                                     exp_c,
+                                                     object ["@type" .= String "g:Boolean", "@value" .= Bool False]
+                                                   ]
+                              )
+                ]
+        exp_c = object [ "xxx" .= object ["@type" .= String "g:Int", "@value" .= Number 200],
+                         "yyy" .= Bool True
+                       ]
+    (unwrapOne $ forceDecode nestedSample) `shouldBe` expected
+        
