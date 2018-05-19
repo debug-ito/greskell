@@ -27,6 +27,7 @@ import Data.Foldable (length)
 import Data.Hashable (Hashable)
 import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as HM
+import qualified Data.Map as M
 import Data.Text (Text)
 import Data.Vector ((!))
 import GHC.Exts (IsList(Item))
@@ -163,20 +164,20 @@ data GMapEntry k v =
 instance GraphSONTyped (GMapEntry k v) where
   gsonTypeFor _ = "g:Map"
 
-instance (FromJSON k, FromJSONKey k, Eq k, Hashable k, FromJSON v) => FromJSON (GMapEntry k v) where
+instance (FromJSON k, FromJSONKey k, Ord k, FromJSON v) => FromJSON (GMapEntry k v) where
   parseJSON val = toEntry =<< parseJSON val
     where
-      toEntry gm = case HM.toList $ gmapValue gm of
+      toEntry gm = case M.toList $ gmapValue gm of
         [(k,v)] -> return $ GMapEntry { gmapEntryFlat = gmapFlat gm,
                                         gmapEntryKey = k,
                                         gmapEntryValue = v
                                       }
         l -> fail ("Expects a single entry map, but it has " ++ (show $ length l) ++ " entries.")
 
-instance (ToJSON k, ToJSONKey k, Eq k, Hashable k, ToJSON v) => ToJSON (GMapEntry k v) where
+instance (ToJSON k, ToJSONKey k, Ord k, ToJSON v) => ToJSON (GMapEntry k v) where
   toJSON e = toJSON $ singleton' e
     where
-      singleton' :: (Eq k, Hashable k) => GMapEntry k v -> GMap HashMap k v
+      singleton' :: (Ord k) => GMapEntry k v -> GMap M.Map k v
       singleton' = singleton
   
 -- | Get the key-value pair from 'GMapEntry'.

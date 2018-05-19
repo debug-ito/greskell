@@ -34,7 +34,8 @@ library
                         scientific >=0.3.4.9 && <0.4,
                         text >=1.2.2.1 && <1.3,
                         semigroups >=0.18.2 && <0.19,
-                        vector
+                        vector,
+                        containers
 
 test-suite spec
   type:                 exitcode-stdio-1.0
