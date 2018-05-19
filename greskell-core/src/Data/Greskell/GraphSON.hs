@@ -6,26 +6,31 @@
 --
 -- 
 module Data.Greskell.GraphSON
-       ( -- * Type
+       ( -- * GraphSON
          GraphSON(..),
          GraphSONTyped(..),
-         -- * Constructors
+         -- ** constructors
          nonTypedGraphSON,
          typedGraphSON,
          typedGraphSON',
-         -- * Parser support
+         -- ** parser support
          parseTypedGraphSON,
-         parseTypedGraphSON'
+         parseTypedGraphSON',
+         -- * GValue
+         GValue(..),
+         GValueBody(..),
+         unwrapGraphSON
        ) where
 
 import Control.Applicative ((<$>), (<*>))
 import Control.Monad (when)
-import Data.Aeson (ToJSON(toJSON), FromJSON(parseJSON), object, (.=), Value(Object), (.:!))
+import Data.Aeson (ToJSON(toJSON), FromJSON(parseJSON), object, (.=), Value(..), (.:!))
 import qualified Data.Aeson as Aeson
 import Data.Aeson.Types (Parser)
-import Data.Foldable (Foldable(foldr))
+import Data.Foldable (Foldable(foldr), foldl')
+import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Lazy as HML
-import Data.Hashable (Hashable)
+import Data.Hashable (Hashable(..))
 import Data.HashSet (HashSet)
 import Data.Int (Int8, Int16, Int32, Int64)
 import Data.Scientific (Scientific)
@@ -196,3 +201,73 @@ parseTypedGraphSON' v = do
   where
     parseGraphSONPlain :: Value -> Parser (GraphSON Value)
     parseGraphSONPlain = parseJSON
+
+
+
+-- | An Aeson 'Value' wrapped in 'GraphSON' wrapper type. Useful to
+-- parse JSON text in GraphSON format.
+newtype GValue = GValue { unGValue :: GraphSON GValueBody }
+                 deriving (Show,Eq,Generic)
+
+instance Hashable GValue
+
+data GValueBody =
+    GObject !(HashMap Text GValue)
+  | GArray !(Vector GValue)
+  | GString !Text
+  | GNumber !Scientific
+  | GBool !Bool
+  | GNull
+  deriving (Show,Eq,Generic)
+
+instance Hashable GValueBody where
+-- See Data.Aeson.Types.Internal
+  hashWithSalt s (GObject o) = s `hashWithSalt` (0::Int) `hashWithSalt` o
+  hashWithSalt s (GArray a) = foldl' hashWithSalt (s `hashWithSalt` (1::Int)) a
+  hashWithSalt s (GString str) = s `hashWithSalt` (2::Int) `hashWithSalt` str
+  hashWithSalt s (GNumber n) = s `hashWithSalt` (3::Int) `hashWithSalt` n
+  hashWithSalt s (GBool b) = s `hashWithSalt` (4::Int) `hashWithSalt` b
+  hashWithSalt s GNull = s `hashWithSalt` (5::Int)
+
+-- | Parse 'GraphSON' wrappers recursively in 'Value', making it into
+-- 'GValue'.
+instance FromJSON GValue where
+  parseJSON input = do
+    gv <- parseJSON input
+    recursed_value <- recurse $ gsonValue gv
+    return $ GValue $ gv { gsonValue = recursed_value }
+    where
+      recurse :: Value -> Parser GValueBody
+      recurse (Object o) = GObject <$> traverse parseJSON o
+      recurse (Array a) = GArray <$> traverse parseJSON a
+      recurse (String s) = return $ GString s
+      recurse (Number n) = return $ GNumber n
+      recurse (Bool b) = return $ GBool b
+      recurse Null = return GNull
+
+-- TODO: implement tests for unwrapGraphSON.
+
+-- TODO: make FromGraphSON class
+    
+-- | Reconstruct 'Value' from 'GValue'.
+instance ToJSON GValue where
+  toJSON (GValue gson_body) = toJSON $ fmap toJSON gson_body
+
+instance ToJSON GValueBody where
+  toJSON (GObject o) = toJSON o
+  toJSON (GArray a) = toJSON a
+  toJSON (GString s) = String s
+  toJSON (GNumber n) = Number n
+  toJSON (GBool b) = Bool b
+  toJSON GNull = Null
+
+-- | Just remove 'GraphSON' wrappers from 'GValue'.
+unwrapGraphSON :: GValue -> Value
+unwrapGraphSON (GValue gson_body) = unwrapBody $ gsonValue gson_body
+  where
+    unwrapBody GNull = Null
+    unwrapBody (GBool b) = Bool b
+    unwrapBody (GNumber n) = Number n
+    unwrapBody (GString s) = String s
+    unwrapBody (GArray a) = Array $ fmap unwrapGraphSON a
+    unwrapBody (GObject o) = Object $ fmap unwrapGraphSON o
