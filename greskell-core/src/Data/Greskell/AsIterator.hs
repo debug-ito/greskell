@@ -92,8 +92,8 @@ instance AsIterator (Vector a) where
   type IteratorItem (Vector a) = a
 
 -- | @asIterator@ converts a @Map@ to @Iterator<Map.Entry>@.
-instance AsIterator (GMap k v) where
-  type IteratorItem (GMap k v) = GMapEntry k v
+instance AsIterator (GMap c k v) where
+  type IteratorItem (GMap c k v) = GMapEntry k v
 instance AsIterator (HashMap k v) where
   type IteratorItem (HashMap k v) = GMapEntry k v
 

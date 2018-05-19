@@ -96,40 +96,45 @@ instance GraphSONTyped (FlattenedMap c k v) where
 -- GraphSON v3 encodes it as an array of flattened keys and values
 -- (like 'FlattenedMap'.)  'GMap' type handles both encoding schemes.
 --
--- >>> Aeson.eitherDecode "{\"ten\": 10}" :: Either String (GMap Text Int)
+-- - type @c@: container type for a map (e.g. 'Data.Map.Map' and
+--   'Data.HashMap.Strict.HashMap').
+-- - type @k@: key of the map.
+-- - type @v@: value of the map.
+--
+-- >>> Aeson.eitherDecode "{\"ten\": 10}" :: Either String (GMap HashMap Text Int)
 -- Right (GMap {gmapFlat = False, gmapValue = fromList [("ten",10)]})
--- >>> Aeson.eitherDecode "[\"ten\", 10]" :: Either String (GMap Text Int)
+-- >>> Aeson.eitherDecode "[\"ten\", 10]" :: Either String (GMap HashMap Text Int)
 -- Right (GMap {gmapFlat = True, gmapValue = fromList [("ten",10)]})
 -- >>> Aeson.encode $ GMap False (HashMap.fromList [(9, "nine")] :: HashMap Int Text)
 -- "{\"9\":\"nine\"}"
 -- >>> Aeson.encode $ GMap True (HashMap.fromList [(9, "nine")] :: HashMap Int Text)
 -- "[9,\"nine\"]"
-data GMap k v =
+data GMap c k v =
   GMap
   { gmapFlat :: !Bool,
     -- ^ If 'True', the map is encoded as an array. If 'False', it's
     -- encoded as a JSON Object.
-    gmapValue :: !(HashMap k v)
+    gmapValue :: !(c k v)
     -- ^ Map implementation.
   }
   deriving (Show,Eq)
 
-instance (FromJSON k, FromJSONKey k, Eq k, Hashable k, FromJSON v) => FromJSON (GMap k v) where
+instance (FromJSON k, FromJSON v, IsList (c k v), Item (c k v) ~ (k,v), FromJSON (c k v)) => FromJSON (GMap c k v) where
   parseJSON v@(Object _) = GMap False <$> parseJSON v
   parseJSON v@(Array _) = (GMap True .unFlattenedMap) <$> parseJSON v
   parseJSON _ = empty
 
-instance (ToJSON k, ToJSONKey k, Eq k, Hashable k, ToJSON v) => ToJSON (GMap k v) where
+instance (ToJSON k, ToJSON v, IsList (c k v), Item (c k v) ~ (k,v), ToJSON (c k v)) => ToJSON (GMap c k v) where
   toJSON gm = if gmapFlat gm
               then toJSON $ FlattenedMap $ unGMap gm
               else toJSON $ unGMap gm
 
 -- | Map to \"g:Map\".
-instance GraphSONTyped (GMap k v) where
+instance GraphSONTyped (GMap c k v) where
   gsonTypeFor _ = "g:Map"
 
--- | Get 'HashMap' from 'GMap'.
-unGMap :: GMap k v -> HashMap k v
+-- | Get the map implementation from 'GMap'.
+unGMap :: GMap c k v -> c k v
 unGMap = gmapValue
 
 -- | Haskell representation of @Map.Entry@ type.
@@ -169,18 +174,21 @@ instance (FromJSON k, FromJSONKey k, Eq k, Hashable k, FromJSON v) => FromJSON (
         l -> fail ("Expects a single entry map, but it has " ++ (show $ length l) ++ " entries.")
 
 instance (ToJSON k, ToJSONKey k, Eq k, Hashable k, ToJSON v) => ToJSON (GMapEntry k v) where
-  toJSON e = toJSON $ singleton e
+  toJSON e = toJSON $ singleton' e
+    where
+      singleton' :: (Eq k, Hashable k) => GMapEntry k v -> GMap HashMap k v
+      singleton' = singleton
   
 -- | Get the key-value pair from 'GMapEntry'.
 unGMapEntry :: GMapEntry k v -> (k, v)
 unGMapEntry e = (gmapEntryKey e, gmapEntryValue e)
 
-singleton :: Hashable k => GMapEntry k v -> GMap k v
+singleton :: (IsList (c k v), Item (c k v) ~ (k,v)) => GMapEntry k v -> GMap c k v
 singleton e = GMap { gmapFlat = gmapEntryFlat e,
-                     gmapValue = HM.singleton (gmapEntryKey e) (gmapEntryValue e)
+                     gmapValue = List.fromList [(gmapEntryKey e, gmapEntryValue e)]
                    }
 
-toList :: GMap k v -> [GMapEntry k v]
-toList gm = map toEntry $ HM.toList $ gmapValue gm
+toList :: (IsList (c k v), Item (c k v) ~ (k,v)) => GMap c k v -> [GMapEntry k v]
+toList gm = map toEntry $ List.toList $ gmapValue gm
   where
     toEntry (k, v) = GMapEntry (gmapFlat gm) k v

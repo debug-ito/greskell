@@ -2,6 +2,7 @@
 module Data.Greskell.GMapSpec (main,spec) where
 
 import Data.Aeson (eitherDecode, object, (.=), toJSON, Value(..))
+import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as HM
 import Data.List (isInfixOf)
 import Data.Monoid (mempty)
@@ -23,7 +24,7 @@ spec = do
 spec_GMap :: Spec
 spec_GMap = describe "GraphSON GMap" $ do
   describe "non-flat" $ do
-    let val :: GraphSON (GMap String Int)
+    let val :: GraphSON (GMap HashMap String Int)
         val = nonTypedGraphSON $ GMap False $ HM.fromList [("foo", 3), ("bar", 5), ("a", 1)]
     specify "FromJSON" $ do
       let input = "{\"foo\":3, \"a\": 1, \"bar\": 5}"
@@ -35,11 +36,11 @@ spec_GMap = describe "GraphSON GMap" $ do
                             ]
       toJSON val `shouldBe` expected
     specify "FromJSON empty" $ do
-      let val_empty :: GraphSON (GMap String Int)
+      let val_empty :: GraphSON (GMap HashMap String Int)
           val_empty = nonTypedGraphSON $ GMap False mempty
       eitherDecode "{}" `shouldBe` Right val_empty
   describe "flat" $ do
-    let val :: GraphSON (GMap String Int)
+    let val :: GraphSON (GMap HashMap String Int)
         val = typedGraphSON $ GMap True $ HM.fromList [("foo", 3), ("bar", 5), ("a", 1)]
     specify "FromJSON" $ do
       let input = "{\"@type\": \"g:Map\", \"@value\": [\"a\", 1, \"bar\", 5, \"foo\", 3]}"
@@ -54,7 +55,7 @@ spec_GMap = describe "GraphSON GMap" $ do
       let (Just (Array got_flat)) = HM.lookup "@value" got
       pairList got_flat `shouldMatchList` pairList exp_flat
     specify "FromJSON empty" $ do
-      let val_empty :: GraphSON (GMap String Int)
+      let val_empty :: GraphSON (GMap HashMap String Int)
           val_empty = typedGraphSON $ GMap True mempty
       eitherDecode "{\"@type\": \"g:Map\", \"@value\": []}" `shouldBe` Right val_empty
 
