@@ -21,7 +21,8 @@ library
   hs-source-dirs:       src
   ghc-options:          -Wall -fno-warn-unused-imports
   -- default-extensions:   
-  other-extensions:     OverloadedStrings, TypeFamilies, DeriveGeneric
+  other-extensions:     OverloadedStrings, TypeFamilies, DeriveGeneric,
+                        GeneralizedNewtypeDeriving, DeriveTraversable
   exposed-modules:      Data.Greskell.Greskell,
                         Data.Greskell.GraphSON,
                         Data.Greskell.GMap,

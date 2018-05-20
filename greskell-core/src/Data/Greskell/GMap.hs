@@ -1,4 +1,4 @@
-{-# LANGUAGE TypeFamilies, OverloadedStrings #-}
+{-# LANGUAGE TypeFamilies, OverloadedStrings, GeneralizedNewtypeDeriving, DeriveTraversable #-}
 -- |
 -- Module: Data.Greskell.GMap
 -- Description: data type for g:Map
@@ -23,12 +23,13 @@ import Data.Aeson
   ( FromJSON(..), ToJSON(..), Value(..),
     FromJSONKey, ToJSONKey
   )
-import Data.Foldable (length)
+import Data.Foldable (length, Foldable)
 import Data.Hashable (Hashable)
 import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Map as M
 import Data.Text (Text)
+import Data.Traversable (Traversable)
 import Data.Vector ((!))
 import GHC.Exts (IsList(Item))
 import qualified GHC.Exts as List (IsList(fromList, toList))
@@ -66,7 +67,7 @@ import Data.Greskell.GraphSON.GraphSONTyped (GraphSONTyped(..))
 -- >>> Aeson.encode $ FlattenedMap $ (HashMap.fromList [(10, "ten")] :: HashMap Int String)
 -- "[10,\"ten\"]"
 newtype FlattenedMap c k v = FlattenedMap { unFlattenedMap :: c k v }
-                   deriving (Show,Eq,Ord)
+                   deriving (Show,Eq,Ord,Foldable,Traversable,Functor)
 
 instance (FromJSON k, FromJSON v, IsList (c k v), Item (c k v) ~ (k,v)) => FromJSON (FlattenedMap c k v) where
   parseJSON (Array v) = if odd vlen
@@ -117,7 +118,7 @@ data GMap c k v =
     gmapValue :: !(c k v)
     -- ^ Map implementation.
   }
-  deriving (Show,Eq)
+  deriving (Show,Eq,Foldable,Traversable,Functor)
 
 instance (FromJSON k, FromJSON v, IsList (c k v), Item (c k v) ~ (k,v), FromJSON (c k v)) => FromJSON (GMap c k v) where
   parseJSON v@(Object _) = GMap False <$> parseJSON v
@@ -157,7 +158,7 @@ data GMapEntry k v =
     gmapEntryKey :: !k,
     gmapEntryValue :: !v
   }
-  deriving (Show,Eq,Ord)
+  deriving (Show,Eq,Ord,Foldable,Traversable,Functor)
 
 -- | Map to \"g:Map\".
 instance GraphSONTyped (GMapEntry k v) where
