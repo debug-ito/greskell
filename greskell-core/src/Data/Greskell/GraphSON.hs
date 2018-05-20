@@ -262,6 +262,17 @@ unwrapBase mapChild (GValue gson_body) = unwrapBody $ gsonValue gson_body
 
 -- | Types that can be constructed from 'GValue'. This is analogous to
 -- 'FromJSON' class.
+--
+-- Instances of basic types are implemented based on the following
+-- rule.
+--
+-- - Simple scalar types (e.g. 'Int' and 'Text'): use 'parseUnwrapAll'.
+-- - List-like types (e.g. '[]', 'Vector' and 'Set'): use
+--   'parseUnwrapList'.
+-- - Map-like types (e.g. 'L.HashMap' and 'L.Map'): use
+--   'parseUnwrapTraversable'. 'GMap' is used as an intermediate type,
+--   so that all versions of GraphSON formats are handled properly.
+-- - Other types: see the individual instance documentation.
 class FromGraphSON a where
   parseGraphSON :: GValue -> Parser a
 
