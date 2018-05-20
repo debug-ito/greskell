@@ -26,7 +26,7 @@ library
                         Data.Greskell.GraphSON,
                         Data.Greskell.GMap,
                         Data.Greskell.AsIterator
-  -- other-modules:        
+  other-modules:        Data.Greskell.GraphSON.GraphSONTyped
   build-depends:        base >=4.9.0.0 && <4.12,
                         aeson >=0.11.2.1 && <1.4,
                         unordered-containers >=0.2.7.1 && <0.3,

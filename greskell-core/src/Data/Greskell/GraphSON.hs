@@ -30,15 +30,15 @@ import qualified Data.Aeson as Aeson
 import Data.Aeson.Types (Parser)
 import Data.Foldable (Foldable(foldr), foldl')
 import Data.HashMap.Strict (HashMap)
-import qualified Data.HashMap.Lazy as HML
 import Data.Hashable (Hashable(..))
-import Data.HashSet (HashSet)
-import Data.Int (Int8, Int16, Int32, Int64)
+import Data.Int (Int32)
 import Data.Scientific (Scientific)
 import Data.Text (Text)
 import Data.Traversable (Traversable(traverse))
 import Data.Vector (Vector)
 import GHC.Generics (Generic)
+
+import Data.Greskell.GraphSON.GraphSONTyped (GraphSONTyped(..))
 
 -- $
 -- >>> :set -XOverloadedStrings
@@ -122,54 +122,6 @@ instance FromJSON v => FromJSON (GraphSON v) where
     
 parseDirect :: FromJSON v => Value -> Parser (GraphSON v)
 parseDirect v = GraphSON Nothing <$> parseJSON v
-
-
--- | Types that have an intrinsic type ID for 'gsonType' field.
-class GraphSONTyped a where
-  gsonTypeFor :: a -> Text
-  -- ^ Type ID for 'gsonType'.
-
-instance GraphSONTyped Char where
-  gsonTypeFor _ = "gx:Char"
-
--- | Map to \"gx:Byte\". Note that Java's Byte is signed.
-instance GraphSONTyped Int8 where
-  gsonTypeFor _ = "gx:Byte"
-
-instance GraphSONTyped Int16 where
-  gsonTypeFor _ = "gx:Int16"
-
-instance GraphSONTyped Int32 where
-  gsonTypeFor _ = "g:Int32"
-
-instance GraphSONTyped Int64 where
-  gsonTypeFor _ = "g:Int64"
-
-instance GraphSONTyped Float where
-  gsonTypeFor _ = "g:Float"
-
-instance GraphSONTyped Double where
-  gsonTypeFor _ = "g:Double"
-
-instance GraphSONTyped [a] where
-  gsonTypeFor _ = "g:List"
-
-instance GraphSONTyped (Vector a) where
-  gsonTypeFor _ = "g:List"
-
--- | Map to \"g:Double\".
-instance GraphSONTyped Scientific where
-  gsonTypeFor _ = "g:Double"
-
--- | Note that Lazy HashMap and Strict HashMap are the same data type.
-instance GraphSONTyped (HML.HashMap k v) where
-  gsonTypeFor _ = "g:Map"
-
-instance GraphSONTyped (HashSet a) where
-  gsonTypeFor _ = "g:Set"
-
-instance (GraphSONTyped a, GraphSONTyped b) => GraphSONTyped (Either a b) where
-  gsonTypeFor e = either gsonTypeFor gsonTypeFor e
 
 -- | Parse @GraphSON v@, but it checks 'gsonType'. If 'gsonType' is
 -- 'Nothing' or it's not equal to 'gsonTypeFor', the 'Parser' fails.

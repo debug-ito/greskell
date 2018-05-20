@@ -33,8 +33,7 @@ import Data.Vector ((!))
 import GHC.Exts (IsList(Item))
 import qualified GHC.Exts as List (IsList(fromList, toList))
 
-import Data.Greskell.GraphSON
-  (GraphSON(gsonValue), GraphSONTyped(..), parseTypedGraphSON', typedGraphSON)
+import Data.Greskell.GraphSON.GraphSONTyped (GraphSONTyped(..))
 
 -- $setup
 -- >>> :set -XOverloadedStrings
