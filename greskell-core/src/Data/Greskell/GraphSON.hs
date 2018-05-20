@@ -22,7 +22,10 @@ module Data.Greskell.GraphSON
          unwrapAll,
          unwrapOne,
          -- * FromGraphSON
-         FromGraphSON(..)
+         FromGraphSON(..),
+         -- ** parser support
+         parseUnwrapAll,
+         parseUnwrapTraversable
        ) where
 
 import Control.Applicative ((<$>), (<*>))
@@ -241,4 +244,19 @@ unwrapBase mapChild (GValue gson_body) = unwrapBody $ gsonValue gson_body
 class FromGraphSON a where
   parseGraphSON :: GValue -> Parser a
 
+-- | Unwrap the given 'GValue' with 'unwrapAll', and just parse the
+-- result with 'parseJSON'.
+--
+-- Useful to implement 'FromGraphSON' instances for scalar types.
+parseUnwrapAll :: FromJSON a => GValue -> Parser a
+parseUnwrapAll gv = parseJSON $ unwrapAll gv
 
+-- | Unwrap the given 'GValue' with 'unwrapOne', parse the result to
+-- @(t GValue)@, and recursively parse the children with
+-- 'parseGraphSON'.
+--
+-- Useful to implement 'FromGraphSON' instances for 'Traversable'
+-- types.
+parseUnwrapTraversable :: (Traversable t, FromJSON (t GValue), FromGraphSON a)
+                       => GValue -> Parser (t a)
+parseUnwrapTraversable gv = traverse parseGraphSON =<< (parseJSON $ unwrapOne gv)
