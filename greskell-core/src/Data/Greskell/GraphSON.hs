@@ -338,11 +338,11 @@ instance FromGraphSON IntSet where
 ---- List instances
 
 instance FromGraphSON a => FromGraphSON [a] where
-  parseGraphSON = parseUnwrapTraversable
+  parseGraphSON = parseUnwrapList
 instance FromGraphSON a => FromGraphSON (Vector a) where
-  parseGraphSON = parseUnwrapTraversable
+  parseGraphSON = parseUnwrapList
 instance FromGraphSON a => FromGraphSON (Seq a) where
-  parseGraphSON = parseUnwrapTraversable
+  parseGraphSON = parseUnwrapList
 
 ---- Set instances
 
