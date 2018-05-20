@@ -20,7 +20,9 @@ module Data.Greskell.GraphSON
          GValue(..),
          GValueBody(..),
          unwrapAll,
-         unwrapOne
+         unwrapOne,
+         -- * FromGraphSON
+         FromGraphSON(..)
        ) where
 
 import Control.Applicative ((<$>), (<*>))
@@ -157,8 +159,12 @@ parseTypedGraphSON' v = do
 
 
 
--- | An Aeson 'Value' wrapped in 'GraphSON' wrapper type. Useful to
--- parse JSON text in GraphSON format.
+-- | An Aeson 'Value' wrapped in 'GraphSON' wrapper type. Basically
+-- this type is the Haskell representaiton of a GraphSON-encoded
+-- document.
+--
+-- This type is used to parse GraphSON documents. See also
+-- 'FromGraphSON' class.
 newtype GValue = GValue { unGValue :: GraphSON GValueBody }
                  deriving (Show,Eq,Generic)
 
@@ -198,10 +204,6 @@ instance FromJSON GValue where
       recurse (Bool b) = return $ GBool b
       recurse Null = return GNull
 
--- TODO: implement tests for unwrapGraphSON.
-
--- TODO: make FromGraphSON class
-    
 -- | Reconstruct 'Value' from 'GValue'.
 instance ToJSON GValue where
   toJSON (GValue gson_body) = toJSON $ fmap toJSON gson_body
@@ -233,3 +235,10 @@ unwrapBase mapChild (GValue gson_body) = unwrapBody $ gsonValue gson_body
     unwrapBody (GString s) = String s
     unwrapBody (GArray a) = Array $ fmap mapChild a
     unwrapBody (GObject o) = Object $ fmap mapChild o
+
+-- | Types that can be constructed from 'GValue'. This is analogous to
+-- 'FromJSON' class.
+class FromGraphSON a where
+  parseGraphSON :: GValue -> Parser a
+
+
