@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, DeriveGeneric #-}
+{-# LANGUAGE OverloadedStrings, DeriveGeneric, TypeFamilies #-}
 -- |
 -- Module: Data.Greskell.GraphSON
 -- Description: Encoding and decoding GraphSON
@@ -28,22 +28,38 @@ module Data.Greskell.GraphSON
          parseUnwrapTraversable
        ) where
 
-import Control.Applicative ((<$>), (<*>))
+import Control.Applicative ((<$>), (<*>), (<|>))
 import Control.Monad (when)
-import Data.Aeson (ToJSON(toJSON), FromJSON(parseJSON), object, (.=), Value(..), (.:!))
+import Data.Aeson
+  ( ToJSON(toJSON), FromJSON(parseJSON), FromJSONKey,
+    object, (.=), Value(..), (.:!)
+  )
 import qualified Data.Aeson as Aeson
 import Data.Aeson.Types (Parser)
 import Data.Foldable (Foldable(foldr), foldl')
 import Data.HashMap.Strict (HashMap)
+import qualified Data.HashMap.Lazy as L (HashMap)
+import Data.HashSet (HashSet)
 import Data.Hashable (Hashable(..))
-import Data.Int (Int32)
+import Data.Int (Int8, Int16, Int32, Int64)
+import qualified Data.IntMap.Lazy as L (IntMap)
+import Data.IntSet (IntSet)
+import qualified Data.Map.Lazy as L (Map)
+import Data.Ratio (Ratio)
 import Data.Scientific (Scientific)
+import Data.Sequence (Seq)
+import Data.Set (Set)
 import Data.Text (Text)
+import qualified Data.Text.Lazy as TL
 import Data.Traversable (Traversable(traverse))
 import Data.Vector (Vector)
+import Data.Word (Word8, Word16, Word32, Word64)
+import Numeric.Natural (Natural)
+import GHC.Exts (IsList(Item))
 import GHC.Generics (Generic)
 
 import Data.Greskell.GraphSON.GraphSONTyped (GraphSONTyped(..))
+import Data.Greskell.GMap (GMap, GMapEntry, unGMap)
 
 -- $
 -- >>> :set -XOverloadedStrings
@@ -260,3 +276,100 @@ parseUnwrapAll gv = parseJSON $ unwrapAll gv
 parseUnwrapTraversable :: (Traversable t, FromJSON (t GValue), FromGraphSON a)
                        => GValue -> Parser (t a)
 parseUnwrapTraversable gv = traverse parseGraphSON =<< (parseJSON $ unwrapOne gv)
+
+---- Trivial instances
+
+instance FromGraphSON Int where
+  parseGraphSON = parseUnwrapAll
+instance FromGraphSON Text where
+  parseGraphSON = parseUnwrapAll
+instance FromGraphSON TL.Text where
+  parseGraphSON = parseUnwrapAll
+instance FromGraphSON Bool where
+  parseGraphSON = parseUnwrapAll
+instance FromGraphSON Char where
+  parseGraphSON = parseUnwrapAll
+instance FromGraphSON Double where
+  parseGraphSON = parseUnwrapAll
+instance FromGraphSON Float where
+  parseGraphSON = parseUnwrapAll
+instance FromGraphSON Int8 where
+  parseGraphSON = parseUnwrapAll
+instance FromGraphSON Int16 where
+  parseGraphSON = parseUnwrapAll
+instance FromGraphSON Int32 where
+  parseGraphSON = parseUnwrapAll
+instance FromGraphSON Int64 where
+  parseGraphSON = parseUnwrapAll
+instance FromGraphSON Integer where
+  parseGraphSON = parseUnwrapAll
+instance FromGraphSON Natural where
+  parseGraphSON = parseUnwrapAll
+instance (FromJSON a, Integral a) => FromGraphSON (Ratio a) where
+  parseGraphSON = parseUnwrapAll
+instance FromGraphSON Word where
+  parseGraphSON = parseUnwrapAll
+instance FromGraphSON Word8 where
+  parseGraphSON = parseUnwrapAll
+instance FromGraphSON Word16 where
+  parseGraphSON = parseUnwrapAll
+instance FromGraphSON Word32 where
+  parseGraphSON = parseUnwrapAll
+instance FromGraphSON Word64 where
+  parseGraphSON = parseUnwrapAll
+instance FromGraphSON Scientific where
+  parseGraphSON = parseUnwrapAll
+instance FromGraphSON IntSet where
+  parseGraphSON = parseUnwrapAll
+
+---- List instances
+
+instance FromGraphSON a => FromGraphSON [a] where
+  parseGraphSON = parseUnwrapTraversable
+instance FromGraphSON a => FromGraphSON (Vector a) where
+  parseGraphSON = parseUnwrapTraversable
+instance FromGraphSON a => FromGraphSON (Seq a) where
+  parseGraphSON = parseUnwrapTraversable
+
+-- TODO: Set and HashSet is not Traversable. Should we use IsList?
+
+
+---- Map instances
+
+instance (FromGraphSON v, Eq k, Hashable k, FromJSONKey k, FromJSON k) => FromGraphSON (L.HashMap k v) where
+  parseGraphSON = fmap unGMap . parseUnwrapTraversable
+instance (FromGraphSON v, Ord k, FromJSONKey k, FromJSON k) => FromGraphSON (L.Map k v) where
+  parseGraphSON = fmap unGMap . parseUnwrapTraversable
+
+-- TODO: IntMap cannot be used with GMap.
+
+-- instance FromGraphSON v => FromGraphSON (L.IntMap v) where
+--   parseGraphSON = fmap unGMap . parseUnwrapTraversable
+
+
+---- GMap and GMapEntry
+
+instance (Traversable (c k), FromJSON k, IsList (c k GValue), Item (c k GValue) ~ (k,GValue), FromJSON (c k GValue), FromGraphSON v)
+         => FromGraphSON (GMap c k v) where
+  parseGraphSON = parseUnwrapTraversable
+instance (FromJSON k, FromJSONKey k, Ord k, FromGraphSON v) => FromGraphSON (GMapEntry k v) where
+  parseGraphSON = parseUnwrapTraversable
+
+
+---- Maybe and Either
+
+-- | Parse 'GNull' into 'Nothing'.
+instance FromGraphSON a => FromGraphSON (Maybe a) where
+  parseGraphSON (GValue (GraphSON _ GNull)) = return Nothing
+  parseGraphSON gv = fmap Just $ parseGraphSON gv
+
+-- | Try 'Left', then 'Right'.
+instance (FromGraphSON a, FromGraphSON b) => FromGraphSON (Either a b) where
+  parseGraphSON gv = (fmap Left $ parseGraphSON gv) <|> (fmap Right $ parseGraphSON gv)
+
+
+---- Value
+
+-- | Call 'unwrapAll' to remove all GraphSON wrappers.
+instance FromGraphSON Value where
+  parseGraphSON = return . unwrapAll
