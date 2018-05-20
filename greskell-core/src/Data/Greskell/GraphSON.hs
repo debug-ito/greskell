@@ -44,8 +44,11 @@ import Data.HashSet (HashSet)
 import Data.Hashable (Hashable(..))
 import Data.Int (Int8, Int16, Int32, Int64)
 import qualified Data.IntMap.Lazy as L (IntMap)
+import qualified Data.IntMap.Lazy as LIntMap
 import Data.IntSet (IntSet)
 import qualified Data.Map.Lazy as L (Map)
+import qualified Data.Map.Lazy as LMap
+import Data.Monoid (mempty)
 import Data.Ratio (Ratio)
 import Data.Scientific (Scientific)
 import Data.Sequence (Seq)
@@ -355,12 +358,12 @@ instance (FromGraphSON v, Eq k, Hashable k, FromJSONKey k, FromJSON k) => FromGr
   parseGraphSON = fmap unGMap . parseUnwrapTraversable
 instance (FromGraphSON v, Ord k, FromJSONKey k, FromJSON k) => FromGraphSON (L.Map k v) where
   parseGraphSON = fmap unGMap . parseUnwrapTraversable
-
--- TODO: IntMap cannot be used with GMap.
-
--- instance FromGraphSON v => FromGraphSON (L.IntMap v) where
---   parseGraphSON = fmap unGMap . parseUnwrapTraversable
-
+-- IntMap cannot be used with GMap directly..
+instance FromGraphSON v => FromGraphSON (L.IntMap v) where
+  parseGraphSON = fmap (mapToIntMap . unGMap) . parseUnwrapTraversable
+    where
+      mapToIntMap :: L.Map Int v -> L.IntMap v
+      mapToIntMap = LMap.foldrWithKey LIntMap.insert mempty
 
 ---- GMap and GMapEntry
 
