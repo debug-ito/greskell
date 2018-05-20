@@ -25,7 +25,8 @@ module Data.Greskell.GraphSON
          FromGraphSON(..),
          -- ** parser support
          parseUnwrapAll,
-         parseUnwrapTraversable
+         parseUnwrapTraversable,
+         parseUnwrapList
        ) where
 
 import Control.Applicative ((<$>), (<*>), (<|>))
@@ -56,6 +57,7 @@ import Data.Vector (Vector)
 import Data.Word (Word8, Word16, Word32, Word64)
 import Numeric.Natural (Natural)
 import GHC.Exts (IsList(Item))
+import qualified GHC.Exts as List (fromList, toList)
 import GHC.Generics (Generic)
 
 import Data.Greskell.GraphSON.GraphSONTyped (GraphSONTyped(..))
@@ -277,6 +279,14 @@ parseUnwrapTraversable :: (Traversable t, FromJSON (t GValue), FromGraphSON a)
                        => GValue -> Parser (t a)
 parseUnwrapTraversable gv = traverse parseGraphSON =<< (parseJSON $ unwrapOne gv)
 
+-- | Extract 'GArray' from the given 'GValue', parse the items in the
+-- array, and gather them by 'List.fromList'.
+--
+-- Useful to implement 'FromGraphSON' instances for 'IsList' types.
+parseUnwrapList :: (IsList a, i ~ Item a, FromGraphSON i) => GValue -> Parser a
+parseUnwrapList (GValue (GraphSON _ (GArray v))) = fmap List.fromList $ traverse parseGraphSON $ List.toList v
+parseUnwrapList (GValue (GraphSON _ body)) = fail ("Expects GArray, but got " ++ show body)
+
 ---- Trivial instances
 
 instance FromGraphSON Int where
@@ -331,7 +341,12 @@ instance FromGraphSON a => FromGraphSON (Vector a) where
 instance FromGraphSON a => FromGraphSON (Seq a) where
   parseGraphSON = parseUnwrapTraversable
 
--- TODO: Set and HashSet is not Traversable. Should we use IsList?
+---- Set instances
+
+instance (FromGraphSON a, Ord a) => FromGraphSON (Set a) where
+  parseGraphSON = parseUnwrapList
+instance (FromGraphSON a, Eq a, Hashable a) => FromGraphSON (HashSet a) where
+  parseGraphSON = parseUnwrapList
 
 
 ---- Map instances
