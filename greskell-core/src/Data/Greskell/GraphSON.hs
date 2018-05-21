@@ -303,6 +303,8 @@ parseUnwrapList (GValue (GraphSON _ body)) = fail ("Expects GArray, but got " ++
 
 ---- Trivial instances
 
+instance FromGraphSON GValue where
+  parseGraphSON = return
 instance FromGraphSON Int where
   parseGraphSON = parseUnwrapAll
 instance FromGraphSON Text where
