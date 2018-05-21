@@ -8,6 +8,7 @@
 module Data.Greskell.GMap
        ( -- * FlattenedMap
          FlattenedMap(..),
+         parseToFlattenedMap,
          -- * GMap
          GMap(..),
          unGMap,
@@ -23,6 +24,7 @@ import Data.Aeson
   ( FromJSON(..), ToJSON(..), Value(..),
     FromJSONKey, ToJSONKey
   )
+import Data.Aeson.Types (Parser)
 import Data.Foldable (length, Foldable)
 import Data.Hashable (Hashable)
 import Data.HashMap.Strict (HashMap)
@@ -30,7 +32,7 @@ import qualified Data.HashMap.Strict as HM
 import qualified Data.Map as M
 import Data.Text (Text)
 import Data.Traversable (Traversable)
-import Data.Vector ((!))
+import Data.Vector ((!), Vector)
 import GHC.Exts (IsList(Item))
 import qualified GHC.Exts as List (IsList(fromList, toList))
 
@@ -70,15 +72,24 @@ newtype FlattenedMap c k v = FlattenedMap { unFlattenedMap :: c k v }
                    deriving (Show,Eq,Ord,Foldable,Traversable,Functor)
 
 instance (FromJSON k, FromJSON v, IsList (c k v), Item (c k v) ~ (k,v)) => FromJSON (FlattenedMap c k v) where
-  parseJSON (Array v) = if odd vlen
-                        then fail "Fail to parse a list into FlattenedMap because there are odd number of elements."
-                        else fmap (FlattenedMap . List.fromList) pairs
-    where
-      vlen = length v
-      pairList = map (\i -> (v ! (i * 2), v ! (i * 2 + 1))) [0 .. ((vlen `div` 2) - 1)]
-      parsePair (vk, vv) = (,) <$> parseJSON vk <*> parseJSON vv
-      pairs = mapM parsePair pairList
+  parseJSON (Array v) = parseToFlattenedMap parseJSON parseJSON v
   parseJSON _ = fail "Expects Array"
+
+-- | General parser for 'FlattenedMap'.
+parseToFlattenedMap :: (IsList (c k v), Item (c k v) ~ (k,v))
+                    => (s -> Parser k) -- ^ key parser
+                    -> (s -> Parser v) -- ^ value parser
+                    -> Vector s -- ^ input vector of flattened key-values.
+                    -> Parser (FlattenedMap c k v)
+parseToFlattenedMap parseKey parseValue v =
+  if odd vlen
+  then fail "Fail to parse a list into FlattenedMap because there are odd number of elements."
+  else fmap (FlattenedMap . List.fromList) pairs
+  where
+    vlen = length v
+    pairList = map (\i -> (v ! (i * 2), v ! (i * 2 + 1))) [0 .. ((vlen `div` 2) - 1)]
+    parsePair (vk, vv) = (,) <$> parseKey vk <*> parseValue vv
+    pairs = mapM parsePair pairList
 
 instance (ToJSON k, ToJSON v, IsList (c k v), Item (c k v) ~ (k,v)) => ToJSON (FlattenedMap c k v) where
   toJSON (FlattenedMap m) = toJSON $ flatten $ map toValuePair $ List.toList m
