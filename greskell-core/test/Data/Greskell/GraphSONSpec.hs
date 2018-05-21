@@ -15,11 +15,13 @@ import Data.Text (Text)
 import qualified Data.Vector as V
 import Test.Hspec
 
+import Data.Greskell.GMap (GMapEntry(..), unGMapEntry)
 import Data.Greskell.GraphSON
   ( GraphSON, parseTypedGraphSON, parseTypedGraphSON',
     typedGraphSON', nonTypedGraphSON,
     GValue(..), GValueBody(..),
-    unwrapAll, unwrapOne
+    unwrapAll, unwrapOne,
+    FromGraphSON(..)
   )
 
 main :: IO ()
@@ -33,6 +35,7 @@ spec = do
     parseTypedGraphSON'_spec
   describe "GValue" $ do
     gvalue_spec
+    fromGraphSON_spec
 
 fromJSON_spec :: Spec
 fromJSON_spec = describe "FromJSON (recursive)" $ do
@@ -291,4 +294,47 @@ unwrap_spec = do
                          "yyy" .= Bool True
                        ]
     (unwrapOne $ forceDecode nestedSample) `shouldBe` expected
-        
+
+decodeG :: FromGraphSON a => BSL.ByteString -> Either String a
+decodeG = parseEither parseGraphSON . forceDecode
+
+fromGraphSON_spec :: Spec
+fromGraphSON_spec = describe "FromGraphSON" $ do
+  specify "bare Int" $ do
+    let got :: Either String Int
+        got = decodeG "199"
+    got `shouldBe` Right 199
+  specify "wrapped Int" $ do
+    let got :: Either String Int
+        got = decodeG (gson "g:Int" "256")
+    got `shouldBe` Right 256
+  specify "bare list" $ do
+    let got :: Either String [Int]
+        got = decodeG "[1, 2, 3]"
+    got `shouldBe` Right [1, 2, 3]
+  specify "wrapped list" $ do
+    let got :: Either String [Int]
+        got = decodeG (gson "g:List" ("[" <> BSL.intercalate "," (map gint ["1","2","3"]) <> "]"))
+        gint n = gson "g:Int" n
+    got `shouldBe` Right [1, 2, 3]
+  specify "bare map" $ do
+    let got :: Either String (HashMap Text Int)
+        got = decodeG "{\"foo\": 100, \"bar\": 200}"
+    got `shouldBe` Right (HM.fromList [("foo", 100), ("bar", 200)])
+  specify "wrapped flattened map" $ do
+    let got :: Either String (HashMap Text Int)
+        got = decodeG (gson "g:Map" ("[\"foo\", " <> gint "100" <> ", \"bar\", " <> gint "200"  <> "]"))
+        gint n = gson "g:Int" n
+    got `shouldBe` Right (HM.fromList [("foo", 100), ("bar", 200)])
+  specify "bare GMapEntry" $ do
+    let got :: Either String (GMapEntry Int Text)
+        got = decodeG "{\"123\": \"hoge\"}"
+    got `shouldBe` Right (GMapEntry False 123 "hoge")
+  specify "wrapped GMapEntry" $ do
+    let got :: Either String (GMapEntry Int Text)
+        got = decodeG (gson "g:Map" ("[" <> gint "123" <> ", \"hoge\"]"))
+        gint n = gson "g:Int" n
+    got `shouldBe` Right (GMapEntry True 123 "hoge")
+  specify "bare Maybe" $ True `shouldBe` False -- TODO
+  specify "wrapped Maybe" $ True `shouldBe` False -- TODO
+  
