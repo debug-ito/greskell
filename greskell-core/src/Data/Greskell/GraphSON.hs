@@ -67,7 +67,7 @@ import GHC.Generics (Generic)
 import Data.Greskell.GraphSON.GraphSONTyped (GraphSONTyped(..))
 import Data.Greskell.GMap
   ( GMap, GMapEntry, unGMap,
-    FlattenedMap, parseToFlattenedMap, parseToGMap
+    FlattenedMap, parseToFlattenedMap, parseToGMap, parseToGMapEntry
   )
 
 -- $
@@ -393,8 +393,12 @@ instance (FromGraphSON k, FromGraphSON v, IsList (c k v), Item (c k v) ~ (k,v), 
       -- parseObject = parseUnwrapTraversable . GValue . nonTypedGraphSON . GObject  --- Too many wrapping and unwrappings!!!
       parseObject o = traverse parseGraphSON =<< (parseJSON $ Object $ fmap toJSON o)
 
-instance (FromJSON k, FromJSONKey k, Ord k, FromGraphSON v) => FromGraphSON (GMapEntry k v) where
-  parseGraphSON = parseUnwrapTraversable -- TODO: fix it!
+-- | Use 'parseToGMapEntry'.
+instance (FromGraphSON k, FromGraphSON v, FromJSONKey k, Ord k) => FromGraphSON (GMapEntry k v) where
+  parseGraphSON gv = parseToGMapEntry' =<< parseGraphSON gv
+    where
+      parseToGMapEntry' :: Ord k => GMap L.Map k v -> Parser (GMapEntry k v)
+      parseToGMapEntry' = parseToGMapEntry
 
 
 ---- Map instances

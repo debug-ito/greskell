@@ -17,7 +17,8 @@ module Data.Greskell.GMap
          parseToGMap,
          -- * GMapEntry
          GMapEntry(..),
-         unGMapEntry
+         unGMapEntry,
+         parseToGMapEntry
        ) where
 
 import Control.Applicative ((<$>), (<*>), (<|>), empty)
@@ -185,19 +186,23 @@ data GMapEntry k v =
   }
   deriving (Show,Eq,Ord,Foldable,Traversable,Functor)
 
+parseToGMapEntry :: (IsList (c k v), Item (c k v) ~ (k,v)) => GMap c k v -> Parser (GMapEntry k v)
+parseToGMapEntry gm = case List.toList $ gmapValue gm of
+  [(k,v)] -> return $ GMapEntry { gmapEntryFlat = gmapFlat gm,
+                                  gmapEntryKey = k,
+                                  gmapEntryValue = v
+                                }
+  l -> fail ("Expects a single entry map, but it has " ++ (show $ length l) ++ " entries.")
+
 -- | Map to \"g:Map\".
 instance GraphSONTyped (GMapEntry k v) where
   gsonTypeFor _ = "g:Map"
 
 instance (FromJSON k, FromJSONKey k, Ord k, FromJSON v) => FromJSON (GMapEntry k v) where
-  parseJSON val = toEntry =<< parseJSON val
+  parseJSON val = parseToGMapEntry' =<< parseJSON val
     where
-      toEntry gm = case M.toList $ gmapValue gm of
-        [(k,v)] -> return $ GMapEntry { gmapEntryFlat = gmapFlat gm,
-                                        gmapEntryKey = k,
-                                        gmapEntryValue = v
-                                      }
-        l -> fail ("Expects a single entry map, but it has " ++ (show $ length l) ++ " entries.")
+      parseToGMapEntry' :: Ord k => GMap M.Map k v -> Parser (GMapEntry k v)
+      parseToGMapEntry' = parseToGMapEntry
 
 instance (ToJSON k, ToJSONKey k, Ord k, ToJSON v) => ToJSON (GMapEntry k v) where
   toJSON e = toJSON $ singleton' e
