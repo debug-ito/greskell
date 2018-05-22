@@ -14,6 +14,7 @@ module Data.Greskell.GMap
          unGMap,
          singleton,
          toList,
+         parseToGMap,
          -- * GMapEntry
          GMapEntry(..),
          unGMapEntry
@@ -131,10 +132,23 @@ data GMap c k v =
   }
   deriving (Show,Eq,Foldable,Traversable,Functor)
 
+-- | General parser for 'GMap'.
+parseToGMap :: (IsList (c k v), Item (c k v) ~ (k,v))
+            => (s -> Parser k) -- ^ key parser
+            -> (s -> Parser v) -- ^ value parser
+            -> (HashMap Text s -> Parser (c k v)) -- ^ object parser
+            -> Either (HashMap Text s) (Vector s) -- ^ input object or flattened key-values.
+            -> Parser (GMap c k v)
+parseToGMap _ _ op (Left o) = fmap (GMap False) $ op o
+parseToGMap kp vp _ (Right v) = fmap (GMap True . unFlattenedMap) $ parseToFlattenedMap kp vp v
+
 instance (FromJSON k, FromJSON v, IsList (c k v), Item (c k v) ~ (k,v), FromJSON (c k v)) => FromJSON (GMap c k v) where
-  parseJSON v@(Object _) = GMap False <$> parseJSON v
-  parseJSON v@(Array _) = (GMap True .unFlattenedMap) <$> parseJSON v
-  parseJSON _ = empty
+  parseJSON v = case v of
+    Object o -> parse $ Left o
+    Array a -> parse $ Right a
+    _ -> empty
+    where
+      parse = parseToGMap parseJSON parseJSON (parseJSON . Object)
 
 instance (ToJSON k, ToJSON v, IsList (c k v), Item (c k v) ~ (k,v), ToJSON (c k v)) => ToJSON (GMap c k v) where
   toJSON gm = if gmapFlat gm
