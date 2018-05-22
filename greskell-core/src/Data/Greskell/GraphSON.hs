@@ -21,6 +21,7 @@ module Data.Greskell.GraphSON
          GValueBody(..),
          unwrapAll,
          unwrapOne,
+         gValueBody,
          -- * FromGraphSON
          FromGraphSON(..),
          -- ** parser support
@@ -259,6 +260,10 @@ unwrapBase mapChild (GValue gson_body) = unwrapBody $ gsonValue gson_body
     unwrapBody (GString s) = String s
     unwrapBody (GArray a) = Array $ fmap mapChild a
     unwrapBody (GObject o) = Object $ fmap mapChild o
+
+-- | Get the 'GValueBody' from 'GValue'.
+gValueBody :: GValue -> GValueBody
+gValueBody = gsonValue . unGValue
 
 -- | Types that can be constructed from 'GValue'. This is analogous to
 -- 'FromJSON' class.
