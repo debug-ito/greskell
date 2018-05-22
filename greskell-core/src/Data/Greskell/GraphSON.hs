@@ -65,7 +65,10 @@ import qualified GHC.Exts as List (fromList, toList)
 import GHC.Generics (Generic)
 
 import Data.Greskell.GraphSON.GraphSONTyped (GraphSONTyped(..))
-import Data.Greskell.GMap (GMap, GMapEntry, unGMap)
+import Data.Greskell.GMap
+  ( GMap, GMapEntry, unGMap,
+    FlattenedMap, parseToFlattenedMap, parseToGMap
+  )
 
 -- $
 -- >>> :set -XOverloadedStrings
@@ -274,9 +277,9 @@ gValueBody = gsonValue . unGValue
 -- - Simple scalar types (e.g. 'Int' and 'Text'): use 'parseUnwrapAll'.
 -- - List-like types (e.g. '[]', 'Vector' and 'Set'): use
 --   'parseUnwrapList'.
--- - Map-like types (e.g. 'L.HashMap' and 'L.Map'): use
---   'parseUnwrapTraversable'. 'GMap' is used as an intermediate type,
---   so that all versions of GraphSON formats are handled properly.
+-- - Map-like types (e.g. 'L.HashMap' and 'L.Map'): parse into 'GMap'
+--   first, then unwrap the 'GMap' wrapper. That way, all versions of
+--   GraphSON formats are handled properly.
 -- - Other types: see the individual instance documentation.
 class FromGraphSON a where
   parseGraphSON :: GValue -> Parser a
@@ -370,27 +373,41 @@ instance (FromGraphSON a, Eq a, Hashable a) => FromGraphSON (HashSet a) where
   parseGraphSON = parseUnwrapList
 
 
----- Map instances
+---- GMap and others
 
-instance (FromGraphSON v, Eq k, Hashable k, FromJSONKey k, FromJSON k) => FromGraphSON (L.HashMap k v) where
-  parseGraphSON = fmap unGMap . parseUnwrapTraversable
-instance (FromGraphSON v, Ord k, FromJSONKey k, FromJSON k) => FromGraphSON (L.Map k v) where
-  parseGraphSON = fmap unGMap . parseUnwrapTraversable
--- IntMap cannot be used with GMap directly..
-instance FromGraphSON v => FromGraphSON (L.IntMap v) where
-  parseGraphSON = fmap (mapToIntMap . unGMap) . parseUnwrapTraversable
-    where
-      mapToIntMap :: L.Map Int v -> L.IntMap v
-      mapToIntMap = LMap.foldrWithKey LIntMap.insert mempty
+-- | Use 'parseToFlattenedMap'.
+instance (FromGraphSON k, FromGraphSON v, IsList (c k v), Item (c k v) ~ (k,v)) => FromGraphSON (FlattenedMap c k v) where
+  parseGraphSON gv = case gValueBody gv of
+    GArray a -> parseToFlattenedMap parseGraphSON parseGraphSON a
+    b -> fail ("Expects GArray, but got " ++ show b)
 
----- GMap and GMapEntry
-
-instance (Traversable (c k), FromJSON k, IsList (c k GValue), Item (c k GValue) ~ (k,GValue), FromJSON (c k GValue), FromGraphSON v)
+-- | Use 'parseToGMap'.
+instance (FromGraphSON k, FromGraphSON v, IsList (c k v), Item (c k v) ~ (k,v), Traversable (c k), FromJSON (c k GValue))
          => FromGraphSON (GMap c k v) where
-  parseGraphSON = parseUnwrapTraversable
+  parseGraphSON gv = case gValueBody gv of
+    GObject o -> parse $ Left o
+    GArray a -> parse $ Right a
+    other -> fail ("Expects GObject or GArray, but got " ++ show other)
+    where
+      parse = parseToGMap parseGraphSON parseGraphSON parseObject
+      parseObject = parseUnwrapTraversable . GValue . nonTypedGraphSON . GObject
+
 instance (FromJSON k, FromJSONKey k, Ord k, FromGraphSON v) => FromGraphSON (GMapEntry k v) where
   parseGraphSON = parseUnwrapTraversable
 
+
+---- Map instances
+
+instance (FromGraphSON v, Eq k, Hashable k, FromJSONKey k, FromGraphSON k) => FromGraphSON (L.HashMap k v) where
+  parseGraphSON = fmap unGMap . parseGraphSON
+instance (FromGraphSON v, Ord k, FromJSONKey k, FromGraphSON k) => FromGraphSON (L.Map k v) where
+  parseGraphSON = fmap unGMap . parseGraphSON
+-- IntMap cannot be used with GMap directly..
+instance FromGraphSON v => FromGraphSON (L.IntMap v) where
+  parseGraphSON = fmap (mapToIntMap . unGMap) . parseGraphSON
+    where
+      mapToIntMap :: L.Map Int v -> L.IntMap v
+      mapToIntMap = LMap.foldrWithKey LIntMap.insert mempty
 
 ---- Maybe and Either
 
