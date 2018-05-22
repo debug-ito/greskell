@@ -74,7 +74,7 @@ newtype FlattenedMap c k v = FlattenedMap { unFlattenedMap :: c k v }
 
 instance (FromJSON k, FromJSON v, IsList (c k v), Item (c k v) ~ (k,v)) => FromJSON (FlattenedMap c k v) where
   parseJSON (Array v) = parseToFlattenedMap parseJSON parseJSON v
-  parseJSON _ = fail "Expects Array"
+  parseJSON v = fail ("Expects Array, but got " ++ show v)
 
 -- | General parser for 'FlattenedMap'.
 parseToFlattenedMap :: (IsList (c k v), Item (c k v) ~ (k,v))
@@ -146,7 +146,7 @@ instance (FromJSON k, FromJSON v, IsList (c k v), Item (c k v) ~ (k,v), FromJSON
   parseJSON v = case v of
     Object o -> parse $ Left o
     Array a -> parse $ Right a
-    _ -> empty
+    other -> fail ("Expects Object or Array, but got " ++ show other)
     where
       parse = parseToGMap parseJSON parseJSON (parseJSON . Object)
 
