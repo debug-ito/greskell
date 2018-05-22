@@ -390,10 +390,11 @@ instance (FromGraphSON k, FromGraphSON v, IsList (c k v), Item (c k v) ~ (k,v), 
     other -> fail ("Expects GObject or GArray, but got " ++ show other)
     where
       parse = parseToGMap parseGraphSON parseGraphSON parseObject
-      parseObject = parseUnwrapTraversable . GValue . nonTypedGraphSON . GObject
+      -- parseObject = parseUnwrapTraversable . GValue . nonTypedGraphSON . GObject  --- Too many wrapping and unwrappings!!!
+      parseObject o = traverse parseGraphSON =<< (parseJSON $ Object $ fmap toJSON o)
 
 instance (FromJSON k, FromJSONKey k, Ord k, FromGraphSON v) => FromGraphSON (GMapEntry k v) where
-  parseGraphSON = parseUnwrapTraversable
+  parseGraphSON = parseUnwrapTraversable -- TODO: fix it!
 
 
 ---- Map instances
