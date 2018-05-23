@@ -345,3 +345,16 @@ fromGraphSON_spec = describe "FromGraphSON" $ do
     let got :: Either String (Maybe Int)
         got = decodeG (gson "g:Int" "null")
     got `shouldBe` Right Nothing
+  specify "bare nested" $ do
+    let got :: Either String (HashMap Int [Int])
+        got = decodeG "{\"99\": [], \"33\": [1, 2, 3]}"
+    got `shouldBe` Right (HM.fromList [(99, []), (33, [1,2,3])])
+  specify "wrapped nested" $ do
+    let got :: Either String (HashMap [Int] [Int])
+        got = decodeG input
+        input = gson "g:Map" $ "[" <> key_a <> "," <> val_a <> ", " <> key_b <> ", " <> val_b <> "]"
+        key_a = gson "g:List" $ "[" <> gint "1" <> "," <> gint "2" <> "]"
+        val_a = gson "g:List" $ "[]"
+        key_b = gson "g:List" $ "[" <> gint "3" <> "," <> gint "4" <> ", " <> gint "5" <> "]"
+        val_b = gson "g:List" $ "[" <> gint "6" <> "]"
+    got `shouldBe` Right (HM.fromList [ ([1,2], []), ([3,4,5], [6])])
