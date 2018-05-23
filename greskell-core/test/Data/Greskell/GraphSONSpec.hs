@@ -337,5 +337,11 @@ fromGraphSON_spec = describe "FromGraphSON" $ do
     let got :: Either String (GMapEntry Int Text)
         got = decodeG (gson "g:Map" ("[" <> gint "123" <> ", \"hoge\"]"))
     got `shouldBe` Right (GMapEntry True 123 "hoge")
-  specify "bare Maybe" $ True `shouldBe` False -- TODO
-  specify "wrapped Maybe" $ True `shouldBe` False -- TODO
+  specify "bare Maybe" $ do
+    let got :: Either String (Maybe Int)
+        got = decodeG "null"
+    got `shouldBe` Right Nothing
+  specify "wrapped Maybe" $ do
+    let got :: Either String (Maybe Int)
+        got = decodeG (gson "g:Int" "null")
+    got `shouldBe` Right Nothing
