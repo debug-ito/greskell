@@ -26,7 +26,6 @@ module Data.Greskell.GraphSON
          FromGraphSON(..),
          -- ** parser support
          parseUnwrapAll,
-         parseUnwrapTraversable,
          parseUnwrapList
        ) where
 
@@ -291,15 +290,17 @@ class FromGraphSON a where
 parseUnwrapAll :: FromJSON a => GValue -> Parser a
 parseUnwrapAll gv = parseJSON $ unwrapAll gv
 
--- | Unwrap the given 'GValue' with 'unwrapOne', parse the result to
--- @(t GValue)@, and recursively parse the children with
--- 'parseGraphSON'.
---
--- Useful to implement 'FromGraphSON' instances for 'Traversable'
--- types.
-parseUnwrapTraversable :: (Traversable t, FromJSON (t GValue), FromGraphSON a)
-                       => GValue -> Parser (t a)
-parseUnwrapTraversable gv = traverse parseGraphSON =<< (parseJSON $ unwrapOne gv)
+---- Looks like we don't need this.
+
+-- -- | Unwrap the given 'GValue' with 'unwrapOne', parse the result to
+-- -- @(t GValue)@, and recursively parse the children with
+-- -- 'parseGraphSON'.
+-- --
+-- -- Useful to implement 'FromGraphSON' instances for 'Traversable'
+-- -- types.
+-- parseUnwrapTraversable :: (Traversable t, FromJSON (t GValue), FromGraphSON a)
+--                        => GValue -> Parser (t a)
+-- parseUnwrapTraversable gv = traverse parseGraphSON =<< (parseJSON $ unwrapOne gv)
 
 -- | Extract 'GArray' from the given 'GValue', parse the items in the
 -- array, and gather them by 'List.fromList'.
