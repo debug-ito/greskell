@@ -9,15 +9,21 @@ module Data.Greskell.AsIterator
        ( AsIterator(..)
        ) where
 
-import Data.HashMap.Strict (HashMap)
+import qualified Data.HashMap.Lazy as L (HashMap)
+import Data.HashSet (HashSet)
 import Data.Int (Int8, Int16, Int32, Int64)
+import qualified Data.IntMap.Lazy as L (IntMap)
+import Data.IntSet (IntSet)
+import qualified Data.Map.Lazy as L (Map)
 import Data.Ratio (Ratio)
-import Data.Word (Word8, Word16, Word32, Word64)
-import Numeric.Natural (Natural)
 import Data.Scientific (Scientific)
+import Data.Sequence (Seq)
+import Data.Set (Set)
 import Data.Text (Text)
 import qualified Data.Text.Lazy as TL
 import Data.Vector (Vector)
+import Data.Word (Word8, Word16, Word32, Word64)
+import Numeric.Natural (Natural)
 
 import Data.Greskell.GMap (GMap, GMapEntry)
 
@@ -33,7 +39,8 @@ import Data.Greskell.GMap (GMap, GMapEntry)
 --
 -- - @Iterator@ and @Iterable@ types like @List@, @Stream@ and
 --   @GraphTraversal@ are converted to their element types.
--- - @Map@ type is converted to its @Map.Entry@.
+-- - @Map@ type is converted to its @Map.Entry@. In greskell,
+--   @Map.Entry@ is expressed as 'GMapEntry'.
 -- - Other types are converted to themselves.
 --
 -- Caveat:
@@ -43,9 +50,6 @@ import Data.Greskell.GMap (GMap, GMapEntry)
 --   deal with @String@s in Gremlin.
 class AsIterator a where
   type IteratorItem a
-
-instance Integral a => AsIterator (Ratio a) where
-  type IteratorItem (Ratio a) = Ratio a
 
 instance AsIterator Int where
   type IteratorItem Int = Int
@@ -73,6 +77,8 @@ instance AsIterator Integer where
   type IteratorItem Integer = Integer
 instance AsIterator Natural where
   type IteratorItem Natural = Natural
+instance Integral a => AsIterator (Ratio a) where
+  type IteratorItem (Ratio a) = Ratio a
 instance AsIterator Word where
   type IteratorItem Word = Word
 instance AsIterator Word8 where
@@ -90,16 +96,28 @@ instance AsIterator [a] where
   type IteratorItem [a] = a
 instance AsIterator (Vector a) where
   type IteratorItem (Vector a) = a
+instance AsIterator (HashSet a) where
+  type IteratorItem (HashSet a) = a
+instance AsIterator (Seq a) where
+  type IteratorItem (Seq a) = a
+instance AsIterator (Set a) where
+  type IteratorItem (Set a) = a
+instance AsIterator IntSet where
+  type IteratorItem IntSet = Int
 
--- | @asIterator@ converts a @Map@ to @Iterator<Map.Entry>@.
 instance AsIterator (GMap c k v) where
   type IteratorItem (GMap c k v) = GMapEntry k v
-instance AsIterator (HashMap k v) where
-  type IteratorItem (HashMap k v) = GMapEntry k v
+instance AsIterator (GMapEntry k v) where
+  type IteratorItem (GMapEntry k v) = GMapEntry k v
+instance AsIterator (L.HashMap k v) where
+  type IteratorItem (L.HashMap k v) = GMapEntry k v
+instance AsIterator (L.Map k v) where
+  type IteratorItem (L.Map k v) = GMapEntry k v
+instance AsIterator (L.IntMap v) where
+  type IteratorItem (L.IntMap v) = GMapEntry Int v
 
 instance AsIterator a => AsIterator (Maybe a) where
   type IteratorItem (Maybe a) = Maybe (IteratorItem a)
-
 
 -- About encoding of Map.Entry
 --
@@ -110,5 +128,3 @@ instance AsIterator a => AsIterator (Maybe a) where
 --
 -- - https://github.com/fasterxml/jackson-databind/issues/565
 -- - https://fasterxml.github.io/jackson-databind/javadoc/2.8/com/fasterxml/jackson/databind/ser/impl/MapEntrySerializer.html
-
--- TODO: add more type instances (mostly for scalar types)
