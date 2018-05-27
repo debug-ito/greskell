@@ -15,7 +15,7 @@ module Data.Greskell.WebSocket.Response
          isTerminating
        ) where
 
-import Control.Applicative (empty, (<$>), (<*>))
+import Control.Applicative ((<$>), (<*>))
 import Data.Aeson
   ( Object, ToJSON(..), FromJSON(..), Value(Number, Object),
     defaultOptions, genericParseJSON
@@ -83,7 +83,7 @@ instance FromJSON ResponseCode where
   parseJSON (Number n) = maybe err return $ codeFromInt $ floor n
     where
       err = fail ("Unknown response code: " ++ show n)
-  parseJSON _ = empty
+  parseJSON v = fail ("Expected Number, but got " ++ show v)
 
 instance FromGraphSON ResponseCode where
   parseGraphSON = parseUnwrapAll
@@ -110,7 +110,7 @@ instance FromGraphSON ResponseStatus where
       <$> o .: "code"
       <*> o .: "message"
       <*> o .: "attributes"
-    _ -> empty
+    gb -> fail ("Expected GObject, but got " ++ show gb)
   
 
 -- | \"result\" field.
@@ -131,7 +131,7 @@ instance FromGraphSON s => FromGraphSON (ResponseResult s) where
       ResponseResult
       <$> o .: "data"
       <*> o .: "meta"
-    _ -> empty
+    gb -> fail ("Expected GObject, but got " ++ show gb)
 
 instance Functor ResponseResult where
   fmap f rr = rr { resultData = f $ resultData rr }
@@ -157,7 +157,7 @@ instance FromGraphSON s => FromGraphSON (ResponseMessage s) where
       <$> (o .: "requestId")
       <*> (o .: "status")
       <*> (o .: "result")
-    _ -> empty
+    gb -> fail ("Expected GObject, but got " ++ show gb)
 
 instance Functor ResponseMessage where
   fmap f rm = rm { result = fmap f $ result rm }
