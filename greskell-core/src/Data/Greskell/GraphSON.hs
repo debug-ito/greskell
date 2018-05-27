@@ -26,19 +26,23 @@ module Data.Greskell.GraphSON
          FromGraphSON(..),
          -- ** parser support
          parseUnwrapAll,
-         parseUnwrapList
+         parseUnwrapList,
+         (.:),
+         parseEither
        ) where
 
 import Control.Applicative ((<$>), (<*>), (<|>))
 import Control.Monad (when)
 import Data.Aeson
   ( ToJSON(toJSON), FromJSON(parseJSON), FromJSONKey,
-    object, (.=), Value(..), (.:!)
+    object, (.=), Value(..)
   )
 import qualified Data.Aeson as Aeson
 import Data.Aeson.Types (Parser)
+import qualified Data.Aeson.Types as Aeson (parseEither)
 import Data.Foldable (Foldable(foldr), foldl')
 import Data.HashMap.Strict (HashMap)
+import qualified Data.HashMap.Strict as HM
 import qualified Data.HashMap.Lazy as L (HashMap)
 import Data.HashSet (HashSet)
 import Data.Hashable (Hashable(..))
@@ -53,9 +57,11 @@ import Data.Ratio (Ratio)
 import Data.Scientific (Scientific)
 import Data.Sequence (Seq)
 import Data.Set (Set)
-import Data.Text (Text)
+import Data.Text (Text, unpack)
 import qualified Data.Text.Lazy as TL
 import Data.Traversable (Traversable(traverse))
+import Data.UUID (UUID)
+import qualified Data.UUID as UUID
 import Data.Vector (Vector)
 import Data.Word (Word8, Word16, Word32, Word64)
 import Numeric.Natural (Natural)
@@ -144,8 +150,8 @@ instance FromJSON v => FromJSON (GraphSON v) where
     if length o /= 2
       then parseDirect v
       else do
-      mtype <- o .:! "@type"
-      mvalue <- o .:! "@value"
+      mtype <- o Aeson..:! "@type"
+      mvalue <- o Aeson..:! "@value"
       maybe (parseDirect v) return $ typedGraphSON' <$> mtype <*> mvalue
   parseJSON v = parseDirect v
     
@@ -310,6 +316,16 @@ parseUnwrapList :: (IsList a, i ~ Item a, FromGraphSON i) => GValue -> Parser a
 parseUnwrapList (GValue (GraphSON _ (GArray v))) = fmap List.fromList $ traverse parseGraphSON $ List.toList v
 parseUnwrapList (GValue (GraphSON _ body)) = fail ("Expects GArray, but got " ++ show body)
 
+-- | Parse 'GValue' into 'FromGraphSON'.
+parseEither :: FromGraphSON a => GValue -> Either String a
+parseEither = Aeson.parseEither parseGraphSON
+
+-- | Like Aeson's 'Aeson..:', but for 'FromGraphSON'.
+(.:) :: FromGraphSON a => HashMap Text GValue -> Text -> Parser a
+go .: label = maybe failure parseGraphSON $ HM.lookup label go
+  where
+    failure = fail ("Cannot find field " ++ unpack label)
+
 ---- Trivial instances
 
 instance FromGraphSON GValue where
@@ -427,8 +443,15 @@ instance (FromGraphSON a, FromGraphSON b) => FromGraphSON (Either a b) where
   parseGraphSON gv = (fmap Left $ parseGraphSON gv) <|> (fmap Right $ parseGraphSON gv)
 
 
----- Value
+---- Others
 
 -- | Call 'unwrapAll' to remove all GraphSON wrappers.
 instance FromGraphSON Value where
   parseGraphSON = return . unwrapAll
+
+instance FromGraphSON UUID where
+  parseGraphSON gv = case gValueBody gv of
+    GString t -> maybe failure return $ UUID.fromText t
+      where
+        failure = fail ("Failed to parse into UUID: " ++ unpack t)
+    b -> fail ("Expected GString, but got " ++ show b)
