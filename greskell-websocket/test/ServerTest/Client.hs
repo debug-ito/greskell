@@ -6,6 +6,7 @@ import Control.Concurrent.Async (withAsync, mapConcurrently)
 import Control.Exception.Safe (bracket)
 import Control.Monad (forM_)
 import Data.Aeson (Value(Number))
+import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as HM
 import Data.Maybe (isNothing, isJust, fromJust)
 import Data.Text (Text)
@@ -73,8 +74,8 @@ client_basic_spec = do
       nextResult rh `shouldReturn` Just n
     nextResult rh `shouldReturn` Nothing
     nextResult rh `shouldReturn` Nothing
-  specify "eval (GMap Int String)" $ withClient $ \client -> do
-    let g :: Greskell (GMap Int String)
+  specify "eval (GMap HashMap Int Text)" $ withClient $ \client -> do
+    let g :: Greskell (GMap HashMap Int Text)
         g = G.unsafeGreskell "[100: 'hoge', 200: 'foo', 300: 'bar']"
     rh <- submit client g Nothing
     got <- fmap (map unGMapEntry) $ slurpResults rh
