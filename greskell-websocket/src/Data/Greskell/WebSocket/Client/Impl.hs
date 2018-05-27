@@ -17,11 +17,11 @@ import Control.Concurrent.STM
 import Control.Exception.Safe
   ( throw, Typeable, Exception, SomeException, catch
   )
-import Data.Aeson (Object, Value, FromJSON)
+import Data.Aeson (Object)
 import qualified Data.Aeson as Aeson
 import qualified Data.Aeson.Types as Aeson (Parser)
 import Data.Greskell.Greskell (ToGreskell(GreskellReturn), toGremlin)
-import Data.Greskell.GraphSON (GraphSON, gsonValue)
+import Data.Greskell.GraphSON (GraphSON, gsonValue, GValue, FromGraphSON(..), parseEither)
 import Data.Greskell.AsIterator (AsIterator(IteratorItem))
 import Data.Monoid (mempty)
 import Data.Vector (Vector, (!))
@@ -45,7 +45,7 @@ import Data.Greskell.WebSocket.Util (slurp)
 data Client =
   Client
   { clientOpts :: Options,
-    clientConn :: Connection Value
+    clientConn :: Connection GValue
   }
 
 -- | Create a 'Client' to a Gremlin Server, with the default 'Options'.
@@ -75,22 +75,19 @@ data HandleState =
 -- from the server.
 data ResultHandle v =
   ResultHandle
-  { rhResHandle :: ResponseHandle Value,
-    rhParseValue :: Value -> Either String (Vector v),
+  { rhResHandle :: ResponseHandle GValue,
+    rhParseGValue :: GValue -> Either String (Vector v),
     rhResultCache :: TVar (Vector v),
     rhNextResultIndex :: TVar Int,
     rhState :: TVar HandleState
   }
 
-unwrapGraphSONResult :: GraphSON (Vector (GraphSON v)) -> Vector v
-unwrapGraphSONResult = fmap gsonValue . gsonValue
-
-submitBase :: FromJSON r => Client -> Text -> Maybe Object -> IO (ResultHandle r)
+submitBase :: FromGraphSON r => Client -> Text -> Maybe Object -> IO (ResultHandle r)
 submitBase client script bindings = do
   rh <- Conn.sendRequest conn op
   (cache, index, state) <- (,,) <$> newTVarIO mempty <*> newTVarIO 0 <*> newTVarIO HandleOpen
   return $ ResultHandle { rhResHandle = rh,
-                          rhParseValue = parser,
+                          rhParseGValue = parseEither,
                           rhResultCache = cache,
                           rhNextResultIndex = index,
                           rhState = state
@@ -105,9 +102,6 @@ submitBase client script bindings = do
                          ReqStd.aliases = Opt.aliases opts,
                          ReqStd.scriptEvaluationTimeout = Opt.scriptEvaluationTimeout opts
                        }
-    parser val = resultToEither $ fmap unwrapGraphSONResult $ Aeson.fromJSON val
-    resultToEither (Aeson.Error s) = Left s
-    resultToEither (Aeson.Success a) = Right a
 
 -- | Submit a Gremlin script to the server. You can get its results by
 -- 'ResultHandle'. The result type @v@ is determined by the script
@@ -116,7 +110,7 @@ submitBase client script bindings = do
 -- Usually this function does not throw any exception. Exceptions
 -- about sending requests are reported when you operate on
 -- 'ResultHandle'.
-submit :: (ToGreskell g, r ~ GreskellReturn g, AsIterator r, v ~ IteratorItem r, FromJSON v)
+submit :: (ToGreskell g, r ~ GreskellReturn g, AsIterator r, v ~ IteratorItem r, FromGraphSON v)
        => Client
        -> g -- ^ Gremlin script
        -> Maybe Object -- ^ bindings
@@ -127,14 +121,14 @@ submit client greskell bindings = submitBase client (toGremlin greskell) binding
 submitRaw :: Client
           -> Text -- ^ Gremlin script
           -> Maybe Object -- ^ bindings
-          -> IO (ResultHandle Value)
+          -> IO (ResultHandle GValue)
 submitRaw = submitBase
 
 -- | Exception about 'submit' operation and getting its result.
 data SubmitException =
-    ResponseError (ResponseMessage Value)
+    ResponseError (ResponseMessage GValue)
     -- ^ The server returns a 'ResponseMessage' with error 'ResponseCode'.
-  | ParseError (ResponseMessage Value) String
+  | ParseError (ResponseMessage GValue) String
     -- ^ The client fails to parse the \"data\" field of the
     -- 'ResponseMessage'. The error message is kept in the 'String'
     -- field.
@@ -201,7 +195,7 @@ loadResponse rh = parseResponse =<< (Conn.nextResponseSTM $ rhResHandle rh)
        Res.PartialContent -> parseData res
        _ -> throw $ ResponseError res -- TODO: handle Authenticate code
     parseData res =
-      case rhParseValue rh $ Res.resultData $ Res.result res of
+      case rhParseGValue rh $ Res.resultData $ Res.result res of
        Left err -> throw $ ParseError res err
        Right parsed -> do
          writeTVar (rhResultCache rh) parsed

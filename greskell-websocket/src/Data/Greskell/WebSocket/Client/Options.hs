@@ -18,7 +18,7 @@ module Data.Greskell.WebSocket.Client.Options
          module Data.Greskell.WebSocket.Connection.Settings
        ) where
 
-import Data.Aeson (Value)
+import Data.Greskell.GraphSON (GValue)
 import Data.HashMap.Strict (HashMap)
 import Data.Text (Text)
 
@@ -31,7 +31,7 @@ import Data.Greskell.WebSocket.Connection.Settings
 -- customize its fields by accessor functions.
 data Options =
   Options
-  { connectionSettings :: !(Settings Value),
+  { connectionSettings :: !(Settings GValue),
     -- ^ Settings for the underlying 'Connection'. Default:
     -- 'defJSONSettings'.
     batchSize :: !(Maybe Int),

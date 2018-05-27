@@ -14,7 +14,7 @@ module Data.Greskell.WebSocket.Connection.Settings
     concurrency, requestQueueSize
   ) where
 
-import Data.Aeson (FromJSON)
+import Data.Greskell.GraphSON (FromGraphSON)
 
 import Data.Greskell.WebSocket.Codec (Codec)
 import Data.Greskell.WebSocket.Codec.JSON (jsonCodec)
@@ -65,5 +65,5 @@ defSettings c = Settings
                 }
 
 -- | 'defSettings' with 'jsonCodec'.
-defJSONSettings :: FromJSON s => Settings s
+defJSONSettings :: FromGraphSON s => Settings s
 defJSONSettings = defSettings jsonCodec

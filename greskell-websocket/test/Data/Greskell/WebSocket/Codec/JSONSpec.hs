@@ -7,14 +7,17 @@ import Data.Aeson (Value(Null, Number), (.=))
 import qualified Data.Aeson as A
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy as BSL
-import Data.Greskell.GraphSON (GraphSON, nonTypedGraphSON, typedGraphSON, typedGraphSON')
+import Data.Greskell.GraphSON
+  ( GValue(..), GValueBody(..),
+    nonTypedGValue, typedGValue'
+  )
+import Data.Greskell.Greskell (unsafeGreskell, Greskell)
 import qualified Data.HashMap.Strict as HM
 import Data.Maybe (fromJust)
 import Data.Monoid (mempty, (<>))
 import qualified Data.UUID as UUID
+import qualified Data.Vector as V
 import Test.Hspec
-
-import Data.Greskell.Greskell (unsafeGreskell, Greskell)
 
 import Data.Greskell.WebSocket.Request
   ( RequestMessage(..), toRequestMessage
@@ -71,7 +74,7 @@ decode_spec = describe "decodeWith" $ do
       got `shouldBe` Right exp_msg
 
   describe "standard response" $ do
-    let codec :: Codec (GraphSON [GraphSON Value])
+    let codec :: Codec GValue
         codec = jsonCodec
         expMsg d = ResponseMessage { requestId = uuidFromString "41d2e28a-20a4-4ab0-b379-d810dede3786",
                                      status = exp_status,
@@ -84,26 +87,29 @@ decode_spec = describe "decodeWith" $ do
         expResult d = ResponseResult { resultData = d,
                                        meta = mempty
                                      }
-        exp_v1 = A.object
-                 [ "id" .= A.Number 1,
-                   "label" .= A.String "person",
-                   "type" .= A.String "vertex"
+        exp_v1 = nonTypedGValue $ GArray $ V.fromList
+                 [ nonTypedGValue $ GObject $ HM.fromList
+                   [ ("id", nonTypedGValue $ GNumber 1),
+                     ("label", nonTypedGValue $ GString "person"),
+                     ("type", nonTypedGValue $ GString "vertex")
+                   ] 
                  ]
-        exp_v2 = A.object
-                 [ "id" .= A.object ["@type" .= A.String "g:Int32", "@value" .= A.Number 1],
-                   "label" .= A.String "person"
-                 ]
-        exp_v3 = exp_v2
+        exp_typed_vertex = typedGValue' "g:Vertex" $ GObject $ HM.fromList
+                           [ ("id", typedGValue' "g:Int32" $ GNumber 1),
+                             ("label", nonTypedGValue $ GString "person")
+                           ]
+        exp_v2 = nonTypedGValue $ GArray $ V.fromList [exp_typed_vertex]
+        exp_v3 = typedGValue' "g:List" $ GArray $ V.fromList [exp_typed_vertex]
         sampleFile v = "response_standard_" ++ v ++ ".json"
     specify "v1" $ do
       got <- decodeWith codec <$> loadSample (sampleFile "v1")
-      got `shouldBe` Right (expMsg $ nonTypedGraphSON [nonTypedGraphSON exp_v1])
+      got `shouldBe` Right (expMsg exp_v1)
     specify "v2" $ do
       got <- decodeWith codec <$> loadSample (sampleFile "v2")
-      got `shouldBe` Right (expMsg $ nonTypedGraphSON [typedGraphSON' "g:Vertex" exp_v2])
+      got `shouldBe` Right (expMsg exp_v2)
     specify "v3" $ do
       got <- decodeWith codec <$> loadSample (sampleFile "v3")
-      got `shouldBe` Right (expMsg $ typedGraphSON [typedGraphSON' "g:Vertex" exp_v3])
+      got `shouldBe` Right (expMsg exp_v3)
 
 encodedValue :: Codec s -> RequestMessage -> Value
 encodedValue c req = case A.eitherDecode $ encodeWith c req of
