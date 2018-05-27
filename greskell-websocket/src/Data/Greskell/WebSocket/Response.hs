@@ -18,15 +18,16 @@ module Data.Greskell.WebSocket.Response
 import Control.Applicative (empty, (<$>), (<*>))
 import Data.Aeson
   ( Object, ToJSON(..), FromJSON(..), Value(Number, Object),
-    defaultOptions, genericParseJSON,
-    (.:)
+    defaultOptions, genericParseJSON
   )
-import GHC.Generics (Generic)
+import Data.Greskell.GraphSON
+  ( gsonValue, FromGraphSON(..), parseUnwrapAll, (.:),
+    GValueBody(..), gValueBody
+  )
 import Data.Text (Text)
 import Data.UUID (UUID)
+import GHC.Generics (Generic)
 
-import Data.Greskell.GraphSON (gsonValue)
-import Data.Greskell.GMap (unGMap)
 
 
 -- | Response status code
@@ -84,6 +85,9 @@ instance FromJSON ResponseCode where
       err = fail ("Unknown response code: " ++ show n)
   parseJSON _ = empty
 
+instance FromGraphSON ResponseCode where
+  parseGraphSON = parseUnwrapAll
+
 instance ToJSON ResponseCode where
   toJSON = toJSON . codeToInt
 
@@ -97,13 +101,17 @@ data ResponseStatus =
   deriving (Show,Eq,Generic)
 
 instance FromJSON ResponseStatus where
-  parseJSON (Object o) =
-    ResponseStatus
-    <$> o .: "code"
-    <*> o .: "message"
-    <*> (unGMap <$> gsonValue <$> o .: "attributes")
-  parseJSON _ = empty
+  parseJSON v = parseGraphSON =<< parseJSON v
 
+instance FromGraphSON ResponseStatus where
+  parseGraphSON gv = case gValueBody gv of
+    GObject o ->
+      ResponseStatus
+      <$> o .: "code"
+      <*> o .: "message"
+      <*> o .: "attributes"
+    _ -> empty
+  
 
 -- | \"result\" field.
 data ResponseResult s =
@@ -114,12 +122,16 @@ data ResponseResult s =
   }
   deriving (Show,Eq,Generic)
 
-instance FromJSON s => FromJSON (ResponseResult s) where
-  parseJSON (Object o) =
-    ResponseResult
-    <$> o .: "data"
-    <*> (unGMap <$> gsonValue <$> o .: "meta")
-  parseJSON _ = empty
+instance FromGraphSON s => FromJSON (ResponseResult s) where
+  parseJSON v = parseGraphSON =<< parseJSON v
+
+instance FromGraphSON s => FromGraphSON (ResponseResult s) where
+  parseGraphSON gv = case gValueBody gv of
+    GObject o -> 
+      ResponseResult
+      <$> o .: "data"
+      <*> o .: "meta"
+    _ -> empty
 
 instance Functor ResponseResult where
   fmap f rr = rr { resultData = f $ resultData rr }
@@ -135,8 +147,17 @@ data ResponseMessage s =
   }
   deriving (Show,Eq,Generic)
 
-instance FromJSON s => FromJSON (ResponseMessage s) where
-  parseJSON = genericParseJSON defaultOptions
+instance FromGraphSON s => FromJSON (ResponseMessage s) where
+  parseJSON v = parseGraphSON =<< parseJSON v
+
+instance FromGraphSON s => FromGraphSON (ResponseMessage s) where
+  parseGraphSON gv = case gValueBody gv of
+    GObject o -> 
+      ResponseMessage
+      <$> (o .: "requestId")
+      <*> (o .: "status")
+      <*> (o .: "result")
+    _ -> empty
 
 instance Functor ResponseMessage where
   fmap f rm = rm { result = fmap f $ result rm }
