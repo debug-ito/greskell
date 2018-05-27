@@ -27,6 +27,7 @@ import Data.Greskell.Greskell
 import Data.Greskell.Graph
   ( AVertex, T, tId, tLabel, tKey, tValue
   )
+import Data.Greskell.GraphSON (FromGraphSON)
 import Data.Greskell.GTraversal
   ( Walk, GTraversal,
     source, sV', ($.), gOrder, gBy1,
@@ -100,7 +101,7 @@ spec_basics = do
     let array_in_obj = Aeson.object [("foo", Aeson.toJSON [(3 :: Int), 2, 1]), ("hoge", Aeson.toJSON [("a" :: Text), "b", "c"])]
     checkV (value array_in_obj) array_in_obj
 
-checkRaw :: (AsIterator a, b ~ IteratorItem a, Aeson.FromJSON b, Eq b, Show b)
+checkRaw :: (AsIterator a, b ~ IteratorItem a, FromGraphSON b, Eq b, Show b)
          => Greskell a
          -> [b]
          -> SpecWith (String, Int)
@@ -110,7 +111,7 @@ checkRaw  input expected = specify label $ withClient $ \client -> do
   where
     label = unpack $ toGremlin input
 
-checkOne :: (AsIterator a, b ~ IteratorItem a, Aeson.FromJSON b, Eq b, Show b)
+checkOne :: (AsIterator a, b ~ IteratorItem a, FromGraphSON b, Eq b, Show b)
          => Greskell a -> b -> SpecWith (String, Int)
 checkOne input expected = checkRaw input [expected]
 
@@ -169,7 +170,7 @@ spec_T = describe "T enum" $ do
             <> "g = graph.traversal(); "
           )
         body = toGremlin $ mapper $. sV' [] $ source "g"
-    specFor :: (Aeson.FromJSON a, Eq a, Show a) => String -> Walk Transform AVertex a -> [a] -> SpecWith (String,Int)
+    specFor :: (FromGraphSON a, Eq a, Show a) => String -> Walk Transform AVertex a -> [a] -> SpecWith (String,Int)
     specFor desc mapper expected = specify desc $ withClient $ \client -> do
       got <- WS.slurpResults =<< WS.submit client (prefixedTraversal mapper) Nothing
       got `shouldBe` expected
