@@ -19,9 +19,13 @@ module Data.Greskell.GraphSON
          -- * GValue
          GValue(..),
          GValueBody(..),
+         -- ** constructors
+         nonTypedGValue,
+         typedGValue',
+         -- ** deconstructors
+         gValueBody,
          unwrapAll,
          unwrapOne,
-         gValueBody,
          -- * FromGraphSON
          FromGraphSON(..),
          -- ** parser support
@@ -248,6 +252,15 @@ instance ToJSON GValueBody where
   toJSON (GNumber n) = Number n
   toJSON (GBool b) = Bool b
   toJSON GNull = Null
+
+-- | Create a 'GValue' without \"@type\" field.
+nonTypedGValue :: GValueBody -> GValue
+nonTypedGValue = GValue . nonTypedGraphSON
+
+-- | Create a 'GValue' with the given \"@type\" field.
+typedGValue' :: Text -- ^ \"@type\" field.
+             -> GValueBody -> GValue
+typedGValue' t b = GValue $ typedGraphSON' t b
 
 -- | Remove all 'GraphSON' wrappers recursively from 'GValue'.
 unwrapAll :: GValue -> Value
