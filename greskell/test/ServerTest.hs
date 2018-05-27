@@ -5,6 +5,8 @@ import Control.Category ((<<<))
 import Control.Exception.Safe (bracket)
 import qualified Data.Aeson as Aeson
 import Data.Either (isRight)
+import Data.HashMap.Strict (HashMap)
+import qualified Data.HashMap.Strict as HM
 import qualified Data.Greskell.WebSocket.Client as WS
 import Data.Monoid (mempty, (<>))
 import Data.Scientific (Scientific)
@@ -15,6 +17,7 @@ import Test.Hspec
 import Data.Greskell.AsIterator
   ( AsIterator(IteratorItem)
   )
+import Data.Greskell.GMap (GMapEntry, unGMapEntry)
 import Data.Greskell.Gremlin
   ( oIncr, oDecr, cCompare, Order,
     Predicate(..), pLt, pAnd, pGte, pNot, pEq, pTest
@@ -22,7 +25,7 @@ import Data.Greskell.Gremlin
 import Data.Greskell.Greskell
   ( toGremlin, Greskell, toGreskell,
     true, false, list, value, single, number,
-    unsafeMethodCall
+    unsafeMethodCall, unsafeGreskell
   )
 import Data.Greskell.Graph
   ( AVertex, T, tId, tLabel, tKey, tValue
@@ -89,27 +92,40 @@ spec_basics = do
     checkN (number 3.1415) (3.1415)
     checkN (number 2.31e12) (2.31e12)
     checkN (number (-434.23e-19)) (-434.23e-19)
-  -- Now failing.. We need a way to unwrap GraphSON wrapper recursively.
-  describe "value (object)" $ do
-    let checkV :: Greskell Aeson.Value -> Aeson.Value -> SpecWith (String,Int)
-        checkV i e = checkRaw (single i) [e]
-    checkV (value $ Aeson.object []) (Aeson.object [])
-    
-    let simple_nonempty = Aeson.object [("foo", Aeson.String "hoge"), ("bar", Aeson.Number 20)]
-    checkV (value simple_nonempty) simple_nonempty
-    
-    let array_in_obj = Aeson.object [("foo", Aeson.toJSON [(3 :: Int), 2, 1]), ("hoge", Aeson.toJSON [("a" :: Text), "b", "c"])]
-    checkV (value array_in_obj) array_in_obj
+  describe "nested map" $ do
+    let check :: Greskell (HashMap Int (HashMap Text Int)) -> [(Int, (HashMap Text Int))] -> SpecWith (String,Int)
+        check = checkRawMapped unGMapEntry
+    check (unsafeGreskell "[:]") []
+    check (unsafeGreskell "[100: [\"foo\": 55], 200: [:], 300: [\"bar\": 60, \"buzz\": 65]]")
+      [ (100, HM.fromList [("foo", 55)]),
+        (200, mempty),
+        (300, HM.fromList [("bar", 60), ("buzz", 65)])
+      ]
+  describe "array in map" $ do
+    let check :: Greskell (HashMap Text [Int]) -> [(Text, [Int])] -> SpecWith (String,Int)
+        check = checkRawMapped unGMapEntry
+    check (unsafeGreskell "[:]") []
+    check (unsafeGreskell "[\"foo\": [], \"bar\": [1,2,3]]")
+      [ ("foo", []),
+        ("bar", [1,2,3])
+      ]
+
+checkRawMapped :: (AsIterator a, b ~ IteratorItem a, FromGraphSON b, Eq c, Show c)
+               => (b -> c)
+               -> Greskell a
+               -> [c]
+               -> SpecWith (String, Int)
+checkRawMapped mapResult input expected = specify label $ withClient $ \client -> do
+  got <- WS.slurpResults =<< WS.submit client input Nothing
+  map mapResult got `shouldBe` expected
+  where
+    label = unpack $ toGremlin input
 
 checkRaw :: (AsIterator a, b ~ IteratorItem a, FromGraphSON b, Eq b, Show b)
          => Greskell a
          -> [b]
          -> SpecWith (String, Int)
-checkRaw  input expected = specify label $ withClient $ \client -> do
-  got <- WS.slurpResults =<< WS.submit client input Nothing
-  got `shouldBe` expected
-  where
-    label = unpack $ toGremlin input
+checkRaw = checkRawMapped id
 
 checkOne :: (AsIterator a, b ~ IteratorItem a, FromGraphSON b, Eq b, Show b)
          => Greskell a -> b -> SpecWith (String, Int)

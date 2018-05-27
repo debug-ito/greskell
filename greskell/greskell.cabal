@@ -100,7 +100,7 @@ test-suite server-test-suite
   -- other-modules:
   if flag(server-test)
     -- Explicitly remove dependency. See https://github.com/haskell/cabal/issues/1725
-    build-depends:        base, aeson, hspec, text,
+    build-depends:        base, aeson, hspec, text, unordered-containers,
                           greskell, greskell-core,
                           scientific >=0.3.4.9 && <0.4,
                           greskell-websocket,
