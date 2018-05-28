@@ -166,9 +166,9 @@ unGMap = gmapValue
 
 -- | Haskell representation of @Map.Entry@ type.
 --
--- GraphSON encodes Java's @Map.Entry@ type as if it were a @Map@ with
--- a single entry. Thus its encoded form is either a JSON object or a
--- flattened key-values, as explained in 'GMap'.
+-- Basically GraphSON encodes Java's @Map.Entry@ type as if it were a
+-- @Map@ with a single entry. Thus its encoded form is either a JSON
+-- object or a flattened key-values, as explained in 'GMap'.
 --
 -- >>> Aeson.eitherDecode "{\"1\": \"one\"}" :: Either String (GMapEntry Int Text)
 -- Right (GMapEntry {gmapEntryFlat = False, gmapEntryKey = 1, gmapEntryValue = "one"})
@@ -178,6 +178,14 @@ unGMap = gmapValue
 -- "{\"one\":1}"
 -- >>> Aeson.encode (GMapEntry True "one" 1 :: GMapEntry Text Int)
 -- "[\"one\",1]"
+--
+-- In old versions of TinkerPop, @Map.Entry@ is encoded as a JSON
+-- oject with \"key\" and \"value\" fields. 'FromJSON' instance of
+-- 'GMapEntry' supports this format as well, but 'ToJSON' instance
+-- doesn't support it.
+--
+-- >>> Aeson.eitherDecode "{\"key\":1, \"value\": \"one\"}" :: Either String (GMapEntry Int Text)
+-- Right (GMapEntry {gmapEntryFlat = False, gmapEntryKey = 1, gmapEntryValue = "one"})
 data GMapEntry k v =
   GMapEntry
   { gmapEntryFlat :: !Bool,
@@ -186,23 +194,56 @@ data GMapEntry k v =
   }
   deriving (Show,Eq,Ord,Foldable,Traversable,Functor)
 
-parseToGMapEntry :: (IsList (c k v), Item (c k v) ~ (k,v)) => GMap c k v -> Parser (GMapEntry k v)
-parseToGMapEntry gm = case List.toList $ gmapValue gm of
+entryFromGMap :: (IsList (c k v), Item (c k v) ~ (k,v)) => GMap c k v -> Parser (GMapEntry k v)
+entryFromGMap gm = case List.toList $ gmapValue gm of
   [(k,v)] -> return $ GMapEntry { gmapEntryFlat = gmapFlat gm,
                                   gmapEntryKey = k,
                                   gmapEntryValue = v
                                 }
   l -> fail ("Expects a single entry map, but it has " ++ (show $ length l) ++ " entries.")
 
+parseKeyValueToEntry :: (s -> Parser k)
+                     -> (s -> Parser v)
+                     -> HashMap Text s
+                     -> Parser (Maybe (GMapEntry k v))
+parseKeyValueToEntry kp vp o =
+  if length o /= 2
+  then return Nothing
+  else do
+    mk <- parseIfPresent kp $ HM.lookup "key" o
+    mv <- parseIfPresent vp $ HM.lookup "value" o
+    return $ GMapEntry False <$> mk <*> mv
+  where
+    parseIfPresent :: (a -> Parser v) -> Maybe a -> Parser (Maybe v)
+    parseIfPresent f = maybe (return Nothing) (fmap Just . f)
+
+-- | General parser for 'GMapEntry'.
+parseToGMapEntry :: (IsList (c k v), Item (c k v) ~ (k,v))
+                 => (s -> Parser k) -- ^ key parser
+                 -> (s -> Parser v) -- ^ value parser
+                 -> (HashMap Text s -> Parser (c k v))  -- ^ object parser
+                 -> Either (HashMap Text s) (Vector s) -- ^ input object or flattened key-values
+                 -> Parser (GMapEntry k v)
+parseToGMapEntry kp vp op input@(Right _) = entryFromGMap =<< parseToGMap kp vp op input
+parseToGMapEntry kp vp op input@(Left o) = do
+  mkv_parsed <- parseKeyValueToEntry kp vp o
+  case mkv_parsed of
+   Just p -> return p
+   Nothing -> entryFromGMap =<< parseToGMap kp vp op input
+
 -- | Map to \"g:Map\".
 instance GraphSONTyped (GMapEntry k v) where
   gsonTypeFor _ = "g:Map"
 
 instance (FromJSON k, FromJSONKey k, Ord k, FromJSON v) => FromJSON (GMapEntry k v) where
-  parseJSON val = parseToGMapEntry' =<< parseJSON val
+  parseJSON val = case val of
+    Object o -> parse $ Left o
+    Array a -> parse $ Right a
+    other -> fail ("Expects Object or Array, but got " ++ show other)
     where
-      parseToGMapEntry' :: Ord k => GMap M.Map k v -> Parser (GMapEntry k v)
-      parseToGMapEntry' = parseToGMapEntry
+      parse = parseToGMapEntry parseJSON parseJSON objParser
+      objParser :: (FromJSON v, FromJSONKey k, Ord k) => HashMap Text Value -> Parser (M.Map k v)
+      objParser = parseJSON . Object
 
 instance (ToJSON k, ToJSONKey k, Ord k, ToJSON v) => ToJSON (GMapEntry k v) where
   toJSON e = toJSON $ singleton' e

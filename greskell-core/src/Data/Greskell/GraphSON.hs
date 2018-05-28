@@ -411,6 +411,11 @@ instance (FromGraphSON k, FromGraphSON v, IsList (c k v), Item (c k v) ~ (k,v)) 
     GArray a -> parseToFlattenedMap parseGraphSON parseGraphSON a
     b -> fail ("Expects GArray, but got " ++ show b)
 
+parseGObjectToTraversal :: (Traversable t, FromJSON (t GValue), FromGraphSON v)
+                        => HashMap Text GValue
+                        -> Parser (t v)
+parseGObjectToTraversal o = traverse parseGraphSON =<< (parseJSON $ Object $ fmap toJSON o)
+
 -- | Use 'parseToGMap'.
 instance (FromGraphSON k, FromGraphSON v, IsList (c k v), Item (c k v) ~ (k,v), Traversable (c k), FromJSON (c k GValue))
          => FromGraphSON (GMap c k v) where
@@ -421,14 +426,18 @@ instance (FromGraphSON k, FromGraphSON v, IsList (c k v), Item (c k v) ~ (k,v), 
     where
       parse = parseToGMap parseGraphSON parseGraphSON parseObject
       -- parseObject = parseUnwrapTraversable . GValue . nonTypedGraphSON . GObject  --- Too many wrapping and unwrappings!!!
-      parseObject o = traverse parseGraphSON =<< (parseJSON $ Object $ fmap toJSON o)
+      parseObject = parseGObjectToTraversal
 
 -- | Use 'parseToGMapEntry'.
 instance (FromGraphSON k, FromGraphSON v, FromJSONKey k, Ord k) => FromGraphSON (GMapEntry k v) where
-  parseGraphSON gv = parseToGMapEntry' =<< parseGraphSON gv
+  parseGraphSON val = case gValueBody val of
+    GObject o -> parse $ Left o
+    GArray a -> parse $ Right a
+    other -> fail ("Expects GObject or GArray, but got " ++ show other)
     where
-      parseToGMapEntry' :: Ord k => GMap L.Map k v -> Parser (GMapEntry k v)
-      parseToGMapEntry' = parseToGMapEntry
+      parse = parseToGMapEntry parseGraphSON parseGraphSON parseObject
+      parseObject :: (FromGraphSON v, FromJSONKey k, Ord k) => HashMap Text GValue -> Parser (L.Map k v)
+      parseObject = parseGObjectToTraversal
 
 
 ---- Map instances
