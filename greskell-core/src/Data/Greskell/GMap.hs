@@ -38,6 +38,7 @@ import Data.Vector ((!), Vector)
 import qualified Data.Vector as V
 import GHC.Exts (IsList(Item))
 import qualified GHC.Exts as List (IsList(fromList, toList))
+import Unsafe.Coerce (unsafeCoerce)
 
 import Data.Greskell.GraphSON.GraphSONTyped (GraphSONTyped(..))
 
@@ -235,7 +236,7 @@ parseSingleEntryObjectToEntry vp o =
     -- modules.
       FromJSONKeyText p -> return $ fmap return p
       FromJSONKeyTextParser p -> return p
-      FromJSONKeyCoerce _ -> fail ("Unexpected FromJSONKeyCoerce.")
+      FromJSONKeyCoerce _ -> return $ fmap return unsafeCoerce
       FromJSONKeyValue _ -> fail ("Unexpected FromJSONKeyValue.")
 
 orElseM :: Monad m => m (Maybe a) -> m (Maybe a) -> m (Maybe a)
