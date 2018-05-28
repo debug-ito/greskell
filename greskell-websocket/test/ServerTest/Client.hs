@@ -117,7 +117,14 @@ client_basic_spec = do
       (length $ filter isNothing mgot) `shouldBe` 2
       let got = map fromJust $ filter isJust mgot
       got `shouldMatchList` [1..50]
-    
+  specify "Gremlin script throwing exception" $ withClient $ \client -> do
+    let g :: Greskell Int
+        g = G.unsafeGreskell "throw new Exception(\"BOOM\")"
+        expEx (ResponseError res) = (Res.code $ Res.status res) == Res.ScriptEvaluationError
+        expEx _ = False
+    rh <- submit client g Nothing
+    nextResult rh `shouldThrow` expEx
+    nextResult rh `shouldThrow` expEx
     
 
 bad_server_spec :: SpecWith Port
