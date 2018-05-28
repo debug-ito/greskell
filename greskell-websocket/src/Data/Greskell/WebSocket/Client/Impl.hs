@@ -142,7 +142,9 @@ instance Exception SubmitException
 -- response to come.
 --
 -- On error, it may throw all sorts of exceptions including
--- 'SubmitException' and 'Conn.RequestException'.
+-- 'SubmitException' and 'Conn.RequestException'. For example, if the
+-- submitted Gremlin script throws an exception, 'nextResult' throws
+-- 'ResponseError' with 'ResponseCode' of 'Res.ScriptEvaluationError'.
 nextResult :: ResultHandle v -> IO (Maybe v)
 nextResult = atomically . nextResultSTM
 
