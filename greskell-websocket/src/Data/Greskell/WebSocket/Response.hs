@@ -12,7 +12,10 @@ module Data.Greskell.WebSocket.Response
          ResponseCode(..),
          codeToInt,
          codeFromInt,
-         isTerminating
+         isTerminating,
+         isSuccess,
+         isClientSideError,
+         isServerSideError
        ) where
 
 import Control.Applicative ((<$>), (<*>))
@@ -78,6 +81,42 @@ codeFromInt i = case i of
 isTerminating :: ResponseCode -> Bool
 isTerminating PartialContent = False
 isTerminating _ = True
+
+isCodeClass :: Int -> ResponseCode -> Bool
+isCodeClass n c = (codeToInt c `div` 100) == n
+
+-- | Returns 'True' if the 'ResponseCode' is a success.
+--
+-- >>> isSuccess Success
+-- True
+-- >>> isSuccess Unauthorized
+-- False
+-- >>> isSuccess ServerError
+-- False
+isSuccess :: ResponseCode -> Bool
+isSuccess = isCodeClass 2
+
+-- | Returns 'True' if the 'ResponseCode' is a client-side failure.
+--
+-- >>> isClientSideError Success
+-- False
+-- >>> isClientSideError Unauthorized
+-- True
+-- >>> isClientSideError ServerError
+-- False
+isClientSideError :: ResponseCode -> Bool
+isClientSideError = isCodeClass 4
+
+-- | Returns 'True' if the 'ResponseCode' is a server-side failure.
+--
+-- >>> isServerSideError Success
+-- False
+-- >>> isServerSideError Unauthorized
+-- False
+-- >>> isServerSideError ServerError
+-- True
+isServerSideError :: ResponseCode -> Bool
+isServerSideError = isCodeClass 5
 
 instance FromJSON ResponseCode where
   parseJSON (Number n) = maybe err return $ codeFromInt $ floor n
