@@ -1,10 +1,10 @@
 -- |
--- Module: Data.Greskell.WebSocket.Request.Aeson
+-- Module: Network.Greskell.WebSocket.Request.Aeson
 -- Description: parser support
 -- Maintainer: Toshio Ito <debug.ito@gmail.com>
 --
 -- __Internal module. End-users should not use this.__
-module Data.Greskell.WebSocket.Request.Aeson
+module Network.Greskell.WebSocket.Request.Aeson
        ( genericToJSON, genericToEncoding, genericParseJSON,
          opt,
          toObject

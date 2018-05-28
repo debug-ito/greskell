@@ -1,10 +1,10 @@
 -- |
--- Module: Data.Greskell.WebSocket.Codec
+-- Module: Network.Greskell.WebSocket.Codec
 -- Description: Encoder\/decoder of Request\/Response
 -- Maintainer: Toshio Ito <debug.ito@gmail.com>
 --
 -- 
-module Data.Greskell.WebSocket.Codec
+module Network.Greskell.WebSocket.Codec
        ( Codec(..),
          ErrorMessage,
          encodeBinaryWith,
@@ -18,8 +18,8 @@ import Data.Monoid ((<>))
 import Data.Text (Text)
 import Data.Text.Encoding (encodeUtf8, decodeUtf8')
 
-import Data.Greskell.WebSocket.Request (RequestMessage)
-import Data.Greskell.WebSocket.Response (ResponseMessage)
+import Network.Greskell.WebSocket.Request (RequestMessage)
+import Network.Greskell.WebSocket.Response (ResponseMessage)
 
 type ErrorMessage = String
 

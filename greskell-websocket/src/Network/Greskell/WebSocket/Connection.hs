@@ -1,10 +1,10 @@
 -- |
--- Module: Data.Greskell.WebSocket.Connection
+-- Module: Network.Greskell.WebSocket.Connection
 -- Description: WebSocket Connection to Gremlin Server
 -- Maintainer: Toshio Ito <debug.ito@gmail.com>
 --
 -- 
-module Data.Greskell.WebSocket.Connection
+module Network.Greskell.WebSocket.Connection
        ( -- * Make a Connection
          connect,
          close,
@@ -12,7 +12,7 @@ module Data.Greskell.WebSocket.Connection
          Host,
          Port,
          -- ** Settings for Connection
-         module Data.Greskell.WebSocket.Connection.Settings,
+         module Network.Greskell.WebSocket.Connection.Settings,
          -- * Make a request
          sendRequest,
          sendRequest',
@@ -25,6 +25,6 @@ module Data.Greskell.WebSocket.Connection
          RequestException(..)
        ) where
 
-import Data.Greskell.WebSocket.Connection.Impl
-import Data.Greskell.WebSocket.Connection.Settings
-import Data.Greskell.WebSocket.Connection.Type
+import Network.Greskell.WebSocket.Connection.Impl
+import Network.Greskell.WebSocket.Connection.Settings
+import Network.Greskell.WebSocket.Connection.Type

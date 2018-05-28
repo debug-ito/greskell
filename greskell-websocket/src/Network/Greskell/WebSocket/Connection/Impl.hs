@@ -1,12 +1,12 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 -- |
--- Module: Data.Greskell.WebSocket.Connection.Impl
+-- Module: Network.Greskell.WebSocket.Connection.Impl
 -- Description: internal implementation of Connection
 -- Maintainer: Toshio Ito <debug.ito@gmail.com>
 --
 -- This is an internal module. It deliberately exports everything. The
 -- upper module is responsible to make a proper export list.
-module Data.Greskell.WebSocket.Connection.Impl where
+module Network.Greskell.WebSocket.Connection.Impl where
 
 import Control.Applicative ((<$>), (<|>), empty)
 import Control.Concurrent (threadDelay)
@@ -31,24 +31,24 @@ import qualified Network.WebSockets as WS
 import qualified Data.ByteString.Lazy as BSL
 import qualified Data.HashTable.IO as HT
 
-import Data.Greskell.WebSocket.Codec (Codec(decodeWith, encodeWith), encodeBinaryWith)
-import Data.Greskell.WebSocket.Connection.Settings (Settings)
-import qualified Data.Greskell.WebSocket.Connection.Settings as Settings
-import Data.Greskell.WebSocket.Connection.Type
+import Network.Greskell.WebSocket.Codec (Codec(decodeWith, encodeWith), encodeBinaryWith)
+import Network.Greskell.WebSocket.Connection.Settings (Settings)
+import qualified Network.Greskell.WebSocket.Connection.Settings as Settings
+import Network.Greskell.WebSocket.Connection.Type
   ( Connection(..), ConnectionState(..),
     ResPack, ReqID, ReqPack(..), RawRes,
     GeneralException(..)
   )
-import Data.Greskell.WebSocket.Request
+import Network.Greskell.WebSocket.Request
   ( RequestMessage(RequestMessage, requestId),
     Operation, makeRequestMessage
   )
-import Data.Greskell.WebSocket.Response
+import Network.Greskell.WebSocket.Response
   ( ResponseMessage(ResponseMessage, requestId, status),
     ResponseStatus(ResponseStatus, code),
     isTerminating
   )
-import Data.Greskell.WebSocket.Util (slurp)
+import Network.Greskell.WebSocket.Util (slurp)
 
 -- | Host name or an IP address.
 type Host = String

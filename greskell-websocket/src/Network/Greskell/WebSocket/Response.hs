@@ -1,11 +1,11 @@
 {-# LANGUAGE DeriveGeneric, OverloadedStrings #-}
 -- |
--- Module: Data.Greskell.WebSocket.Response
+-- Module: Network.Greskell.WebSocket.Response
 -- Description: Response from Gremlin Server
 -- Maintainer: Toshio Ito <debug.ito@gmail.com>
 --
 -- 
-module Data.Greskell.WebSocket.Response
+module Network.Greskell.WebSocket.Response
        ( ResponseMessage(..),
          ResponseStatus(..),
          ResponseResult(..),

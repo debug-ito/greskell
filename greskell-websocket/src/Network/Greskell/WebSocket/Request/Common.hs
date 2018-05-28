@@ -1,11 +1,11 @@
 {-# LANGUAGE OverloadedStrings #-}
 -- |
--- Module: Data.Greskell.WebSocket.Request.Common
+-- Module: Network.Greskell.WebSocket.Request.Common
 -- Description: Common data types for Request objects
 -- Maintainer: Toshio Ito <debug.ito@gmail.com>
 --
 -- 
-module Data.Greskell.WebSocket.Request.Common
+module Network.Greskell.WebSocket.Request.Common
        ( Operation(..),
          SASLMechanism(..),
          Base64(..)

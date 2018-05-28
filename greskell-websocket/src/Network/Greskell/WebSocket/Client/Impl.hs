@@ -1,12 +1,12 @@
 {-# LANGUAGE DuplicateRecordFields, TypeFamilies #-}
 -- |
--- Module: Data.Greskell.WebSocket.Client.Impl
+-- Module: Network.Greskell.WebSocket.Client.Impl
 -- Description: 
 -- Maintainer: Toshio Ito <debug.ito@gmail.com>
 --
 -- __Internal module__. It's like
--- "Data.Greskell.WebSocket.Connection.Impl".
-module Data.Greskell.WebSocket.Client.Impl
+-- "Network.Greskell.WebSocket.Connection.Impl".
+module Network.Greskell.WebSocket.Client.Impl
        where
 
 import Control.Applicative ((<$>), (<*>))
@@ -28,16 +28,16 @@ import Data.Vector (Vector, (!))
 import Data.Text (Text)
 import Data.Traversable (traverse)
 
-import Data.Greskell.WebSocket.Client.Options (Options)
-import qualified Data.Greskell.WebSocket.Client.Options as Opt
-import Data.Greskell.WebSocket.Connection
+import Network.Greskell.WebSocket.Client.Options (Options)
+import qualified Network.Greskell.WebSocket.Client.Options as Opt
+import Network.Greskell.WebSocket.Connection
   ( Host, Port, Connection, ResponseHandle
   )
-import qualified Data.Greskell.WebSocket.Connection as Conn
-import qualified Data.Greskell.WebSocket.Request.Standard as ReqStd
-import Data.Greskell.WebSocket.Response (ResponseCode, ResponseMessage)
-import qualified Data.Greskell.WebSocket.Response as Res
-import Data.Greskell.WebSocket.Util (slurp)
+import qualified Network.Greskell.WebSocket.Connection as Conn
+import qualified Network.Greskell.WebSocket.Request.Standard as ReqStd
+import Network.Greskell.WebSocket.Response (ResponseCode, ResponseMessage)
+import qualified Network.Greskell.WebSocket.Response as Res
+import Network.Greskell.WebSocket.Util (slurp)
 
 
 -- | A client that establishes a connection to the Gremlin Server. You

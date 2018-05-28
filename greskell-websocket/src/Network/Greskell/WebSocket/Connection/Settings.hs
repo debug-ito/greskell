@@ -1,10 +1,10 @@
 -- |
--- Module: Data.Greskell.WebSocket.Connection.Settings
+-- Module: Network.Greskell.WebSocket.Connection.Settings
 -- Description: Settings for making Connection
 -- Maintainer: Toshio Ito <debug.ito@gmail.com>
 --
 -- 
-module Data.Greskell.WebSocket.Connection.Settings
+module Network.Greskell.WebSocket.Connection.Settings
   ( -- * Settings
     Settings,
     defSettings,
@@ -16,9 +16,9 @@ module Data.Greskell.WebSocket.Connection.Settings
 
 import Data.Greskell.GraphSON (FromGraphSON)
 
-import Data.Greskell.WebSocket.Codec (Codec)
-import Data.Greskell.WebSocket.Codec.JSON (jsonCodec)
-import Data.Greskell.WebSocket.Connection.Type (GeneralException)
+import Network.Greskell.WebSocket.Codec (Codec)
+import Network.Greskell.WebSocket.Codec.JSON (jsonCodec)
+import Network.Greskell.WebSocket.Connection.Type (GeneralException)
 
 import System.IO (stderr, hPutStrLn)
 

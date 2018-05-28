@@ -26,7 +26,7 @@ import qualified Network.WebSockets as WS
 import System.IO (stderr, hPutStrLn)
 import Test.Hspec
 
-import Data.Greskell.WebSocket.Connection
+import Network.Greskell.WebSocket.Connection
   ( Host, Port, Connection, ResponseHandle,
     close, connect, sendRequest', sendRequest, slurpResponses,
     nextResponse,
@@ -34,15 +34,15 @@ import Data.Greskell.WebSocket.Connection
     Settings(onGeneralException, responseTimeout, concurrency, requestQueueSize),
     defJSONSettings
   )
-import Data.Greskell.WebSocket.Request
+import Network.Greskell.WebSocket.Request
   ( RequestMessage(requestId), toRequestMessage, makeRequestMessage
   )
-import Data.Greskell.WebSocket.Request.Standard (OpEval(..))
-import Data.Greskell.WebSocket.Response
+import Network.Greskell.WebSocket.Request.Standard (OpEval(..))
+import Network.Greskell.WebSocket.Response
   ( ResponseMessage(requestId, status, result), ResponseStatus(code), ResponseCode(..),
     ResponseResult(resultData)
   )
-import qualified Data.Greskell.WebSocket.Response as Response
+import qualified Network.Greskell.WebSocket.Response as Response
 
 import qualified TestUtil.TCounter as TCounter
 import TestUtil.Env (withEnvForExtServer, withEnvForIntServer)

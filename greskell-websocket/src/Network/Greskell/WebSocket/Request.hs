@@ -1,11 +1,11 @@
 {-# LANGUAGE DuplicateRecordFields, DeriveGeneric #-}
 -- |
--- Module: Data.Greskell.WebSocket.Request
+-- Module: Network.Greskell.WebSocket.Request
 -- Description: Request to Gremlin Server
 -- Maintainer: Toshio Ito <debug.ito@gmail.com>
 --
 -- 
-module Data.Greskell.WebSocket.Request
+module Network.Greskell.WebSocket.Request
        ( -- * RequestMessage
          RequestMessage(..),
          Operation(..),
@@ -20,8 +20,8 @@ import Data.UUID (UUID)
 import Data.UUID.V4 (nextRandom)
 import GHC.Generics (Generic)
 
-import qualified Data.Greskell.WebSocket.Request.Aeson as GAeson
-import Data.Greskell.WebSocket.Request.Common (Operation(..))
+import qualified Network.Greskell.WebSocket.Request.Aeson as GAeson
+import Network.Greskell.WebSocket.Request.Common (Operation(..))
 
 
 -- | RequestMessage to a Gremlin Server.

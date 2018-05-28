@@ -17,8 +17,8 @@ import Data.UUID (UUID)
 import qualified Data.UUID as UUID
 import qualified Network.WebSockets as WS
 
-import Data.Greskell.WebSocket.Codec (decodeBinary)
-import Data.Greskell.WebSocket.Request (RequestMessage)
+import Network.Greskell.WebSocket.Codec (decodeBinary)
+import Network.Greskell.WebSocket.Request (RequestMessage)
 
 
 wsServer :: Int -- ^ port number

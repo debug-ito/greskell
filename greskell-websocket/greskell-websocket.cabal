@@ -21,23 +21,23 @@ library
   -- default-extensions:   
   other-extensions:     OverloadedStrings, DuplicateRecordFields,
                         DeriveGeneric, PartialTypeSignatures, FlexibleContexts
-  exposed-modules:      Data.Greskell.WebSocket,
-                        Data.Greskell.WebSocket.Connection,
-                        Data.Greskell.WebSocket.Connection.Settings,
-                        Data.Greskell.WebSocket.Request,
-                        Data.Greskell.WebSocket.Request.Common,
-                        Data.Greskell.WebSocket.Request.Standard,
-                        Data.Greskell.WebSocket.Request.Session,
-                        Data.Greskell.WebSocket.Response,
-                        Data.Greskell.WebSocket.Codec,
-                        Data.Greskell.WebSocket.Codec.JSON
-                        Data.Greskell.WebSocket.Client,
-                        Data.Greskell.WebSocket.Client.Options
-  other-modules:        Data.Greskell.WebSocket.Request.Aeson,
-                        Data.Greskell.WebSocket.Connection.Impl,
-                        Data.Greskell.WebSocket.Connection.Type,
-                        Data.Greskell.WebSocket.Client.Impl,
-                        Data.Greskell.WebSocket.Util
+  exposed-modules:      Network.Greskell.WebSocket,
+                        Network.Greskell.WebSocket.Connection,
+                        Network.Greskell.WebSocket.Connection.Settings,
+                        Network.Greskell.WebSocket.Request,
+                        Network.Greskell.WebSocket.Request.Common,
+                        Network.Greskell.WebSocket.Request.Standard,
+                        Network.Greskell.WebSocket.Request.Session,
+                        Network.Greskell.WebSocket.Response,
+                        Network.Greskell.WebSocket.Codec,
+                        Network.Greskell.WebSocket.Codec.JSON
+                        Network.Greskell.WebSocket.Client,
+                        Network.Greskell.WebSocket.Client.Options
+  other-modules:        Network.Greskell.WebSocket.Request.Aeson,
+                        Network.Greskell.WebSocket.Connection.Impl,
+                        Network.Greskell.WebSocket.Connection.Type,
+                        Network.Greskell.WebSocket.Client.Impl,
+                        Network.Greskell.WebSocket.Util
   build-depends:        base,
                         greskell-core,
                         bytestring,
@@ -73,7 +73,7 @@ test-suite spec
   -- default-extensions:   
   other-extensions:     OverloadedStrings, DuplicateRecordFields,
                         NoMonomorphismRestriction
-  other-modules:        Data.Greskell.WebSocket.Codec.JSONSpec
+  other-modules:        Network.Greskell.WebSocket.Codec.JSONSpec
   build-depends:        base, greskell-websocket, aeson, uuid, bytestring, unordered-containers, vector,
                         greskell-core,
                         hspec

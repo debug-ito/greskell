@@ -7,7 +7,7 @@ module TestUtil.Env
 import System.Environment (lookupEnv)
 import Test.Hspec
 
-import Data.Greskell.WebSocket.Connection (Host, Port)
+import Network.Greskell.WebSocket.Connection (Host, Port)
 
 requireEnv :: String -> IO String
 requireEnv env_key = maybe bail return =<< lookupEnv env_key

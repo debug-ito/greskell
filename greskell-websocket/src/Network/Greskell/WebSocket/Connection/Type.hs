@@ -1,12 +1,12 @@
 -- |
--- Module: Data.Greskell.WebSocket.Connection.Type
+-- Module: Network.Greskell.WebSocket.Connection.Type
 -- Description: common types for Connection
 -- Maintainer: Toshio Ito <debug.ito@gmail.com>
 --
 -- This is an internal module. This defines and exports common types
 -- used by Connection modules. The upper module is responsible to
 -- limit exports from this module.
-module Data.Greskell.WebSocket.Connection.Type
+module Network.Greskell.WebSocket.Connection.Type
   ( RawReq,
     RawRes,
     ReqID,
@@ -23,8 +23,8 @@ import Control.Concurrent.STM (TQueue, TBQueue, TVar)
 import qualified Data.ByteString.Lazy as BSL
 import Data.UUID (UUID)
 
-import Data.Greskell.WebSocket.Response (ResponseMessage)
-import Data.Greskell.WebSocket.Codec (Codec)
+import Network.Greskell.WebSocket.Response (ResponseMessage)
+import Network.Greskell.WebSocket.Codec (Codec)
 
 type RawReq = BSL.ByteString
 type RawRes = BSL.ByteString

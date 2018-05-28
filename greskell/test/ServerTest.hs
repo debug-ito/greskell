@@ -7,7 +7,7 @@ import qualified Data.Aeson as Aeson
 import Data.Either (isRight)
 import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as HM
-import qualified Data.Greskell.WebSocket.Client as WS
+import qualified Network.Greskell.WebSocket.Client as WS
 import Data.Monoid (mempty, (<>))
 import Data.Scientific (Scientific)
 import Data.Text (unpack, Text)

@@ -1,10 +1,10 @@
 -- |
--- Module: Data.Greskell.WebSocket.Util
+-- Module: Network.Greskell.WebSocket.Util
 -- Description: Common utility
 -- Maintainer: Toshio Ito <debug.ito@gmail.com>
 --
 -- __Internal module__.
-module Data.Greskell.WebSocket.Util
+module Network.Greskell.WebSocket.Util
        ( slurp
        ) where
 

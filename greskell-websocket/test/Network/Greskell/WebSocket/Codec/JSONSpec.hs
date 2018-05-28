@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings, DuplicateRecordFields, NoMonomorphismRestriction #-}
-module Data.Greskell.WebSocket.Codec.JSONSpec (main,spec) where
+module Network.Greskell.WebSocket.Codec.JSONSpec (main,spec) where
 
 import Control.Applicative ((<$>))
 import Control.Monad (forM_)
@@ -19,18 +19,18 @@ import qualified Data.UUID as UUID
 import qualified Data.Vector as V
 import Test.Hspec
 
-import Data.Greskell.WebSocket.Request
+import Network.Greskell.WebSocket.Request
   ( RequestMessage(..), toRequestMessage
   )
-import Data.Greskell.WebSocket.Request.Common (SASLMechanism(..), Operation, Base64(..))
-import Data.Greskell.WebSocket.Request.Standard
+import Network.Greskell.WebSocket.Request.Common (SASLMechanism(..), Operation, Base64(..))
+import Network.Greskell.WebSocket.Request.Standard
   ( OpAuthentication(..), OpEval(..)
   )
-import qualified Data.Greskell.WebSocket.Request.Session as S
-import Data.Greskell.WebSocket.Response
+import qualified Network.Greskell.WebSocket.Request.Session as S
+import Network.Greskell.WebSocket.Response
   (ResponseMessage(..), ResponseStatus(..), ResponseResult(..), ResponseCode(..))
-import Data.Greskell.WebSocket.Codec (Codec(..))
-import Data.Greskell.WebSocket.Codec.JSON (jsonCodec)
+import Network.Greskell.WebSocket.Codec (Codec(..))
+import Network.Greskell.WebSocket.Codec.JSON (jsonCodec)
 
 main :: IO ()
 main = hspec spec

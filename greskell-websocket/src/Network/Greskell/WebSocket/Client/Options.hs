@@ -1,10 +1,10 @@
 -- |
--- Module: Data.Greskell.WebSocket.Client.Options
+-- Module: Network.Greskell.WebSocket.Client.Options
 -- Description: Options to create a Client
 -- Maintainer: Toshio Ito <debug.ito@gmail.com>
 --
 -- 
-module Data.Greskell.WebSocket.Client.Options
+module Network.Greskell.WebSocket.Client.Options
        ( -- * Options
          Options,
          defOptions,
@@ -15,15 +15,15 @@ module Data.Greskell.WebSocket.Client.Options
          aliases,
          scriptEvaluationTimeout,
          -- * Settings
-         module Data.Greskell.WebSocket.Connection.Settings
+         module Network.Greskell.WebSocket.Connection.Settings
        ) where
 
 import Data.Greskell.GraphSON (GValue)
 import Data.HashMap.Strict (HashMap)
 import Data.Text (Text)
 
-import Data.Greskell.WebSocket.Connection (Connection)
-import Data.Greskell.WebSocket.Connection.Settings
+import Network.Greskell.WebSocket.Connection (Connection)
+import Network.Greskell.WebSocket.Connection.Settings
 
 -- | Configuration options to create a client for Gremlin Server.
 --

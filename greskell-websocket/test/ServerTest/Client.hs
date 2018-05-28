@@ -17,17 +17,17 @@ import Data.Greskell.Greskell (Greskell)
 import qualified Data.Greskell.Greskell as G
 import Data.Greskell.GMap (GMap, GMapEntry, unGMapEntry)
 
-import Data.Greskell.WebSocket.Client
+import Network.Greskell.WebSocket.Client
   ( Host, Port, Client, Options,
     connectWith, close, submit,
     defOptions, batchSize, connectionSettings, responseTimeout,
     nextResult, slurpResults,
     SubmitException(ResponseError, ParseError)
   )
-import Data.Greskell.WebSocket.Connection
+import Network.Greskell.WebSocket.Connection
   (RequestException(ResponseTimeout))
-import Data.Greskell.WebSocket.Request (RequestMessage(requestId))
-import qualified Data.Greskell.WebSocket.Response as Res
+import Network.Greskell.WebSocket.Request (RequestMessage(requestId))
+import qualified Network.Greskell.WebSocket.Response as Res
 
 import TestUtil.Env (withEnvForExtServer, withEnvForIntServer)
 import TestUtil.MockServer
