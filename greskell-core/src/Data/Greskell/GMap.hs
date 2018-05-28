@@ -230,10 +230,7 @@ parseSingleEntryObjectToEntry vp o =
     parseKey k = do
       p <- getParser
       p k
-    getParser = case fmap id $ fromJSONKey of
-    -- (above) Hack to remove possibility of FromJSONKeyCoerce,
-    -- because running FromJSONKeyCoerce is tricky outside Aeson
-    -- modules.
+    getParser = case fromJSONKey of
       FromJSONKeyText p -> return $ fmap return p
       FromJSONKeyTextParser p -> return p
       FromJSONKeyCoerce _ -> return $ fmap return unsafeCoerce
