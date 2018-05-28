@@ -24,7 +24,7 @@ module Data.Greskell.GMap
 import Control.Applicative ((<$>), (<*>), (<|>), empty)
 import Data.Aeson
   ( FromJSON(..), ToJSON(..), Value(..),
-    FromJSONKey, ToJSONKey
+    FromJSONKey, fromJSONKey, FromJSONKeyFunction(..), ToJSONKey
   )
 import Data.Aeson.Types (Parser)
 import Data.Foldable (length, Foldable)
@@ -32,9 +32,10 @@ import Data.Hashable (Hashable)
 import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Map as M
-import Data.Text (Text)
-import Data.Traversable (Traversable)
+import Data.Text (Text, intercalate, unpack)
+import Data.Traversable (Traversable, traverse)
 import Data.Vector ((!), Vector)
+import qualified Data.Vector as V
 import GHC.Exts (IsList(Item))
 import qualified GHC.Exts as List (IsList(fromList, toList))
 
@@ -77,6 +78,17 @@ instance (FromJSON k, FromJSON v, IsList (c k v), Item (c k v) ~ (k,v)) => FromJ
   parseJSON (Array v) = parseToFlattenedMap parseJSON parseJSON v
   parseJSON v = fail ("Expects Array, but got " ++ show v)
 
+-- | Parse a flattened key-values to an associative Vector.
+parseToAVec :: (s -> Parser k) -> (s -> Parser v) -> Vector s -> Parser (Vector (k,v))
+parseToAVec parseKey parseValue v = 
+  if odd vlen
+  then fail "Fail to parse a list into an associative list because there are odd number of elements."
+  else traverse parsePair pairVec
+  where
+    vlen = length v
+    pairVec = fmap (\i -> (v ! (i * 2), v ! (i * 2 + 1))) $ V.fromList [0 .. ((vlen `div` 2) - 1)]
+    parsePair (vk, vv) = (,) <$> parseKey vk <*> parseValue vv
+
 -- | General parser for 'FlattenedMap'.
 parseToFlattenedMap :: (IsList (c k v), Item (c k v) ~ (k,v))
                     => (s -> Parser k) -- ^ key parser
@@ -84,14 +96,7 @@ parseToFlattenedMap :: (IsList (c k v), Item (c k v) ~ (k,v))
                     -> Vector s -- ^ input vector of flattened key-values.
                     -> Parser (FlattenedMap c k v)
 parseToFlattenedMap parseKey parseValue v =
-  if odd vlen
-  then fail "Fail to parse a list into FlattenedMap because there are odd number of elements."
-  else fmap (FlattenedMap . List.fromList) pairs
-  where
-    vlen = length v
-    pairList = map (\i -> (v ! (i * 2), v ! (i * 2 + 1))) [0 .. ((vlen `div` 2) - 1)]
-    parsePair (vk, vv) = (,) <$> parseKey vk <*> parseValue vv
-    pairs = mapM parsePair pairList
+  fmap (FlattenedMap . List.fromList . V.toList) $ parseToAVec parseKey parseValue v
 
 instance (ToJSON k, ToJSON v, IsList (c k v), Item (c k v) ~ (k,v)) => ToJSON (FlattenedMap c k v) where
   toJSON (FlattenedMap m) = toJSON $ flatten $ map toValuePair $ List.toList m
@@ -180,7 +185,7 @@ unGMap = gmapValue
 -- "[\"one\",1]"
 --
 -- In old versions of TinkerPop, @Map.Entry@ is encoded as a JSON
--- oject with \"key\" and \"value\" fields. 'FromJSON' instance of
+-- object with \"key\" and \"value\" fields. 'FromJSON' instance of
 -- 'GMapEntry' supports this format as well, but 'ToJSON' instance
 -- doesn't support it.
 --
@@ -193,14 +198,6 @@ data GMapEntry k v =
     gmapEntryValue :: !v
   }
   deriving (Show,Eq,Ord,Foldable,Traversable,Functor)
-
-entryFromGMap :: (IsList (c k v), Item (c k v) ~ (k,v)) => GMap c k v -> Parser (GMapEntry k v)
-entryFromGMap gm = case List.toList $ gmapValue gm of
-  [(k,v)] -> return $ GMapEntry { gmapEntryFlat = gmapFlat gm,
-                                  gmapEntryKey = k,
-                                  gmapEntryValue = v
-                                }
-  l -> fail ("Expects a single entry map, but it has " ++ (show $ length l) ++ " entries.")
 
 parseKeyValueToEntry :: (s -> Parser k)
                      -> (s -> Parser v)
@@ -217,33 +214,65 @@ parseKeyValueToEntry kp vp o =
     parseIfPresent :: (a -> Parser v) -> Maybe a -> Parser (Maybe v)
     parseIfPresent f = maybe (return Nothing) (fmap Just . f)
 
+parseSingleEntryObjectToEntry :: FromJSONKey k
+                              => (s -> Parser v)
+                              -> HashMap Text s
+                              -> Parser (Maybe (GMapEntry k v))
+parseSingleEntryObjectToEntry vp o =
+  case HM.toList o of
+   [(raw_key, raw_val)] -> do
+     key <- parseKey raw_key
+     val <- vp raw_val
+     return $ Just $ GMapEntry False key val
+   _ -> return Nothing
+  where
+    parseKey k = do
+      p <- getParser
+      p k
+    getParser = case fmap id $ fromJSONKey of
+    -- (above) Hack to remove possibility of FromJSONKeyCoerce,
+    -- because running FromJSONKeyCoerce is tricky outside Aeson
+    -- modules.
+      FromJSONKeyText p -> return $ fmap return p
+      FromJSONKeyTextParser p -> return p
+      FromJSONKeyCoerce _ -> fail ("Unexpected FromJSONKeyCoerce.")
+      FromJSONKeyValue _ -> fail ("Unexpected FromJSONKeyValue.")
+
+orElseM :: Monad m => m (Maybe a) -> m (Maybe a) -> m (Maybe a)
+orElseM act_a act_b = do
+  ma <- act_a
+  case ma of
+   Just a -> return $ Just a
+   Nothing -> act_b
+
 -- | General parser for 'GMapEntry'.
-parseToGMapEntry :: (IsList (c k v), Item (c k v) ~ (k,v))
+parseToGMapEntry :: FromJSONKey k
                  => (s -> Parser k) -- ^ key parser
                  -> (s -> Parser v) -- ^ value parser
-                 -> (HashMap Text s -> Parser (c k v))  -- ^ object parser
                  -> Either (HashMap Text s) (Vector s) -- ^ input object or flattened key-values
                  -> Parser (GMapEntry k v)
-parseToGMapEntry kp vp op input@(Right _) = entryFromGMap =<< parseToGMap kp vp op input
-parseToGMapEntry kp vp op input@(Left o) = do
-  mkv_parsed <- parseKeyValueToEntry kp vp o
-  case mkv_parsed of
-   Just p -> return p
-   Nothing -> entryFromGMap =<< parseToGMap kp vp op input
+parseToGMapEntry kp vp (Right vec) = do
+  avec <- parseToAVec kp vp vec
+  case V.toList avec of
+   [(key, val)] -> return $ GMapEntry True key val
+   _ -> fail ("Expects a single entry of key-value pair, but got " ++ (show $ V.length avec) ++ " entries.")
+parseToGMapEntry kp vp (Left o) = do
+  m_ret <- parseKeyValueToEntry kp vp o `orElseM` parseSingleEntryObjectToEntry vp o
+  case m_ret of
+   Just ret -> return ret
+   Nothing -> fail ("Unexpected structure of Object: got keys: " ++ (unpack $ intercalate ", " $ HM.keys o))
 
 -- | Map to \"g:Map\".
 instance GraphSONTyped (GMapEntry k v) where
   gsonTypeFor _ = "g:Map"
 
-instance (FromJSON k, FromJSONKey k, Ord k, FromJSON v) => FromJSON (GMapEntry k v) where
+instance (FromJSON k, FromJSONKey k, FromJSON v) => FromJSON (GMapEntry k v) where
   parseJSON val = case val of
     Object o -> parse $ Left o
     Array a -> parse $ Right a
     other -> fail ("Expects Object or Array, but got " ++ show other)
     where
-      parse = parseToGMapEntry parseJSON parseJSON objParser
-      objParser :: (FromJSON v, FromJSONKey k, Ord k) => HashMap Text Value -> Parser (M.Map k v)
-      objParser = parseJSON . Object
+      parse = parseToGMapEntry parseJSON parseJSON
 
 instance (ToJSON k, ToJSONKey k, Ord k, ToJSON v) => ToJSON (GMapEntry k v) where
   toJSON e = toJSON $ singleton' e

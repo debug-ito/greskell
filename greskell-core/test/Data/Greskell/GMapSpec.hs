@@ -74,8 +74,8 @@ spec_GMapEntry = describe "GMapEntry" $ do
   specify "zero entry" $ do
     let got :: Either String (GMapEntry String Int)
         got = eitherDecode "[]"
-    got `expLeft` ("it has 0 entries" `isInfixOf`)
+    got `expLeft` ("0 entries" `isInfixOf`)
   specify "two entries" $ do
     let got :: Either String (GMapEntry String Int)
         got = eitherDecode "{\"foo\": 10, \"bar\": 20}"
-    got `expLeft` ("it has 2 entries" `isInfixOf`)
+    got `expLeft` ("Unexpected structure" `isInfixOf`)

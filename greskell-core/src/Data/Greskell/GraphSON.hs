@@ -429,15 +429,13 @@ instance (FromGraphSON k, FromGraphSON v, IsList (c k v), Item (c k v) ~ (k,v), 
       parseObject = parseGObjectToTraversal
 
 -- | Use 'parseToGMapEntry'.
-instance (FromGraphSON k, FromGraphSON v, FromJSONKey k, Ord k) => FromGraphSON (GMapEntry k v) where
+instance (FromGraphSON k, FromGraphSON v, FromJSONKey k) => FromGraphSON (GMapEntry k v) where
   parseGraphSON val = case gValueBody val of
     GObject o -> parse $ Left o
     GArray a -> parse $ Right a
     other -> fail ("Expects GObject or GArray, but got " ++ show other)
     where
-      parse = parseToGMapEntry parseGraphSON parseGraphSON parseObject
-      parseObject :: (FromGraphSON v, FromJSONKey k, Ord k) => HashMap Text GValue -> Parser (L.Map k v)
-      parseObject = parseGObjectToTraversal
+      parse = parseToGMapEntry parseGraphSON parseGraphSON
 
 
 ---- Map instances
