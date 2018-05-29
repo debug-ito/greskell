@@ -299,6 +299,12 @@ gValueBody = gsonValue . unGValue
 --   first, then unwrap the 'GMap' wrapper. That way, all versions of
 --   GraphSON formats are handled properly.
 -- - Other types: see the individual instance documentation.
+--
+-- Note that 'Char' does not have 'FromGraphSON' instance. This is
+-- intentional. As stated in the document of
+-- 'Data.Greskell.AsIterator.AsIterator', using 'String' in greskell
+-- is an error in most cases. To prevent you from using 'String',
+-- 'Char' (and thus 'String') don't have 'FromGraphSON' instances.
 class FromGraphSON a where
   parseGraphSON :: GValue -> Parser a
 
@@ -350,8 +356,6 @@ instance FromGraphSON Text where
 instance FromGraphSON TL.Text where
   parseGraphSON = parseUnwrapAll
 instance FromGraphSON Bool where
-  parseGraphSON = parseUnwrapAll
-instance FromGraphSON Char where
   parseGraphSON = parseUnwrapAll
 instance FromGraphSON Double where
   parseGraphSON = parseUnwrapAll
