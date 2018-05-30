@@ -23,6 +23,8 @@ module Data.Greskell.Greskell
          single,
          number,
          value,
+         gvalue,
+         gvalue',
          -- * Unsafe constructors
          unsafeGreskell,
          unsafeGreskellLazy,
@@ -43,6 +45,8 @@ import Data.String (IsString(..))
 import Data.List (intersperse)
 import Data.Text (Text, pack, unpack)
 import qualified Data.Text.Lazy as TL
+
+import Data.Greskell.GraphSON (GValue, GValueBody(..), unwrapAll, nonTypedGValue)
 
 -- $
 -- >>> :set -XOverloadedStrings
@@ -218,6 +222,18 @@ value (Aeson.Object obj)
     toGroovyMap pairs = "[" <> TL.intercalate "," (map toPairText pairs) <> "]"
     toPairText (key, val) = (toGremlinLazy $ string key) <> ":" <> (toGremlinLazy $ value val)
 
+-- | 'GValue' literal.
+--
+-- All GraphSON wrappers in 'GValue' are just ignored.
+gvalue :: GValue -> Greskell GValue
+gvalue = fmap phantomToGValue . value . unwrapAll
+  where
+    phantomToGValue _ = nonTypedGValue $ GNull
+
+-- | 'GValue' literal from 'GValueBody'. The 'gsonType' field is
+-- 'Nothing'.
+gvalue' :: GValueBody -> Greskell GValue
+gvalue' = gvalue . nonTypedGValue
 
 unsafeToValue :: Greskell a -> Greskell Value
 unsafeToValue = fmap (const Aeson.Null)
