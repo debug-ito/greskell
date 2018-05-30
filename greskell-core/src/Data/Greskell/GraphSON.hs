@@ -15,7 +15,6 @@ module Data.Greskell.GraphSON
          typedGraphSON',
          -- ** parser support
          parseTypedGraphSON,
-         parseTypedGraphSON',
          -- * GValue
          GValue(..),
          GValueBody(..),
@@ -168,8 +167,11 @@ parseDirect v = GraphSON Nothing <$> parseJSON v
 parseTypedGraphSON :: (GraphSONTyped v, FromJSON v) => Value -> Parser (GraphSON v)
 parseTypedGraphSON v = either fail return =<< parseTypedGraphSON' v
 
--- | Like 'parseTypedGraphSON', but this handles parse errors in a
--- finer granularity.
+-- | Note: this function is not exported because I don't need it for
+-- now. If you need this function, just open an issue.
+--
+-- Like 'parseTypedGraphSON', but this handles parse errors in a finer
+-- granularity.
 --
 -- - If the given 'Value' is not a typed JSON object, it returns
 --   'Left'.
