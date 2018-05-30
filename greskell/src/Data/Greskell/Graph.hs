@@ -45,14 +45,15 @@ module Data.Greskell.Graph
          parseNonEmptyValues,
          fromProperties,
          -- * Internal use
-         FromJSONWithKey
+         FromGraphSONWithKey
        ) where
 
 import Control.Applicative (empty, (<$>), (<*>), (<|>))
-import Data.Aeson (Value(..), FromJSON(..), (.:), (.:?), Object)
+import Data.Aeson (Value(..), FromJSON(..))
 import Data.Aeson.Types (Parser)
 import Data.Foldable (toList, Foldable(foldr), foldlM)
-import qualified Data.HashMap.Lazy as HM
+import qualified Data.HashMap.Lazy as HML -- TODO. should it be lazy??
+import qualified Data.HashMap.Strict as HM
 import Data.List.NonEmpty (NonEmpty(..))
 import qualified Data.List.NonEmpty as NL
 import Data.Maybe (listToMaybe)
@@ -62,8 +63,12 @@ import qualified Data.Semigroup as Semigroup
 import Data.String (IsString(..))
 import Data.Text (Text, unpack)
 import Data.Traversable (Traversable(traverse))
+import Data.Vector (Vector)
 
-import Data.Greskell.GraphSON (GraphSON(..), GraphSONTyped(..), parseTypedGraphSON)
+import Data.Greskell.GraphSON
+  ( GraphSON(..), GraphSONTyped(..), FromGraphSON(..),
+    (.:), GValue, GValueBody(..), gValueBody, gValueType
+  )
 import Data.Greskell.Greskell
   ( Greskell, unsafeGreskellLazy, string,
     ToGreskell(..)
@@ -150,12 +155,12 @@ key = Key . string
 
 -- $concrete_types
 --
--- Concrete data types based on aeson 'Value's.
+-- Concrete data types based on aeson values.
 --
--- Element IDs and property values are all 'Value', because they are
--- highly polymorphic. They are wrapped with 'GraphSON', so that you
--- can inspect 'gsonType' field if present. 'ElementID' and
--- 'EdgeVertexID' are bare 'Value' type for convenience.
+-- Element IDs and property values are all 'GValue', because they are
+-- highly polymorphic. The 'GValue' type allows you to inspect
+-- 'gsonType' field if necessary. 'ElementID' and 'EdgeVertexID' are
+-- 'GValue', too.
 --
 -- As for properties, you can use 'PropertyMap' and other type-classes
 -- to manipulate them.
@@ -169,17 +174,17 @@ key = Key . string
 -- aeson data types.
 data AVertex =
   AVertex
-  { avId :: GraphSON Value,
+  { avId :: GValue,
     -- ^ ID of this vertex
     avLabel :: Text,
     -- ^ Label of this vertex
-    avProperties :: PropertyMapList AVertexProperty (GraphSON Value)
+    avProperties :: PropertyMapList AVertexProperty GValue
     -- ^ Properties of this vertex.
   }
   deriving (Show,Eq)
 
 instance Element AVertex where
-  type ElementID AVertex = Value
+  type ElementID AVertex = GValue
   type ElementProperty AVertex = AVertexProperty
 
 instance Vertex AVertex
@@ -188,17 +193,21 @@ instance GraphSONTyped AVertex where
   gsonTypeFor _ = "g:Vertex"
 
 instance FromJSON AVertex where
-  parseJSON (Object o) = AVertex
-                         <$> (o .: "id")
-                         <*> (o .: "label")
-                         <*> (o `optionalMonoid` "properties")
-  parseJSON _ = empty
+  parseJSON v = parseGraphSON =<< parseJSON v
+
+instance FromGraphSON AVertex where
+  parseGraphSON gv = case gValueBody gv of
+    GObject o -> AVertex
+                 <$> (o .: "id")
+                 <*> (o .: "label")
+                 <*> (o `optionalMonoid` "properties")
+    _ -> empty
 
 -- | General edge type you can use for 'Edge' class, based on aeson
 -- data types.
 data AEdge =
   AEdge
-  { aeId :: GraphSON Value,
+  { aeId :: GValue,
     -- ^ ID of this edge.
     aeLabel :: Text,
     -- ^ Label of this edge.
@@ -206,45 +215,52 @@ data AEdge =
     -- ^ Label of this edge's destination vertex.
     aeOutVLabel :: Text,
     -- ^ Label of this edge's source vertex.
-    aeInV :: GraphSON Value,
+    aeInV :: GValue,
     -- ^ ID of this edge's destination vertex.
-    aeOutV :: GraphSON Value,
+    aeOutV :: GValue,
     -- ^ ID of this edge's source vertex.
-    aeProperties :: PropertyMapSingle AProperty (GraphSON Value)
+    aeProperties :: PropertyMapSingle AProperty GValue
     -- ^ Properties of this edge.
   }
   deriving (Show,Eq)
 
 instance Element AEdge where
-  type ElementID AEdge = Value
+  type ElementID AEdge = GValue
   type ElementProperty AEdge = AProperty
 
 instance Edge AEdge where
-  type EdgeVertexID AEdge = Value
+  type EdgeVertexID AEdge = GValue
 
 instance GraphSONTyped AEdge where
   gsonTypeFor _ = "g:Edge"
 
 instance FromJSON AEdge where
-  parseJSON (Object o) =
-    AEdge
-    <$> (o .: "id")
-    <*> (o .: "label")
-    <*> (o .: "inVLabel")
-    <*> (o .: "outVLabel")
-    <*> (o .: "inV")
-    <*> (o .: "outV")
-    <*> (o `optionalMonoid` "properties")
-  parseJSON _ = empty
+  parseJSON v = parseGraphSON =<< parseJSON v
 
-optionalMonoid :: (Monoid m, FromJSON m) => Object -> Text -> Parser m
-optionalMonoid obj field_name = fmap (maybe mempty id) (obj .:? field_name)
+instance FromGraphSON AEdge where
+  parseGraphSON gv = case gValueBody gv of
+    GObject o -> AEdge
+                 <$> (o .: "id")
+                 <*> (o .: "label")
+                 <*> (o .: "inVLabel")
+                 <*> (o .: "outVLabel")
+                 <*> (o .: "inV")
+                 <*> (o .: "outV")
+                 <*> (o `optionalMonoid` "properties")
+    _ -> empty
+
+optionalMonoid :: (Monoid m, FromGraphSON m) => HM.HashMap Text GValue -> Text -> Parser m
+optionalMonoid obj field_name = maybe (return mempty) parseGraphSON $ nullToNothing =<< HM.lookup field_name obj
+  where
+    nullToNothing gv = case gValueBody gv of
+      GNull -> Nothing
+      _ -> Just gv
 
 -- | __This typeclass is for internal use.__
 --
--- JSON parser with a property key given from outside.
-class FromJSONWithKey a where
-  parseJSONWithKey :: Text -> Value -> Parser a
+-- GraphSON parser with a property key given from outside.
+class FromGraphSONWithKey a where
+  parseGraphSONWithKey :: Text -> GValue -> Parser a
 
 
 -- | General simple property type you can use for 'Property' class.
@@ -256,13 +272,20 @@ data AProperty v =
   deriving (Show,Eq,Ord)
 
 -- | Parse Property of GraphSON 1.0.
-instance FromJSON v => FromJSON (AProperty v) where
-  parseJSON (Object o) =
-    AProperty <$> (o .: "key") <*> (o .: "value")
-  parseJSON _ = empty
+--
+-- In version 0.1.1.0 and before, the constraint was @FromJSON v@.
+-- This has changed.
+instance FromGraphSON v => FromJSON (AProperty v) where
+  parseJSON v = parseGraphSON =<< parseJSON v
 
-instance FromJSON v => FromJSONWithKey (AProperty v) where
-  parseJSONWithKey k v = AProperty k <$> parseJSON v
+-- | Parse Property of GraphSON 1.0.
+instance FromGraphSON v => FromGraphSON (AProperty v) where
+  parseGraphSON gv = case gValueBody gv of
+    GObject o -> AProperty <$> (o .: "key") <*> (o .: "value")
+    _ -> empty
+
+instance FromGraphSON v => FromGraphSONWithKey (AProperty v) where
+  parseGraphSONWithKey k v = AProperty k <$> parseGraphSON v
 
 instance Property AProperty where
   propertyKey = apKey
@@ -284,37 +307,43 @@ instance Traversable AProperty where
 -- based on aeson data types.
 data AVertexProperty v =
   AVertexProperty
-  { avpId :: GraphSON Value,
+  { avpId :: GValue,
     -- ^ ID of this vertex property.
     avpLabel :: Text,
     -- ^ Label and key of this vertex property.
     avpValue :: v,
     -- ^ Value of this vertex property.
-    avpProperties :: PropertyMapSingle AProperty (GraphSON Value)
+    avpProperties :: PropertyMapSingle AProperty GValue
     -- ^ (meta)properties of this vertex property.
   }
   deriving (Show,Eq)
 
-instance FromJSON v => FromJSON (AVertexProperty v) where
-  parseJSON v@(Object o) = do
-    label <- o .: "label"
-    parseJSONWithKey label v
-  parseJSON _ = empty
+-- | In version 0.1.1.0 and before, the constraint was @FromJSON v@.
+-- This has changed.
+instance FromGraphSON v => FromJSON (AVertexProperty v) where
+  parseJSON v = parseGraphSON =<< parseJSON v
 
-instance FromJSON v => FromJSONWithKey (AVertexProperty v) where
-  parseJSONWithKey k (Object o) = AVertexProperty
-                                    <$> (o .: "id")
-                                    <*> pure k
-                                    <*> (o .: "value")
-                                    <*> (o `optionalMonoid` "properties")
-  parseJSONWithKey _ _ = empty
+instance FromGraphSON v => FromGraphSON (AVertexProperty v) where
+  parseGraphSON gv = case gValueBody gv of
+    GObject o -> do
+      label <- o .: "label"
+      parseGraphSONWithKey label gv
+    _ -> empty
 
+instance FromGraphSON v => FromGraphSONWithKey (AVertexProperty v) where
+  parseGraphSONWithKey k gv = case gValueBody gv of
+    GObject o -> AVertexProperty
+                 <$> (o .: "id")
+                 <*> pure k
+                 <*> (o .: "value")
+                 <*> (o `optionalMonoid` "properties")
+    _ -> empty
 
 instance GraphSONTyped (AVertexProperty v) where
   gsonTypeFor _ = "g:VertexProperty"
 
 instance Element (AVertexProperty v) where
-  type ElementID (AVertexProperty v) = Value
+  type ElementID (AVertexProperty v) = GValue
   type ElementProperty (AVertexProperty v) = AProperty
 
 instance Property AVertexProperty where
@@ -368,6 +397,8 @@ parseOneValue k pm = maybe (fail err_msg) (parseJSON . gsonValue) $ lookupOneVal
   where
     err_msg = notExistErrorMsg k
 
+-- TODO: we may have to revise those functions, too.
+
 -- | Lookup a list of property values from a 'PropertyMap' by the
 -- given key, and parse them.
 parseListValues :: (PropertyMap m, Property p, FromJSON v) => Text -> m p (GraphSON Value) -> Parser [v]
@@ -390,11 +421,11 @@ fromProperties = foldr putProperty mempty
 -- | Generic implementation of 'PropertyMap'. @t@ is the type of
 -- cardinality, @p@ is the type of 'Property' class and @v@ is the
 -- type of the property value.
-newtype PropertyMapGeneric t p v = PropertyMapGeneric (HM.HashMap Text (t (p v)))
+newtype PropertyMapGeneric t p v = PropertyMapGeneric (HML.HashMap Text (t (p v)))
                                  deriving (Show,Eq)
 
 instance Semigroup (t (p v)) => Semigroup (PropertyMapGeneric t p v) where
-  (PropertyMapGeneric a) <> (PropertyMapGeneric b) = PropertyMapGeneric $ HM.unionWith (<>) a b
+  (PropertyMapGeneric a) <> (PropertyMapGeneric b) = PropertyMapGeneric $ HML.unionWith (<>) a b
 
 instance Semigroup (t (p v)) => Monoid (PropertyMapGeneric t p v) where
   mempty = PropertyMapGeneric mempty
@@ -414,27 +445,39 @@ instance (Traversable t, Traversable p) => Traversable (PropertyMapGeneric t p) 
 
 putPropertyGeneric :: (Semigroup (t (p v)), Applicative t, Property p) => p v -> PropertyMapGeneric t p v -> PropertyMapGeneric t p v
 putPropertyGeneric prop (PropertyMapGeneric hm) =
-  PropertyMapGeneric $ HM.insertWith (<>) (propertyKey prop) (pure prop) hm
+  PropertyMapGeneric $ HML.insertWith (<>) (propertyKey prop) (pure prop) hm
 
 removePropertyGeneric :: Text -> PropertyMapGeneric t p v -> PropertyMapGeneric t p v
-removePropertyGeneric k (PropertyMapGeneric hm) = PropertyMapGeneric $ HM.delete k hm
+removePropertyGeneric k (PropertyMapGeneric hm) = PropertyMapGeneric $ HML.delete k hm
 
 allPropertiesGeneric :: Foldable t => PropertyMapGeneric t p v -> [p v]
-allPropertiesGeneric (PropertyMapGeneric hm) = concat $ map toList $ HM.elems hm
+allPropertiesGeneric (PropertyMapGeneric hm) = concat $ map toList $ HML.elems hm
 
-parsePropertiesGeneric :: (Property p, PropertyMap m, Monoid (m p v), GraphSONTyped (p v), FromJSON (p v), FromJSONWithKey (p v))
-                       => (Value -> Parser [Value])
-                       -> Value
+parsePropertiesGeneric :: (Property p, PropertyMap m, Monoid (m p v), GraphSONTyped (p v), FromGraphSON (p v), FromGraphSONWithKey (p v))
+                       => (GValue -> Parser (Vector GValue))
+                       -> GValue
                        -> Parser (m p v)
-parsePropertiesGeneric normalizeCardinality (Object obj) = foldlM folder mempty $ HM.toList obj
+parsePropertiesGeneric normalizeCardinality gv = case gValueBody gv of
+  GObject obj -> foldlM folder mempty $ HML.toList obj
+  _ -> empty
   where
     folder pm (k, value) = fmap (foldr putProperty pm) $ traverse (parseProperty k) =<< normalizeCardinality value
-    parseProperty k value = (fmap gsonValue $ parseTypedGraphSON value) <|> parseJSONWithKey k value
-parsePropertiesGeneric _ _ = empty
+    parseProperty k value = parseTypedGValue value <|> parseGraphSONWithKey k value
 
-expectAesonArray :: Value -> Parser [Value]
-expectAesonArray (Array a) = return $ toList a
-expectAesonArray _ = empty
+-- parhaps we might as well place it in GraphSON module and let it export.
+parseTypedGValue :: (GraphSONTyped v, FromGraphSON v) => GValue -> Parser v
+parseTypedGValue  gv = do
+  prop <- parseGraphSON gv
+  let exp_type = gsonTypeFor prop
+      mgot_type = gValueType gv
+  if mgot_type /= Just exp_type
+    then fail ("Expected @type field of " ++ unpack exp_type ++ ", but got " ++ show mgot_type)
+    else return prop
+
+expectAesonArray :: GValue -> Parser (Vector GValue)
+expectAesonArray gv = case gValueBody gv of
+  GArray a -> return a
+  _ -> empty
 
 -- | A 'PropertyMap' that has a single value per key.
 --
@@ -447,15 +490,21 @@ newtype PropertyMapSingle p v = PropertyMapSingle (PropertyMapGeneric Semigroup.
                               deriving (Show,Eq,Semigroup,Monoid,Functor,Foldable,Traversable)
 
 instance PropertyMap PropertyMapSingle where
-  lookupOne k (PropertyMapSingle (PropertyMapGeneric hm)) = fmap Semigroup.getFirst $ HM.lookup k hm
+  lookupOne k (PropertyMapSingle (PropertyMapGeneric hm)) = fmap Semigroup.getFirst $ HML.lookup k hm
   lookupList k m = maybe [] return $ lookupOne k m
   putProperty p (PropertyMapSingle pg) = PropertyMapSingle $ putPropertyGeneric p pg
   removeProperty t (PropertyMapSingle pg) = PropertyMapSingle $ removePropertyGeneric t pg
   allProperties (PropertyMapSingle pg) = allPropertiesGeneric pg
 
-instance (Property p, GraphSONTyped (p v), FromJSON (p v), FromJSONWithKey (p v))
+-- | In version 0.1.1.0 and before, the constraint was @FromJSON v@.
+-- This has changed.
+instance (Property p, GraphSONTyped (p v), FromGraphSON (p v), FromGraphSONWithKey (p v))
          => FromJSON (PropertyMapSingle p v) where
-  parseJSON = parsePropertiesGeneric (return . return)
+  parseJSON v = parseGraphSON =<< parseJSON v
+
+instance (Property p, GraphSONTyped (p v), FromGraphSON (p v), FromGraphSONWithKey (p v))
+         => FromGraphSON (PropertyMapSingle p v) where
+  parseGraphSON = parsePropertiesGeneric (return . return)
 
 -- | A 'PropertyMap' that can keep more than one values per key.
 --
@@ -471,12 +520,18 @@ newtype PropertyMapList p v = PropertyMapList (PropertyMapGeneric NonEmpty p v)
                             deriving (Show,Eq,Semigroup,Monoid,Functor,Foldable,Traversable)
 
 instance PropertyMap PropertyMapList where
-  lookupList k (PropertyMapList (PropertyMapGeneric hm)) = maybe [] NL.toList $ HM.lookup k hm
+  lookupList k (PropertyMapList (PropertyMapGeneric hm)) = maybe [] NL.toList $ HML.lookup k hm
   putProperty p (PropertyMapList pg) = PropertyMapList $ putPropertyGeneric p pg
   removeProperty t (PropertyMapList pg) = PropertyMapList $ removePropertyGeneric t pg
   allProperties (PropertyMapList pg) = allPropertiesGeneric pg
 
-instance (Property p, GraphSONTyped (p v), FromJSON (p v), FromJSONWithKey (p v))
+-- | In version 0.1.1.0 and before, the constraint was @FromJSON v@.
+-- This has changed.
+instance (Property p, GraphSONTyped (p v), FromGraphSON (p v), FromGraphSONWithKey (p v))
          => FromJSON (PropertyMapList p v) where
-  parseJSON v = parsePropertiesGeneric expectAesonArray v
+  parseJSON v = parseGraphSON =<< parseJSON v
+
+instance (Property p, GraphSONTyped (p v), FromGraphSON (p v), FromGraphSONWithKey (p v))
+         => FromGraphSON (PropertyMapList p v) where
+  parseGraphSON v = parsePropertiesGeneric expectAesonArray v
 

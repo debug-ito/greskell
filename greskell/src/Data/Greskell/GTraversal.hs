@@ -139,6 +139,7 @@ import Data.Greskell.Graph
     AVertex, AEdge,
     T, Key
   )
+import Data.Greskell.GraphSON (GValue)
 import Data.Greskell.Gremlin
   ( Comparator(..),
     P
@@ -367,7 +368,7 @@ sV ids src = GTraversal $ sourceMethod "V" ids src
 --
 -- >>> toGremlin (source "g" & sV' (map (value . Aeson.Number) [1,2,3]))
 -- "g.V(1.0,2.0,3.0)"
-sV' :: [Greskell Value]
+sV' :: [Greskell GValue]
     -> Greskell GraphTraversalSource
     -> GTraversal Transform () AVertex
 sV' = sV
@@ -383,7 +384,7 @@ sE ids src = GTraversal $ sourceMethod "E" ids src
 --
 -- >>> toGremlin (source "g" & sE' (map (value . Aeson.Number) [1]))
 -- "g.E(1.0)"
-sE' :: [Greskell Value]
+sE' :: [Greskell GValue]
        -> Greskell GraphTraversalSource
        -> GTraversal Transform () AEdge
 sE' = sE
