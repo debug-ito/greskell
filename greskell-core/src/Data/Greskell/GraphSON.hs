@@ -24,6 +24,7 @@ module Data.Greskell.GraphSON
          typedGValue',
          -- ** deconstructors
          gValueBody,
+         gValueType,
          unwrapAll,
          unwrapOne,
          -- * FromGraphSON
@@ -285,6 +286,10 @@ unwrapBase mapChild (GValue gson_body) = unwrapBody $ gsonValue gson_body
 -- | Get the 'GValueBody' from 'GValue'.
 gValueBody :: GValue -> GValueBody
 gValueBody = gsonValue . unGValue
+
+-- | Get the 'gsonType' field from 'GValue'.
+gValueType :: GValue -> Maybe Text
+gValueType = gsonType . unGValue
 
 -- | Types that can be constructed from 'GValue'. This is analogous to
 -- 'FromJSON' class.
