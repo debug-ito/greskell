@@ -29,6 +29,8 @@ module Data.Greskell.GTraversal
          sV',
          sE,
          sE',
+         sAddV,
+         sAddV',
          -- * GTraversal
          (&.),
          ($.),
@@ -109,6 +111,7 @@ module Data.Greskell.GTraversal
          gAddV',
          gDrop,
          gDropP,
+         gProperty,
          -- ** @.by@ steps
          
          -- | @.by@ steps are not 'Walk' on their own because they are
@@ -388,6 +391,20 @@ sE' :: [Greskell GValue]
        -> Greskell GraphTraversalSource
        -> GTraversal Transform () AEdge
 sE' = sE
+
+-- | @.addV()@ method on 'GraphTraversalSource'.
+sAddV :: Vertex v
+      => Greskell Text -- ^ vertex label
+      -> Greskell GraphTraversalSource
+      -> GTraversal SideEffect () v
+sAddV label src = GTraversal $ sourceMethod "addV" [label] src
+
+-- | Monomorphic version of 'sAddV'.
+--
+-- >>> toGremlin (source "g" & sAddV' "person")
+-- "g.addV(\"person\")"
+sAddV' :: Greskell Text -> Greskell GraphTraversalSource -> GTraversal SideEffect () AVertex
+sAddV' = sAddV
 
 -- | Unsafely create 'GTraversal' from the given raw Gremlin script.
 --
@@ -898,3 +915,13 @@ gDrop = unsafeWalk "drop" []
 -- "g.E().properties(\"weight\").drop()"
 gDropP :: Property p => Walk SideEffect (p a) (p a)
 gDropP = unsafeWalk "drop" []
+
+-- | simple @.property@ step. It adds a value to the property.
+--
+-- >>> toGremlin (source "g" & sV' [] & liftWalk &. gProperty "age" (20 :: Greskell Int))
+-- "g.V().property(\"age\",20)"
+gProperty :: Element e
+          => Key e v -- ^ key of the property
+          -> Greskell v -- ^ value of the property
+          -> Walk SideEffect e e
+gProperty key val = unsafeWalk "property" [toGremlin key, toGremlin val]
