@@ -395,22 +395,29 @@ lookupListValues k = fmap propertyValue . lookupList k
 notExistErrorMsg :: Text -> String
 notExistErrorMsg k = "Property '" ++ unpack k ++ "' does not exist."
 
--- | Lookup a property 'Value' by the given key, and parse it.
-parseOneValue :: (PropertyMap m, Property p, FromJSON v) => Text -> m p (GraphSON Value) -> Parser v
-parseOneValue k pm = maybe (fail err_msg) (parseJSON . gsonValue) $ lookupOneValue k pm
+-- | Lookup a property 'GValue' by the given key, and parse it.
+-- 
+-- In version 0.1.1.0 and before, this function took an argument @m p (GraphSON Value)@.
+-- This has changed, because property types for 'AVertex' etc have changed.
+parseOneValue :: (PropertyMap m, Property p, FromGraphSON v) => Text -> m p GValue -> Parser v
+parseOneValue k pm = maybe (fail err_msg) parseGraphSON $ lookupOneValue k pm
   where
     err_msg = notExistErrorMsg k
 
--- TODO: we may have to revise those functions, too.
-
 -- | Lookup a list of property values from a 'PropertyMap' by the
 -- given key, and parse them.
-parseListValues :: (PropertyMap m, Property p, FromJSON v) => Text -> m p (GraphSON Value) -> Parser [v]
-parseListValues k pm = mapM (parseJSON . gsonValue) $ lookupListValues k pm
+-- 
+-- In version 0.1.1.0 and before, this function took an argument @m p (GraphSON Value)@.
+-- This has changed, because property types for 'AVertex' etc have changed.
+parseListValues :: (PropertyMap m, Property p, FromGraphSON v) => Text -> m p GValue -> Parser [v]
+parseListValues k pm = mapM parseGraphSON $ lookupListValues k pm
 
 -- | Like 'parseListValues', but this function 'fail's when there is
 -- no property with the given key.
-parseNonEmptyValues :: (PropertyMap m, Property p, FromJSON v) => Text -> m p (GraphSON Value) -> Parser (NonEmpty v)
+--
+-- In version 0.1.1.0 and before, this function took an argument @m p (GraphSON Value)@.
+-- This has changed, because property types for 'AVertex' etc have changed.
+parseNonEmptyValues :: (PropertyMap m, Property p, FromGraphSON v) => Text -> m p GValue -> Parser (NonEmpty v)
 parseNonEmptyValues k pm = toNonEmpty =<< parseListValues k pm
   where
     toNonEmpty [] = fail $ notExistErrorMsg k
