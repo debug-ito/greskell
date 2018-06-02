@@ -30,7 +30,7 @@ import Data.Greskell.Greskell
 import Data.Greskell.Graph
   ( AVertex, T, tId, tLabel, tKey, tValue
   )
-import Data.Greskell.GraphSON (FromGraphSON)
+import Data.Greskell.GraphSON (FromGraphSON, gValueBody, GValueBody(..))
 import Data.Greskell.GTraversal
   ( Walk, GTraversal,
     source, sV', ($.), gOrder, gBy1,
@@ -169,10 +169,10 @@ spec_predicate = do
 
 spec_T :: SpecWith (String,Int)
 spec_T = describe "T enum" $ do
-  specFor "tId" (gMapT tId) [Aeson.Number 10]
+  specFor' "tId" (gMapT tId) gValueBody [GNumber 10]
   specFor "tLabel" (gMapT tLabel) ["VLABEL"]
   specFor "tKey" (gMapT tKey <<< gProperties ["vprop"]) ["vprop"]
-  specFor "tValue" (gMapT tValue <<< gProperties ["vprop"]) [Aeson.Number 400]
+  specFor' "tValue" (gMapT tValue <<< gProperties ["vprop"]) gValueBody [GNumber 400]
   where
     gMapT :: Greskell (T a b) -> Walk Transform a b
     gMapT t = unsafeWalk "map" ["{ " <> toGremlin (unsafeMethodCall t "apply" ["it.get()"]) <> " }"]
@@ -186,10 +186,12 @@ spec_T = describe "T enum" $ do
             <> "g = graph.traversal(); "
           )
         body = toGremlin $ mapper $. sV' [] $ source "g"
-    specFor :: (FromGraphSON a, Eq a, Show a) => String -> Walk Transform AVertex a -> [a] -> SpecWith (String,Int)
-    specFor desc mapper expected = specify desc $ withClient $ \client -> do
+    specFor' :: (FromGraphSON a, Eq b, Show b) => String -> Walk Transform AVertex a -> (a -> b) -> [b] -> SpecWith (String,Int)
+    specFor' desc mapper convResult expected = specify desc $ withClient $ \client -> do
       got <- WS.slurpResults =<< WS.submit client (prefixedTraversal mapper) Nothing
-      got `shouldBe` expected
+      (map convResult got) `shouldBe` expected
+    specFor :: (FromGraphSON a, Eq a, Show a) => String -> Walk Transform AVertex a -> [a] -> SpecWith (String,Int)
+    specFor desc mapper expected = specFor' desc mapper id expected
 
 spec_P :: SpecWith (String,Int)
 spec_P = describe "P class" $ specify "pNot, pEq, pTest" $ withClient $ \client -> do
