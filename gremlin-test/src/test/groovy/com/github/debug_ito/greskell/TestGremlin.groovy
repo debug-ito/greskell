@@ -5,7 +5,9 @@ import static org.junit.Assert.assertThat;
 import static org.hamcrest.CoreMatchers.*;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
+import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
+import org.apache.tinkerpop.gremlin.process.traversal.P;
 
 
 public class TestGremlin {
@@ -99,5 +101,36 @@ public class TestGremlin {
                .map({ it.get().objects() }).toList(), is([["marko"]]);
     assertThat g.V().has("name", "marko").path().by(__.outE("knows").order().by("weight",Order.decr).inV().values("name"))
                .map({ it.get().objects() }).toList(), is([["josh"]]);
+  }
+
+  @Test
+  public void addE_traversal_takes_input_to_addE() throws Exception {
+    def g = MyModern.make().traversal();
+    def edges = g.V().has("name", P.within("marko", "peter", "josh"))
+                .addE("new_edge").from(__.outE("created").order().by("weight", Order.incr).inV()).toList();
+    // The traversal inside .from() yields 2 anchor vertices for
+    // "josh" (namely, "lop" and "ripple"), but only the first vertex
+    // is used for the anchor. As a result, .addE() always creates
+    // exactly one edge for each input Vertex.
+    assertThat edges.size(), is(3);
+    edges.each { e ->
+      assertThat((e instanceof Edge), is(true));
+      assertThat(e.label(), is("new_edge"));
+    };
+    def pairs = edges.collect { e -> return (String)(e.outVertex().value("name")) + "->" + (String)(e.inVertex().value("name")) };
+    assertThat pairs.sort(), is(["lop->josh", "lop->marko", "lop->peter"]);
+    assertThat(g.E().hasLabel("new_edge").toList().size(), is(3));
+  }
+
+  @Test
+  public void addE_traversal_throws_error_if_it_yields_no_result() throws Exception {
+    def g = MyModern.make().traversal();
+    try {
+      g.V().has("name", "vadas").addE("new_edge").from(__.out("created")).iterate();
+      fail("this operation is supposed to throw an exception");
+    }catch(Exception e) {
+      // expected.
+      ;
+    }
   }
 }
