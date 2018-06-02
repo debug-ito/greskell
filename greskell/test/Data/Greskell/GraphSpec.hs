@@ -14,7 +14,8 @@ import Data.Greskell.Graph
     AEdge(..), AVertexProperty(..), AVertex(..)
   )
 import Data.Greskell.GraphSON
-  ( nonTypedGraphSON, typedGraphSON, typedGraphSON'
+  ( nonTypedGraphSON, typedGraphSON, typedGraphSON',
+    nonTypedGValue, typedGValue', GValueBody(..)
   )
 
 main :: IO ()
@@ -123,27 +124,27 @@ spec_AEdge = describe "AEdge" $ do
   it "should parse GraphSON v1" $ do
     let expected = nonTypedGraphSON
                    $ AEdge
-                   { aeId = nonTypedGraphSON $ toJSON (13 :: Int),
+                   { aeId = nonTypedGValue $ GNumber 13,
                      aeLabel = "develops",
                      aeInVLabel = "software",
                      aeOutVLabel = "person",
-                     aeInV = nonTypedGraphSON $ toJSON (10 :: Int),
-                     aeOutV = nonTypedGraphSON $ toJSON (1 :: Int),
+                     aeInV = nonTypedGValue $ GNumber 10,
+                     aeOutV = nonTypedGValue $ GNumber 1,
                      aeProperties = putProperty
-                                    (AProperty "since" $ nonTypedGraphSON $ toJSON (2009 :: Int))
+                                    (AProperty "since" $ nonTypedGValue $ GNumber 2009)
                                     $ mempty
                    }
     loadGraphSON "edge_v1.json" `shouldReturn` Right expected
   let expected_v23 = typedGraphSON
                      $ AEdge
-                     { aeId = typedGraphSON' "g:Int32" $ toJSON (13 :: Int),
+                     { aeId = typedGValue' "g:Int32" $ GNumber 13,
                        aeLabel = "develops",
                        aeInVLabel = "software",
                        aeOutVLabel = "person",
-                       aeInV = typedGraphSON' "g:Int32" $ toJSON (10 :: Int),
-                       aeOutV = typedGraphSON' "g:Int32" $ toJSON (1 :: Int),
+                       aeInV = typedGValue' "g:Int32" $ GNumber 10,
+                       aeOutV = typedGValue' "g:Int32" $ GNumber 1,
                        aeProperties = putProperty
-                                      (AProperty "since" $ typedGraphSON' "g:Int32" $ toJSON (2009 :: Int))
+                                      (AProperty "since" $ typedGValue' "g:Int32" $ GNumber 2009)
                                       $ mempty
                      }
   it "should parse GraphSON v2" $ do
@@ -153,31 +154,39 @@ spec_AEdge = describe "AEdge" $ do
 
 spec_AProperty :: Spec
 spec_AProperty = describe "AProperty" $ do
-  it "should parse GraphSON v1" $ do
-    let ex = nonTypedGraphSON $ AProperty "since" $ nonTypedGraphSON (2009 :: Int)
+  it "should parse GraphSON v1 (GValue)" $ do
+    let ex = nonTypedGraphSON $ AProperty "since" $ nonTypedGValue $ GNumber 2009
     loadGraphSON "property_v1.json" `shouldReturn` Right ex
-  let ex23 = typedGraphSON $ AProperty "since" $ typedGraphSON' "g:Int32" (2009 :: Int)
-  it "should parse GraphSON v2" $ do
+  it "should parse GraphSON v1 (bare Int)" $ do
+    let ex = nonTypedGraphSON $ AProperty "since" $ (2009 :: Int)
+    loadGraphSON "property_v1.json" `shouldReturn` Right ex
+  let ex23 = typedGraphSON $ AProperty "since" $ typedGValue' "g:Int32" $ GNumber 2009
+      ex23_nowrap = typedGraphSON $ AProperty "since" $ (2009 :: Int)
+  it "should parse GraphSON v2 (GValue)" $ do
     loadGraphSON "property_v2.json" `shouldReturn` Right ex23
-  it "should parse GraphSON v3" $ do
+  it "should parse GraphSON v2 (bare Int)" $ do
+    loadGraphSON "property_v2.json" `shouldReturn` Right ex23_nowrap
+  it "should parse GraphSON v3 (GValue)" $ do
     loadGraphSON "property_v3.json" `shouldReturn` Right ex23
+  it "should parse GraphSON v3 (bare Int)" $ do
+    loadGraphSON "property_v3.json" `shouldReturn` Right ex23_nowrap
 
 spec_AVertexProperty :: Spec
 spec_AVertexProperty = describe "AVertexProperty" $ do
   it "should parse GraphSON v1" $ do
     let ex = nonTypedGraphSON $
              AVertexProperty
-             { avpId = nonTypedGraphSON $ toJSON (0 :: Int),
+             { avpId = nonTypedGValue $ GNumber 0,
                avpLabel = "name",
-               avpValue = nonTypedGraphSON $ toJSON ("marko" :: Text),
+               avpValue = nonTypedGValue $ GString "marko",
                avpProperties = mempty
              }
     loadGraphSON "vertex_property_v1.json" `shouldReturn` Right ex
   let ex23 = typedGraphSON $
              AVertexProperty
-             { avpId = typedGraphSON' "g:Int64" $ toJSON (0 :: Int),
+             { avpId = typedGValue' "g:Int64" $ GNumber 0,
                avpLabel = "name",
-               avpValue = nonTypedGraphSON $ toJSON ("marko" :: Text),
+               avpValue = nonTypedGValue $ GString "marko",
                avpProperties = mempty
              }
   it "should parse GraphSON v2" $ do
@@ -190,48 +199,48 @@ spec_AVertex = describe "AVertex" $ do
   it "should parse GraphSON v1" $ do
     let ex = nonTypedGraphSON $
              AVertex
-             { avId = nonTypedGraphSON $ toJSON (1 :: Int),
+             { avId = nonTypedGValue $ GNumber 1,
                avLabel = "person",
                avProperties = foldr putProperty mempty
                               [ AVertexProperty
-                                { avpId = nonTypedGraphSON $ toJSON (0 :: Int),
+                                { avpId = nonTypedGValue $ GNumber 0,
                                   avpLabel = "name",
-                                  avpValue = nonTypedGraphSON $ toJSON ("marko" :: Text),
+                                  avpValue = nonTypedGValue $ GString "marko",
                                   avpProperties = mempty
                                 },
                                 AVertexProperty
-                                { avpId = nonTypedGraphSON $ toJSON (6 :: Int),
+                                { avpId = nonTypedGValue $ GNumber 6,
                                   avpLabel = "location",
-                                  avpValue = nonTypedGraphSON $ toJSON ("san diego" :: Text),
+                                  avpValue = nonTypedGValue $ GString "san diego",
                                   avpProperties = foldr putProperty mempty
-                                                  [ AProperty "startTime" $ nonTypedGraphSON $ toJSON (1997 :: Int),
-                                                    AProperty "endTime" $ nonTypedGraphSON $ toJSON (2001 :: Int)
+                                                  [ AProperty "startTime" $ nonTypedGValue $ GNumber 1997,
+                                                    AProperty "endTime" $ nonTypedGValue $ GNumber 2001
                                                   ]
                                 },
                                 AVertexProperty
-                                { avpId = nonTypedGraphSON $ toJSON (7 :: Int),
+                                { avpId = nonTypedGValue $ GNumber 7,
                                   avpLabel = "location",
-                                  avpValue = nonTypedGraphSON $ toJSON ("santa cruz" :: Text),
+                                  avpValue = nonTypedGValue $ GString "santa cruz",
                                   avpProperties = foldr putProperty mempty
-                                                  [ AProperty "startTime" $ nonTypedGraphSON $ toJSON (2001 :: Int),
-                                                    AProperty "endTime" $ nonTypedGraphSON $ toJSON (2004 :: Int)
+                                                  [ AProperty "startTime" $ nonTypedGValue $ GNumber 2001,
+                                                    AProperty "endTime" $ nonTypedGValue $ GNumber 2004
                                                   ]
                                 },
                                 AVertexProperty
-                                { avpId = nonTypedGraphSON $ toJSON (8 :: Int),
+                                { avpId = nonTypedGValue $ GNumber 8,
                                   avpLabel = "location",
-                                  avpValue = nonTypedGraphSON $ toJSON ("brussels" :: Text),
+                                  avpValue = nonTypedGValue $ GString "brussels",
                                   avpProperties = foldr putProperty mempty
-                                                  [ AProperty "startTime" $ nonTypedGraphSON $ toJSON (2004 :: Int),
-                                                    AProperty "endTime" $ nonTypedGraphSON $ toJSON (2005 :: Int)
+                                                  [ AProperty "startTime" $ nonTypedGValue $ GNumber 2004,
+                                                    AProperty "endTime" $ nonTypedGValue $ GNumber 2005
                                                   ]
                                 },
                                 AVertexProperty
-                                { avpId = nonTypedGraphSON $ toJSON (9 :: Int),
+                                { avpId = nonTypedGValue $ GNumber 9,
                                   avpLabel = "location",
-                                  avpValue = nonTypedGraphSON $ toJSON ("santa fe" :: Text),
+                                  avpValue = nonTypedGValue $ GString "santa fe",
                                   avpProperties = foldr putProperty mempty
-                                                  [ AProperty "startTime" $ nonTypedGraphSON $ toJSON (2005 :: Int)
+                                                  [ AProperty "startTime" $ nonTypedGValue $ GNumber 2005
                                                   ]
                                 }
                               ]
@@ -239,48 +248,48 @@ spec_AVertex = describe "AVertex" $ do
     loadGraphSON "vertex_v1.json" `shouldReturn` Right ex
   let ex23 = typedGraphSON $
              AVertex
-             { avId = typedGraphSON' "g:Int32" $ toJSON (1 :: Int),
+             { avId = typedGValue' "g:Int32" $ GNumber 1,
                avLabel = "person",
                avProperties = foldr putProperty mempty
                               [ AVertexProperty
-                                { avpId = typedGraphSON' "g:Int64" $ toJSON (0 :: Int),
+                                { avpId = typedGValue' "g:Int64" $ GNumber 0,
                                   avpLabel = "name",
-                                  avpValue = nonTypedGraphSON $ toJSON ("marko" :: Text),
+                                  avpValue = nonTypedGValue $ GString "marko",
                                   avpProperties = mempty
                                 },
                                 AVertexProperty
-                                { avpId = typedGraphSON' "g:Int64" $ toJSON (6 :: Int),
+                                { avpId = typedGValue' "g:Int64" $ GNumber 6,
                                   avpLabel = "location",
-                                  avpValue = nonTypedGraphSON $ toJSON ("san diego" :: Text),
+                                  avpValue = nonTypedGValue $ GString "san diego",
                                   avpProperties = foldr putProperty mempty
-                                                  [ AProperty "startTime" $ typedGraphSON' "g:Int32" $ toJSON (1997 :: Int),
-                                                    AProperty "endTime" $ typedGraphSON' "g:Int32" $ toJSON (2001 :: Int)
+                                                  [ AProperty "startTime" $ typedGValue' "g:Int32" $ GNumber 1997,
+                                                    AProperty "endTime" $ typedGValue' "g:Int32" $ GNumber 2001
                                                   ]
                                 },
                                 AVertexProperty
-                                { avpId = typedGraphSON' "g:Int64" $ toJSON (7 :: Int),
+                                { avpId = typedGValue' "g:Int64" $ GNumber 7,
                                   avpLabel = "location",
-                                  avpValue = nonTypedGraphSON $ toJSON ("santa cruz" :: Text),
+                                  avpValue = nonTypedGValue $ GString "santa cruz",
                                   avpProperties = foldr putProperty mempty
-                                                  [ AProperty "startTime" $ typedGraphSON' "g:Int32" $ toJSON (2001 :: Int),
-                                                    AProperty "endTime" $ typedGraphSON' "g:Int32" $ toJSON (2004 :: Int)
+                                                  [ AProperty "startTime" $ typedGValue' "g:Int32" $ GNumber 2001,
+                                                    AProperty "endTime" $ typedGValue' "g:Int32" $ GNumber 2004
                                                   ]
                                 },
                                 AVertexProperty
-                                { avpId = typedGraphSON' "g:Int64" $ toJSON (8 :: Int),
+                                { avpId = typedGValue' "g:Int64" $ GNumber 8,
                                   avpLabel = "location",
-                                  avpValue = nonTypedGraphSON $ toJSON ("brussels" :: Text),
+                                  avpValue = nonTypedGValue $ GString "brussels",
                                   avpProperties = foldr putProperty mempty
-                                                  [ AProperty "startTime" $ typedGraphSON' "g:Int32" $ toJSON (2004 :: Int),
-                                                    AProperty "endTime" $ typedGraphSON' "g:Int32" $ toJSON (2005 :: Int)
+                                                  [ AProperty "startTime" $ typedGValue' "g:Int32" $ GNumber 2004,
+                                                    AProperty "endTime" $ typedGValue' "g:Int32" $ GNumber 2005
                                                   ]
                                 },
                                 AVertexProperty
-                                { avpId = typedGraphSON' "g:Int64" $ toJSON (9 :: Int),
+                                { avpId = typedGValue' "g:Int64" $ GNumber 9,
                                   avpLabel = "location",
-                                  avpValue = nonTypedGraphSON $ toJSON ("santa fe" :: Text),
+                                  avpValue = nonTypedGValue $ GString "santa fe",
                                   avpProperties = foldr putProperty mempty
-                                                  [ AProperty "startTime" $ typedGraphSON' "g:Int32" $ toJSON (2005 :: Int)
+                                                  [ AProperty "startTime" $ typedGValue' "g:Int32" $ GNumber 2005
                                                   ]
                                 }
                               ]
