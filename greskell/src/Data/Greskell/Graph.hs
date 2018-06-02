@@ -264,6 +264,8 @@ class FromGraphSONWithKey a where
 
 
 -- | General simple property type you can use for 'Property' class.
+--
+-- If you are not sure about the type @v@, just use 'GValue'.
 data AProperty v =
   AProperty
   { apKey :: Text,
@@ -305,6 +307,8 @@ instance Traversable AProperty where
 
 -- | General vertex property type you can use for VertexProperty,
 -- based on aeson data types.
+--
+-- If you are not sure about the type @v@, just use 'GValue'.
 data AVertexProperty v =
   AVertexProperty
   { avpId :: GValue,
