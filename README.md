@@ -262,7 +262,10 @@ In the above example, `sV` and `gOut` are polymorphic with `Vertex` constraint, 
 To support GraphSON decoding, we introduced a data type called `GraphSON`. `GraphSON a` has data of type `a` and optional "type string" that describes the type of that data.
 
 ```haskell GraphSON
-import Data.Greskell.GraphSON (GraphSON(..))
+import Data.Greskell.GraphSON
+  ( GraphSON(..),
+    nonTypedGValue, typedGValue', GValueBody(GNumber, GString)
+  )
 import Data.Greskell.Graph
   ( AVertex(..), AVertexProperty(..),
     fromProperties
@@ -313,13 +316,13 @@ decoded_vertex_GraphSONv1 =
   { gsonType = Nothing,
     gsonValue =
       AVertex 
-      { avId = GraphSON Nothing (A.Number 1),
+      { avId = nonTypedGValue $ GNumber 1,
         avLabel = "person",
         avProperties = fromProperties [
           AVertexProperty
-          { avpId = GraphSON Nothing (A.Number 0),
+          { avpId = nonTypedGValue $ GNumber 0,
             avpLabel = "name",
-            avpValue = GraphSON Nothing (A.String "marko"),
+            avpValue = nonTypedGValue $ GString "marko",
             avpProperties = mempty
           }
         ]
@@ -331,13 +334,13 @@ decoded_vertex_GraphSONv3 =
   { gsonType = Just "g:Vertex",
     gsonValue =
       AVertex 
-      { avId = GraphSON (Just "g:Int32") (A.Number 1),
+      { avId = typedGValue' "g:Int32" $ GNumber 1,
         avLabel = "person",
         avProperties = fromProperties [
           AVertexProperty
-          { avpId = GraphSON (Just "g:Int64") (A.Number 0),
+          { avpId = typedGValue' "g:Int64" $ GNumber 0,
             avpLabel = "name",
-            avpValue = GraphSON Nothing (A.String "marko"),
+            avpValue = nonTypedGValue $ GString "marko",
             avpProperties = mempty
           }
         ]
@@ -367,7 +370,7 @@ import Data.Greskell.Graph
     AVertexProperty, AVertex(..), AProperty,
     parseOneValue
   )
-import Data.Greskell.GraphSON (GraphSON(..))
+import Data.Greskell.GraphSON (GraphSON(..), FromGraphSON(parseGraphSON))
 import Data.Greskell.Greskell (toGremlin)
 import Data.Greskell.GTraversal
   ( GTraversal, Transform,
@@ -415,7 +418,7 @@ instance A.FromJSON Person where
       fromAVertex :: AVertex -> A.Parser Person
       fromAVertex av = do
         guard (avLabel av == "person")
-        pid <- A.parseJSON $ gsonValue $ avId av
+        pid <- parseGraphSON $ avId av
         name <- parseOneValue "name" $ avProperties av
         age <- parseOneValue "age" $ avProperties av
         return $ Person pid name age
