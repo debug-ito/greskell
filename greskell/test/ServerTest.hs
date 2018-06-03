@@ -23,19 +23,23 @@ import Data.Greskell.Gremlin
     Predicate(..), pLt, pAnd, pGte, pNot, pEq, pTest
   )
 import Data.Greskell.Greskell
-  ( toGremlin, Greskell, toGreskell,
-    true, false, list, value, single, number,
+  ( toGremlin, Greskell, toGreskell, ToGreskell(..),
+    true, false, list, value, single, number, gvalue',
     unsafeMethodCall, unsafeGreskell
   )
 import Data.Greskell.Graph
-  ( AVertex, T, tId, tLabel, tKey, tValue
+  ( AVertex, AEdge, AProperty(..),
+    T, tId, tLabel, tKey, tValue
   )
-import Data.Greskell.GraphSON (FromGraphSON, gValueBody, GValueBody(..))
+import Data.Greskell.GraphSON
+  ( FromGraphSON, gValueBody, GValueBody(..), nonTypedGValue, GValue
+  )
 import Data.Greskell.GTraversal
-  ( Walk, GTraversal,
-    source, sV', ($.), gOrder, gBy1,
+  ( Walk, GTraversal, SideEffect,
+    source, sV', sE', gV', sAddV', gAddE', gTo, gHasValue,
+    ($.), gOrder, gBy1,
     Transform, unsafeWalk, unsafeGTraversal,
-    gProperties
+    gProperties, gProperty, liftWalk
   )
 
 main :: IO ()
@@ -48,6 +52,7 @@ spec = withEnv $ do
   spec_predicate
   spec_T
   spec_P
+  spec_graph
 
 
 spec_basics :: SpecWith (String,Int)
@@ -199,3 +204,58 @@ spec_P = describe "P class" $ specify "pNot, pEq, pTest" $ withClient $ \client 
       test v = WS.slurpResults =<< WS.submit client (pTest p $ v) Nothing
   test (number 10) `shouldReturn` [False]
   test (number 15) `shouldReturn` [True]
+
+spec_graph :: SpecWith (String,Int)
+spec_graph = do
+  specify "AProperty (edge properties)" $ withClient $ \client -> do
+    let trav = gProperties [] $. sE' [] $ source "g"
+        prop t = AProperty "condition" $ nonTypedGValue $ GString t
+        expected = map prop [ ">=0.11.2.1",
+                              ">=1.2.2.1",
+                              ">=1.2.3"
+                            ]
+    got <- WS.slurpResults =<< WS.submit client (withPrelude trav) Nothing
+    got `shouldBe` expected
+  where
+    withPrelude :: (ToGreskell a) => a -> Greskell (GreskellReturn a)
+    withPrelude orig = unsafeGreskell (toGremlin prelude <> toGremlin orig)
+    prelude :: Greskell ()
+    prelude = unsafeGreskell $ mconcat $ map (<> "; ")
+              ( [ "graph = org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph.open()",
+                  "g = graph.traversal()",
+                  "graph.addVertex(id, 1, label, 'package')",
+                  "graph.addVertex(id, 2, label, 'package')",
+                  "graph.addVertex(id, 3, label, 'package')",
+                  finalize $ setName 1 "greskell",
+                  finalize $ setName 2 "aeson",
+                  finalize $ setName 3 "text",
+                  finalize $ dependsOn 1 2 ">=0.11.2.1",
+                  finalize $ dependsOn 1 3 ">=1.2.2.1",
+                  finalize $ dependsOn 2 3 ">=1.2.3"
+                ]
+                ++ addVersion 1 "0.1.1.0" "2018-04-08"
+                ++ addVersion 2 "1.3.1.1" "2018-05-10"
+                ++ addVersion 2 "1.2.2.0" "2017-09-20"
+                ++ addVersion 3 "1.2.3.0" "2017-12-27"
+                ++ addVersion 3 "1.2.2.0" "2017-12-23"
+              )
+    finalize :: ToGreskell a => a -> Text
+    finalize gt = (toGremlin gt) <> ".iterate()"
+    num :: Integer -> Greskell GValue
+    num = gvalue' . GNumber . fromInteger
+    setName :: Integer -> Greskell Text -> GTraversal SideEffect () AVertex
+    setName vid name = gProperty "name" name $. liftWalk $ sV' [num vid] $ source "g"
+    dependsOn :: Integer -> Integer -> Greskell Text -> GTraversal SideEffect () AEdge
+    dependsOn from_id to_id version_cond =
+      gProperty "condition" version_cond
+      $. (gAddE' "depends_on" $ gTo (gV' [num to_id]))
+      $. liftWalk $ sV' [num from_id] $ source "g"
+    addVersion :: Integer -> Greskell Text -> Greskell Text -> [Text]
+    addVersion vid ver date =
+      [ finalize $ gProperty "version" ver $. liftWalk $ sV' [num vid] $ source "g",
+        finalize $ gProperty "date" date $. liftWalk $ gHasValue ver $. gProperties ["version"] $. sV' [num vid] $ source "g"
+      ]
+
+
+
+  
