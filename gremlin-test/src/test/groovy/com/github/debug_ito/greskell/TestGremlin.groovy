@@ -5,6 +5,7 @@ import static org.junit.Assert.assertThat;
 import static org.hamcrest.CoreMatchers.*;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
@@ -132,5 +133,32 @@ public class TestGremlin {
       // expected.
       ;
     }
+  }
+
+  @Test
+  public void V_method_flatMaps_the_input_traverser() throws Exception {
+    def g = MyModern.make().traversal();
+    def paths = g.E().hasLabel("created").outV().as("creator").V().has("name", P.within("vadas", "ripple")).path().toList();
+    def paths_str = paths.collect { p ->
+      p.objects().collect { elem ->
+        if(elem instanceof Vertex) {
+          return "v(" + (String)(((Vertex)elem).value("name")) + ")";
+        }else if(elem instanceof Edge) {
+          def e = (Edge)elem;
+          return "e(" + (String)e.outVertex().value("name") + "-" + e.label() + "->" +
+            (String)e.inVertex().value("name") + ")";
+        }
+      }.join(",");
+    };
+    assertThat paths_str.sort(), is([
+      "e(josh-created->lop),v(josh),v(ripple)",
+      "e(josh-created->lop),v(josh),v(vadas)",
+      "e(josh-created->ripple),v(josh),v(ripple)",
+      "e(josh-created->ripple),v(josh),v(vadas)",
+      "e(marko-created->lop),v(marko),v(ripple)",
+      "e(marko-created->lop),v(marko),v(vadas)",
+      "e(peter-created->lop),v(peter),v(ripple)",
+      "e(peter-created->lop),v(peter),v(vadas)",
+     ]);
   }
 }
