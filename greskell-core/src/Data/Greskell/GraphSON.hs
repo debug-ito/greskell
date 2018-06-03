@@ -486,3 +486,9 @@ instance FromGraphSON UUID where
       where
         failure = fail ("Failed to parse into UUID: " ++ unpack t)
     b -> fail ("Expected GString, but got " ++ show b)
+
+-- | For any input 'GValue', 'parseGraphSON' returns @()@. For
+-- example, you can use it to ignore data you get from the Gremlin
+-- server.
+instance FromGraphSON () where
+  parseGraphSON _ = return ()

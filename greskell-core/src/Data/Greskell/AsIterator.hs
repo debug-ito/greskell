@@ -51,6 +51,8 @@ import Data.Greskell.GMap (GMap, GMapEntry)
 class AsIterator a where
   type IteratorItem a
 
+instance AsIterator () where
+  type IteratorItem () = ()
 instance AsIterator Int where
   type IteratorItem Int = Int
 instance AsIterator Text where
