@@ -88,6 +88,8 @@ module Data.Greskell.GTraversal
          gRange,
          -- ** Transformation steps
          gFlatMap,
+         gV,
+         gV',
          -- ** Accessor steps
          gValues,
          gProperties,
@@ -109,6 +111,11 @@ module Data.Greskell.GTraversal
          -- ** Graph manipulation steps
          gAddV,
          gAddV',
+         gAddE,
+         gAddE',
+         AddAnchor,
+         gFrom,
+         gTo,
          gDrop,
          gDropP,
          gProperty,
@@ -794,6 +801,16 @@ gFlatMap gt = unsafeWalk "flatMap" [travToG gt]
 -- gFlatMap' :: (ToGTraversal g, Split c m, Lift Transform p, Lift m p) => g c s e -> Walk p s e
 -- gFlatMap = undefined
 
+-- | @.V@ step.
+--
+-- For each input item, @.V@ step emits vertices selected by the
+-- argument (or all vertices if the empty list is passed.)
+gV :: Vertex v => [Greskell (ElementID v)] -> Walk Transform s v
+gV ids = unsafeWalk "V" $ map toGremlin ids
+
+-- | Monomorphic version of 'gV'.
+gV' :: [Greskell GValue] -> Walk Transform s AVertex
+gV' = gV
 
 -- | @.values@ step.
 --
@@ -925,3 +942,41 @@ gProperty :: Element e
           -> Greskell v -- ^ value of the property
           -> Walk SideEffect e e
 gProperty key val = unsafeWalk "property" [toGremlin key, toGremlin val]
+
+
+-- | Vertex anchor for 'gAddE'. It corresponds to @.from@ or @.to@
+-- step following an @.addE@ step.
+--
+-- Type @s@ is the input Vertex for the @.addE@ step. Type @e@ is the
+-- type of the anchor Vertex that the 'AddAnchor' yields. So, @.addE@
+-- step creates an edge between @s@ and @e@.
+data AddAnchor s e = AddAnchor Text (GTraversal Transform s e)
+
+anchorStep :: WalkType c => AddAnchor s e -> Walk c edge edge
+anchorStep (AddAnchor step_name subtraversal) = unsafeWalk step_name [toGremlin subtraversal]
+
+-- | @.from@ step with a traversal.
+gFrom :: (ToGTraversal g) => g Transform s e -> AddAnchor s e
+gFrom = AddAnchor "from" . toGTraversal
+
+-- | @.to@ step with a traversal.
+gTo :: (ToGTraversal g) => g Transform s e -> AddAnchor s e
+gTo = AddAnchor "to" . toGTraversal
+
+-- | @.addE@ step.
+--
+-- >>> let key_name = "name" :: Key AVertex Text
+-- >>> toGremlin (source "g" & sV' [] & liftWalk &. gAddE' "knows" (gFrom $ gV' [] >>> gHas2 key_name "marko"))
+-- "g.V().addE(\"knows\").from(__.V().has(\"name\",\"marko\"))"
+-- >>> toGremlin (source "g" & sV' [] &. gHas2 key_name "marko" & liftWalk &. gAddE' "knows" (gTo $ gV' []))
+-- "g.V().has(\"name\",\"marko\").addE(\"knows\").to(__.V())"
+gAddE :: (Vertex vs, Vertex ve, Edge e)
+      => Greskell Text
+      -> AddAnchor vs ve
+      -> Walk SideEffect vs e
+gAddE label anch = (unsafeWalk "addE" [toGremlin label]) >>> anchorStep anch
+
+-- | Monomorphic version of 'gAddE'
+gAddE' :: Greskell Text -> AddAnchor AVertex AVertex -> Walk SideEffect AVertex AEdge
+gAddE' = gAddE
+
