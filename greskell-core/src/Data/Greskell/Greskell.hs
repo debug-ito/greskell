@@ -23,8 +23,10 @@ module Data.Greskell.Greskell
          single,
          number,
          value,
+         valueInt,
          gvalue,
          gvalue',
+         gvalueInt,
          -- * Unsafe constructors
          unsafeGreskell,
          unsafeGreskellLazy,
@@ -209,6 +211,11 @@ number = unsafeGreskell . pack . show
 -- "[10.0,20.0,30.0]"
 -- >>> toGremlin $ value $ Aeson.Object mempty
 -- "[:]"
+--
+-- Note that 'Aeson.Number' does not distinguish integers from
+-- floating-point numbers, so 'value' function may format an integer
+-- as a floating-point number. To ensure formatting as integers, use
+-- 'valueInt'.
 value :: Value -> Greskell Value
 value Aeson.Null = unsafeGreskellLazy "null"
 value (Aeson.Bool b) = unsafeToValue (if b then true else false)
@@ -222,9 +229,20 @@ value (Aeson.Object obj)
     toGroovyMap pairs = "[" <> TL.intercalate "," (map toPairText pairs) <> "]"
     toPairText (key, val) = (toGremlinLazy $ string key) <> ":" <> (toGremlinLazy $ value val)
 
+-- | Integer literal as 'Value' type.
+--
+-- >>> toGremlin $ valueInt (100 :: Int)
+-- "100"
+valueInt :: Integral a => a -> Greskell Value
+valueInt n = fmap toValue $ fromIntegral n
+  where
+    toValue :: Integer -> Value
+    toValue = const Aeson.Null
+
 -- | 'GValue' literal.
 --
--- All GraphSON wrappers in 'GValue' are just ignored.
+-- Similar to 'value' function, but it ignores all GraphSON wrappers
+-- in 'GValue'.
 gvalue :: GValue -> Greskell GValue
 gvalue = fmap phantomToGValue . value . unwrapAll
   where
@@ -234,6 +252,16 @@ gvalue = fmap phantomToGValue . value . unwrapAll
 -- 'Nothing'.
 gvalue' :: GValueBody -> Greskell GValue
 gvalue' = gvalue . nonTypedGValue
+
+-- | Integer literal as 'GValue' type.
+--
+-- >>> toGremlin $ gvalueInt (256 :: Int)
+-- "256"
+gvalueInt :: Integral a => a -> Greskell GValue
+gvalueInt n = fmap toGValue $ fromIntegral n
+  where
+    toGValue :: Integer -> GValue
+    toGValue = const $ nonTypedGValue $ GNull
 
 unsafeToValue :: Greskell a -> Greskell Value
 unsafeToValue = fmap (const Aeson.Null)
