@@ -24,7 +24,7 @@ import Data.Greskell.Gremlin
   )
 import Data.Greskell.Greskell
   ( toGremlin, Greskell, toGreskell, ToGreskell(..),
-    true, false, list, value, single, number, gvalue',
+    true, false, list, value, single, number, gvalueInt,
     unsafeMethodCall, unsafeGreskell
   )
 import Data.Greskell.Graph
@@ -215,7 +215,18 @@ spec_graph = do
                               ">=1.2.3"
                             ]
     got <- WS.slurpResults =<< WS.submit client (withPrelude trav) Nothing
-    got `shouldBe` expected
+    got `shouldMatchList` expected
+  specify "AProperty (vertex property meta-properties)" $ withClient $ \client -> do
+    let trav = gProperties [] $. gProperties [] $. sV' [] $ source "g"
+        prop t = AProperty "date" $ nonTypedGValue $ GString t
+        expected = map prop [ "2018-04-08",
+                              "2018-05-10",
+                              "2017-09-20",
+                              "2017-12-27",
+                              "2017-12-23"
+                            ]
+    got <- WS.slurpResults =<< WS.submit client (withPrelude trav) Nothing
+    got `shouldMatchList` expected
   where
     withPrelude :: (ToGreskell a) => a -> Greskell (GreskellReturn a)
     withPrelude orig = unsafeGreskell (toGremlin prelude <> toGremlin orig)
@@ -242,7 +253,7 @@ spec_graph = do
     finalize :: ToGreskell a => a -> Text
     finalize gt = (toGremlin gt) <> ".iterate()"
     num :: Integer -> Greskell GValue
-    num = gvalue' . GNumber . fromInteger
+    num = gvalueInt
     setName :: Integer -> Greskell Text -> GTraversal SideEffect () AVertex
     setName vid name = gProperty "name" name $. liftWalk $ sV' [num vid] $ source "g"
     dependsOn :: Integer -> Integer -> Greskell Text -> GTraversal SideEffect () AEdge
