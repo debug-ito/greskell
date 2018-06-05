@@ -1,4 +1,4 @@
-{-# LANGUAGE TypeFamilies, OverloadedStrings, FlexibleInstances, GeneralizedNewtypeDeriving, DeriveTraversable #-}
+{-# LANGUAGE TypeFamilies, OverloadedStrings, FlexibleInstances, GeneralizedNewtypeDeriving, DeriveTraversable, GADTs #-}
 {-# OPTIONS_GHC -fno-warn-redundant-constraints #-}
 -- |
 -- Module: Data.Greskell.Graph
@@ -27,6 +27,9 @@ module Data.Greskell.Graph
          -- * Typed Key (accessor of a Property)
          Key(..),
          key,
+         -- ** key-value pair
+         KeyValue(..),
+         (=:),
          -- * Concrete data types
          --
          -- $concrete_types
@@ -77,6 +80,11 @@ import Data.Greskell.Greskell
   ( Greskell, unsafeGreskellLazy, string,
     ToGreskell(..)
   )
+
+-- $setup
+--
+-- >>> import Data.Greskell.Greskell (toGremlin)
+
 
 -- | @org.apache.tinkerpop.gremlin.structure.Element@ interface in a
 -- TinkerPop graph.
@@ -184,6 +192,19 @@ instance ToGreskell (Key a b) where
 -- | Create a 'Key' from a literal string.
 key :: Text -> Key a b
 key = Key . string
+
+
+-- | Pair of 'Key' and its value.
+--
+-- Type @a@ is the type of 'Element' that keeps the 'KeyValue'
+-- pair. It drops the type of the value, so that you can construct
+-- heterogeneous lists of key-value pairs for a given 'Element'.
+data KeyValue a where
+  KeyValue :: Key a b -> Greskell b -> KeyValue a
+
+-- | Constructor operator of 'KeyValue'.
+(=:) :: Key a b -> Greskell b -> KeyValue a
+(=:) = KeyValue
 
 -- $concrete_types
 --
