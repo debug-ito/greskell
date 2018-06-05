@@ -57,7 +57,6 @@ import Control.Applicative (empty, (<$>), (<*>), (<|>))
 import Data.Aeson (Value(..), FromJSON(..))
 import Data.Aeson.Types (Parser)
 import Data.Foldable (toList, Foldable(foldr), foldlM)
-import qualified Data.HashMap.Lazy as HML -- TODO. should it be lazy??
 import qualified Data.HashMap.Strict as HM
 import Data.List.NonEmpty (NonEmpty(..))
 import qualified Data.List.NonEmpty as NL
@@ -465,11 +464,11 @@ fromProperties = foldr putProperty mempty
 -- | Generic implementation of 'PropertyMap'. @t@ is the type of
 -- cardinality, @p@ is the type of 'Property' class and @v@ is the
 -- type of the property value.
-newtype PropertyMapGeneric t p v = PropertyMapGeneric (HML.HashMap Text (t (p v)))
+newtype PropertyMapGeneric t p v = PropertyMapGeneric (HM.HashMap Text (t (p v)))
                                  deriving (Show,Eq)
 
 instance Semigroup (t (p v)) => Semigroup (PropertyMapGeneric t p v) where
-  (PropertyMapGeneric a) <> (PropertyMapGeneric b) = PropertyMapGeneric $ HML.unionWith (<>) a b
+  (PropertyMapGeneric a) <> (PropertyMapGeneric b) = PropertyMapGeneric $ HM.unionWith (<>) a b
 
 instance Semigroup (t (p v)) => Monoid (PropertyMapGeneric t p v) where
   mempty = PropertyMapGeneric mempty
@@ -489,20 +488,20 @@ instance (Traversable t, Traversable p) => Traversable (PropertyMapGeneric t p) 
 
 putPropertyGeneric :: (Semigroup (t (p v)), Applicative t, Property p) => p v -> PropertyMapGeneric t p v -> PropertyMapGeneric t p v
 putPropertyGeneric prop (PropertyMapGeneric hm) =
-  PropertyMapGeneric $ HML.insertWith (<>) (propertyKey prop) (pure prop) hm
+  PropertyMapGeneric $ HM.insertWith (<>) (propertyKey prop) (pure prop) hm
 
 removePropertyGeneric :: Text -> PropertyMapGeneric t p v -> PropertyMapGeneric t p v
-removePropertyGeneric k (PropertyMapGeneric hm) = PropertyMapGeneric $ HML.delete k hm
+removePropertyGeneric k (PropertyMapGeneric hm) = PropertyMapGeneric $ HM.delete k hm
 
 allPropertiesGeneric :: Foldable t => PropertyMapGeneric t p v -> [p v]
-allPropertiesGeneric (PropertyMapGeneric hm) = concat $ map toList $ HML.elems hm
+allPropertiesGeneric (PropertyMapGeneric hm) = concat $ map toList $ HM.elems hm
 
 parsePropertiesGeneric :: (Property p, PropertyMap m, Monoid (m p v), GraphSONTyped (p v), FromGraphSON (p v), FromGraphSONWithKey (p v))
                        => (GValue -> Parser (Vector GValue))
                        -> GValue
                        -> Parser (m p v)
 parsePropertiesGeneric normalizeCardinality gv = case gValueBody gv of
-  GObject obj -> foldlM folder mempty $ HML.toList obj
+  GObject obj -> foldlM folder mempty $ HM.toList obj
   _ -> empty
   where
     folder pm (k, value) = fmap (foldr putProperty pm) $ traverse (parseProperty k) =<< normalizeCardinality value
@@ -534,7 +533,7 @@ newtype PropertyMapSingle p v = PropertyMapSingle (PropertyMapGeneric Semigroup.
                               deriving (Show,Eq,Semigroup,Monoid,Functor,Foldable,Traversable)
 
 instance PropertyMap PropertyMapSingle where
-  lookupOne k (PropertyMapSingle (PropertyMapGeneric hm)) = fmap Semigroup.getFirst $ HML.lookup k hm
+  lookupOne k (PropertyMapSingle (PropertyMapGeneric hm)) = fmap Semigroup.getFirst $ HM.lookup k hm
   lookupList k m = maybe [] return $ lookupOne k m
   putProperty p (PropertyMapSingle pg) = PropertyMapSingle $ putPropertyGeneric p pg
   removeProperty t (PropertyMapSingle pg) = PropertyMapSingle $ removePropertyGeneric t pg
@@ -564,7 +563,7 @@ newtype PropertyMapList p v = PropertyMapList (PropertyMapGeneric NonEmpty p v)
                             deriving (Show,Eq,Semigroup,Monoid,Functor,Foldable,Traversable)
 
 instance PropertyMap PropertyMapList where
-  lookupList k (PropertyMapList (PropertyMapGeneric hm)) = maybe [] NL.toList $ HML.lookup k hm
+  lookupList k (PropertyMapList (PropertyMapGeneric hm)) = maybe [] NL.toList $ HM.lookup k hm
   putProperty p (PropertyMapList pg) = PropertyMapList $ putPropertyGeneric p pg
   removeProperty t (PropertyMapList pg) = PropertyMapList $ removePropertyGeneric t pg
   allProperties (PropertyMapList pg) = allPropertiesGeneric pg
