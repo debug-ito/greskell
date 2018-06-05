@@ -29,7 +29,7 @@ import Data.Greskell.Greskell
   )
 import Data.Greskell.Graph
   ( AVertex, AEdge, AProperty(..),
-    T, tId, tLabel, tKey, tValue
+    T, tId, tLabel, tKey, tValue, cList, (=:)
   )
 import Data.Greskell.GraphSON
   ( FromGraphSON, gValueBody, GValueBody(..), nonTypedGValue, GValue
@@ -39,7 +39,7 @@ import Data.Greskell.GTraversal
     source, sV', sE', gV', sAddV', gAddE', gTo, gHasValue,
     ($.), gOrder, gBy1,
     Transform, unsafeWalk, unsafeGTraversal,
-    gProperties, gProperty, liftWalk
+    gProperties, gProperty, gPropertyV, liftWalk
   )
 
 main :: IO ()
@@ -250,7 +250,7 @@ spec_graph = do
                 ++ addVersion 3 "1.2.3.0" "2017-12-27"
                 ++ addVersion 3 "1.2.2.0" "2017-12-23"
               )
-    finalize :: ToGreskell a => a -> Text
+    finalize :: GTraversal c s e -> Text
     finalize gt = (toGremlin gt) <> ".iterate()"
     num :: Integer -> Greskell GValue
     num = gvalueInt
@@ -263,10 +263,6 @@ spec_graph = do
       $. liftWalk $ sV' [num from_id] $ source "g"
     addVersion :: Integer -> Greskell Text -> Greskell Text -> [Text]
     addVersion vid ver date =
-      [ finalize $ gProperty "version" ver $. liftWalk $ sV' [num vid] $ source "g",
-        finalize $ gProperty "date" date $. liftWalk $ gHasValue ver $. gProperties ["version"] $. sV' [num vid] $ source "g"
+      [ finalize $ gPropertyV (Just cList) "version" ver ["date" =: date] $. liftWalk $ sV' [num vid] $ source "g"
       ]
-
-
-
   
