@@ -119,6 +119,7 @@ module Data.Greskell.GTraversal
          gDrop,
          gDropP,
          gProperty,
+         gPropertyV,
          -- ** @.by@ steps
          
          -- | @.by@ steps are not 'Walk' on their own because they are
@@ -147,7 +148,8 @@ import qualified Data.Text.Lazy as TL
 import Data.Greskell.Graph
   ( Element(..), Vertex, Edge, Property(..),
     AVertex, AEdge,
-    T, Key
+    T, Key, Cardinality,
+    KeyValue(..)
   )
 import Data.Greskell.GraphSON (GValue)
 import Data.Greskell.Gremlin
@@ -166,7 +168,7 @@ import Data.Greskell.AsIterator (AsIterator(IteratorItem))
 -- >>> import Data.Function ((&))
 -- >>> import Data.Greskell.Greskell (gvalue')
 -- >>> import Data.Greskell.Gremlin (pBetween, pEq, pLte, oDecr, oIncr)
--- >>> import Data.Greskell.Graph (tId)
+-- >>> import Data.Greskell.Graph (tId, cList, (=:), AVertex, AVertexProperty)
 -- >>> import Data.Greskell.GraphSON (GValueBody(..))
 
 -- | @GraphTraversal@ class object of TinkerPop. It takes data @s@
@@ -943,6 +945,26 @@ gProperty :: Element e
           -> Walk SideEffect e e
 gProperty key val = unsafeWalk "property" [toGremlin key, toGremlin val]
 
+-- | @.property@ step for 'Vertex'.
+--
+-- >>> let key_location = "location" :: Key AVertex Text
+-- >>> let key_since = "since" :: Key (AVertexProperty Text) Text
+-- >>> let key_score = "score" :: Key (AVertexProperty Text) Int
+-- >>> toGremlin (source "g" & sV' [] & liftWalk &. gPropertyV (Just cList) key_location "New York" [key_since =: "2012-09-23", key_score =: 8])
+-- "g.V().property(list,\"location\",\"New York\",\"since\",\"2012-09-23\",\"score\",8)"
+gPropertyV :: (Vertex e, vp ~ ElementProperty e, Property vp, Element (vp v))
+           => Maybe (Greskell Cardinality) -- ^ cardinality of the vertex property.
+           -> Key e v -- ^ key of the vertex property
+           -> Greskell v -- ^ value of the vertex property
+           -> [KeyValue (vp v)] -- ^ optional meta-properties for the vertex property.
+           -> Walk SideEffect e e
+gPropertyV mcard key val metaprops = unsafeWalk "property" (arg_card ++ arg_keyval ++ arg_metaprops)
+  where
+    arg_card = maybe [] (\card -> [toGremlin card]) mcard
+    arg_keyval = [toGremlin key, toGremlin val]
+    arg_metaprops = expand =<< metaprops
+      where
+        expand (KeyValue meta_key meta_val) = [toGremlin meta_key, toGremlin meta_val]
 
 -- | Vertex anchor for 'gAddE'. It corresponds to @.from@ or @.to@
 -- step following an @.addE@ step.
