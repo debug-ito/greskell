@@ -19,6 +19,11 @@ module Data.Greskell.Graph
          tKey,
          tLabel,
          tValue,
+         -- * Cardinality Enum
+         Cardinality,
+         cList,
+         cSet,
+         cSingle,
          -- * Typed Key (accessor of a Property)
          Key(..),
          key,
@@ -130,6 +135,34 @@ tLabel = unsafeGreskellLazy "T.label"
 tValue :: (Element (p v), Property p) => Greskell (T (p v) v)
 tValue = unsafeGreskellLazy "T.value"
 
+-- | @org.apache.tinkerpop.gremlin.structure.VertexProperty.Cardinality@ enum.
+data Cardinality
+
+-- Developer note: while 'tId' creates a Greskell of "T.id", 'cList'
+-- creates just "list", not "VertexProperty.Cardinality.list". This is
+-- because Neptune (Amazon's cloud-based graph database) happens to
+-- support "list" but not "VertexProperty.Cardinality.list" (it
+-- supports "T.id", though.)
+-- See https://docs.aws.amazon.com/neptune/latest/userguide/access-graph-gremlin-differences.html
+--
+-- Future versions of greskell may support some configuration
+-- mechanism to control how to format Gremlin symbols such as those in
+-- Cardinality, T, Order, P, Direction etc.
+
+-- | @list@ Cardinality.
+--
+-- >>> toGremlin cList
+-- "list"
+cList :: Greskell Cardinality
+cList = unsafeGreskellLazy "list"
+
+-- | @set@ Cardinality.
+cSet :: Greskell Cardinality
+cSet = unsafeGreskellLazy "set"
+
+-- | @single@ Cardinality.
+cSingle :: Greskell Cardinality
+cSingle = unsafeGreskellLazy "single"
 
 -- | A property key accessing value @b@ in an Element @a@. In Gremlin,
 -- it's just a String type.
