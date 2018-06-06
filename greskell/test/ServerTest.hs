@@ -210,16 +210,16 @@ spec_graph :: SpecWith (String,Int)
 spec_graph = do
   specify "AProperty (edge properties)" $ withClient $ \client -> do
     let trav = gProperties [] $. sE' [] $ source "g"
-        prop t = AProperty "condition" $ nonTypedGValue $ GString t
+        prop t = AProperty "condition" $ GString t
         expected = map prop [ ">=0.11.2.1",
                               ">=1.2.2.1",
                               ">=1.2.3"
                             ]
     got <- WS.slurpResults =<< WS.submit client (withPrelude trav) Nothing
-    got `shouldMatchList` expected
+    (map (fmap gValueBody) got) `shouldMatchList` expected
   specify "AProperty (vertex property meta-properties)" $ withClient $ \client -> do
     let trav = gProperties [] $. gProperties [] $. sV' [] $ source "g"
-        prop t = AProperty "date" $ nonTypedGValue $ GString t
+        prop t = AProperty "date" $ GString t
         expected = map prop [ "2018-04-08",
                               "2018-05-10",
                               "2017-09-20",
@@ -227,7 +227,7 @@ spec_graph = do
                               "2017-12-23"
                             ]
     got <- WS.slurpResults =<< WS.submit client (withPrelude trav) Nothing
-    got `shouldMatchList` expected
+    (map (fmap gValueBody) got) `shouldMatchList` expected
   specify "AEdge" $ withClient $ \client -> do
     let trav = sE' [] $ source "g"
         expE outv inv cond = ("depends_on", "package", "package", outv, inv, props)
