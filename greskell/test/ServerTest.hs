@@ -28,7 +28,7 @@ import Data.Greskell.Greskell
     unsafeMethodCall, unsafeGreskell
   )
 import Data.Greskell.Graph
-  ( AVertex, AEdge(..), AProperty(..),
+  ( AVertex, AEdge(..), AProperty(..), AVertexProperty(..),
     T, tId, tLabel, tKey, tValue, cList, (=:),
     fromProperties
   )
@@ -243,7 +243,23 @@ spec_graph = do
                    ]
     got <- WS.slurpResults =<< WS.submit client (withPrelude trav) Nothing
     (map getE got) `shouldMatchList` expected
-  -- TODO: AVertexProperty, AVertex
+  specify "AVertexProperty" $ withClient $ \client -> do
+    let trav = gProperties [] $. sV' [] $ source "g"
+        getVP vp = (avpLabel vp, gValueBody $ avpValue vp, fmap gValueBody $ avpProperties vp)
+        expName val = ("name", GString val, mempty)
+        expVer val date = ("version", GString val, fromProperties [AProperty "date" $ GString date])
+        expected = [ expName "greskell",
+                     expName "aeson",
+                     expName "text",
+                     expVer "0.1.1.0" "2018-04-08",
+                     expVer "1.3.1.1" "2018-05-10",
+                     expVer "1.2.2.0" "2017-09-20",
+                     expVer "1.2.3.0" "2017-12-27",
+                     expVer "1.2.2.0" "2017-12-23"
+                   ]
+    got <- WS.slurpResults =<< WS.submit client (withPrelude trav) Nothing
+    (map getVP got) `shouldMatchList` expected
+  -- TODO: AVertex
   where
     withPrelude :: (ToGreskell a) => a -> Greskell (GreskellReturn a)
     withPrelude orig = unsafeGreskell (toGremlin prelude <> toGremlin orig)
