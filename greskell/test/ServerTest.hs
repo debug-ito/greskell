@@ -28,8 +28,9 @@ import Data.Greskell.Greskell
     unsafeMethodCall, unsafeGreskell
   )
 import Data.Greskell.Graph
-  ( AVertex, AEdge, AProperty(..),
-    T, tId, tLabel, tKey, tValue, cList, (=:)
+  ( AVertex, AEdge(..), AProperty(..),
+    T, tId, tLabel, tKey, tValue, cList, (=:),
+    fromProperties
   )
 import Data.Greskell.GraphSON
   ( FromGraphSON, gValueBody, GValueBody(..), nonTypedGValue, GValue
@@ -227,6 +228,22 @@ spec_graph = do
                             ]
     got <- WS.slurpResults =<< WS.submit client (withPrelude trav) Nothing
     got `shouldMatchList` expected
+  specify "AEdge" $ withClient $ \client -> do
+    let trav = sE' [] $ source "g"
+        expE outv inv cond = ("depends_on", "package", "package", outv, inv, props)
+          where
+            props = fromProperties [AProperty "condition" $ GString cond]
+        getE e = ( aeLabel e, aeInVLabel e, aeOutVLabel e,
+                   gValueBody $ aeOutV e, gValueBody $ aeInV e,
+                   fmap gValueBody $ aeProperties e
+                 )
+        expected = [ expE (GNumber 1) (GNumber 2) ">=0.11.2.1",
+                     expE (GNumber 1) (GNumber 3) ">=1.2.2.1",
+                     expE (GNumber 2) (GNumber 3) ">=1.2.3"
+                   ]
+    got <- WS.slurpResults =<< WS.submit client (withPrelude trav) Nothing
+    (map getE got) `shouldMatchList` expected
+  -- TODO: AVertexProperty, AVertex
   where
     withPrelude :: (ToGreskell a) => a -> Greskell (GreskellReturn a)
     withPrelude orig = unsafeGreskell (toGremlin prelude <> toGremlin orig)
