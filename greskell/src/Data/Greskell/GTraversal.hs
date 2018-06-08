@@ -753,7 +753,7 @@ data ByComparator s where
 instance IsString (ByComparator s) where
   fromString = ByComparatorProj . fromString
 
--- | @.by@ step with 1 argumernt, used for comparison.
+-- | @.by@ step with 1 argument, used for comparison.
 gBy1 :: (ProjectionLike p, ToGreskell p) => p -> ByComparator (ProjectionLikeStart p)
 gBy1 = ByComparatorProj . gBy
 
@@ -773,6 +773,12 @@ gBy2 p c = ByComparatorProjComp (gBy p) c
 -- "g.V().order().by(\"age\",Order.decr).by(T.id)"
 -- >>> toGremlin (source "g" & sV' [] &. gOrder [gBy2 (gOut' ["knows"] >>> gCount) oIncr, gBy2 tId oIncr])
 -- "g.V().order().by(__.out(\"knows\").count(),Order.incr).by(T.id,Order.incr)"
+--
+-- 'ByComparator' is an 'IsString', meaning projection by the given
+-- key.
+--
+-- >>> toGremlin (source "g" & sV' [] &. gOrder ["age"])
+-- "g.V().order().by(\"age\")"
 gOrder :: [ByComparator s] -- ^ following @.by@ steps.
        -> Walk Transform s s
 gOrder bys = modulateWith order_step by_steps

@@ -20,7 +20,7 @@ import Data.Greskell.Graph
   )
 import Data.Greskell.GraphSON (nonTypedGValue, GValueBody(..))
 import Data.Greskell.Greskell
-  ( toGremlin, Greskell, gvalue')
+  ( toGremlin, Greskell, gvalueInt)
 import Data.Greskell.GTraversal
   ( Walk, Transform,
     source, (&.), ($.), sV', sE',
@@ -48,9 +48,8 @@ spec_GraphTraversalSource = describe "GraphTraversalSource" $ do
   specify "g.V()" $ do
     (toGremlin $ sV' [] $ source "g") `shouldBe` ("g.V()")
   specify "g.V(1,2,3)" $ do
-    let ids = [1,2,3] :: [Greskell Int]
-        toGValuePhatom = const $ nonTypedGValue $ GNull
-    (toGremlin $ sV' (map (fmap toGValuePhatom) ids) $ source "g") `shouldBe` ("g.V(1,2,3)")
+    let ids = map gvalueInt $ ([1,2,3] :: [Int])
+    (toGremlin $ sV' ids $ source "g") `shouldBe` ("g.V(1,2,3)")
 
 spec_order_by :: Spec
 spec_order_by = describe "gOrder" $ do
@@ -90,8 +89,8 @@ spec_compose_steps = describe "DSL to compose steps" $ do
     let gt = source "g" & sV' [] &. gHas2P ("x" :: Key e Int) (pEq 100) &. gOut' [] &. gRange 0 100
     toGremlin gt `shouldBe` "g.V().has(\"x\",P.eq(100)).out().range(0,100)"
   specify "(&) and (&.) and (>>>)" $ do
-    let gt = source "g" & sV' [gvalue' $ GNumber 200] &. (gOut' [] >>> gOut' ["friends_to"] >>> gValues ["name"])
-    toGremlin gt `shouldBe` "g.V(200.0).out().out(\"friends_to\").values(\"name\")"
+    let gt = source "g" & sV' [gvalueInt (200 :: Int)] &. (gOut' [] >>> gOut' ["friends_to"] >>> gValues ["name"])
+    toGremlin gt `shouldBe` "g.V(200).out().out(\"friends_to\").values(\"name\")"
   specify "($) and ($.)" $ do
     let gt = gRange 20 30 $. gNot (gOut' ["friends_to"]) $. sV' [] $ source "g"
     toGremlin gt `shouldBe` "g.V().not(__.out(\"friends_to\")).range(20,30)"
@@ -118,8 +117,8 @@ spec_has = do
         `shouldBe` "g.E().hasLabel(P.neq(\"friends_to\"))"
   describe "gHasIdP" $ do
     specify "P" $ do
-      toGremlin (source "g" & sV' [] &. gHasIdP (pInside (gvalue' $ GNumber 10) (gvalue' $ GNumber 20)))
-        `shouldBe` "g.V().hasId(P.inside(10.0,20.0))"
+      toGremlin (source "g" & sV' [] &. gHasIdP (pInside (gvalueInt (10 :: Int)) (gvalueInt (20 :: Int))))
+        `shouldBe` "g.V().hasId(P.inside(10,20))"
   describe "gHasKeyP, gProperties" $ do
     specify "P" $ do
       toGremlin (source "g" & sV' [] &. gProperties [] &. gHasKeyP (pEq "hoge"))

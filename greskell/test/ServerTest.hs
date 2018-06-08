@@ -174,6 +174,9 @@ spec_predicate = do
   checkOne (pTest (pLt 20 `pAnd` pGte 10) (15 :: Greskell Int)) True
   checkOne (pTest (pLt 20 `pAnd` pGte 10) (20 :: Greskell Int)) False
 
+iterateTraversal :: GTraversal c s e -> Greskell ()
+iterateTraversal gt = unsafeMethodCall (toGreskell gt) "iterate" []
+
 spec_T :: SpecWith (String,Int)
 spec_T = describe "T enum" $ do
   specFor' "tId" (gMapT tId) gValueBody [GNumber 10]
@@ -188,9 +191,14 @@ spec_T = describe "T enum" $ do
       where
         prelude = 
           ( "graph = org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph.open(); "
-            <> "v = graph.addVertex(id, 10, label, \"VLABEL\"); "
-            <> "v.property(\"vprop\", 400, \"a\", \"A\", \"b\", \"B\"); "
             <> "g = graph.traversal(); "
+            <> "graph.addVertex(id, 10, label, \"VLABEL\"); "
+            -- <> "v.property(\"vprop\", 400, \"a\", \"A\", \"b\", \"B\"); "
+            <> ( toGremlin $ iterateTraversal
+                 $ gPropertyV Nothing "vprop" (gvalueInt $ (400 :: Int))
+                   ["a" =: ("A" :: Greskell Text), "b" =: ("B" :: Greskell Text)]
+                 $. liftWalk $ sV' [] $ source "g"
+               ) <> "; "
           )
         body = toGremlin $ mapper $. sV' [] $ source "g"
     specFor' :: (FromGraphSON a, Eq b, Show b) => String -> Walk Transform AVertex a -> (a -> b) -> [b] -> SpecWith (String,Int)
@@ -299,7 +307,7 @@ spec_graph = do
                 ++ addVersion 3 "1.2.2.0" "2017-12-23"
               )
     finalize :: GTraversal c s e -> Text
-    finalize gt = (toGremlin gt) <> ".iterate()"
+    finalize gt = toGremlin $ iterateTraversal gt
     num :: Integer -> Greskell GValue
     num = gvalueInt
     setName :: Integer -> Greskell Text -> GTraversal SideEffect () AVertex
