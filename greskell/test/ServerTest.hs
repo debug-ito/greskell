@@ -215,6 +215,8 @@ spec_P = describe "P class" $ specify "pNot, pEq, pTest" $ withClient $ \client 
   test (number 10) `shouldReturn` [False]
   test (number 15) `shouldReturn` [True]
 
+-- | This test is supported TinkerPop 3.1.0 and above, because it uses
+-- 'gAddE'' function.
 spec_graph :: SpecWith (String,Int)
 spec_graph = do
   specify "AProperty (edge properties)" $ withClient $ \client -> do

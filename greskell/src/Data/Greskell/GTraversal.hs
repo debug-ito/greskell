@@ -991,7 +991,7 @@ gFrom = AddAnchor "from" . toGTraversal
 gTo :: (ToGTraversal g) => g Transform s e -> AddAnchor s e
 gTo = AddAnchor "to" . toGTraversal
 
--- | @.addE@ step.
+-- | @.addE@ step. Supported since TinkerPop 3.1.0.
 --
 -- >>> let key_name = "name" :: Key AVertex Text
 -- >>> toGremlin (source "g" & sV' [] & liftWalk &. gAddE' "knows" (gFrom $ gV' [] >>> gHas2 key_name "marko"))
