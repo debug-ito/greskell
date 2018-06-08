@@ -7,10 +7,11 @@ import qualified Data.Aeson as Aeson
 import Data.Either (isRight)
 import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as HM
-import qualified Network.Greskell.WebSocket.Client as WS
+import Data.List (sortBy)
 import Data.Monoid (mempty, (<>))
 import Data.Scientific (Scientific)
 import Data.Text (unpack, Text)
+import qualified Network.Greskell.WebSocket.Client as WS
 import System.Environment (lookupEnv)
 import Test.Hspec
 
@@ -28,9 +29,9 @@ import Data.Greskell.Greskell
     unsafeMethodCall, unsafeGreskell
   )
 import Data.Greskell.Graph
-  ( AVertex, AEdge(..), AProperty(..), AVertexProperty(..),
+  ( AVertex(..), AEdge(..), AProperty(..), AVertexProperty(..),
     T, tId, tLabel, tKey, tValue, cList, (=:),
-    fromProperties
+    fromProperties, allProperties
   )
 import Data.Greskell.GraphSON
   ( FromGraphSON, gValueBody, GValueBody(..), nonTypedGValue, GValue
@@ -243,9 +244,9 @@ spec_graph = do
                    ]
     got <- WS.slurpResults =<< WS.submit client (withPrelude trav) Nothing
     (map getE got) `shouldMatchList` expected
+  let getVP vp = (avpLabel vp, gValueBody $ avpValue vp, fmap gValueBody $ avpProperties vp)
   specify "AVertexProperty" $ withClient $ \client -> do
     let trav = gProperties [] $. sV' [] $ source "g"
-        getVP vp = (avpLabel vp, gValueBody $ avpValue vp, fmap gValueBody $ avpProperties vp)
         expName val = ("name", GString val, mempty)
         expVer val date = ("version", GString val, fromProperties [AProperty "date" $ GString date])
         expected = [ expName "greskell",
@@ -259,7 +260,21 @@ spec_graph = do
                    ]
     got <- WS.slurpResults =<< WS.submit client (withPrelude trav) Nothing
     (map getVP got) `shouldMatchList` expected
-  -- TODO: AVertex
+  specify "AVertex" $ withClient $ \client -> do
+    let trav = sV' [] $ source "g"
+        getV v = ( gValueBody $ avId v,
+                   avLabel v,
+                   sort' $ map getVP $ allProperties $ avProperties v
+                 )
+        sort' = sortBy $ \(k1, v1, _) (k2, v2, _) -> compare (show k1,show v1) (show k2,show v2)
+        expV vid name ver_dates = ( GNumber vid, "package", ("name", GString name, mempty) : map toVP ver_dates )
+        toVP (ver, date) = ("version", GString ver, fromProperties [AProperty "date" $ GString date])
+        expected = [ expV 1 "greskell" [("0.1.1.0", "2018-04-08")],
+                     expV 2 "aeson" [("1.2.2.0", "2017-09-20"), ("1.3.1.1", "2018-05-10")],
+                     expV 3 "text" [("1.2.2.0", "2017-12-23"), ("1.2.3.0", "2017-12-27")]
+                   ]
+    got <- WS.slurpResults =<< WS.submit client (withPrelude trav) Nothing
+    (map getV got) `shouldMatchList` expected
   where
     withPrelude :: (ToGreskell a) => a -> Greskell (GreskellReturn a)
     withPrelude orig = unsafeGreskell (toGremlin prelude <> toGremlin orig)
