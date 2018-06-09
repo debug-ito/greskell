@@ -166,7 +166,7 @@ import Data.Greskell.AsIterator (AsIterator(IteratorItem))
 --
 -- >>> :set -XOverloadedStrings
 -- >>> import Data.Function ((&))
--- >>> import Data.Greskell.Greskell (gvalue')
+-- >>> import Data.Greskell.Greskell (gvalueInt)
 -- >>> import Data.Greskell.Gremlin (pBetween, pEq, pLte, oDecr, oIncr)
 -- >>> import Data.Greskell.Graph (tId, cList, (=:), AVertex, AVertexProperty)
 -- >>> import Data.Greskell.GraphSON (GValueBody(..))
@@ -378,8 +378,8 @@ sV ids src = GTraversal $ sourceMethod "V" ids src
 
 -- | Monomorphic version of 'sV'.
 --
--- >>> toGremlin (source "g" & sV' (map (gvalue' . GNumber) [1,2,3]))
--- "g.V(1.0,2.0,3.0)"
+-- >>> toGremlin (source "g" & sV' (map gvalueInt ([1,2,3] :: [Int])))
+-- "g.V(1,2,3)"
 sV' :: [Greskell GValue]
     -> Greskell GraphTraversalSource
     -> GTraversal Transform () AVertex
@@ -394,8 +394,8 @@ sE ids src = GTraversal $ sourceMethod "E" ids src
 
 -- | Monomorphic version of 'sE'.
 --
--- >>> toGremlin (source "g" & sE' (map (gvalue' . GNumber) [1]))
--- "g.E(1.0)"
+-- >>> toGremlin (source "g" & sE' (map gvalueInt ([1] :: [Int])))
+-- "g.E(1)"
 sE' :: [Greskell GValue]
        -> Greskell GraphTraversalSource
        -> GTraversal Transform () AEdge
@@ -563,8 +563,8 @@ gHasLabelP' p = unsafeWalk "hasLabel" [toGremlin p]
 
 -- | @.hasId@ step.
 --
--- >>> toGremlin (source "g" & sV' [] &. gHasId (gvalue' $ GNumber 7))
--- "g.V().hasId(7.0)"
+-- >>> toGremlin (source "g" & sV' [] &. gHasId (gvalueInt $ (7 :: Int)))
+-- "g.V().hasId(7)"
 gHasId :: (Element s, WalkType c) => Greskell (ElementID s) -> Walk c s s
 gHasId = liftWalk . gHasId'
 
@@ -574,8 +574,8 @@ gHasId' i = unsafeWalk "hasId" [toGremlin i]
 
 -- | @.hasId@ step with 'P' type. Supported since TinkerPop 3.2.7.
 --
--- >>> toGremlin (source "g" & sV' [] &. gHasIdP (pLte $ gvalue' $ GNumber 100))
--- "g.V().hasId(P.lte(100.0))"
+-- >>> toGremlin (source "g" & sV' [] &. gHasIdP (pLte $ gvalueInt (100 :: Int)))
+-- "g.V().hasId(P.lte(100))"
 gHasIdP :: (Element s, WalkType c)
         => Greskell (P (ElementID s))
         -> Walk c s s
@@ -858,8 +858,8 @@ gOut = genericTraversalWalk "out"
 
 -- | Monomorphic version of 'gOut'.
 --
--- >>> toGremlin (source "g" & sV' [gvalue' $ GString "person"] &. gOut' ["knows"])
--- "g.V(\"person\").out(\"knows\")"
+-- >>> toGremlin (source "g" & sV' [gvalueInt (8 :: Int)] &. gOut' ["knows"])
+-- "g.V(8).out(\"knows\")"
 gOut' :: (Vertex v)
       => [Greskell Text]
       -> Walk Transform v AVertex

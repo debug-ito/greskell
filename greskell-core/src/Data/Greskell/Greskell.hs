@@ -25,7 +25,6 @@ module Data.Greskell.Greskell
          value,
          valueInt,
          gvalue,
-         gvalue',
          gvalueInt,
          -- * Unsafe constructors
          unsafeGreskell,
@@ -239,19 +238,11 @@ valueInt n = fmap toValue $ fromIntegral n
     toValue :: Integer -> Value
     toValue = const Aeson.Null
 
--- | 'GValue' literal.
---
--- Similar to 'value' function, but it ignores all GraphSON wrappers
--- in 'GValue'.
-gvalue :: GValue -> Greskell GValue
-gvalue = fmap phantomToGValue . value . unwrapAll
+-- | 'Value' literal as 'GValue' type.
+gvalue :: Value -> Greskell GValue
+gvalue = fmap phantomToGValue . value
   where
     phantomToGValue _ = nonTypedGValue $ GNull
-
--- | 'GValue' literal from 'GValueBody'. The 'gsonType' field is
--- 'Nothing'.
-gvalue' :: GValueBody -> Greskell GValue
-gvalue' = gvalue . nonTypedGValue
 
 -- | Integer literal as 'GValue' type.
 --
