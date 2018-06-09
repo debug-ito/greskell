@@ -8,7 +8,7 @@ import qualified Data.Aeson as A
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy as BSL
 import Data.Greskell.GraphSON
-  ( GValue(..), GValueBody(..),
+  ( GValue, GValueBody(..),
     nonTypedGValue, typedGValue'
   )
 import Data.Greskell.Greskell (unsafeGreskell, Greskell)

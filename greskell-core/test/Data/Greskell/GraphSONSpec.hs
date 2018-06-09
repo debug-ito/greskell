@@ -21,7 +21,7 @@ import Data.Greskell.GraphSON
     -- parseTypedGraphSON',
     typedGraphSON', nonTypedGraphSON,
     nonTypedGValue, typedGValue',
-    GValue(..), GValueBody(..),
+    GValue, GValueBody(..),
     FromGraphSON(..)
   )
 import Data.Greskell.GraphSON.GValue (unwrapAll, unwrapOne)
