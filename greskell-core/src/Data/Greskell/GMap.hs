@@ -234,7 +234,10 @@ parseSingleEntryObjectToEntry vp o =
       FromJSONKeyText p -> return $ fmap return p
       FromJSONKeyTextParser p -> return p
       FromJSONKeyCoerce _ -> return $ fmap return unsafeCoerce
-      FromJSONKeyValue _ -> fail ("Unexpected FromJSONKeyValue.")
+      FromJSONKeyValue _ -> fail ( "Unexpected FromJSONKeyValue."
+                                   ++ " It expects that the entry key is parsed from the text key in JSON Object,"
+                                   ++ " but the key type does not support it."
+                                 )
 
 orElseM :: Monad m => m (Maybe a) -> m (Maybe a) -> m (Maybe a)
 orElseM act_a act_b = do
