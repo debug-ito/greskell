@@ -31,11 +31,13 @@ import Data.Greskell.Greskell
   )
 import Data.Greskell.Graph
   ( AVertex(..), AEdge(..), AProperty(..), AVertexProperty(..),
+    PropertyMapSingle,
     T, tId, tLabel, tKey, tValue, cList, (=:),
     fromProperties, allProperties
   )
 import Data.Greskell.GraphSON
-  ( FromGraphSON, gValueBody, GValueBody(..), nonTypedGValue, GValue
+  ( FromGraphSON, nonTypedGValue, GValue,
+    parseEither
   )
 import Data.Greskell.GTraversal
   ( Walk, GTraversal, SideEffect,
@@ -180,10 +182,10 @@ iterateTraversal gt = unsafeMethodCall (toGreskell gt) "iterate" []
 
 spec_T :: SpecWith (String,Int)
 spec_T = describe "T enum" $ do
-  specFor' "tId" (gMapT tId) gValueBody [GNumber 10]
+  specFor' "tId" (gMapT tId) parseEither [(Right 10 :: Either String Int)]
   specFor "tLabel" (gMapT tLabel) ["VLABEL"]
   specFor "tKey" (gMapT tKey <<< gProperties ["vprop"]) ["vprop"]
-  specFor' "tValue" (gMapT tValue <<< gProperties ["vprop"]) gValueBody [GNumber 400]
+  specFor' "tValue" (gMapT tValue <<< gProperties ["vprop"]) parseEither [(Right 400 :: Either String Int)]
   where
     gMapT :: Greskell (T a b) -> Walk Transform a b
     gMapT t = unsafeWalk "map" ["{ " <> toGremlin (unsafeMethodCall t "apply" ["it.get()"]) <> " }"]
@@ -194,7 +196,6 @@ spec_T = describe "T enum" $ do
           ( "graph = org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph.open(); "
             <> "g = graph.traversal(); "
             <> "graph.addVertex(id, 10, label, \"VLABEL\"); "
-            -- <> "v.property(\"vprop\", 400, \"a\", \"A\", \"b\", \"B\"); "
             <> ( toGremlin $ iterateTraversal
                  $ gPropertyV Nothing "vprop" (gvalueInt $ (400 :: Int))
                    ["a" =: ("A" :: Greskell Text), "b" =: ("B" :: Greskell Text)]
@@ -222,16 +223,16 @@ spec_graph :: SpecWith (String,Int)
 spec_graph = do
   specify "AProperty (edge properties)" $ withClient $ \client -> do
     let trav = gProperties [] $. sE' [] $ source "g"
-        prop t = AProperty "condition" $ GString t
+        prop t = AProperty "condition" $ Right (t :: Text)
         expected = map prop [ ">=0.11.2.1",
                               ">=1.2.2.1",
                               ">=1.2.3"
                             ]
     got <- WS.slurpResults =<< WS.submit client (withPrelude trav) Nothing
-    (map (fmap gValueBody) $ V.toList got) `shouldMatchList` expected
+    (map (fmap parseEither) $ V.toList got) `shouldMatchList` expected
   specify "AProperty (vertex property meta-properties)" $ withClient $ \client -> do
     let trav = gProperties [] $. gProperties [] $. sV' [] $ source "g"
-        prop t = AProperty "date" $ GString t
+        prop t = AProperty "date" $ Right (t :: Text)
         expected = map prop [ "2018-04-08",
                               "2018-05-10",
                               "2017-09-20",
@@ -239,27 +240,30 @@ spec_graph = do
                               "2017-12-23"
                             ]
     got <- WS.slurpResults =<< WS.submit client (withPrelude trav) Nothing
-    (map (fmap gValueBody) $ V.toList got) `shouldMatchList` expected
+    (map (fmap parseEither) $ V.toList got) `shouldMatchList` expected
   specify "AEdge" $ withClient $ \client -> do
     let trav = sE' [] $ source "g"
-        expE outv inv cond = ("depends_on", "package", "package", outv, inv, props)
+        expE :: Int -> Int -> Text -> (Text,Text,Text,Either String Int, Either String Int, PropertyMapSingle AProperty (Either String Text))
+        expE outv inv cond = ("depends_on", "package", "package", Right outv, Right inv, props)
           where
-            props = fromProperties [AProperty "condition" $ GString cond]
+            props = fromProperties [AProperty "condition" $ Right cond]
         getE e = ( aeLabel e, aeInVLabel e, aeOutVLabel e,
-                   gValueBody $ aeOutV e, gValueBody $ aeInV e,
-                   fmap gValueBody $ aeProperties e
+                   parseEither $ aeOutV e, parseEither $ aeInV e,
+                   fmap parseEither $ aeProperties e
                  )
-        expected = [ expE (GNumber 1) (GNumber 2) ">=0.11.2.1",
-                     expE (GNumber 1) (GNumber 3) ">=1.2.2.1",
-                     expE (GNumber 2) (GNumber 3) ">=1.2.3"
+        expected = [ expE 1 2 ">=0.11.2.1",
+                     expE 1 3 ">=1.2.2.1",
+                     expE 2 3 ">=1.2.3"
                    ]
     got <- WS.slurpResults =<< WS.submit client (withPrelude trav) Nothing
     (map getE $ V.toList got) `shouldMatchList` expected
-  let getVP vp = (avpLabel vp, gValueBody $ avpValue vp, fmap gValueBody $ avpProperties vp)
+  let getVP vp = (avpLabel vp, parseEither $ avpValue vp, fmap parseEither $ avpProperties vp)
   specify "AVertexProperty" $ withClient $ \client -> do
     let trav = gProperties [] $. sV' [] $ source "g"
-        expName val = ("name", GString val, mempty)
-        expVer val date = ("version", GString val, fromProperties [AProperty "date" $ GString date])
+        expName :: Text -> (Text,Either String Text, PropertyMapSingle AProperty (Either String Text))
+        expName val = ("name", Right val, mempty)
+        expVer :: Text -> Text -> (Text,Either String Text, PropertyMapSingle AProperty (Either String Text))
+        expVer val date = ("version", Right val, fromProperties [AProperty "date" $ Right date])
         expected = [ expName "greskell",
                      expName "aeson",
                      expName "text",
@@ -273,13 +277,14 @@ spec_graph = do
     (map getVP $ V.toList got) `shouldMatchList` expected
   specify "AVertex" $ withClient $ \client -> do
     let trav = sV' [] $ source "g"
-        getV v = ( gValueBody $ avId v,
+        getV v = ( parseEither $ avId v,
                    avLabel v,
                    sort' $ map getVP $ allProperties $ avProperties v
                  )
         sort' = sortBy $ \(k1, v1, _) (k2, v2, _) -> compare (show k1,show v1) (show k2,show v2)
-        expV vid name ver_dates = ( GNumber vid, "package", ("name", GString name, mempty) : map toVP ver_dates )
-        toVP (ver, date) = ("version", GString ver, fromProperties [AProperty "date" $ GString date])
+        expV :: Int -> Text -> [(Text, Text)] -> (Either String Int,Text,[(Text,Either String Text,PropertyMapSingle AProperty (Either String Text))])
+        expV vid name ver_dates = (Right vid, "package", ("name", Right name, mempty) : map toVP ver_dates)
+        toVP (ver, date) = ("version", Right ver, fromProperties [AProperty "date" $ Right date])
         expected = [ expV 1 "greskell" [("0.1.1.0", "2018-04-08")],
                      expV 2 "aeson" [("1.2.2.0", "2017-09-20"), ("1.3.1.1", "2018-05-10")],
                      expV 3 "text" [("1.2.2.0", "2017-12-23"), ("1.2.3.0", "2017-12-27")]

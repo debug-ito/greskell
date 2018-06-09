@@ -25,9 +25,11 @@ library
                         GeneralizedNewtypeDeriving, DeriveTraversable
   exposed-modules:      Data.Greskell.Greskell,
                         Data.Greskell.GraphSON,
+                        Data.Greskell.GraphSON.GValue,
                         Data.Greskell.GMap,
                         Data.Greskell.AsIterator
-  other-modules:        Data.Greskell.GraphSON.GraphSONTyped
+  other-modules:        Data.Greskell.GraphSON.GraphSONTyped,
+                        Data.Greskell.GraphSON.Core
   build-depends:        base >=4.9.0.0 && <4.12,
                         aeson >=0.11.2.1 && <1.4,
                         unordered-containers >=0.2.7.1 && <0.3,

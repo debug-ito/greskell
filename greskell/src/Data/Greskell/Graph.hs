@@ -74,8 +74,9 @@ import Data.Vector (Vector)
 
 import Data.Greskell.GraphSON
   ( GraphSON(..), GraphSONTyped(..), FromGraphSON(..),
-    (.:), GValue, GValueBody(..), gValueBody, gValueType
+    (.:), GValue, GValueBody(..)
   )
+import Data.Greskell.GraphSON.GValue (gValueBody, gValueType)
 import Data.Greskell.Greskell
   ( Greskell, unsafeGreskellLazy, string,
     ToGreskell(..)

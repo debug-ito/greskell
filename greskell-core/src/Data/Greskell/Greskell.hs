@@ -47,7 +47,7 @@ import Data.List (intersperse)
 import Data.Text (Text, pack, unpack)
 import qualified Data.Text.Lazy as TL
 
-import Data.Greskell.GraphSON (GValue, GValueBody(..), unwrapAll, nonTypedGValue)
+import Data.Greskell.GraphSON (GValue, GValueBody(..), nonTypedGValue)
 
 -- $
 -- >>> :set -XOverloadedStrings

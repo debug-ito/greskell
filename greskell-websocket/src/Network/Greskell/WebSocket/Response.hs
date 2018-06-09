@@ -25,8 +25,9 @@ import Data.Aeson
   )
 import Data.Greskell.GraphSON
   ( gsonValue, FromGraphSON(..), parseUnwrapAll, (.:),
-    GValueBody(..), gValueBody
+    GValueBody(..)
   )
+import Data.Greskell.GraphSON.GValue (gValueBody)
 import Data.Text (Text)
 import Data.UUID (UUID)
 import GHC.Generics (Generic)

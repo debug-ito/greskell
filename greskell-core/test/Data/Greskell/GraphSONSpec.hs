@@ -20,10 +20,11 @@ import Data.Greskell.GraphSON
   ( GraphSON, parseTypedGraphSON,
     -- parseTypedGraphSON',
     typedGraphSON', nonTypedGraphSON,
+    nonTypedGValue, typedGValue',
     GValue(..), GValueBody(..),
-    unwrapAll, unwrapOne,
     FromGraphSON(..)
   )
+import Data.Greskell.GraphSON.GValue (unwrapAll, unwrapOne)
 
 main :: IO ()
 main = hspec spec
@@ -253,10 +254,10 @@ fromToJSON label input_json expected = specify label $ do
     exp_enc = forceDecode input_json
     
 bare :: GValueBody -> GValue
-bare = GValue . nonTypedGraphSON
+bare = nonTypedGValue
 
 wrapped :: Text -> GValueBody -> GValue
-wrapped t b = GValue $ typedGraphSON' t b
+wrapped = typedGValue'
 
 gson :: BSL.ByteString -> BSL.ByteString -> BSL.ByteString
 gson ftype fvalue = "{\"@type\":\"" <> ftype <> "\",\"@value\":" <> fvalue <> "}"
