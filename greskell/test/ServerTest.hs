@@ -11,6 +11,7 @@ import Data.List (sortBy)
 import Data.Monoid (mempty, (<>))
 import Data.Scientific (Scientific)
 import Data.Text (unpack, Text)
+import qualified Data.Vector as V
 import qualified Network.Greskell.WebSocket.Client as WS
 import System.Environment (lookupEnv)
 import Test.Hspec
@@ -124,7 +125,7 @@ checkRawMapped :: (AsIterator a, b ~ IteratorItem a, FromGraphSON b, Eq c, Show 
                -> SpecWith (String, Int)
 checkRawMapped mapResult input expected = specify label $ withClient $ \client -> do
   got <- WS.slurpResults =<< WS.submit client input Nothing
-  map mapResult got `shouldBe` expected
+  fmap mapResult got `shouldBe` V.fromList expected
   where
     label = unpack $ toGremlin input
 
@@ -204,7 +205,7 @@ spec_T = describe "T enum" $ do
     specFor' :: (FromGraphSON a, Eq b, Show b) => String -> Walk Transform AVertex a -> (a -> b) -> [b] -> SpecWith (String,Int)
     specFor' desc mapper convResult expected = specify desc $ withClient $ \client -> do
       got <- WS.slurpResults =<< WS.submit client (prefixedTraversal mapper) Nothing
-      (map convResult got) `shouldBe` expected
+      (fmap convResult got) `shouldBe` V.fromList expected
     specFor :: (FromGraphSON a, Eq a, Show a) => String -> Walk Transform AVertex a -> [a] -> SpecWith (String,Int)
     specFor desc mapper expected = specFor' desc mapper id expected
 
@@ -212,8 +213,8 @@ spec_P :: SpecWith (String,Int)
 spec_P = describe "P class" $ specify "pNot, pEq, pTest" $ withClient $ \client -> do
   let p = pNot $ pEq $ number 10
       test v = WS.slurpResults =<< WS.submit client (pTest p $ v) Nothing
-  test (number 10) `shouldReturn` [False]
-  test (number 15) `shouldReturn` [True]
+  test (number 10) `shouldReturn` V.fromList [False]
+  test (number 15) `shouldReturn` V.fromList [True]
 
 -- | This test is supported TinkerPop 3.1.0 and above, because it uses
 -- 'gAddE'' function.
@@ -227,7 +228,7 @@ spec_graph = do
                               ">=1.2.3"
                             ]
     got <- WS.slurpResults =<< WS.submit client (withPrelude trav) Nothing
-    (map (fmap gValueBody) got) `shouldMatchList` expected
+    (map (fmap gValueBody) $ V.toList got) `shouldMatchList` expected
   specify "AProperty (vertex property meta-properties)" $ withClient $ \client -> do
     let trav = gProperties [] $. gProperties [] $. sV' [] $ source "g"
         prop t = AProperty "date" $ GString t
@@ -238,7 +239,7 @@ spec_graph = do
                               "2017-12-23"
                             ]
     got <- WS.slurpResults =<< WS.submit client (withPrelude trav) Nothing
-    (map (fmap gValueBody) got) `shouldMatchList` expected
+    (map (fmap gValueBody) $ V.toList got) `shouldMatchList` expected
   specify "AEdge" $ withClient $ \client -> do
     let trav = sE' [] $ source "g"
         expE outv inv cond = ("depends_on", "package", "package", outv, inv, props)
@@ -253,7 +254,7 @@ spec_graph = do
                      expE (GNumber 2) (GNumber 3) ">=1.2.3"
                    ]
     got <- WS.slurpResults =<< WS.submit client (withPrelude trav) Nothing
-    (map getE got) `shouldMatchList` expected
+    (map getE $ V.toList got) `shouldMatchList` expected
   let getVP vp = (avpLabel vp, gValueBody $ avpValue vp, fmap gValueBody $ avpProperties vp)
   specify "AVertexProperty" $ withClient $ \client -> do
     let trav = gProperties [] $. sV' [] $ source "g"
@@ -269,7 +270,7 @@ spec_graph = do
                      expVer "1.2.2.0" "2017-12-23"
                    ]
     got <- WS.slurpResults =<< WS.submit client (withPrelude trav) Nothing
-    (map getVP got) `shouldMatchList` expected
+    (map getVP $ V.toList got) `shouldMatchList` expected
   specify "AVertex" $ withClient $ \client -> do
     let trav = sV' [] $ source "g"
         getV v = ( gValueBody $ avId v,
@@ -284,7 +285,7 @@ spec_graph = do
                      expV 3 "text" [("1.2.2.0", "2017-12-23"), ("1.2.3.0", "2017-12-27")]
                    ]
     got <- WS.slurpResults =<< WS.submit client (withPrelude trav) Nothing
-    (map getV got) `shouldMatchList` expected
+    (map getV $ V.toList got) `shouldMatchList` expected
   where
     withPrelude :: (ToGreskell a) => a -> Greskell (GreskellReturn a)
     withPrelude orig = unsafeGreskell (toGremlin prelude <> toGremlin orig)

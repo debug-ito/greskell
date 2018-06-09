@@ -9,13 +9,13 @@ module Network.Greskell.WebSocket.Util
        ) where
 
 import Data.Monoid ((<>))
-import qualified Data.DList as DL
+import qualified Data.Vector as V
 
-slurp :: Monad m => m (Maybe a) -> m [a]
-slurp act = fmap DL.toList $ go mempty
+slurp :: Monad m => m (Maybe a) -> m (V.Vector a)
+slurp act = go mempty
   where
     go got = do
       mres <- act
       case mres of
        Nothing -> return got
-       Just res -> go (got <> DL.singleton res)
+       Just res -> go $! (V.snoc got res)

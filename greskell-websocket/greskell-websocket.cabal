@@ -50,7 +50,6 @@ library
                         stm,
                         websockets,
                         hashtables,
-                        dlist,
                         safe-exceptions,
                         vector
 
@@ -100,7 +99,7 @@ test-suite server-test
   if flag(server-test)
     build-depends:        base, greskell-websocket, greskell-core,
                           aeson, uuid, unordered-containers, text, async, safe-exceptions,
-                          websockets, bytestring, stm,
+                          websockets, bytestring, stm, vector,
                           hspec
                           
   else

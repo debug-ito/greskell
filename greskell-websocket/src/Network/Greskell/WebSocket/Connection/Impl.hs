@@ -24,12 +24,13 @@ import Control.Exception.Safe
   )
 import Control.Monad (when, void, forM_)
 import Data.Aeson (Value)
+import qualified Data.ByteString.Lazy as BSL
+import qualified Data.HashTable.IO as HT
 import Data.Monoid (mempty)
 import Data.Typeable (Typeable)
 import Data.UUID (UUID)
+import Data.Vector (Vector)
 import qualified Network.WebSockets as WS
-import qualified Data.ByteString.Lazy as BSL
-import qualified Data.HashTable.IO as HT
 
 import Network.Greskell.WebSocket.Codec (Codec(decodeWith, encodeWith), encodeBinaryWith)
 import Network.Greskell.WebSocket.Connection.Settings (Settings)
@@ -421,5 +422,5 @@ isTerminatingResponse (ResponseMessage { status = (ResponseStatus { code = c }) 
   isTerminating c
 
 -- | Get all remaining 'ResponseMessage's from 'ResponseHandle'.
-slurpResponses :: ResponseHandle s -> IO [ResponseMessage s]
+slurpResponses :: ResponseHandle s -> IO (Vector (ResponseMessage s))
 slurpResponses h = slurp $ nextResponse h

@@ -10,6 +10,7 @@ import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as HM
 import Data.Maybe (isNothing, isJust, fromJust)
 import Data.Text (Text)
+import qualified Data.Vector as V
 import qualified Network.WebSockets as WS
 import Test.Hspec
 
@@ -78,26 +79,26 @@ client_basic_spec = do
     let g :: Greskell (GMap HashMap Int Text)
         g = G.unsafeGreskell "[100: 'hoge', 200: 'foo', 300: 'bar']"
     rh <- submit client g Nothing
-    got <- fmap (map unGMapEntry) $ slurpResults rh
-    got `shouldMatchList` [(100, "hoge"), (200, "foo"), (300, "bar")]
+    got <- fmap (fmap unGMapEntry) $ slurpResults rh
+    (V.toList got) `shouldMatchList` [(100, "hoge"), (200, "foo"), (300, "bar")]
   specify "eval (Maybe Int)" $ withClient $ \client -> do
     let g :: Greskell (Maybe Int)
         g = G.unsafeGreskell "100"
     rh <- submit client g Nothing
-    slurpResults rh `shouldReturn` [Just 100]
+    slurpResults rh `shouldReturn` V.fromList [Just 100]
   specify "eval (bound Double)" $ withClient $ \client -> do
     let gx = G.unsafeGreskell "x"
         g = 92.125 + gx :: Greskell Double
         b = HM.fromList [("x", Number 22.25)]
     rh <- submit client g (Just b)
-    slurpResults rh `shouldReturn` [114.375]
+    slurpResults rh `shouldReturn` V.fromList [114.375]
   specify "multiple response messages" $ \(host, port) -> do
     let opt = defOptions { batchSize = Just 3
                          }
         g = G.list $ map fromInteger [1..31] :: Greskell [Int]
     forClient' opt host port $ \client -> do
       rh <- submit client g Nothing
-      slurpResults rh `shouldReturn` [1..31]
+      slurpResults rh `shouldReturn` V.fromList [1..31]
   specify "ParseError exception" $ withClient $ \client -> do
     let g :: Greskell Int
         g = G.unsafeGreskell "\"some string\""

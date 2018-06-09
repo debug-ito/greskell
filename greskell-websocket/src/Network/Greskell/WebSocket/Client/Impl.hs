@@ -27,6 +27,7 @@ import Data.Monoid (mempty)
 import Data.Vector (Vector, (!))
 import Data.Text (Text)
 import Data.Traversable (traverse)
+import Data.Vector (Vector)
 
 import Network.Greskell.WebSocket.Client.Options (Options)
 import qualified Network.Greskell.WebSocket.Client.Options as Opt
@@ -210,6 +211,5 @@ loadResponse rh = parseResponse =<< (Conn.nextResponseSTM $ rhResHandle rh)
              return $ Just (parsed ! 0)
 
 -- | Get all remaining results from 'ResultHandle'.
-slurpResults :: ResultHandle v -> IO [v]
+slurpResults :: ResultHandle v -> IO (Vector v)
 slurpResults h = slurp $ nextResult h
-      

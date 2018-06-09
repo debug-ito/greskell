@@ -19,6 +19,7 @@ import Data.Monoid ((<>))
 import qualified Data.HashMap.Strict as HM
 import Data.Greskell.GraphSON (GraphSON, gsonValue)
 import Data.Text (Text, pack)
+import qualified Data.Vector as V
 import Data.UUID (UUID)
 import qualified Data.UUID as UUID
 import Data.UUID.V4 (nextRandom)
@@ -93,7 +94,7 @@ opEval g = OpEval { batchSize = Nothing,
 
 ---- 'resultData' should be parsed with GraphSON wrappers to support v1, v2 and v3.
 slurpParseEval :: FromJSON a => ResponseHandle Value -> IO [ResponseMessage (Either String (GraphSON [GraphSON a]))]
-slurpParseEval rh = (fmap . fmap . fmap) parseValue $ slurpResponses rh
+slurpParseEval rh = (fmap . fmap . fmap) parseValue $ fmap V.toList $ slurpResponses rh
 
 responseValues :: ResponseMessage (Either String (GraphSON [GraphSON a])) -> Either String [a]
 responseValues = fmap (map gsonValue . gsonValue) . resultData . result
