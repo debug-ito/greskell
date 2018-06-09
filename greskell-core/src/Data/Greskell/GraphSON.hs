@@ -24,10 +24,11 @@ module Data.Greskell.GraphSON
          -- * FromGraphSON
          FromGraphSON(..),
          -- ** parser support
+         parseEither,
          parseUnwrapAll,
          parseUnwrapList,
          (.:),
-         parseEither
+         parseJSONViaGValue
        ) where
 
 import Control.Applicative ((<$>), (<*>), (<|>))
@@ -141,6 +142,12 @@ parseEither = Aeson.parseEither parseGraphSON
 go .: label = maybe failure parseGraphSON $ HM.lookup label go
   where
     failure = fail ("Cannot find field " ++ unpack label)
+
+-- | Implementation of 'parseJSON' based on 'parseGraphSON'. The input
+-- 'Value' is first converted to 'GValue', and it's parsed to the
+-- output type.
+parseJSONViaGValue :: FromGraphSON a => Value -> Parser a
+parseJSONViaGValue v = parseGraphSON =<< parseJSON v
 
 ---- Trivial instances
 

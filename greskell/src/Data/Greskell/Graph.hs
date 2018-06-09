@@ -74,7 +74,8 @@ import Data.Vector (Vector)
 
 import Data.Greskell.GraphSON
   ( GraphSON(..), GraphSONTyped(..), FromGraphSON(..),
-    (.:), GValue, GValueBody(..)
+    (.:), GValue, GValueBody(..),
+    parseJSONViaGValue
   )
 import Data.Greskell.GraphSON.GValue (gValueBody, gValueType)
 import Data.Greskell.Greskell
@@ -247,7 +248,7 @@ instance GraphSONTyped AVertex where
   gsonTypeFor _ = "g:Vertex"
 
 instance FromJSON AVertex where
-  parseJSON v = parseGraphSON =<< parseJSON v
+  parseJSON = parseJSONViaGValue
 
 instance FromGraphSON AVertex where
   parseGraphSON gv = case gValueBody gv of
@@ -289,7 +290,7 @@ instance GraphSONTyped AEdge where
   gsonTypeFor _ = "g:Edge"
 
 instance FromJSON AEdge where
-  parseJSON v = parseGraphSON =<< parseJSON v
+  parseJSON = parseJSONViaGValue
 
 instance FromGraphSON AEdge where
   parseGraphSON gv = case gValueBody gv of
@@ -332,7 +333,7 @@ data AProperty v =
 -- In version 0.1.1.0 and before, the constraint was @FromJSON v@.
 -- This has changed.
 instance FromGraphSON v => FromJSON (AProperty v) where
-  parseJSON v = parseGraphSON =<< parseJSON v
+  parseJSON = parseJSONViaGValue
 
 -- | Parse Property of GraphSON 1.0.
 instance FromGraphSON v => FromGraphSON (AProperty v) where
@@ -379,7 +380,7 @@ data AVertexProperty v =
 -- | In version 0.1.1.0 and before, the constraint was @FromJSON v@.
 -- This has changed.
 instance FromGraphSON v => FromJSON (AVertexProperty v) where
-  parseJSON v = parseGraphSON =<< parseJSON v
+  parseJSON = parseJSONViaGValue
 
 instance FromGraphSON v => FromGraphSON (AVertexProperty v) where
   parseGraphSON gv = case gValueBody gv of
@@ -565,7 +566,7 @@ instance PropertyMap PropertyMapSingle where
 -- This has changed.
 instance (Property p, GraphSONTyped (p v), FromGraphSON (p v), FromGraphSONWithKey (p v))
          => FromJSON (PropertyMapSingle p v) where
-  parseJSON v = parseGraphSON =<< parseJSON v
+  parseJSON = parseJSONViaGValue
 
 instance (Property p, GraphSONTyped (p v), FromGraphSON (p v), FromGraphSONWithKey (p v))
          => FromGraphSON (PropertyMapSingle p v) where
@@ -594,7 +595,7 @@ instance PropertyMap PropertyMapList where
 -- This has changed.
 instance (Property p, GraphSONTyped (p v), FromGraphSON (p v), FromGraphSONWithKey (p v))
          => FromJSON (PropertyMapList p v) where
-  parseJSON v = parseGraphSON =<< parseJSON v
+  parseJSON = parseJSONViaGValue
 
 instance (Property p, GraphSONTyped (p v), FromGraphSON (p v), FromGraphSONWithKey (p v))
          => FromGraphSON (PropertyMapList p v) where
