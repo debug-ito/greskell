@@ -29,7 +29,8 @@ import Data.Greskell.GMap (GMap, GMapEntry)
 
 -- | Types that are converted to an iterator by
 -- @org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils.asIterator@
--- method. In fact, that method can convert any type to an iterator.
+-- method. In fact, that method can convert any type to an iterator,
+-- but greskell limits types to which the conversion is applicable.
 --
 -- Associated with this type-class is 'IteratorItem'. 'IteratorItem'
 -- type family is association of type @a@ and the type of its item
@@ -45,7 +46,7 @@ import Data.Greskell.GMap (GMap, GMapEntry)
 --
 -- Caveat:
 --
--- - Because Haskell's 'String' is '[Char]', @IteratorItem String@
+-- - Because Haskell's 'String' is @[Char]@, @IteratorItem String@
 --   returns 'Char', which is incorrect. Use 'Text' if you want to
 --   deal with @String@s in Gremlin.
 class AsIterator a where

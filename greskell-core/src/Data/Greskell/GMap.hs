@@ -5,6 +5,10 @@
 -- Maintainer: Toshio Ito <debug.ito@gmail.com>
 --
 -- @since 0.1.2.0
+--
+-- This module defines types for parsing a "g:Map" GraphSON
+-- object. Usually users only have to use 'GMapEntry', because other
+-- types are just used internally to implement GraphSON parsers.
 module Data.Greskell.GMap
        ( -- * FlattenedMap
          FlattenedMap(..),
@@ -75,6 +79,7 @@ import Data.Greskell.GraphSON.GraphSONTyped (GraphSONTyped(..))
 newtype FlattenedMap c k v = FlattenedMap { unFlattenedMap :: c k v }
                    deriving (Show,Eq,Ord,Foldable,Traversable,Functor)
 
+-- | Use 'parseToFlattenedMap'.
 instance (FromJSON k, FromJSON v, IsList (c k v), Item (c k v) ~ (k,v)) => FromJSON (FlattenedMap c k v) where
   parseJSON (Array v) = parseToFlattenedMap parseJSON parseJSON v
   parseJSON v = fail ("Expects Array, but got " ++ show v)
@@ -149,6 +154,7 @@ parseToGMap :: (IsList (c k v), Item (c k v) ~ (k,v))
 parseToGMap _ _ op (Left o) = fmap (GMap False) $ op o
 parseToGMap kp vp _ (Right v) = fmap (GMap True . unFlattenedMap) $ parseToFlattenedMap kp vp v
 
+-- | Use 'parseToGMap'.
 instance (FromJSON k, FromJSON v, IsList (c k v), Item (c k v) ~ (k,v), FromJSON (c k v)) => FromJSON (GMap c k v) where
   parseJSON v = case v of
     Object o -> parse $ Left o
@@ -267,6 +273,7 @@ parseToGMapEntry kp vp (Left o) = do
 instance GraphSONTyped (GMapEntry k v) where
   gsonTypeFor _ = "g:Map"
 
+-- | Use 'parseToGMapEntry'.
 instance (FromJSON k, FromJSONKey k, FromJSON v) => FromJSON (GMapEntry k v) where
   parseJSON val = case val of
     Object o -> parse $ Left o
@@ -285,11 +292,13 @@ instance (ToJSON k, ToJSONKey k, Ord k, ToJSON v) => ToJSON (GMapEntry k v) wher
 unGMapEntry :: GMapEntry k v -> (k, v)
 unGMapEntry e = (gmapEntryKey e, gmapEntryValue e)
 
+-- | Create 'GMap' that has the single 'GMapEntry'.
 singleton :: (IsList (c k v), Item (c k v) ~ (k,v)) => GMapEntry k v -> GMap c k v
 singleton e = GMap { gmapFlat = gmapEntryFlat e,
                      gmapValue = List.fromList [(gmapEntryKey e, gmapEntryValue e)]
                    }
 
+-- | Deconstruct 'GMap' into a list of 'GMapEntry's.
 toList :: (IsList (c k v), Item (c k v) ~ (k,v)) => GMap c k v -> [GMapEntry k v]
 toList gm = map toEntry $ List.toList $ gmapValue gm
   where
