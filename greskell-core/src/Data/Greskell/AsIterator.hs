@@ -4,7 +4,7 @@
 -- Description: Conversion from Object to Iterator in Gremlin
 -- Maintainer: Toshio Ito <debug.ito@gmail.com>
 --
--- 
+-- @since 0.1.2.0
 module Data.Greskell.AsIterator
        ( AsIterator(..)
        ) where

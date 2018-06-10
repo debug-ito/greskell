@@ -4,7 +4,7 @@
 -- Description: data type for g:Map
 -- Maintainer: Toshio Ito <debug.ito@gmail.com>
 --
--- 
+-- @since 0.1.2.0
 module Data.Greskell.GMap
        ( -- * FlattenedMap
          FlattenedMap(..),

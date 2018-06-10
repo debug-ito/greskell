@@ -12,7 +12,9 @@ module Data.Greskell
          module Data.Greskell.GTraversal,
          module Data.Greskell.Gremlin,
          module Data.Greskell.Graph,
-         module Data.Greskell.GraphSON
+         module Data.Greskell.GraphSON,
+         module Data.Greskell.GMap,
+         module Data.Greskell.AsIterator
        ) where
 
 import Data.Greskell.Greskell
@@ -21,3 +23,5 @@ import Data.Greskell.GTraversal
 import Data.Greskell.Gremlin
 import Data.Greskell.Graph
 import Data.Greskell.GraphSON
+import Data.Greskell.GMap
+import Data.Greskell.AsIterator
