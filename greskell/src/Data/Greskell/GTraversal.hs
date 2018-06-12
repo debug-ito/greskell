@@ -402,6 +402,8 @@ sE' :: [Greskell GValue]
 sE' = sE
 
 -- | @.addV()@ method on 'GraphTraversalSource'.
+--
+-- @since 0.2.0.0
 sAddV :: Vertex v
       => Greskell Text -- ^ vertex label
       -> Greskell GraphTraversalSource
@@ -412,6 +414,8 @@ sAddV label src = GTraversal $ sourceMethod "addV" [label] src
 --
 -- >>> toGremlin (source "g" & sAddV' "person")
 -- "g.addV(\"person\")"
+--
+-- @since 0.2.0.0
 sAddV' :: Greskell Text -> Greskell GraphTraversalSource -> GTraversal SideEffect () AVertex
 sAddV' = sAddV
 
@@ -813,10 +817,14 @@ gFlatMap gt = unsafeWalk "flatMap" [travToG gt]
 --
 -- For each input item, @.V@ step emits vertices selected by the
 -- argument (or all vertices if the empty list is passed.)
+--
+-- @since 0.2.0.0
 gV :: Vertex v => [Greskell (ElementID v)] -> Walk Transform s v
 gV ids = unsafeWalk "V" $ map toGremlin ids
 
 -- | Monomorphic version of 'gV'.
+--
+-- @since 0.2.0.0
 gV' :: [Greskell GValue] -> Walk Transform s AVertex
 gV' = gV
 
@@ -945,6 +953,8 @@ gDropP = unsafeWalk "drop" []
 --
 -- >>> toGremlin (source "g" & sV' [] & liftWalk &. gProperty "age" (20 :: Greskell Int))
 -- "g.V().property(\"age\",20)"
+--
+-- @since 0.2.0.0
 gProperty :: Element e
           => Key e v -- ^ key of the property
           -> Greskell v -- ^ value of the property
@@ -958,8 +968,10 @@ gProperty key val = unsafeWalk "property" [toGremlin key, toGremlin val]
 -- >>> let key_score = "score" :: Key (AVertexProperty Text) Int
 -- >>> toGremlin (source "g" & sV' [] & liftWalk &. gPropertyV (Just cList) key_location "New York" [key_since =: "2012-09-23", key_score =: 8])
 -- "g.V().property(list,\"location\",\"New York\",\"since\",\"2012-09-23\",\"score\",8)"
+--
+-- @since 0.2.0.0
 gPropertyV :: (Vertex e, vp ~ ElementProperty e, Property vp, Element (vp v))
-           => Maybe (Greskell Cardinality) -- ^ cardinality of the vertex property.
+           => Maybe (Greskell Cardinality) -- ^ optional cardinality of the vertex property.
            -> Key e v -- ^ key of the vertex property
            -> Greskell v -- ^ value of the vertex property
            -> [KeyValue (vp v)] -- ^ optional meta-properties for the vertex property.
@@ -978,16 +990,22 @@ gPropertyV mcard key val metaprops = unsafeWalk "property" (arg_card ++ arg_keyv
 -- Type @s@ is the input Vertex for the @.addE@ step. Type @e@ is the
 -- type of the anchor Vertex that the 'AddAnchor' yields. So, @.addE@
 -- step creates an edge between @s@ and @e@.
+--
+-- @since 0.2.0.0
 data AddAnchor s e = AddAnchor Text (GTraversal Transform s e)
 
 anchorStep :: WalkType c => AddAnchor s e -> Walk c edge edge
 anchorStep (AddAnchor step_name subtraversal) = unsafeWalk step_name [toGremlin subtraversal]
 
 -- | @.from@ step with a traversal.
+-- 
+-- @since 0.2.0.0
 gFrom :: (ToGTraversal g) => g Transform s e -> AddAnchor s e
 gFrom = AddAnchor "from" . toGTraversal
 
 -- | @.to@ step with a traversal.
+--
+-- @since 0.2.0.0
 gTo :: (ToGTraversal g) => g Transform s e -> AddAnchor s e
 gTo = AddAnchor "to" . toGTraversal
 
@@ -998,6 +1016,8 @@ gTo = AddAnchor "to" . toGTraversal
 -- "g.V().addE(\"knows\").from(__.V().has(\"name\",\"marko\"))"
 -- >>> toGremlin (source "g" & sV' [] &. gHas2 key_name "marko" & liftWalk &. gAddE' "knows" (gTo $ gV' []))
 -- "g.V().has(\"name\",\"marko\").addE(\"knows\").to(__.V())"
+-- 
+-- @since 0.2.0.0
 gAddE :: (Vertex vs, Vertex ve, Edge e)
       => Greskell Text
       -> AddAnchor vs ve
@@ -1005,6 +1025,8 @@ gAddE :: (Vertex vs, Vertex ve, Edge e)
 gAddE label anch = (unsafeWalk "addE" [toGremlin label]) >>> anchorStep anch
 
 -- | Monomorphic version of 'gAddE'
+-- 
+-- @since 0.2.0.0
 gAddE' :: Greskell Text -> AddAnchor AVertex AVertex -> Walk SideEffect AVertex AEdge
 gAddE' = gAddE
 

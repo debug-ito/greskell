@@ -20,8 +20,8 @@
 
 ### GTraversal module
 
-* Add `gV`, `gAddE`, `gFrom`, `gTo`, `gProperty`, `gPropertyV`,
-  `sAddV`, `sAddV'`.
+* Add `gV`, `gV'`, `gAddE`, `gAddE'`, `gFrom`, `gTo`, `gProperty`,
+  `gPropertyV`, `sAddV`, `sAddV'`.
 
 
 ## 0.1.1.0  -- 2018-04-08
