@@ -89,7 +89,7 @@ instance Fractional a => Fractional (Greskell a) where
     where
       scriptOf accessor = TL.pack $ show $ accessor rat
 
--- | Semigroup operator '(<>)' on 'Greskell' assumes @String@
+-- | Semigroup operator '<>' on 'Greskell' assumes @String@
 -- concatenation on Gremlin.
 instance IsString a => Semigroup (Greskell a) where
   (<>) = biOp "+"
@@ -150,9 +150,9 @@ unsafeGreskellLazy = Greskell
 
 -- $literals
 --
--- Functions to create literals in Gremlin script. Use 'fromInteger'
--- to create integer literals. Use 'fromRational' or 'number' to
--- create floating-point data literals.
+-- Functions to create literals in Gremlin script. Use 'fromInteger',
+-- 'valueInt' or 'gvalueInt' to create integer literals. Use
+-- 'fromRational' or 'number' to create floating-point data literals.
 
 -- | Create a String literal in Gremlin script. The content is
 -- automatically escaped.
@@ -190,7 +190,7 @@ list gs = unsafeGreskellLazy $ ("[" <> TL.intercalate "," gs_txt <> "]")
 -- | Make a list with a single object. Useful to prevent the Gremlin
 -- Server from automatically iterating the result object.
 --
--- >>> toGremlin $ single ("hoge" :: Greskell String)
+-- >>> toGremlin $ single ("hoge" :: Greskell Text)
 -- "[\"hoge\"]"
 single :: Greskell a -> Greskell [a]
 single g = list [g]
@@ -232,6 +232,8 @@ value (Aeson.Object obj)
 --
 -- >>> toGremlin $ valueInt (100 :: Int)
 -- "100"
+--
+-- @since 0.1.2.0
 valueInt :: Integral a => a -> Greskell Value
 valueInt n = fmap toValue $ fromIntegral n
   where
@@ -239,6 +241,8 @@ valueInt n = fmap toValue $ fromIntegral n
     toValue = const Aeson.Null
 
 -- | 'Value' literal as 'GValue' type.
+--
+-- @since 0.1.2.0
 gvalue :: Value -> Greskell GValue
 gvalue = fmap phantomToGValue . value
   where
@@ -248,6 +252,8 @@ gvalue = fmap phantomToGValue . value
 --
 -- >>> toGremlin $ gvalueInt (256 :: Int)
 -- "256"
+--
+-- @since 0.1.2.0
 gvalueInt :: Integral a => a -> Greskell GValue
 gvalueInt n = fmap toGValue $ fromIntegral n
   where
@@ -283,7 +289,7 @@ unsafeFunCall fun_name args = unsafeGreskell $ unsafeFunCallText fun_name args
 -- | Unsafely create a 'Greskell' that calls the given object method
 -- call with the given target and arguments.
 --
--- >>> toGremlin $ unsafeMethodCall ("foobar" :: Greskell String) "length" []
+-- >>> toGremlin $ unsafeMethodCall ("foobar" :: Greskell Text) "length" []
 -- "(\"foobar\").length()"
 unsafeMethodCall :: Greskell a -- ^ target object
                  -> Text -- ^ method name

@@ -7,6 +7,8 @@
 -- __This module is for advanced use. Most users should just use "Data.Greskell.GraphSON".__
 --
 -- This module defines 'GValue' and exposes its deconstructors.
+--
+-- @since 0.1.2.0
 module Data.Greskell.GraphSON.GValue
        ( -- * GValue type
          GValue(..),
@@ -52,7 +54,7 @@ newtype GValue = GValue { unGValue :: GraphSON GValueBody }
 
 instance Hashable GValue
 
--- | 'GValue' without 'GraphSON' wrapper.
+-- | 'GValue' without the top-level 'GraphSON' wrapper.
 --
 -- @since 0.1.2.0
 data GValueBody =
@@ -89,7 +91,8 @@ instance FromJSON GValue where
       recurse (Bool b) = return $ GBool b
       recurse Null = return GNull
 
--- | Reconstruct 'Value' from 'GValue'.
+-- | Reconstruct 'Value' from 'GValue'. It preserves all GraphSON
+-- wrappers.
 instance ToJSON GValue where
   toJSON (GValue gson_body) = toJSON $ fmap toJSON gson_body
 
@@ -130,12 +133,16 @@ typedGValue' t b = GValue $ typedGraphSON' t b
 --
 
 -- | Remove all 'GraphSON' wrappers recursively from 'GValue'.
+--
+-- @since 0.1.2.0
 unwrapAll :: GValue -> Value
 unwrapAll = unwrapBase unwrapAll
 
 -- | Remove the top-level 'GraphSON' wrapper, but leave other wrappers
 -- as-is. The remaining wrappers are reconstructed by 'toJSON' to make
 -- them into 'Value'.
+--
+-- @since 0.1.2.0
 unwrapOne :: GValue -> Value
 unwrapOne = unwrapBase toJSON
 
@@ -150,9 +157,13 @@ unwrapBase mapChild (GValue gson_body) = unwrapBody $ gsonValue gson_body
     unwrapBody (GObject o) = Object $ fmap mapChild o
 
 -- | Get the 'GValueBody' from 'GValue'.
+--
+-- @since 0.1.2.0
 gValueBody :: GValue -> GValueBody
 gValueBody = gsonValue . unGValue
 
 -- | Get the 'gsonType' field from 'GValue'.
+--
+-- @since 0.1.2.0
 gValueType :: GValue -> Maybe Text
 gValueType = gsonType . unGValue
