@@ -31,9 +31,8 @@ module Data.Greskell.Graph
          KeyValue(..),
          (=:),
          -- * Concrete data types
-         --
          -- $concrete_types
-         --
+         
          -- ** Vertex
          AVertex(..),
          -- ** Edge
@@ -145,6 +144,8 @@ tValue :: (Element (p v), Property p) => Greskell (T (p v) v)
 tValue = unsafeGreskellLazy "T.value"
 
 -- | @org.apache.tinkerpop.gremlin.structure.VertexProperty.Cardinality@ enum.
+--
+-- @since 0.2.0.0
 data Cardinality
 
 -- Developer note: while 'tId' creates a Greskell of "T.id", 'cList'
@@ -162,14 +163,20 @@ data Cardinality
 --
 -- >>> toGremlin cList
 -- "list"
+--
+-- @since 0.2.0.0
 cList :: Greskell Cardinality
 cList = unsafeGreskellLazy "list"
 
 -- | @set@ Cardinality.
+--
+-- @since 0.2.0.0
 cSet :: Greskell Cardinality
 cSet = unsafeGreskellLazy "set"
 
 -- | @single@ Cardinality.
+--
+-- @since 0.2.0.0
 cSingle :: Greskell Cardinality
 cSingle = unsafeGreskellLazy "single"
 
@@ -199,34 +206,42 @@ key = Key . string
 -- | Pair of 'Key' and its value.
 --
 -- Type @a@ is the type of 'Element' that keeps the 'KeyValue'
--- pair. It drops the type of the value, so that you can construct
--- heterogeneous lists of key-value pairs for a given 'Element'.
+-- pair. It drops the type of the value, so that you can construct a
+-- heterogeneous list of key-value pairs for a given 'Element'.
+--
+-- @since 0.2.0.0
 data KeyValue a where
   KeyValue :: Key a b -> Greskell b -> KeyValue a
 
 -- | Constructor operator of 'KeyValue'.
+--
+-- @since 0.2.0.0
 (=:) :: Key a b -> Greskell b -> KeyValue a
 (=:) = KeyValue
 
 -- $concrete_types
---
--- Concrete data types based on aeson values.
+-- Concrete data types based on Aeson data types.
 --
 -- Element IDs and property values are all 'GValue', because they are
--- highly polymorphic. The 'GValue' type allows you to inspect
--- 'gsonType' field if necessary. 'ElementID' and 'EdgeVertexID' are
--- 'GValue', too.
+-- highly polymorphic. 'ElementID' and 'EdgeVertexID' are 'GValue',
+-- too.
 --
 -- As for properties, you can use 'PropertyMap' and other type-classes
 -- to manipulate them.
 --
 -- If you want to define your own graph structure types, see
 -- [README.md](https://github.com/debug-ito/greskell#make-your-own-graph-structure-types)
--- for detail.
+-- for detail. Basically you can use 'FromGraphSON' instances of these
+-- concrete data types to implement parsers for your own types.
+--
+-- NOTE: In version 0.1.1.0 and before, these conrete data types were
+-- based on @GraphSON Value@. In version 0.2.0.0, this was changed to
+-- 'GValue', so that it can parse nested data structures encoded in
+-- GraphSON.
 
 
 -- | General vertex type you can use for 'Vertex' class, based on
--- aeson data types.
+-- Aeson data types.
 data AVertex =
   AVertex
   { avId :: GValue,
@@ -258,7 +273,7 @@ instance FromGraphSON AVertex where
                  <*> (o `optionalMonoid` "properties")
     _ -> empty
 
--- | General edge type you can use for 'Edge' class, based on aeson
+-- | General edge type you can use for 'Edge' class, based on Aeson
 -- data types.
 data AEdge =
   AEdge
@@ -314,6 +329,8 @@ optionalMonoid obj field_name = maybe (return mempty) parseGraphSON $ nullToNoth
 -- | __This typeclass is for internal use.__
 --
 -- GraphSON parser with a property key given from outside.
+--
+-- @since 0.2.0.0
 class FromGraphSONWithKey a where
   parseGraphSONWithKey :: Text -> GValue -> Parser a
 
@@ -361,7 +378,7 @@ instance Traversable AProperty where
   traverse f sp = fmap (\v -> sp { apValue = v } ) $ f $ apValue sp
 
 -- | General vertex property type you can use for VertexProperty,
--- based on aeson data types.
+-- based on Aeson data types.
 --
 -- If you are not sure about the type @v@, just use 'GValue'.
 data AVertexProperty v =

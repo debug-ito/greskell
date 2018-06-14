@@ -56,9 +56,11 @@ instance GraphSONTyped Double where
 instance GraphSONTyped [a] where
   gsonTypeFor _ = "g:List"
 
+-- | @since 0.1.2.0
 instance GraphSONTyped (Vector a) where
   gsonTypeFor _ = "g:List"
 
+-- | @since 0.1.2.0
 instance GraphSONTyped (Seq a) where
   gsonTypeFor _ = "g:List"
 
@@ -69,18 +71,22 @@ instance GraphSONTyped Scientific where
 instance GraphSONTyped (HashSet a) where
   gsonTypeFor _ = "g:Set"
 
+-- | @since 0.1.2.0
 instance GraphSONTyped IntSet where
   gsonTypeFor _ = "g:Set"
 
+-- | @since 0.1.2.0
 instance GraphSONTyped (Set a) where
   gsonTypeFor _ = "g:Set"
 
 instance GraphSONTyped (L.HashMap k v) where
   gsonTypeFor _ = "g:Map"
 
+-- | @since 0.1.2.0
 instance GraphSONTyped (L.Map k v) where
   gsonTypeFor _= "g:Map"
 
+-- | @since 0.1.2.0
 instance GraphSONTyped (L.IntMap v) where
   gsonTypeFor _= "g:Map"
 
@@ -95,6 +101,6 @@ instance GraphSONTyped (L.IntMap v) where
 -- instance GraphSONTyped (S.IntMap v) where
 --   gsonTypeFor _= "g:Map"
 
-
+-- | @since 0.1.2.0
 instance (GraphSONTyped a, GraphSONTyped b) => GraphSONTyped (Either a b) where
   gsonTypeFor e = either gsonTypeFor gsonTypeFor e

@@ -44,12 +44,17 @@ import Data.Greskell.GraphSON.Core
 -- document.
 --
 -- This type is used to parse GraphSON documents. See also
--- 'FromGraphSON' class.
+-- 'Data.Greskell.GraphSON.FromGraphSON' class.
+-- 
+-- @since 0.1.2.0
 newtype GValue = GValue { unGValue :: GraphSON GValueBody }
                  deriving (Show,Eq,Generic)
 
 instance Hashable GValue
 
+-- | 'GValue' without 'GraphSON' wrapper.
+--
+-- @since 0.1.2.0
 data GValueBody =
     GObject !(HashMap Text GValue)
   | GArray !(Vector GValue)
@@ -97,10 +102,14 @@ instance ToJSON GValueBody where
   toJSON GNull = Null
 
 -- | Create a 'GValue' without \"@type\" field.
+-- 
+-- @since 0.1.2.0
 nonTypedGValue :: GValueBody -> GValue
 nonTypedGValue = GValue . nonTypedGraphSON
 
 -- | Create a 'GValue' with the given \"@type\" field.
+--
+-- @since 0.1.2.0
 typedGValue' :: Text -- ^ \"@type\" field.
              -> GValueBody -> GValue
 typedGValue' t b = GValue $ typedGraphSON' t b

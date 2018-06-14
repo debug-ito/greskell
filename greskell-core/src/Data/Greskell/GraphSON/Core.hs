@@ -45,7 +45,7 @@ import Data.Greskell.GraphSON.GraphSONTyped (GraphSONTyped(..))
 -- Just (GraphSON {gsonType = Just "g:Int32", gsonValue = 1000})
 --
 -- Note that encoding of the \"g:Map\" type is inconsistent between
--- GraphSON v1, v2 and v3. To handle the encoding, use
+-- GraphSON v1 and v2, v3. To handle the encoding, use
 -- "Data.Greskell.GMap".
 data GraphSON v =
   GraphSON
@@ -65,6 +65,7 @@ instance Foldable GraphSON where
 instance Traversable GraphSON where
   traverse f gs = fmap (\v -> gs { gsonValue = v }) $ f $ gsonValue gs
 
+-- | @since 0.1.2.0
 instance Hashable v => Hashable (GraphSON v)
 
 -- | If 'gsonType' is 'Just', the 'GraphSON' is encoded as a typed

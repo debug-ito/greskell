@@ -91,7 +91,7 @@ import Data.Greskell.GraphSON.GValue
 -- rule.
 --
 -- - Simple scalar types (e.g. 'Int' and 'Text'): use 'parseUnwrapAll'.
--- - List-like types (e.g. '[]', 'Vector' and 'Set'): use
+-- - List-like types (e.g. @[]@, 'Vector' and 'Set'): use
 --   'parseUnwrapList'.
 -- - Map-like types (e.g. 'L.HashMap' and 'L.Map'): parse into 'GMap'
 --   first, then unwrap the 'GMap' wrapper. That way, all versions of
@@ -103,6 +103,8 @@ import Data.Greskell.GraphSON.GValue
 -- 'Data.Greskell.AsIterator.AsIterator', using 'String' in greskell
 -- is an error in most cases. To prevent you from using 'String',
 -- 'Char' (and thus 'String') don't have 'FromGraphSON' instances.
+--
+-- @since 0.1.2.0
 class FromGraphSON a where
   parseGraphSON :: GValue -> Parser a
 
@@ -110,6 +112,8 @@ class FromGraphSON a where
 -- result with 'parseJSON'.
 --
 -- Useful to implement 'FromGraphSON' instances for scalar types.
+-- 
+-- @since 0.1.2.0
 parseUnwrapAll :: FromJSON a => GValue -> Parser a
 parseUnwrapAll gv = parseJSON $ unwrapAll gv
 
@@ -129,15 +133,21 @@ parseUnwrapAll gv = parseJSON $ unwrapAll gv
 -- array, and gather them by 'List.fromList'.
 --
 -- Useful to implement 'FromGraphSON' instances for 'IsList' types.
+--
+-- @since 0.1.2.0
 parseUnwrapList :: (IsList a, i ~ Item a, FromGraphSON i) => GValue -> Parser a
 parseUnwrapList (GValue (GraphSON _ (GArray v))) = fmap List.fromList $ traverse parseGraphSON $ List.toList v
 parseUnwrapList (GValue (GraphSON _ body)) = fail ("Expects GArray, but got " ++ show body)
 
 -- | Parse 'GValue' into 'FromGraphSON'.
+--
+-- @since 0.1.2.0
 parseEither :: FromGraphSON a => GValue -> Either String a
 parseEither = Aeson.parseEither parseGraphSON
 
 -- | Like Aeson's 'Aeson..:', but for 'FromGraphSON'.
+--
+-- @since 0.1.2.0
 (.:) :: FromGraphSON a => HashMap Text GValue -> Text -> Parser a
 go .: label = maybe failure parseGraphSON $ HM.lookup label go
   where
@@ -146,6 +156,8 @@ go .: label = maybe failure parseGraphSON $ HM.lookup label go
 -- | Implementation of 'parseJSON' based on 'parseGraphSON'. The input
 -- 'Value' is first converted to 'GValue', and it's parsed to the
 -- output type.
+--
+-- @since 0.1.2.0
 parseJSONViaGValue :: FromGraphSON a => Value -> Parser a
 parseJSONViaGValue v = parseGraphSON =<< parseJSON v
 
