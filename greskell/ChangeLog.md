@@ -18,6 +18,10 @@
 * (internal change): `PropertyMapGeneric` is now based on
   `HashMap.Strict`.
 
+### The top Data.Greskell module
+
+* Re-export `GMap` and `AsIterator` modules.
+
 ### GTraversal module
 
 * Add `gV`, `gV'`, `gAddE`, `gAddE'`, `gFrom`, `gTo`, `gProperty`,
