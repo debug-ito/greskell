@@ -13,10 +13,10 @@
   parsing. If it finds "@type" key, I think it should expect that the
   JSON object is a GraphSON wrapper. It's more or less a bug fix, so
   it doesn't bump major version.
-* Add `instance GraphSONTyped Either`.
 * Add `Generic` and `Hashable` instances to `GraphSON`.
 * Add `GValue` and `GValueBody` types and related functions.
 * Add `FromGraphSON` class and related functions.
+* Add `instance GraphSONTyped Either`.
 * Add `instance GraphSONTyped` to types in `containers` package.
 
 ### Greskell module
