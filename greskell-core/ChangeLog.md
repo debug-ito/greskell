@@ -18,6 +18,7 @@
 * Add `FromGraphSON` class and related functions.
 * Add `instance GraphSONTyped Either`.
 * Add `instance GraphSONTyped` to types in `containers` package.
+* Re-export Aeson's `Parser` type for convenience.
 
 ### Greskell module
 

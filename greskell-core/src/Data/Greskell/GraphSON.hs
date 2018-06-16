@@ -24,6 +24,7 @@ module Data.Greskell.GraphSON
          -- * FromGraphSON
          FromGraphSON(..),
          -- ** parser support
+         Parser,
          parseEither,
          parseUnwrapAll,
          parseUnwrapList,
