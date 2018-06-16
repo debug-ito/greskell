@@ -1,4 +1,4 @@
-{-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE DuplicateRecordFields, CPP #-}
 -- |
 -- Module: Network.Greskell.WebSocket.Connection.Impl
 -- Description: internal implementation of Connection
@@ -13,18 +13,20 @@ import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (withAsync, Async, async, waitCatchSTM, waitAnySTM)
 import qualified Control.Concurrent.Async as Async
 import Control.Concurrent.STM
-  ( TBQueue, readTBQueue, newTBQueueIO, writeTBQueue, flushTBQueue,
+  ( TBQueue, readTBQueue, newTBQueueIO, writeTBQueue,
     TQueue, writeTQueue, newTQueueIO, readTQueue,
     TVar, newTVarIO, readTVar, writeTVar,
     TMVar, tryPutTMVar, tryReadTMVar, putTMVar, newEmptyTMVarIO, readTMVar,
     STM, atomically, retry
   )
+import qualified Control.Concurrent.STM as STM
 import Control.Exception.Safe
   ( Exception(toException), SomeException, withException, throw, try, finally
   )
 import Control.Monad (when, void, forM_)
 import Data.Aeson (Value)
 import qualified Data.ByteString.Lazy as BSL
+import Data.Foldable (toList)
 import qualified Data.HashTable.IO as HT
 import Data.Monoid (mempty)
 import Data.Typeable (Typeable)
@@ -50,6 +52,15 @@ import Network.Greskell.WebSocket.Response
     isTerminating
   )
 import Network.Greskell.WebSocket.Util (slurp)
+
+
+flushTBQueue :: TBQueue a -> STM [a]
+#if MIN_VERSION_stm(2,4,5)
+flushTBQueue = STM.flushTBQueue
+#else
+flushTBQueue q = fmap toList $ slurp $ STM.tryReadTBQueue q
+#endif
+
 
 -- | Host name or an IP address.
 type Host = String
@@ -426,3 +437,5 @@ isTerminatingResponse (ResponseMessage { status = (ResponseStatus { code = c }) 
 -- | Get all remaining 'ResponseMessage's from 'ResponseHandle'.
 slurpResponses :: ResponseHandle s -> IO (Vector (ResponseMessage s))
 slurpResponses h = slurp $ nextResponse h
+
+

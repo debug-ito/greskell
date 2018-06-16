@@ -23,7 +23,8 @@ library
   ghc-options:          -Wall -fno-warn-unused-imports
   -- default-extensions:   
   other-extensions:     OverloadedStrings, DuplicateRecordFields,
-                        DeriveGeneric, PartialTypeSignatures, FlexibleContexts
+                        DeriveGeneric, PartialTypeSignatures, FlexibleContexts,
+                        CPP
   exposed-modules:      Network.Greskell.WebSocket,
                         Network.Greskell.WebSocket.Connection,
                         Network.Greskell.WebSocket.Connection.Settings,
