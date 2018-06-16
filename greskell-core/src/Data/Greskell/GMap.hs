@@ -52,7 +52,7 @@ import Data.Greskell.GraphSON.GraphSONTyped (GraphSONTyped(..))
 -- >>> import Data.HashMap.Strict (HashMap)
 -- >>> import qualified Data.HashMap.Strict as HashMap
 -- >>> import Data.List (sort)
--- >>> import Data.Either (isLeft, fromLeft)
+-- >>> import Data.Either (isLeft)
 
 -- | JSON encoding of a map as an array of flattened key-value pairs.
 -- 
