@@ -46,7 +46,7 @@ library
                         bytestring,
                         base64-bytestring,
                         text,
-                        aeson,
+                        aeson >=1.1.2.0,
                         unordered-containers,
                         uuid,
                         async,
