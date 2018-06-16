@@ -2,12 +2,11 @@
 
 greskell is a toolset to build and execute [Gremlin graph query language](http://tinkerpop.apache.org/gremlin.html) in Haskell.
 
-__NOTE: for now greskell doesn't support connecting to a Gremlin server. For that purpose, use [gremlin-haskell](http://hackage.haskell.org/package/gremlin-haskell).__
-
 Contents:
 
 - [The Greskell type](#the-greskell-type)
 - [Build variable binding](#build-variable-binding)
+- [Submit to the Gremlin Server](#submit-to-the-gremlin-server)
 - [DSL for graph traversals](#dsl-for-graph-traversals)
 - [Type parameters of GTraversal and Walk](#type-parameters-of-gtraversal-and-walk)
 - [Restrict effect of GTraversal by WalkType](#restrict-effect-of-gtraversal-by-walktype)
@@ -89,15 +88,15 @@ main = hspec $ specify "Binder" $ do
 
 `runBinder` function returns the `Binder`'s monadic result and the created binding.
 
-To execute the script and binding, use [gremlin-haskell](http://hackage.haskell.org/package/gremlin-haskell) package.
 
-```haskell Binder
-executeExample :: IO ()
-executeExample = do
-  let (script, binding) = runBinder $ plusTen 50
-  TP.run "localhost" 8182 $ \connection -> do
-    result <- TP.submit connection (toGremlin script) (Just binding)
-    print result
+## Submit to the Gremlin Server
+
+To connect to the Gremlin Server and submit your Gremlin script, use [greskell-websocket](http://hackage.haskell.org/package/greskell-websocket) package.
+
+```haskell submit
+
+TODO
+
 ```
 
 
