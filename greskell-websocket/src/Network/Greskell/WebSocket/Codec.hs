@@ -6,7 +6,6 @@
 -- 
 module Network.Greskell.WebSocket.Codec
        ( Codec(..),
-         ErrorMessage,
          encodeBinaryWith,
          messageHeader,
          decodeBinary
@@ -21,8 +20,6 @@ import Data.Text.Encoding (encodeUtf8, decodeUtf8')
 import Network.Greskell.WebSocket.Request (RequestMessage)
 import Network.Greskell.WebSocket.Response (ResponseMessage)
 
-type ErrorMessage = String
-
 -- | Encoder of 'RequestMessage' and decoder of 'ResponseMessage',
 -- associated with a MIME type.
 --
@@ -31,7 +28,7 @@ data Codec s =
   Codec
   { mimeType :: Text, -- ^ MIME type sent to the server
     encodeWith :: RequestMessage -> BSL.ByteString, -- ^ Request encoder
-    decodeWith :: BSL.ByteString -> Either ErrorMessage (ResponseMessage s) -- ^ Response decoder
+    decodeWith :: BSL.ByteString -> Either String (ResponseMessage s) -- ^ Response decoder
   }
 
 instance Functor Codec where
@@ -54,7 +51,7 @@ encodeBinaryWith c req = messageHeader (mimeType c) <> encodeWith c req
 -- | Decode a message in the \"binary\" format. This is mainly for
 -- testing purposes.
 decodeBinary :: BSL.ByteString
-             -> Either ErrorMessage (Text, BSL.ByteString) -- ^ (mimeType, payload)
+             -> Either String (Text, BSL.ByteString) -- ^ (mimeType, payload)
 decodeBinary raw_msg = do
   case BSL.uncons raw_msg of
    Nothing -> Left "Length of MIME type is missing in the header."
