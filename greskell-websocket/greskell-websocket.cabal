@@ -4,15 +4,18 @@ author:                 Toshio Ito <debug.ito@gmail.com>
 maintainer:             Toshio Ito <debug.ito@gmail.com>
 license:                BSD3
 license-file:           LICENSE
--- synopsis:               
--- description:            
--- category:               
+synopsis:               Haskell client for Gremlin Server using WebSocket serializer
+description:            Haskell client for [Gremlin Server](http://tinkerpop.apache.org/docs/current/reference/#gremlin-server) using WebSocket serializer.
+                        See [README.md](https://github.com/debug-ito/greskell/blob/master/README.md) for detail.
+                        .
+                        This package is based on @greskell-core@, and best used with @greskell@ package.
+category:               Network
 cabal-version:          >= 1.10
 build-type:             Simple
 extra-source-files:     README.md, ChangeLog.md,
                         test/samples/*.json
--- homepage:               
--- bug-reports:            
+homepage:               https://github.com/debug-ito/greskell/
+bug-reports:            https://github.com/debug-ito/greskell/issues/
 
 library
   default-language:     Haskell2010
@@ -105,7 +108,6 @@ test-suite server-test
   else
     buildable: False
 
-
 source-repository head
   type:                 git
---  location:             
+  location:             https://github.com/debug-ito/greskell.git
