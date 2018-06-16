@@ -10,6 +10,7 @@ Contents:
 - [DSL for graph traversals](#dsl-for-graph-traversals)
 - [Type parameters of GTraversal and Walk](#type-parameters-of-gtraversal-and-walk)
 - [Restrict effect of GTraversal by WalkType](#restrict-effect-of-gtraversal-by-walktype)
+- [Submit GTraversal](#submit-gtraversal)
 - [Graph structure types](#graph-structure-types)
 - [GraphSON parser](#graphson-parser)
 - [Make your own graph structure types](#make-your-own-graph-structure-types)
@@ -69,12 +70,11 @@ greskell's `Binder` monad is a simple monad that manages bound variables and the
 ```haskell Binder
 import Data.Greskell.Greskell (Greskell, toGremlin)
 import Data.Greskell.Binder (Binder, newBind, runBinder)
-import qualified Database.TinkerPop as TP -- from gremlin-haskell
 
 plusTen :: Int -> Binder (Greskell Int)
 plusTen x = do
   var_x <- newBind x
-  return $ var_x + 100
+  return $ var_x + 10
 ```
 
 `newBind` creates a new Gremlin variable unique in the `Binder`'s monadic context, and returns that variable.
@@ -82,7 +82,7 @@ plusTen x = do
 ```haskell Binder
 main = hspec $ specify "Binder" $ do
   let (script, binding) = runBinder $ plusTen 50
-  toGremlin script `shouldBe` "(__v0)+(100)"
+  toGremlin script `shouldBe` "(__v0)+(10)"
   binding `shouldBe` HM.fromList [("__v0", A.Number 50)]
 ```
 
@@ -94,10 +94,34 @@ main = hspec $ specify "Binder" $ do
 To connect to the Gremlin Server and submit your Gremlin script, use [greskell-websocket](http://hackage.haskell.org/package/greskell-websocket) package.
 
 ```haskell submit
+import Control.Exception.Safe (bracket, try, SomeException)
+import Data.Foldable (toList)
+import Data.Greskell.Greskell (Greskell) -- from greskell package
+import Data.Greskell.Binder -- from greskell package
+  (Binder, newBind, runBinder)
+import Network.Greskell.WebSocket -- from greskell-websocket package
+  (connect, close, submit, slurpResults)
 
-TODO
+submitExample :: IO [Int]
+submitExample =
+  bracket (connect "localhost" 8182) close $ \client -> do
+    let (g, binding) = runBinder $ plusTen 50
+    result_handle <- submit client g (Just binding)
+    fmap toList $ slurpResults result_handle
 
+plusTen :: Int -> Binder (Greskell Int)
+plusTen x = do
+  var_x <- newBind x
+  return $ var_x + 10
+
+main = hspec $ specify "submit" $ do
+  egot <- try submitExample :: IO (Either SomeException [Int])
+  case egot of
+    Left _ -> return () -- probably there's no server running
+    Right got -> got `shouldBe` [60]
 ```
+
+`submit` function sends a `Greskell` to the server and returns a `ResultHandle`. `ResultHandle` is a stream of evaluation results returned by the server. `slurpResults` gets all items from `ResultHandle`.
 
 
 ## DSL for graph traversals
@@ -178,10 +202,12 @@ Walk types are hierarchical. `Transform` is more powerful than `Filter`, and `Si
 ```haskell WalkType
 import Data.Greskell.GTraversal
   ( Walk, Filter, Transform, SideEffect, GTraversal,
-    liftWalk, source, sV, (&.), gHasLabel, gHas1, gAddV, gValues
+    liftWalk, source, sV, (&.),
+    gHasLabel, gHas1, gAddV, gValues, gIdentity
   )
 import Data.Greskell.Graph (AVertex)
 import Data.Greskell.Greskell (toGremlin)
+import Network.Greskell.WebSocket (Client, ResultHandle, submit)
 
 hasAge :: Walk Filter AVertex AVertex
 hasAge = gHas1 "age"
@@ -214,6 +240,16 @@ main = hspec $ specify "liftWalk" $ do
 ```
 
 In the above example, `nameOfPeople` function takes a `Filter` walk and creates a `Transform` walk. There is no way to pass a `SideEffect` walk (like `gAddV`) to `nameOfPeople` because `Filter` is weaker than `SideEffect`. That way, we can be sure that the result traversal of `nameOfPeople` function never has any side-effect (thus its walk type is just `Transform`.)
+
+
+## Submit GTraversal
+
+You can submit `GTraversal` directly to the Gremlin Server. Submitting `GTraversal c s e` yeilds `ResultHandle e`, so you can get the traversal results in a stream.
+
+```haskell WalkType
+getNameOfPeople :: Client -> IO (ResultHandle Text)
+getNameOfPeople client = submit client (nameOfPeople gIdentity) Nothing
+```
 
 
 ## Graph structure types

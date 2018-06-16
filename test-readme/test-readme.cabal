@@ -56,7 +56,8 @@ test-suite readme-submit
                         greskell, greskell-core,
                         markdown-unlit,
                         text, unordered-containers, aeson, heredoc,
-                        greskell-websocket
+                        greskell-websocket,
+                        safe-exceptions
 
 
 test-suite readme-GTraversal
@@ -81,7 +82,8 @@ test-suite readme-WalkType
                         hspec,
                         greskell, greskell-core,
                         markdown-unlit,
-                        text, unordered-containers, aeson, heredoc
+                        text, unordered-containers, aeson, heredoc,
+                        greskell-websocket
 
 
 test-suite readme-monomorphic
