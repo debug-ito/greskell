@@ -24,7 +24,8 @@ import qualified Network.Greskell.WebSocket.Request.Aeson as GAeson
 import Network.Greskell.WebSocket.Request.Common (Operation(..))
 
 
--- | RequestMessage to a Gremlin Server.
+-- | RequestMessage to a Gremlin Server. See
+-- <http://tinkerpop.apache.org/docs/current/dev/provider/>.
 data RequestMessage =
   RequestMessage
   { requestId :: !UUID,

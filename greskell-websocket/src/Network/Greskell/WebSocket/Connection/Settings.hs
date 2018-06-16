@@ -26,6 +26,8 @@ import System.IO (stderr, hPutStrLn)
 --
 -- You can get the default 'Settings' by 'defSettings' function, and
 -- customize its fields by accessor functions.
+--
+-- Type @s@ is the body of Response.
 data Settings s =
   Settings
   { codec :: !(Codec s),

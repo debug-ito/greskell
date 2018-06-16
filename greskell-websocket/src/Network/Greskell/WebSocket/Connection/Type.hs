@@ -60,6 +60,8 @@ data ConnectionState =
   deriving (Show,Eq,Ord,Enum,Bounded)
 
 -- | A WebSocket connection to a Gremlin Server.
+--
+-- Type @s@ is the body of Response, as in 'ResponseMessage'.
 data Connection s =
   Connection
   { connQReq :: !(TBQueue (ReqPack s)),

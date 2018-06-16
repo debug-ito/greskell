@@ -6,9 +6,12 @@
 --
 -- 
 module Network.Greskell.WebSocket.Request.Session
-       ( OpAuthentication(..),
+       ( -- * OpAuthentication
+         OpAuthentication(..),
+         -- * OpEval
          SessionID,
          OpEval(..),
+         -- * OpClose
          OpClose(..)
        ) where
 

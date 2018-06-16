@@ -6,7 +6,9 @@
 --
 -- 
 module Network.Greskell.WebSocket.Request.Standard
-       ( OpAuthentication(..),
+       ( -- * OpAuthentication
+         OpAuthentication(..),
+         -- * OpEval
          OpEval(..)
        ) where
 

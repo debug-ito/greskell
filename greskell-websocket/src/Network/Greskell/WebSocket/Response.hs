@@ -6,9 +6,13 @@
 --
 -- 
 module Network.Greskell.WebSocket.Response
-       ( ResponseMessage(..),
+       ( -- * ResponseMessage
+         ResponseMessage(..),
+         -- * ResponseStatus
          ResponseStatus(..),
+         -- * ResponseResult
          ResponseResult(..),
+         -- * ResponseCode
          ResponseCode(..),
          codeToInt,
          codeFromInt,
@@ -176,7 +180,8 @@ instance FromGraphSON s => FromGraphSON (ResponseResult s) where
 instance Functor ResponseResult where
   fmap f rr = rr { resultData = f $ resultData rr }
 
--- | ResponseMessage object from Gremlin Server.
+-- | ResponseMessage object from Gremlin Server. See
+-- <http://tinkerpop.apache.org/docs/current/dev/provider/>.
 --
 -- Type @s@ is the type of the response data.
 data ResponseMessage s =

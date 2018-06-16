@@ -337,6 +337,8 @@ runTimer wait_sec rid = async $ do
 
 -- | A handle associated in a 'Connection' for a pair of request and
 -- response. You can retrieve 'ResponseMessage's from this object.
+--
+-- Type @s@ is the body of the response.
 data ResponseHandle s =
   ResponseHandle
   { rhGetResponse :: STM (ResPack s),

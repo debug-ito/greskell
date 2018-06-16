@@ -5,9 +5,12 @@
 --
 -- 
 module Network.Greskell.WebSocket.Codec
-       ( Codec(..),
+       ( -- * Codec
+         Codec(..),
+         -- * Request encoder
          encodeBinaryWith,
          messageHeader,
+         -- * Request decoder
          decodeBinary
        ) where
 
@@ -23,7 +26,7 @@ import Network.Greskell.WebSocket.Response (ResponseMessage)
 -- | Encoder of 'RequestMessage' and decoder of 'ResponseMessage',
 -- associated with a MIME type.
 --
--- Type @s@ is the type of response data.
+-- Type @s@ is the body of Response.
 data Codec s =
   Codec
   { mimeType :: Text, -- ^ MIME type sent to the server
