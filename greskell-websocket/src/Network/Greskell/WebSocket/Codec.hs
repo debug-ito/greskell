@@ -29,9 +29,9 @@ type ErrorMessage = String
 -- Type @s@ is the type of response data.
 data Codec s =
   Codec
-  { mimeType :: Text,
-    encodeWith :: RequestMessage -> BSL.ByteString,
-    decodeWith :: BSL.ByteString -> Either ErrorMessage (ResponseMessage s)
+  { mimeType :: Text, -- ^ MIME type sent to the server
+    encodeWith :: RequestMessage -> BSL.ByteString, -- ^ Request encoder
+    decodeWith :: BSL.ByteString -> Either ErrorMessage (ResponseMessage s) -- ^ Response decoder
   }
 
 instance Functor Codec where
