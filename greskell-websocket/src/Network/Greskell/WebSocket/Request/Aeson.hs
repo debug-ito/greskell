@@ -12,8 +12,10 @@ module Network.Greskell.WebSocket.Request.Aeson
 
 import Data.Aeson
   ( genericToJSON, genericToEncoding, genericParseJSON,
-    defaultOptions, omitNothingFields, Options,
     ToJSON(..), Object, Value(Object)
+  )
+import Data.Aeson.Types 
+  ( defaultOptions, omitNothingFields, Options
   )
 
 opt :: Options
