@@ -41,7 +41,7 @@ library
                         Network.Greskell.WebSocket.Connection.Type,
                         Network.Greskell.WebSocket.Client.Impl,
                         Network.Greskell.WebSocket.Util
-  build-depends:        base,
+  build-depends:        base >=4.9.1.0 && <4.12,
                         greskell-core,
                         bytestring,
                         base64-bytestring,
