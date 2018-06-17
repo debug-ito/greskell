@@ -44,7 +44,6 @@ packages:
 # Dependency packages to be pulled from upstream that are not in the resolver
 # (e.g., acme-missiles-0.3)
 extra-deps:
-- gremlin-haskell-0.1.0.2
 - doctest-discover-0.1.0.8
 
 #### confirmed on 2018-03-12
