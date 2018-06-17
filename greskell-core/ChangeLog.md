@@ -5,6 +5,7 @@
 * Add `GMap` module.
 * Add `AsIterator` module.
 * Add `GraphSON.GValue` module.
+* Confirmed test with `aeson-1.4.0.0`.
 
 ### GraphSON module
 

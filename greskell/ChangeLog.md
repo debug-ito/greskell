@@ -2,6 +2,8 @@
 
 ## 0.2.0.0  -- (draft)
 
+* Confirmed test with `aeson-1.4.0.0` and `hint-0.8.0`.
+
 ### Graph module
 
 * [BREAKING CHANGE]: Now `AVertex`, `AEdge`, `AVertexProperty` are
