@@ -39,7 +39,7 @@ library
                         aeson >=0.11.2.1 && <1.5,
                         unordered-containers >=0.2.7.1 && <0.3,
                         semigroups >=0.18.2 && <0.19,
-                        vector
+                        vector >=0.12.0.1 && <0.13
 
 test-suite spec
   type:                 exitcode-stdio-1.0
@@ -104,8 +104,8 @@ test-suite server-test-suite
     build-depends:        base, aeson, hspec, text, unordered-containers, vector,
                           greskell, greskell-core,
                           scientific >=0.3.4.9 && <0.4,
-                          greskell-websocket,
-                          safe-exceptions
+                          greskell-websocket >=0.1.0.0 && <0.2,
+                          safe-exceptions >=0.1.6 && <0.2
   else
     buildable: False
 
