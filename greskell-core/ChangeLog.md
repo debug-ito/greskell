@@ -1,6 +1,6 @@
 # Revision history for greskell-core
 
-## 0.1.2.0  -- (draft)
+## 0.1.2.0  -- 2018-06-21
 
 * Add `GMap` module.
 * Add `AsIterator` module.

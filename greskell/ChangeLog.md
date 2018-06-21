@@ -1,6 +1,6 @@
 # Revision history for greskell
 
-## 0.2.0.0  -- (draft)
+## 0.2.0.0  -- 2018-06-21
 
 * Confirmed test with `aeson-1.4.0.0` and `hint-0.8.0`.
 
@@ -8,7 +8,7 @@
 
 * [BREAKING CHANGE]: Now `AVertex`, `AEdge`, `AVertexProperty` are
   based on `GValue` type, instead of `GraphSON Value`. This is for
-  taking care of possibly nested GraphSON encoded values in a generic
+  taking care of possibly nested GraphSON-encoded values in a generic
   way.
 * [BREAKING CHANGE]: `parseOneValue`, `parseListValues`,
   `parseNonEmptyValues` functions now require `FromGraphSON`
