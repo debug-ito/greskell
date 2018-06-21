@@ -8,7 +8,8 @@ synopsis:               Haskell binding for Gremlin graph query language
 description:            Haskell binding for [Gremlin graph query language](http://tinkerpop.apache.org/gremlin.html).
                         See [README.md](https://github.com/debug-ito/greskell/blob/master/README.md) for detail.
                         .
-                        This package is the main entry point of greskell family. It re-exports @greskell-core@ package,
+                        This package is the main entry point of greskell family.
+                        It re-exports [greskell-core](http://hackage.haskell.org/package/greskell-core) package,
                         and adds some useful functions to it.
 category:               Data
 cabal-version:          >= 1.10

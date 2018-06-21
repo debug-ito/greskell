@@ -8,7 +8,8 @@ synopsis:               Haskell client for Gremlin Server using WebSocket serial
 description:            Haskell client for [Gremlin Server](http://tinkerpop.apache.org/docs/current/reference/#gremlin-server) using WebSocket serializer.
                         See [README.md](https://github.com/debug-ito/greskell/blob/master/README.md) for detail.
                         .
-                        This package is based on @greskell-core@, and best used with @greskell@ package.
+                        This package is based on [greskell-core](http://hackage.haskell.org/package/greskell-core),
+                        and best used with [greskell](http://hackage.haskell.org/package/greskell) package.
 category:               Network
 cabal-version:          >= 1.10
 build-type:             Simple
