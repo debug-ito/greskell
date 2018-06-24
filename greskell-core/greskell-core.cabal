@@ -1,5 +1,5 @@
 name:                   greskell-core
-version:                0.1.2.0
+version:                0.1.2.1
 author:                 Toshio Ito <debug.ito@gmail.com>
 maintainer:             Toshio Ito <debug.ito@gmail.com>
 license:                BSD3
@@ -66,7 +66,7 @@ test-suite doctest
   ghc-options:          -Wall -fno-warn-unused-imports "-with-rtsopts=-M512m"
   main-is:              DocTest.hs
   build-depends:        base,
-                        doctest >=0.11 && <0.16,
+                        doctest >=0.11 && <0.17,
                         doctest-discover >=0.1.0.7 && <0.2
 
 

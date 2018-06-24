@@ -1,5 +1,10 @@
 # Revision history for greskell
 
+## 0.2.0.2  -- 2018-06-24
+
+* Confirmed test with `doctest-0.16.0`.
+
+
 ## 0.2.0.1  -- 2018-06-24
 
 * .cabal: Now `hint-test` flag has `manual: True` setting. The
