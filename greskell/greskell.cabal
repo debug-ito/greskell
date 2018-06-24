@@ -71,8 +71,11 @@ test-suite doctest
 
 
 flag hint-test
-  description: Do tests that use Haskell interpreter
+  description: Do tests that use Haskell interpreter (hint package).
+               These tests depend on the behavior of the hint package, so it may be unstable.
+               Disable the flag to skip the tests.
   default: True
+  manual: True
 
 test-suite hint-test-suite
   if !flag(hint-test)
