@@ -1,5 +1,13 @@
 # Revision history for greskell
 
+## 0.2.0.1  -- 2018-06-24
+
+* .cabal: Now `hint-test` flag has `manual: True` setting. The
+  hint-test may be sometimes unstable, so the user should be able to
+  disable it in a stable way.
+  See https://github.com/commercialhaskell/stackage/pull/3758
+
+
 ## 0.2.0.0  -- 2018-06-21
 
 * Confirmed test with `aeson-1.4.0.0` and `hint-0.8.0`.
