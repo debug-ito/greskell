@@ -67,7 +67,7 @@ test-suite doctest
   main-is:              DocTest.hs
   build-depends:        base,
                         doctest >=0.11 && <0.17,
-                        doctest-discover >=0.1.0.8 && <0.2
+                        doctest-discover >=0.1.0.8 && <0.3
 
 
 flag hint-test
