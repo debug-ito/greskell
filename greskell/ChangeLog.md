@@ -1,5 +1,10 @@
 # Revision history for greskell
 
+## 0.2.0.3  -- 2018-07-24
+
+* Confirmed test with `doctest-discover-0.2.0.0`.
+
+
 ## 0.2.0.2  -- 2018-06-24
 
 * Confirmed test with `doctest-0.16.0`.
