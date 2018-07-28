@@ -93,6 +93,8 @@ module Data.Greskell.GTraversal
          -- ** Accessor steps
          gValues,
          gProperties,
+         gId,
+         gLabel,
          -- ** Summarizing steps
          gFold,
          gCount,
@@ -846,6 +848,14 @@ gProperties :: (Element s, Property p, ElementProperty s ~ p)
             => [Key s v]
             -> Walk Transform s (p v)
 gProperties = unsafeWalk "properties" . map toGremlin
+
+-- | @.id@ step.
+gId :: Element s => Walk Transform s (ElementID s)
+gId = unsafeWalk "id" []
+
+-- | @.label@ step.
+gLabel :: Element s => Walk Transform s Text
+gLabel = unsafeWalk "label" []
 
 -- | @.fold@ step.
 gFold :: Walk Transform a [a]
