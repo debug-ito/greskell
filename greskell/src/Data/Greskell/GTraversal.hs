@@ -850,10 +850,14 @@ gProperties :: (Element s, Property p, ElementProperty s ~ p)
 gProperties = unsafeWalk "properties" . map toGremlin
 
 -- | @.id@ step.
+--
+-- @since 0.2.1.0
 gId :: Element s => Walk Transform s (ElementID s)
 gId = unsafeWalk "id" []
 
 -- | @.label@ step.
+--
+-- @since 0.2.1.0
 gLabel :: Element s => Walk Transform s Text
 gLabel = unsafeWalk "label" []
 
