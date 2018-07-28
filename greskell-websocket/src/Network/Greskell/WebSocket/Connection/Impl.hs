@@ -51,7 +51,7 @@ import Network.Greskell.WebSocket.Response
     ResponseStatus(ResponseStatus, code),
     isTerminating
   )
-import Network.Greskell.WebSocket.Util (slurp)
+import Network.Greskell.WebSocket.Util (slurp, drain)
 
 
 flushTBQueue :: TBQueue a -> STM [a]
@@ -438,4 +438,9 @@ isTerminatingResponse (ResponseMessage { status = (ResponseStatus { code = c }) 
 slurpResponses :: ResponseHandle s -> IO (Vector (ResponseMessage s))
 slurpResponses h = slurp $ nextResponse h
 
-
+-- | Similar to 'slurpResponses', but this function discards the
+-- responses.
+--
+-- @since 0.1.1.0
+drainResponses :: ResponseHandle s -> IO ()
+drainResponses h = drain $ nextResponse h

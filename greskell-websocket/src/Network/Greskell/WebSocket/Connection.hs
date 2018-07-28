@@ -20,6 +20,7 @@ module Network.Greskell.WebSocket.Connection
          nextResponse,
          nextResponseSTM,
          slurpResponses,
+         drainResponses,
          -- * Exceptions
          GeneralException(..),
          RequestException(..)

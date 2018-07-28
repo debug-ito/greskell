@@ -21,6 +21,7 @@ module Network.Greskell.WebSocket.Client
          nextResult,
          nextResultSTM,
          slurpResults,
+         drainResults,
          -- * Exceptions
          SubmitException(..)
        ) where

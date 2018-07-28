@@ -38,7 +38,7 @@ import qualified Network.Greskell.WebSocket.Connection as Conn
 import qualified Network.Greskell.WebSocket.Request.Standard as ReqStd
 import Network.Greskell.WebSocket.Response (ResponseCode, ResponseMessage)
 import qualified Network.Greskell.WebSocket.Response as Res
-import Network.Greskell.WebSocket.Util (slurp)
+import Network.Greskell.WebSocket.Util (slurp, drain)
 
 
 -- | A client that establishes a connection to the Gremlin Server. You
@@ -213,3 +213,11 @@ loadResponse rh = parseResponse =<< (Conn.nextResponseSTM $ rhResHandle rh)
 -- | Get all remaining results from 'ResultHandle'.
 slurpResults :: ResultHandle v -> IO (Vector v)
 slurpResults h = slurp $ nextResult h
+
+-- | Similar to 'slurpResults', but this function discards the
+-- results. Useful to execute a script whose side-effect is the only
+-- thing you care.
+--
+-- @since 0.1.1.0
+drainResults :: ResultHandle v -> IO ()
+drainResults h = drain $ nextResult h
