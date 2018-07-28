@@ -34,6 +34,8 @@ module Data.Greskell.GTraversal
          -- * GTraversal
          (&.),
          ($.),
+         (<$.>),
+         (<*.>),
          unsafeGTraversal,
          -- * Walk/Steps
 
@@ -134,6 +136,7 @@ module Data.Greskell.GTraversal
          gBy2
        ) where
 
+import Control.Applicative ((<$>), (<*>))
 import Control.Category (Category, (>>>))
 -- (below) to import Category methods without conflict with Prelude
 import qualified Control.Category as Category
@@ -446,6 +449,22 @@ infixr 0 $.
 -- "g.V().values(\"age\")"
 ($.) :: Walk c b d -> GTraversal c a b -> GTraversal c a d
 gs $. gt = gt &. gs
+
+infixr 0 <$.>
+
+-- | Similar to '<$>', but for '$.'.
+--
+-- @since 0.2.1.0
+(<$.>) :: Functor f => Walk c b d -> f (GTraversal c a b) -> f (GTraversal c a d)
+gs <$.> gt = ($.) gs <$> gt
+
+infixr 0 <*.>
+
+-- | Similar to '<*>', but for '$.'.
+--
+-- @since 0.2.1.0
+(<*.>) :: Applicative f => f (Walk c b d) -> f (GTraversal c a b) -> f (GTraversal c a d)
+gs <*.> gt = ($.) <$> gs <*> gt
 
 -- -- $walk-steps
 -- --
