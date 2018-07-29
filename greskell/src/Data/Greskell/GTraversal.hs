@@ -88,6 +88,9 @@ module Data.Greskell.GTraversal
          gOrder,
          -- ** Paging steps
          gRange,
+         gLimit,
+         gTail,
+         gSkip,
          -- ** Transformation steps
          gFlatMap,
          gV,
@@ -696,6 +699,25 @@ gRange :: Greskell Int
        -- ^ max
        -> Walk Transform s s
 gRange min_g max_g = unsafeWalk "range" $ map toGremlin [min_g, max_g]
+
+-- | @.limit@ step.
+--
+-- @since 0.2.1.0
+gLimit :: Greskell Int -> Walk Transform s s
+gLimit num = unsafeWalk "limit" [toGremlin num]
+
+-- | @.tail@ step.
+--
+-- @since 0.2.1.0
+gTail :: Greskell Int -> Walk Transform s s
+gTail num = unsafeWalk "tail" [toGremlin num]
+
+-- | @.skip@ step.
+--
+-- @since 0.2.1.0
+gSkip :: Greskell Int -> Walk Transform s s
+gSkip num = unsafeWalk "skip" [toGremlin num]
+
 
 -- | Data types that mean a projection from one type to another.
 class ProjectionLike p where
