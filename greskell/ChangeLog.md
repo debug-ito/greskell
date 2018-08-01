@@ -24,11 +24,11 @@
 
 ### Graph module
 
-* [BREAKING CHANGE]: Now `AVertex`, `AEdge`, `AVertexProperty` are
+* **BREAKING CHANGE**: Now `AVertex`, `AEdge`, `AVertexProperty` are
   based on `GValue` type, instead of `GraphSON Value`. This is for
   taking care of possibly nested GraphSON-encoded values in a generic
   way.
-* [BREAKING CHANGE]: `parseOneValue`, `parseListValues`,
+* **BREAKING CHANGE**: `parseOneValue`, `parseListValues`,
   `parseNonEmptyValues` functions now require `FromGraphSON`
   constraint, instead of `FromJSON`, because property types of
   `AVertex` etc have changed.
