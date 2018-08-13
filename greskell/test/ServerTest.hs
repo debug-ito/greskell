@@ -30,7 +30,7 @@ import Data.Greskell.Greskell
   )
 import Data.Greskell.Graph
   ( AVertex(..), AEdge(..), AProperty(..), AVertexProperty(..),
-    PropertyMapSingle, Key,
+    PropertyMapSingle,
     T, tId, tLabel, tKey, tValue, cList, (=:),
     fromProperties, allProperties
   )
@@ -41,7 +41,6 @@ import Data.Greskell.GraphSON
 import Data.Greskell.GTraversal
   ( Walk, GTraversal, SideEffect,
     source, sV', sE', gV', sAddV', gAddE', gTo,
-    gHasValue, gValues, gHasLabel, gHasId, gId,
     ($.), gOrder, gBy1,
     Transform, unsafeWalk, unsafeGTraversal,
     gProperties, gProperty, gPropertyV, liftWalk
@@ -60,7 +59,6 @@ spec = withEnv $ do
   spec_T
   spec_P
   spec_graph
-  spec_values_type
 
 
 spec_basics :: SpecWith (String,Int)
@@ -322,25 +320,3 @@ spec_graph = do
       [ finalize $ gPropertyV (Just cList) "version" ver ["date" =: date] $. liftWalk $ sV' [num vid] $ source "g"
       ]
 
-clearGraph :: WS.Client -> IO ()
-clearGraph client = WS.drainResults =<< WS.submitRaw client "g.V().drop()" Nothing
-
-spec_values_type :: SpecWith (String,Int)
-spec_values_type = describe "return type of .values step" $ do
-  specify "input Int, get Int" $ withClient $ \client -> do
-    let prop_key :: Key AVertex Int
-        prop_key = "foobar"
-        putProp = WS.slurpResults =<< WS.submit client script (Just binding)
-          where
-            (script, binding) = runBinder $ do
-              input <- newBind (100 :: Int)
-              return $ liftWalk gId $. gProperty prop_key input $. sAddV' "hoge" $ source "g"
-        getProp vid = WS.slurpResults =<< WS.submit client script (Just binding)
-          where
-            (script, binding) = runBinder $ do
-              vid_var <- newBind vid
-              return $ gValues [prop_key] $. gHasId vid_var $. gHasLabel "hoge" $. sV' [] $ source "g"
-    clearGraph client
-    got_ids <- putProp
-    got <- getProp (got_ids V.! 0)
-    V.toList got `shouldBe` [100]
