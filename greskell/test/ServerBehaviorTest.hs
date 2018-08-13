@@ -11,7 +11,7 @@ import Data.Greskell.Graph
   )
 import Data.Greskell.GTraversal
   ( Walk, GTraversal, SideEffect,
-    source, sV', sAddV', gProperty, gId, gValues, gHasId, gHasLabel,
+    source, sV', sAddV', gProperty, gId, gValues, gHasId, gHasLabel, gHas2,
     ($.), liftWalk
   )
 
@@ -32,6 +32,11 @@ spec_values_type = describe "return type of .values step" $ do
   specify "input Int, get Int" $ withClient $ \client -> do
     let prop_key :: Key AVertex Int
         prop_key = "foobar"
+        searchProp = WS.drainResults =<< WS.submit client script (Just binding)
+          where
+            (script, binding) = runBinder $ do
+              input <- newBind (100 :: Int)
+              return $ gHas2 prop_key input $. sV' [] $ source "g"
         putProp = WS.slurpResults =<< WS.submit client script (Just binding)
           where
             (script, binding) = runBinder $ do
@@ -43,6 +48,7 @@ spec_values_type = describe "return type of .values step" $ do
               vid_var <- newBind vid
               return $ gValues [prop_key] $. gHasId vid_var $. gHasLabel "hoge" $. sV' [] $ source "g"
     clearGraph client
+    searchProp
     got_ids <- putProp
     got <- getProp (got_ids V.! 0)
     V.toList got `shouldBe` [100]
