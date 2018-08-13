@@ -2,7 +2,6 @@
 module Main (main,spec) where
 
 import Control.Category ((<<<))
-import Control.Exception.Safe (bracket)
 import qualified Data.Aeson as Aeson
 import Data.Either (isRight)
 import Data.HashMap.Strict (HashMap)
@@ -13,7 +12,6 @@ import Data.Scientific (Scientific)
 import Data.Text (unpack, Text)
 import qualified Data.Vector as V
 import qualified Network.Greskell.WebSocket.Client as WS
-import System.Environment (lookupEnv)
 import Test.Hspec
 
 import Data.Greskell.AsIterator
@@ -48,6 +46,8 @@ import Data.Greskell.GTraversal
     Transform, unsafeWalk, unsafeGTraversal,
     gProperties, gProperty, gPropertyV, liftWalk
   )
+
+import ServerTest.Common (withEnv, withClient)
 
 main :: IO ()
 main = hspec spec
@@ -144,21 +144,6 @@ checkOne :: (AsIterator a, b ~ IteratorItem a, FromGraphSON b, Eq b, Show b)
          => Greskell a -> b -> SpecWith (String, Int)
 checkOne input expected = checkRaw input [expected]
 
-requireEnv :: String -> IO String
-requireEnv env_key = maybe bail return =<< lookupEnv env_key
-  where
-    bail = expectationFailure msg >> return ""
-      where
-        msg = "Set environment variable "++ env_key ++ " for Server test. "
-
-withEnv :: SpecWith (String, Int) -> Spec
-withEnv = before $ do
-  hostname <- requireEnv "GRESKELL_TEST_HOST"
-  port <- fmap read $ requireEnv "GRESKELL_TEST_PORT"
-  return (hostname, port)
-
-withClient :: (WS.Client -> IO ()) -> (String, Int) -> IO ()
-withClient act (host, port) = bracket (WS.connect host port) WS.close act
 
 spec_comparator :: SpecWith (String,Int)
 spec_comparator = do

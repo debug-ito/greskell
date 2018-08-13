@@ -102,7 +102,7 @@ test-suite server-test-suite
   main-is:              ServerTest.hs
   -- default-extensions:   
   other-extensions:     OverloadedStrings, TypeFamilies
-  -- other-modules:
+  other-modules:        ServerTest.Common
   if flag(server-test)
     -- Explicitly remove dependency. See https://github.com/haskell/cabal/issues/1725
     build-depends:        base, aeson, hspec, text, unordered-containers, vector,
