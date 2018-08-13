@@ -42,7 +42,8 @@ import Data.Greskell.GraphSON
   )
 import Data.Greskell.GTraversal
   ( Walk, GTraversal, SideEffect,
-    source, sV', sE', gV', sAddV', gAddE', gTo, gHasValue, gValues,
+    source, sV', sE', gV', sAddV', gAddE', gTo,
+    gHasValue, gValues, gHasLabel, gHasId, gId,
     ($.), gOrder, gBy1,
     Transform, unsafeWalk, unsafeGTraversal,
     gProperties, gProperty, gPropertyV, liftWalk
@@ -335,22 +336,26 @@ spec_graph = do
     addVersion vid ver date =
       [ finalize $ gPropertyV (Just cList) "version" ver ["date" =: date] $. liftWalk $ sV' [num vid] $ source "g"
       ]
-  
+
+clearGraph :: WS.Client -> IO ()
+clearGraph client = WS.drainResults =<< WS.submitRaw client "g.V().drop()" Nothing
 
 spec_values_type :: SpecWith (String,Int)
 spec_values_type = describe "return type of .values step" $ do
-  let prelude :: [Text]
-      prelude = [ "graph = org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph.open()",
-                  "g = graph.traversal()"
-                ]
-      withPrelude' middle = withPrelude $ unsafeGreskell $ mconcat $ map (<> "; ") (prelude ++ [toGremlin middle])
   specify "input Int, get Int" $ withClient $ \client -> do
     let prop_key :: Key AVertex Int
         prop_key = "foobar"
-        (script, binding) = runBinder $ do
-          input <- newBind (100 :: Int)
-          let middle = iterateTraversal $ gProperty prop_key input $. sAddV' "hoge" $ source "g"
-          return $ withPrelude' middle $ gValues [prop_key] $. sV' [] $ source "g"
-    got <- WS.slurpResults =<< WS.submit client script (Just binding)
+        putProp = WS.slurpResults =<< WS.submit client script (Just binding)
+          where
+            (script, binding) = runBinder $ do
+              input <- newBind (100 :: Int)
+              return $ liftWalk gId $. gProperty prop_key input $. sAddV' "hoge" $ source "g"
+        getProp vid = WS.slurpResults =<< WS.submit client script (Just binding)
+          where
+            (script, binding) = runBinder $ do
+              vid_var <- newBind vid
+              return $ gValues [prop_key] $. gHasId vid_var $. gHasLabel "hoge" $. sV' [] $ source "g"
+    clearGraph client
+    got_ids <- putProp
+    got <- getProp (got_ids V.! 0)
     V.toList got `shouldBe` [100]
-    -- valueじゃなくて、propertiesを使えばtypeを保存してくれるかも？
