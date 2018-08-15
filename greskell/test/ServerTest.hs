@@ -2,7 +2,6 @@
 module Main (main,spec) where
 
 import Control.Category ((<<<))
-import Control.Exception.Safe (bracket)
 import qualified Data.Aeson as Aeson
 import Data.Either (isRight)
 import Data.HashMap.Strict (HashMap)
@@ -13,12 +12,12 @@ import Data.Scientific (Scientific)
 import Data.Text (unpack, Text)
 import qualified Data.Vector as V
 import qualified Network.Greskell.WebSocket.Client as WS
-import System.Environment (lookupEnv)
 import Test.Hspec
 
 import Data.Greskell.AsIterator
   ( AsIterator(IteratorItem)
   )
+import Data.Greskell.Binder (newBind, runBinder)
 import Data.Greskell.GMap (GMapEntry, unGMapEntry)
 import Data.Greskell.Gremlin
   ( oIncr, oDecr, cCompare, Order,
@@ -41,11 +40,13 @@ import Data.Greskell.GraphSON
   )
 import Data.Greskell.GTraversal
   ( Walk, GTraversal, SideEffect,
-    source, sV', sE', gV', sAddV', gAddE', gTo, gHasValue,
+    source, sV', sE', gV', sAddV', gAddE', gTo,
     ($.), gOrder, gBy1,
     Transform, unsafeWalk, unsafeGTraversal,
     gProperties, gProperty, gPropertyV, liftWalk
   )
+
+import ServerTest.Common (withEnv, withClient)
 
 main :: IO ()
 main = hspec spec
@@ -141,21 +142,6 @@ checkOne :: (AsIterator a, b ~ IteratorItem a, FromGraphSON b, Eq b, Show b)
          => Greskell a -> b -> SpecWith (String, Int)
 checkOne input expected = checkRaw input [expected]
 
-requireEnv :: String -> IO String
-requireEnv env_key = maybe bail return =<< lookupEnv env_key
-  where
-    bail = expectationFailure msg >> return ""
-      where
-        msg = "Set environment variable "++ env_key ++ " for Server test. "
-
-withEnv :: SpecWith (String, Int) -> Spec
-withEnv = before $ do
-  hostname <- requireEnv "GRESKELL_TEST_HOST"
-  port <- fmap read $ requireEnv "GRESKELL_TEST_PORT"
-  return (hostname, port)
-
-withClient :: (WS.Client -> IO ()) -> (String, Int) -> IO ()
-withClient act (host, port) = bracket (WS.connect host port) WS.close act
 
 spec_comparator :: SpecWith (String,Int)
 spec_comparator = do
@@ -217,6 +203,10 @@ spec_P = describe "P class" $ specify "pNot, pEq, pTest" $ withClient $ \client 
   test (number 10) `shouldReturn` V.fromList [False]
   test (number 15) `shouldReturn` V.fromList [True]
 
+withPrelude :: (ToGreskell a) => Greskell () -> a -> Greskell (GreskellReturn a)
+withPrelude prelude orig = unsafeGreskell (toGremlin prelude <> toGremlin orig)
+
+
 -- | This test is supported TinkerPop 3.1.0 and above, because it uses
 -- 'gAddE'' function.
 spec_graph :: SpecWith (String,Int)
@@ -228,7 +218,7 @@ spec_graph = do
                               ">=1.2.2.1",
                               ">=1.2.3"
                             ]
-    got <- WS.slurpResults =<< WS.submit client (withPrelude trav) Nothing
+    got <- WS.slurpResults =<< WS.submit client (withPrelude' trav) Nothing
     (map (fmap parseEither) $ V.toList got) `shouldMatchList` expected
   specify "AProperty (vertex property meta-properties)" $ withClient $ \client -> do
     let trav = gProperties [] $. gProperties [] $. sV' [] $ source "g"
@@ -239,7 +229,7 @@ spec_graph = do
                               "2017-12-27",
                               "2017-12-23"
                             ]
-    got <- WS.slurpResults =<< WS.submit client (withPrelude trav) Nothing
+    got <- WS.slurpResults =<< WS.submit client (withPrelude' trav) Nothing
     (map (fmap parseEither) $ V.toList got) `shouldMatchList` expected
   specify "AEdge" $ withClient $ \client -> do
     let trav = sE' [] $ source "g"
@@ -255,7 +245,7 @@ spec_graph = do
                      expE 1 3 ">=1.2.2.1",
                      expE 2 3 ">=1.2.3"
                    ]
-    got <- WS.slurpResults =<< WS.submit client (withPrelude trav) Nothing
+    got <- WS.slurpResults =<< WS.submit client (withPrelude' trav) Nothing
     (map getE $ V.toList got) `shouldMatchList` expected
   let getVP vp = (avpLabel vp, parseEither $ avpValue vp, fmap parseEither $ avpProperties vp)
   specify "AVertexProperty" $ withClient $ \client -> do
@@ -273,7 +263,7 @@ spec_graph = do
                      expVer "1.2.3.0" "2017-12-27",
                      expVer "1.2.2.0" "2017-12-23"
                    ]
-    got <- WS.slurpResults =<< WS.submit client (withPrelude trav) Nothing
+    got <- WS.slurpResults =<< WS.submit client (withPrelude' trav) Nothing
     (map getVP $ V.toList got) `shouldMatchList` expected
   specify "AVertex" $ withClient $ \client -> do
     let trav = sV' [] $ source "g"
@@ -289,11 +279,11 @@ spec_graph = do
                      expV 2 "aeson" [("1.2.2.0", "2017-09-20"), ("1.3.1.1", "2018-05-10")],
                      expV 3 "text" [("1.2.2.0", "2017-12-23"), ("1.2.3.0", "2017-12-27")]
                    ]
-    got <- WS.slurpResults =<< WS.submit client (withPrelude trav) Nothing
+    got <- WS.slurpResults =<< WS.submit client (withPrelude' trav) Nothing
     (map getV $ V.toList got) `shouldMatchList` expected
   where
-    withPrelude :: (ToGreskell a) => a -> Greskell (GreskellReturn a)
-    withPrelude orig = unsafeGreskell (toGremlin prelude <> toGremlin orig)
+    withPrelude' :: (ToGreskell a) => a -> Greskell (GreskellReturn a)
+    withPrelude' = withPrelude prelude
     prelude :: Greskell ()
     prelude = unsafeGreskell $ mconcat $ map (<> "; ")
               ( [ "graph = org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph.open()",
@@ -329,4 +319,4 @@ spec_graph = do
     addVersion vid ver date =
       [ finalize $ gPropertyV (Just cList) "version" ver ["date" =: date] $. liftWalk $ sV' [num vid] $ source "g"
       ]
-  
+
