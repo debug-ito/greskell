@@ -1,5 +1,13 @@
 # Revision history for greskell
 
+## 0.2.1.0  -- 2018-08-17
+
+### GTraversal module
+
+* Add `(<$.>)`, `(<*.>)`, `gLimit`, `gTail`, `gSkip`, `gId`, `gLabel`
+  functions.
+
+
 ## 0.2.0.3  -- 2018-07-24
 
 * Confirmed test with `doctest-discover-0.2.0.0`.
