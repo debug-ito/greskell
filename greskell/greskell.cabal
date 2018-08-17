@@ -117,6 +117,7 @@ test-suite server-test-suite
 flag server-behavior-test
   description: Tests about the behavior of Gremlin Server, rather than greskell.
   default: False
+  manual: True
 
 test-suite server-behavior-test-suite
   type:                 exitcode-stdio-1.0
