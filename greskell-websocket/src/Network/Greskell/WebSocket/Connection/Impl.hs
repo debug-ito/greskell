@@ -89,7 +89,7 @@ connect settings host port = do
                                    }
   where
     codec = Settings.codec settings
-    qreq_size = Settings.requestQueueSize settings
+    qreq_size = fromIntegral $ Settings.requestQueueSize settings
     ws_path = Settings.endpointPath settings
 
 -- | Close the 'Connection'.
