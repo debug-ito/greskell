@@ -1,5 +1,10 @@
 # Revision history for greskell-core
 
+## 0.1.2.4  -- 2018-10-03
+
+* Confirm test with `base-4.12.0.0` and `containers-0.6.0.1`
+
+
 ## 0.1.2.3  -- 2018-09-05
 
 * Confirmed test with `QuickCheck-2.12` and `hspec-2.5.6`.

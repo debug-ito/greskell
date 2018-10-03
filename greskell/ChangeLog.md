@@ -1,5 +1,10 @@
 # Revision history for greskell
 
+## 0.2.1.1  -- 2018-10-03
+
+* Confirm test with `base-4.12.0.0`
+
+
 ## 0.2.1.0  -- 2018-08-17
 
 ### GTraversal module

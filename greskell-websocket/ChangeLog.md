@@ -1,5 +1,10 @@
 # Revision history for greskell-websocket
 
+## 0.1.1.2  -- 2018-10-03
+
+* Confirm test with `base-4.12.0.0`
+
+
 ## 0.1.1.1  -- 2018-09-23
 
 * Confirm test with `stm-2.5.0.0`.
