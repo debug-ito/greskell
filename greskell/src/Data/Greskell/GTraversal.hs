@@ -102,6 +102,7 @@ module Data.Greskell.GTraversal
          gProperties,
          gId,
          gLabel,
+         gSelect1,
          -- ** Summarizing steps
          gFold,
          gCount,
@@ -912,6 +913,10 @@ gId = unsafeWalk "id" []
 -- @since 0.2.1.0
 gLabel :: Element s => Walk Transform s Text
 gLabel = unsafeWalk "label" []
+
+-- | @.select@ step with one argument.
+gSelect1 :: AsLabel a -> Walk Transform s a
+gSelect1 l = unsafeWalk "select" [toGremlin l]
 
 -- | @.fold@ step.
 gFold :: Walk Transform a [a]
