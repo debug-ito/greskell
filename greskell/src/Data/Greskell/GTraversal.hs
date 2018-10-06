@@ -103,6 +103,7 @@ module Data.Greskell.GTraversal
          gId,
          gLabel,
          gSelect1,
+         gSelectN,
          -- ** Summarizing steps
          gFold,
          gCount,
@@ -173,7 +174,7 @@ import Data.Greskell.Greskell
     toGremlinLazy, toGremlin
   )
 import Data.Greskell.AsIterator (AsIterator(IteratorItem))
-import Data.Greskell.AsLabel (AsLabel)
+import Data.Greskell.AsLabel (AsLabel, SelectedMap)
 
 -- $setup
 --
@@ -917,6 +918,10 @@ gLabel = unsafeWalk "label" []
 -- | @.select@ step with one argument.
 gSelect1 :: AsLabel a -> Walk Transform s a
 gSelect1 l = unsafeWalk "select" [toGremlin l]
+
+-- | @.select@ step with more than one arguments.
+gSelectN :: AsLabel a -> AsLabel b -> [AsLabel c] -> Walk Transform s SelectedMap
+gSelectN l1 l2 ls = unsafeWalk "select" ([toGremlin l1, toGremlin l2] ++ map toGremlin ls)
 
 -- | @.fold@ step.
 gFold :: Walk Transform a [a]
