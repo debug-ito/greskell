@@ -95,6 +95,8 @@ module Data.Greskell.GTraversal
          gFlatMap,
          gV,
          gV',
+         -- ** As step
+         gAs,
          -- ** Accessor steps
          gValues,
          gProperties,
@@ -153,6 +155,7 @@ import Data.String (IsString(..))
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
+
 import Data.Greskell.Graph
   ( Element(..), Vertex, Edge, Property(..),
     AVertex, AEdge,
@@ -169,6 +172,7 @@ import Data.Greskell.Greskell
     toGremlinLazy, toGremlin
   )
 import Data.Greskell.AsIterator (AsIterator(IteratorItem))
+import Data.Greskell.AsLabel (AsLabel)
 
 -- $setup
 --
@@ -870,6 +874,13 @@ gV ids = unsafeWalk "V" $ map toGremlin ids
 -- @since 0.2.0.0
 gV' :: [Greskell GValue] -> Walk Transform s AVertex
 gV' = gV
+
+-- | @.as@ step.
+--
+-- @.as@ step is 'Transform' because it adds the label to the
+-- traverser.
+gAs :: AsLabel a -> Walk Transform a a
+gAs l = unsafeWalk "as" [toGremlin l]
 
 -- | @.values@ step.
 --
