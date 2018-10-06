@@ -16,14 +16,15 @@ module Data.Greskell.AsLabel
 import Control.Exception (Exception)
 import Control.Monad.Catch (MonadThrow(..))
 import Data.HashMap.Strict (HashMap)
-import Data.Greskell.GraphSON (GValue, GraphSONTyped(..), FromGraphSON(..))
+import qualified Data.HashMap.Strict as HM
+import Data.Greskell.GraphSON (GValue, GraphSONTyped(..), FromGraphSON(..), parseEither)
 import Data.Greskell.Greskell (ToGreskell(..))
 import qualified Data.Greskell.Greskell as Greskell
 import Data.Text (Text)
 
 -- | 'AsLabel' @a@ represents a label string used in @.as@ step
 -- pointing to the data of type @a@.
-newtype AsLabel a = AsLabel Text
+newtype AsLabel a = AsLabel { unAsLabel :: Text }
                deriving (Show,Eq,Ord)
 
 -- | Returns the 'Text' as a Gremlin string.
@@ -42,13 +43,22 @@ instance GraphSONTyped SelectedMap where
 instance FromGraphSON SelectedMap where
   parseGraphSON gv = fmap SelectedMap $ parseGraphSON gv
 
-data AsLookupException = AsLookupException -- TODO: write proper options
+data AsLookupException = NoSuchAsLabel
+                         -- ^ The 'SelectedMap' does not have the
+                         -- given 'AsLabel' as the key.
+                       | ParseError String
+                         -- ^ Failed to parse the value into the type
+                         -- that the 'AsLabel' indicates. The 'String'
+                         -- is the error message.
                        deriving (Show,Eq,Ord)
 
 instance Exception AsLookupException
 
-lookupAs :: AsLabel a -> SelectedMap -> Either AsLookupException a
-lookupAs = undefined -- TODO
+lookupAs :: FromGraphSON a => AsLabel a -> SelectedMap -> Either AsLookupException a
+lookupAs (AsLabel l) (SelectedMap m) =
+  case HM.lookup l m of
+   Nothing -> Left NoSuchAsLabel
+   Just gv -> either (Left . ParseError) Right $ parseEither gv
 
-lookupAsM :: MonadThrow m => AsLabel a -> SelectedMap -> m a
+lookupAsM :: (MonadThrow m, FromGraphSON a) => AsLabel a -> SelectedMap -> m a
 lookupAsM l m = either throwM return $ lookupAs l m
