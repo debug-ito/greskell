@@ -32,6 +32,10 @@ instance ToGreskell (AsLabel a) where
   type GreskellReturn (AsLabel a) = Text
   toGreskell (AsLabel t) = Greskell.string t
 
+-- | Unsafely convert the phantom type.
+instance Functor AsLabel where
+  fmap _ (AsLabel t) = AsLabel t
+
 -- | A value-heterogeneous map keyed with 'AsLabel'. Obtained from
 -- @.select@ step, for example.
 newtype SelectedMap = SelectedMap (HashMap Text GValue)
