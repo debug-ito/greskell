@@ -41,7 +41,8 @@ library
                         aeson >=0.11.2.1 && <1.5,
                         unordered-containers >=0.2.7.1 && <0.3,
                         semigroups >=0.18.2 && <0.19,
-                        vector >=0.12.0.1 && <0.13
+                        vector >=0.12.0.1 && <0.13,
+                        exceptions
 
 test-suite spec
   type:                 exitcode-stdio-1.0
