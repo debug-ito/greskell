@@ -31,7 +31,8 @@ library
                         Data.Greskell.Gremlin,
                         Data.Greskell.Binder,
                         Data.Greskell.Graph,
-                        Data.Greskell.GTraversal
+                        Data.Greskell.GTraversal,
+                        Data.Greskell.AsLabel
   -- other-modules:        
   build-depends:        base >=4.9.0.0 && <4.13,
                         greskell-core >=0.1.2.0 && <0.2,

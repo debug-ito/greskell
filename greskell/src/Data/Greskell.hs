@@ -14,7 +14,8 @@ module Data.Greskell
          module Data.Greskell.Graph,
          module Data.Greskell.GraphSON,
          module Data.Greskell.GMap,
-         module Data.Greskell.AsIterator
+         module Data.Greskell.AsIterator,
+         module Data.Greskell.AsLabel
        ) where
 
 import Data.Greskell.Greskell
@@ -25,3 +26,4 @@ import Data.Greskell.Graph
 import Data.Greskell.GraphSON
 import Data.Greskell.GMap
 import Data.Greskell.AsIterator
+import Data.Greskell.AsLabel
