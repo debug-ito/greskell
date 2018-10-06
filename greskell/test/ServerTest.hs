@@ -14,6 +14,7 @@ import qualified Data.Vector as V
 import qualified Network.Greskell.WebSocket.Client as WS
 import Test.Hspec
 
+import Data.Greskell.AsLabel (AsLabel(..))
 import Data.Greskell.AsIterator
   ( AsIterator(IteratorItem)
   )
@@ -43,7 +44,8 @@ import Data.Greskell.GTraversal
     source, sV', sE', gV', sAddV', gAddE', gTo,
     ($.), gOrder, gBy1,
     Transform, unsafeWalk, unsafeGTraversal,
-    gProperties, gProperty, gPropertyV, liftWalk
+    gProperties, gProperty, gPropertyV, liftWalk,
+    gAs, gSelect1
   )
 
 import ServerTest.Common (withEnv, withClient)
@@ -59,6 +61,7 @@ spec = withEnv $ do
   spec_T
   spec_P
   spec_graph
+  spec_as
 
 
 spec_basics :: SpecWith (String,Int)
@@ -320,3 +323,16 @@ spec_graph = do
       [ finalize $ gPropertyV (Just cList) "version" ver ["date" =: date] $. liftWalk $ sV' [num vid] $ source "g"
       ]
 
+
+spec_as :: SpecWith (String,Int)
+spec_as = do
+  let start :: GTraversal Transform () Int
+      start = unsafeGTraversal "__(1,2,3)"
+      mult :: Greskell Int -> Walk Transform Int Int
+      mult factor = unsafeWalk "map" ["{ it.get() * " <> toGremlin factor <> " }"]
+  specify "gAs and gSelect1" $ withClient $ \client -> do
+    let label :: AsLabel Int
+        label = AsLabel "a"
+    got <- WS.slurpResults =<< WS.submit client (gSelect1 label $. mult 100 $. gAs label  $. start) Nothing
+    V.toList got `shouldBe` [1,2,3]
+    
