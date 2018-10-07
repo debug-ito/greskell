@@ -7,8 +7,9 @@ import qualified Data.HashMap.Strict as HM
 import Data.Text (unpack)
 import Test.Hspec
 
+import Data.Greskell.AsLabel (AsLabel)
 import Data.Greskell.Greskell (toGremlin, unsafeGreskell, Greskell)
-import Data.Greskell.Binder (newBind, runBinder)
+import Data.Greskell.Binder (Binder, newBind, runBinder, newAsLabel)
 
 main :: IO ()
 main = hspec spec
@@ -23,7 +24,6 @@ shouldBeVariable got_greskell =
   where
     variableHeads = '_' : (['a' .. 'z'] ++ ['A' .. 'Z'])
     variableRests = variableHeads ++ ['0' .. '9']
-
 
 spec :: Spec
 spec = describe "Binder" $ do
@@ -48,3 +48,13 @@ spec = describe "Binder" $ do
     got_bind `shouldBe` HM.fromList [ (toGremlin got_v1, toJSON "foobar"),
                                       (toGremlin got_v2, toJSON "foobar")
                                     ]
+  it "should also be able to produce AsLabels" $ do
+    let newIntLabel :: Binder (AsLabel Int)
+        newIntLabel = newAsLabel
+        newVar = newBind "foobar"
+        ((got_v1, got_l1, got_v2, got_l2), _) =
+          runBinder $ ((,,,) <$> newVar <*> newIntLabel <*> newVar <*> newIntLabel)
+    shouldBeVariable got_v1
+    shouldBeVariable got_v2
+    toGremlin got_v1 `shouldNotBe` toGremlin got_v2
+    got_l1 `shouldNotBe` got_l2
