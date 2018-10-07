@@ -14,7 +14,7 @@ import qualified Data.Vector as V
 import qualified Network.Greskell.WebSocket.Client as WS
 import Test.Hspec
 
-import Data.Greskell.AsLabel (AsLabel(..))
+import Data.Greskell.AsLabel (AsLabel(..), lookupAsM)
 import Data.Greskell.AsIterator
   ( AsIterator(IteratorItem)
   )
@@ -45,7 +45,7 @@ import Data.Greskell.GTraversal
     ($.), gOrder, gBy1,
     Transform, unsafeWalk, unsafeGTraversal,
     gProperties, gProperty, gPropertyV, liftWalk,
-    gAs, gSelect1
+    gAs, gSelect1, gSelectN
   )
 
 import ServerTest.Common (withEnv, withClient)
@@ -335,4 +335,11 @@ spec_as = do
         label = AsLabel "a"
     got <- WS.slurpResults =<< WS.submit client (gSelect1 label $. mult 100 $. gAs label  $. start) Nothing
     V.toList got `shouldBe` [1,2,3]
-    
+  specify "gAs and gSelectN" $ withClient $ \client -> do
+    let lorig, lmul :: AsLabel Int
+        lorig = AsLabel "a"
+        lmul = AsLabel "b"
+        gt = gSelectN lorig lmul [] $. mult 5 $. gAs lmul $. mult 100 $. gAs lorig $. start
+    got <- fmap V.toList $ WS.slurpResults =<< WS.submit client gt Nothing
+    mapM (lookupAsM lorig) got `shouldReturn` [1,2,3]
+    mapM (lookupAsM lmul) got `shouldReturn` [100,200,300]
