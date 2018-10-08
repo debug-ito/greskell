@@ -58,6 +58,20 @@ public class TestGremlin {
   }
 
   @Test
+  public void partial_null_in_select() throws Exception {
+    def g = MyModern.make().traversal();
+    def got = g.V().has("name", "marko").as("person").out().as("out").values("age").as("age").select("person", "out", "age").toList();
+    assertThat got.collect { it.get("person").value("name") }, is(["marko", "marko"]);
+    assertThat got.collect { it.get("out").label() }, is(["person", "person"]);
+    assertThat got.collect { it.get("age") }.sort(), is([27, 32]);
+    
+    // "out" label points to three nodes (josh(person), vadas(person),
+    // lop(software)), but only "person" nodes have "age" property. I
+    // think .select step emits traversers in which all selected
+    // labels have at least one element.
+  }
+
+  @Test
   public void flatMap_map_affect_path() throws Exception {
     def g = MyModern.make().traversal();
     assertThat g.V().map(__.identity()).path().next().size(), is(2);
