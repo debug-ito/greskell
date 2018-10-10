@@ -8,10 +8,14 @@
 module Data.Greskell.AsLabel
        ( AsLabel(..),
          SelectedMap,
+         lookup,
+         lookupM,
          lookupAs,
          lookupAsM,
          AsLookupException(..)
        ) where
+
+import Prelude hiding (lookup)
 
 import Control.Exception (Exception)
 import Control.Monad.Catch (MonadThrow(..))
@@ -60,10 +64,19 @@ data AsLookupException = NoSuchAsLabel
 
 instance Exception AsLookupException
 
+-- | Get value from 'SelectedMap'.
+lookup :: AsLabel a -> SelectedMap b -> Maybe b
+lookup (AsLabel l) (SelectedMap m) = HM.lookup l m
+
+-- | 'MonadThrow' version of 'lookup'. If there is no value for the
+-- 'AsLabel', it throws 'NoSuchAsLabel'.
+lookupM :: MonadThrow m => AsLabel a -> SelectedMap b -> m b
+lookupM l m = maybe (throwM NoSuchAsLabel) return $ lookup l m
+
 -- | Get value from 'SelectedMap' and parse the value into @a@.
 lookupAs :: FromGraphSON a => AsLabel a -> SelectedMap GValue -> Either AsLookupException a
-lookupAs (AsLabel l) (SelectedMap m) =
-  case HM.lookup l m of
+lookupAs l m =
+  case lookup l m of
    Nothing -> Left NoSuchAsLabel
    Just gv -> either (Left . ParseError) Right $ parseEither gv
 
