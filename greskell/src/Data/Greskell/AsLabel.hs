@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, TypeFamilies #-}
+{-# LANGUAGE OverloadedStrings, TypeFamilies, GeneralizedNewtypeDeriving, DeriveTraversable #-}
 -- |
 -- Module: Data.Greskell.AsLabel
 -- Description: Label string used in .as step
@@ -15,12 +15,14 @@ module Data.Greskell.AsLabel
 
 import Control.Exception (Exception)
 import Control.Monad.Catch (MonadThrow(..))
+import Data.Foldable (Foldable)
 import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as HM
 import Data.Greskell.GraphSON (GValue, GraphSONTyped(..), FromGraphSON(..), parseEither)
 import Data.Greskell.Greskell (ToGreskell(..))
 import qualified Data.Greskell.Greskell as Greskell
 import Data.Text (Text)
+import Data.Traversable (Traversable)
 
 -- | 'AsLabel' @a@ represents a label string used in @.as@ step
 -- pointing to the data of type @a@.
@@ -36,15 +38,15 @@ instance ToGreskell (AsLabel a) where
 instance Functor AsLabel where
   fmap _ (AsLabel t) = AsLabel t
 
--- | A value-heterogeneous map keyed with 'AsLabel'. Obtained from
--- @.select@ step, for example.
-newtype SelectedMap = SelectedMap (HashMap Text GValue)
-                    deriving (Show,Eq)
+-- | A map keyed with 'AsLabel'. Obtained from @.select@ step, for
+-- example.
+newtype SelectedMap a = SelectedMap (HashMap Text a)
+                    deriving (Show,Eq,Functor,Foldable,Traversable)
 
-instance GraphSONTyped SelectedMap where
+instance GraphSONTyped (SelectedMap a) where
   gsonTypeFor _ = "g:Map"
 
-instance FromGraphSON SelectedMap where
+instance FromGraphSON a => FromGraphSON (SelectedMap a) where
   parseGraphSON gv = fmap SelectedMap $ parseGraphSON gv
 
 data AsLookupException = NoSuchAsLabel
@@ -58,11 +60,13 @@ data AsLookupException = NoSuchAsLabel
 
 instance Exception AsLookupException
 
-lookupAs :: FromGraphSON a => AsLabel a -> SelectedMap -> Either AsLookupException a
+-- | Get value from 'SelectedMap' and parse the value into @a@.
+lookupAs :: FromGraphSON a => AsLabel a -> SelectedMap GValue -> Either AsLookupException a
 lookupAs (AsLabel l) (SelectedMap m) =
   case HM.lookup l m of
    Nothing -> Left NoSuchAsLabel
    Just gv -> either (Left . ParseError) Right $ parseEither gv
 
-lookupAsM :: (MonadThrow m, FromGraphSON a) => AsLabel a -> SelectedMap -> m a
+-- | 'MonadThrow' version of 'lookupAs'.
+lookupAsM :: (MonadThrow m, FromGraphSON a) => AsLabel a -> SelectedMap GValue -> m a
 lookupAsM l m = either throwM return $ lookupAs l m

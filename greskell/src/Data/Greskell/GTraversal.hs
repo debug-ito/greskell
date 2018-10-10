@@ -920,7 +920,7 @@ gSelect1 :: AsLabel a -> Walk Transform s a
 gSelect1 l = unsafeWalk "select" [toGremlin l]
 
 -- | @.select@ step with more than one arguments.
-gSelectN :: AsLabel a -> AsLabel b -> [AsLabel c] -> Walk Transform s SelectedMap
+gSelectN :: AsLabel a -> AsLabel b -> [AsLabel c] -> Walk Transform s (SelectedMap GValue)
 gSelectN l1 l2 ls = unsafeWalk "select" ([toGremlin l1, toGremlin l2] ++ map toGremlin ls)
 
 -- | @.fold@ step.
