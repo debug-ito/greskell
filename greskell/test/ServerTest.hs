@@ -15,6 +15,7 @@ import qualified Network.Greskell.WebSocket.Client as WS
 import Test.Hspec
 
 import Data.Greskell.AsLabel (AsLabel(..), lookupAsM)
+import qualified Data.Greskell.AsLabel as As
 import Data.Greskell.AsIterator
   ( AsIterator(IteratorItem)
   )
@@ -31,7 +32,7 @@ import Data.Greskell.Greskell
   )
 import Data.Greskell.Graph
   ( AVertex(..), AEdge(..), AProperty(..), AVertexProperty(..),
-    PropertyMapSingle,
+    PropertyMapSingle, Key,
     T, tId, tLabel, tKey, tValue, cList, (=:),
     fromProperties, allProperties
   )
@@ -42,10 +43,11 @@ import Data.Greskell.GraphSON
 import Data.Greskell.GTraversal
   ( Walk, GTraversal, SideEffect,
     source, sV', sE', gV', sAddV', gAddE', gTo,
-    ($.), gOrder, gBy1,
+    ($.), gOrder, gBy1, gBy,
     Transform, unsafeWalk, unsafeGTraversal,
     gProperties, gProperty, gPropertyV, liftWalk,
-    gAs, gSelect1, gSelectN
+    gAs, gSelect1, gSelectN, gSelectBy1, gSelectByN,
+    gFilter, gOut'
   )
 
 import ServerTest.Common (withEnv, withClient)
@@ -62,6 +64,7 @@ spec = withEnv $ do
   spec_P
   spec_graph
   spec_as
+  spec_selectBy
 
 
 spec_basics :: SpecWith (String,Int)
@@ -343,3 +346,32 @@ spec_as = do
     got <- fmap V.toList $ WS.slurpResults =<< WS.submit client gt Nothing
     mapM (lookupAsM lorig) got `shouldReturn` [1,2,3]
     mapM (lookupAsM lmul) got `shouldReturn` [100,200,300]
+
+spec_selectBy :: SpecWith (String,Int)
+spec_selectBy = do
+  let prelude :: Greskell ()
+      prelude = unsafeGreskell $ mconcat $ map (<> "; ")
+                [ "graph = org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph.open()",
+                  "g = graph.traversal()",
+                  "graph.addVertex(id, 1, label, 'person')",
+                  "graph.addVertex(id, 2, label, 'person')",
+                  "g.V(1).property('name', 'ito').property('age', 23).iterate()",
+                  "g.V(2).property('name', 'tanaka').property('age', 18).iterate()",
+                  "g.V(1).addE('knows').to(V(2)).iterate()"
+                ]
+  specify "gAs and gSelectBy1" $ withClient $ \client -> do
+    let src :: AsLabel AVertex
+        src = AsLabel "s"
+        gt = gSelectBy1 src (gBy ("name" :: Key AVertex Text)) $. gAs src $. gFilter (gOut' ["knows"]) $. sV' [] $ source "g"
+    got <- fmap V.toList $ WS.slurpResults =<< WS.submit client (withPrelude prelude gt) Nothing
+    got `shouldBe` ["ito"]
+  specify "gAs and gSelectByN" $ withClient $ \client -> do
+    let src, dest :: AsLabel AVertex
+        src = AsLabel "s"
+        dest = AsLabel "d"
+        gt = gSelectByN src dest [] (gBy ("age" :: Key AVertex Int))
+             $. gAs dest $. gOut' ["knows"]
+             $. gAs src $. gFilter (gOut' ["knows"]) $. sV' [] $ source "g"
+    got <- fmap V.toList $ WS.slurpResults =<< WS.submit client (withPrelude prelude gt) Nothing
+    map (As.lookup src) got `shouldBe` [Just 23]
+    map (As.lookup dest) got `shouldBe` [Just 18]

@@ -104,6 +104,8 @@ module Data.Greskell.GTraversal
          gLabel,
          gSelect1,
          gSelectN,
+         gSelectBy1,
+         gSelectByN,
          -- ** Summarizing steps
          gFold,
          gCount,
@@ -922,6 +924,21 @@ gSelect1 l = unsafeWalk "select" [toGremlin l]
 -- | @.select@ step with more than one arguments.
 gSelectN :: AsLabel a -> AsLabel b -> [AsLabel c] -> Walk Transform s (SelectedMap GValue)
 gSelectN l1 l2 ls = unsafeWalk "select" ([toGremlin l1, toGremlin l2] ++ map toGremlin ls)
+
+unsafeChangeEnd :: Walk c a b -> Walk c a b'
+unsafeChangeEnd (Walk t) = Walk t
+
+byStep :: ByProjection a b -> Walk Transform c c
+byStep (ByProjection p) = unsafeWalk "by" [toGremlin p]
+
+-- | @.select@ step with one argument followed by @.by@ step.
+gSelectBy1 :: AsLabel a -> ByProjection a b -> Walk Transform s b
+gSelectBy1 l bp = modulateWith (unsafeChangeEnd $ gSelect1 l) [byStep bp]
+
+-- | @.select@ step with more than one arguments followed by @.by@
+-- step.
+gSelectByN :: AsLabel a -> AsLabel a -> [AsLabel a] -> ByProjection a b -> Walk Transform s (SelectedMap b)
+gSelectByN l1 l2 ls bp = modulateWith (unsafeChangeEnd $ gSelectN l1 l2 ls) [byStep bp]
 
 -- | @.fold@ step.
 gFold :: Walk Transform a [a]
