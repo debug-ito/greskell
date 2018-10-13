@@ -114,10 +114,14 @@ module Data.Greskell.GTraversal
          gOut',
          gOutE,
          gOutE',
+         gOutV,
+         gOutV',
          gIn,
          gIn',
          gInE,
          gInE',
+         gInV,
+         gInV',
          -- ** Side-effect steps
          gSideEffect,
          gSideEffect',
@@ -978,6 +982,14 @@ gOutE' :: (Vertex v)
        -> Walk Transform v AEdge
 gOutE' = gOutE
 
+-- | @.outV@ step.
+gOutV :: (Edge e, Vertex v) => Walk Transform e v
+gOutV = unsafeWalk "outV" []
+
+-- | Monomorphic version of 'gOutV'.
+gOutV' :: Edge e => Walk Transform e AVertex
+gOutV' = gOutV
+
 -- | @.in@ step
 gIn :: (Vertex v1, Vertex v2)
     => [Greskell Text] -- ^ edge labels
@@ -1001,6 +1013,14 @@ gInE' :: (Vertex v)
       => [Greskell Text] -- ^ edge labels
       -> Walk Transform v AEdge
 gInE' = gInE
+
+-- | @.inV@ step.
+gInV :: (Edge e, Vertex v) => Walk Transform e v
+gInV = unsafeWalk "inV" []
+
+-- | Monomorphic version of 'gInV'.
+gInV' :: Edge e => Walk Transform e AVertex
+gInV' = gInV
 
 -- | @.sideEffect@ step that takes a traversal.
 gSideEffect :: (ToGTraversal g, WalkType c, WalkType p, Split c p) => g c s e -> Walk p s s
