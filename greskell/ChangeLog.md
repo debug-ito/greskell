@@ -1,5 +1,20 @@
 # Revision history for greskell
 
+## 0.2.2.0  -- 2018-11-23
+
+* Add new `AsLabel` module.
+
+### GTraversal module
+
+* Add `gAs`, `gSelect1`, `gSelectN`, `gSelectBy1`, `gSelectByN`,
+  `gOutV`, `gOutV'`, `gInV`, `gInV'` functions.
+
+### Binder module
+
+* Add `newAsLabel` function.
+
+
+
 ## 0.2.1.1  -- 2018-10-03
 
 * Confirm test with `base-4.12.0.0`
