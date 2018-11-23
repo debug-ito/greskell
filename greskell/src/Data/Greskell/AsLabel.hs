@@ -4,7 +4,7 @@
 -- Description: Label string used in .as step
 -- Maintainer: Toshio Ito <debug.ito@gmail.com>
 --
--- 
+-- @since 0.2.2.0
 module Data.Greskell.AsLabel
        ( AsLabel(..),
          SelectedMap,
@@ -53,6 +53,7 @@ instance GraphSONTyped (SelectedMap a) where
 instance FromGraphSON a => FromGraphSON (SelectedMap a) where
   parseGraphSON gv = fmap SelectedMap $ parseGraphSON gv
 
+-- | An 'Exception' raised by 'lookupM' and 'lookupAsM'.
 data AsLookupException = NoSuchAsLabel
                          -- ^ The 'SelectedMap' does not have the
                          -- given 'AsLabel' as the key.

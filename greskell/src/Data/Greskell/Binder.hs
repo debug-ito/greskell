@@ -52,7 +52,7 @@ initBinderS =
 -- >>> import Data.Ord (comparing)
 -- >>> import qualified Data.HashMap.Strict as HashMap
 
--- | A Monad that manages binding variables to values.
+-- | A Monad that manages binding variables and labels to values.
 --
 -- >>> let binder = (,) <$> newBind (10 :: Int) <*> newBind "hoge"
 -- >>> let ((var_int, var_str), binding) = runBinder binder
@@ -77,7 +77,6 @@ newBind :: ToJSON v
         => v -- ^ bound value
         -> Binder (Greskell v) -- ^ variable
 newBind val = Binder $ do
-  -- (next_index, values) <- State.get
   state <- State.get
   let next_index = varIndex state
       values = varBindings state
@@ -115,6 +114,8 @@ toPlaceHolderVariable i = TL.pack ("__v" ++ show i)
 --
 -- The returned 'AsLabel' is guaranteed to be unique in the current
 -- monadic context.
+--
+-- @since 0.2.2.0
 newAsLabel :: Binder (AsLabel a)
 newAsLabel = Binder $ do
   state <- State.get

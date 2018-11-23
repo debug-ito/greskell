@@ -887,6 +887,8 @@ gV' = gV
 --
 -- @.as@ step is 'Transform' because it adds the label to the
 -- traverser.
+--
+-- @since 0.2.2.0
 gAs :: AsLabel a -> Walk Transform a a
 gAs l = unsafeWalk "as" [toGremlin l]
 
@@ -922,10 +924,14 @@ gLabel :: Element s => Walk Transform s Text
 gLabel = unsafeWalk "label" []
 
 -- | @.select@ step with one argument.
+--
+-- @since 0.2.2.0
 gSelect1 :: AsLabel a -> Walk Transform s a
 gSelect1 l = unsafeWalk "select" [toGremlin l]
 
 -- | @.select@ step with more than one arguments.
+--
+-- @since 0.2.2.0
 gSelectN :: AsLabel a -> AsLabel b -> [AsLabel c] -> Walk Transform s (SelectedMap GValue)
 gSelectN l1 l2 ls = unsafeWalk "select" ([toGremlin l1, toGremlin l2] ++ map toGremlin ls)
 
@@ -936,11 +942,15 @@ byStep :: ByProjection a b -> Walk Transform c c
 byStep (ByProjection p) = unsafeWalk "by" [toGremlin p]
 
 -- | @.select@ step with one argument followed by @.by@ step.
+--
+-- @since 0.2.2.0
 gSelectBy1 :: AsLabel a -> ByProjection a b -> Walk Transform s b
 gSelectBy1 l bp = modulateWith (unsafeChangeEnd $ gSelect1 l) [byStep bp]
 
 -- | @.select@ step with more than one arguments followed by @.by@
 -- step.
+--
+-- @since 0.2.2.0
 gSelectByN :: AsLabel a -> AsLabel a -> [AsLabel a] -> ByProjection a b -> Walk Transform s (SelectedMap b)
 gSelectByN l1 l2 ls bp = modulateWith (unsafeChangeEnd $ gSelectN l1 l2 ls) [byStep bp]
 
@@ -983,10 +993,14 @@ gOutE' :: (Vertex v)
 gOutE' = gOutE
 
 -- | @.outV@ step.
+--
+-- @since 0.2.2.0
 gOutV :: (Edge e, Vertex v) => Walk Transform e v
 gOutV = unsafeWalk "outV" []
 
 -- | Monomorphic version of 'gOutV'.
+--
+-- @since 0.2.2.0
 gOutV' :: Edge e => Walk Transform e AVertex
 gOutV' = gOutV
 
@@ -1015,10 +1029,14 @@ gInE' :: (Vertex v)
 gInE' = gInE
 
 -- | @.inV@ step.
+--
+-- @since 0.2.2.0
 gInV :: (Edge e, Vertex v) => Walk Transform e v
 gInV = unsafeWalk "inV" []
 
 -- | Monomorphic version of 'gInV'.
+--
+-- @since 0.2.2.0
 gInV' :: Edge e => Walk Transform e AVertex
 gInV' = gInV
 
