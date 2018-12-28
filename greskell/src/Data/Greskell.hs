@@ -5,6 +5,11 @@
 --
 -- Data.Greskell is a Haskell support to use the Gremlin graph query
 -- language. For more information, see [project README](https://github.com/debug-ito/greskell).
+--
+-- This module re-exports most modules from greskell and greskell-core
+-- packages. The following modules are excluded from re-export:
+--
+-- - "Data.Greskell.Extra": extra utility functions.
 module Data.Greskell
        (
          module Data.Greskell.Greskell,
