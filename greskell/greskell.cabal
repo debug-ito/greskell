@@ -56,7 +56,8 @@ test-suite spec
   other-modules:        Data.Greskell.BinderSpec,
                         Data.Greskell.GTraversalSpec,
                         Data.Greskell.GremlinSpec,
-                        Data.Greskell.GraphSpec
+                        Data.Greskell.GraphSpec,
+                        Data.Greskell.ExtraSpec
   build-depends:        base, text, aeson,  unordered-containers,
                         greskell, greskell-core,
                         hspec >=2.2.3,
