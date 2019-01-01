@@ -1,5 +1,9 @@
 # Revision history for greskell
 
+## 0.2.3.0  -- 2019-01-01
+
+* Add Extra module.
+
 ## 0.2.2.0  -- 2018-11-23
 
 * Add new `AsLabel` module.

@@ -3,7 +3,9 @@
 -- Description: Extra utility functions implemented by Greskell
 -- Maintainer: Toshio Ito <debug.ito@gmail.com>
 --
--- 
+-- Extra utility functions implemented by Greskell.
+--
+-- @since 0.2.3.0
 module Data.Greskell.Extra
   ( writePropertyKeyValues,
     writeAllProperties
@@ -21,6 +23,8 @@ import Data.Text (Text)
 
 -- | Make a series of @.property@ steps to write the given key-value
 -- pairs as properties.
+--
+-- @since 0.2.3.0
 writePropertyKeyValues :: (ToJSON v, Element e) => [(Text, v)] -> Binder (Walk SideEffect e e)
 writePropertyKeyValues pairs = fmap mconcat $ mapM toPropStep pairs
   where
@@ -28,6 +32,8 @@ writePropertyKeyValues pairs = fmap mconcat $ mapM toPropStep pairs
 
 -- | Make a series of @.property@ steps to write all properties in the
 -- given 'PropertyMap'.
+--
+-- @since 0.2.3.0
 writeAllProperties :: (PropertyMap m, Property p, ToJSON v, Element e)
                    => m p v -> Binder (Walk SideEffect e e)
 writeAllProperties ps = writePropertyKeyValues $ map toPair $ allProperties ps
