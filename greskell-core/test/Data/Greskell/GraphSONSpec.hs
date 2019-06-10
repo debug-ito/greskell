@@ -76,6 +76,11 @@ fromJSON_spec = describe "FromJSON (recursive)" $ do
                        ]
     parse input `shouldBe` Right (nonTypedGraphSON input)
 
+isParseTypeError :: String -- ^ expected type
+                 -> String -- ^ error message
+                 -> Bool -- ^ matched
+isParseTypeError exp_type = isInfixOf ("expected " <> exp_type)
+
 parseTypedGraphSON_spec :: Spec
 parseTypedGraphSON_spec = describe "parseTypedGraphSON" $ do
   let parse = parseEither parseTypedGraphSON
@@ -91,7 +96,7 @@ parseTypedGraphSON_spec = describe "parseTypedGraphSON" $ do
       got `shouldSatisfy` (isInfixOf "Expected @type")
     specify "typed JSON with valid @type field and invalid @value" $ do
       let (Left got) = parse (object ["@type" .= String "g:Int32", "@value" .= String "hoge"]) :: Either String (GraphSON Int32)
-      got `shouldSatisfy` (isInfixOf "expected Int32")
+      got `shouldSatisfy` isParseTypeError "Int32"
     specify "typed JSON with valid @type and @value" $ do
       let got = parse (object ["@type" .= String "g:Int32", "@value" .= Number 255]) :: Either String (GraphSON Int32)
       got `shouldBe` (Right $ typedGraphSON' "g:Int32" 255)
@@ -111,7 +116,7 @@ parseTypedGraphSON_spec = describe "parseTypedGraphSON" $ do
       let (Left got) = parse (object [ "@type" .= String "g:Array",
                                        "@value" .= Number 100
                                      ]) :: Either String (GraphSON (HashMap String String))
-      got `shouldSatisfy` (isInfixOf "expected HashMap")
+      got `shouldSatisfy` isParseTypeError "HashMap"
     specify "typed JSON with valid @type and @value" $ do
       let got = parse (object [ "@type" .= String "g:Map",
                                 "@value" .= object ["hoge" .= String "HOGE", "foo" .= String "FOO"]
