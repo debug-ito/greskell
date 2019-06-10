@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, NoMonomorphismRestriction #-}
+{-# LANGUAGE OverloadedStrings, NoMonomorphismRestriction, CPP #-}
 module Data.Greskell.GraphSONSpec (main,spec) where
 
 import Data.Aeson (object, (.=), ToJSON(..), FromJSON(..), Value(..))
@@ -79,7 +79,12 @@ fromJSON_spec = describe "FromJSON (recursive)" $ do
 isParseTypeError :: String -- ^ expected type
                  -> String -- ^ error message
                  -> Bool -- ^ matched
+#if MIN_VERSION_aeson(1,4,3)
+isParseTypeError exp_type = isInfixOf ("parsing " <> exp_type <> " failed")
+#else
 isParseTypeError exp_type = isInfixOf ("expected " <> exp_type)
+#endif
+
 
 parseTypedGraphSON_spec :: Spec
 parseTypedGraphSON_spec = describe "parseTypedGraphSON" $ do
