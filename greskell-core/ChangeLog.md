@@ -1,5 +1,10 @@
 # Revision history for greskell-core
 
+## 0.1.2.6  -- 2019-06-10
+
+* Adapt test spec to `aeson-1.4.3.0` (#1).
+
+
 ## 0.1.2.5  -- 2019-03-31
 
 * Confirm test with `QuickCheck-2.13.1`.
