@@ -34,6 +34,9 @@ import Text.Heredoc (here)
 import Test.Hspec
 ```
 
+To run the examples in this README, run `stack test test-readme`. See [test-readme directory](https://github.com/debug-ito/greskell/tree/master/test-readme) to see how this works.
+
+
 ## The Greskell type
 
 At the core of greskell is the `Greskell` type. `Greskell a` represents a Gremlin expression that evaluates to the type `a`.
