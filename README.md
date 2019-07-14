@@ -104,6 +104,7 @@ import Data.Greskell.Binder -- from greskell package
   (Binder, newBind, runBinder)
 import Network.Greskell.WebSocket -- from greskell-websocket package
   (connect, close, submit, slurpResults)
+import System.IO (hPutStrLn, stderr)
 
 submitExample :: IO [Int]
 submitExample =
@@ -120,8 +121,12 @@ plusTen x = do
 main = hspec $ specify "submit" $ do
   egot <- try submitExample :: IO (Either SomeException [Int])
   case egot of
-    Left _ -> return () -- probably there's no server running
-    Right got -> got `shouldBe` [60]
+    Left e -> do
+      hPutStrLn stderr ("submit error: " ++ show e)
+      hPutStrLn stderr ("  We ignore the error. Probably there's no server running?")
+    Right got -> do
+      hPutStrLn stderr ("submit success: " ++ show got)
+      got `shouldBe` [60]
 ```
 
 `submit` function sends a `Greskell` to the server and returns a `ResultHandle`. `ResultHandle` is a stream of evaluation results returned by the server. `slurpResults` gets all items from `ResultHandle`.
