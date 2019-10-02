@@ -50,7 +50,7 @@ checkWalkTypeRelation makeCode child parent expect_ok = specify label $ doCheck
     label = child ++ " -> " ++ parent
     doCheck = do
       result <- fmap toErrString $ runInterpreter compiledParent
-      hPutStrLn stderr ("## " ++ label ++ ": " ++ show result)
+      -- hPutStrLn stderr ("## " ++ label ++ ": " ++ show result)
       isRight result `shouldBe` expect_ok
     compiledParent = do
       set [searchPath := ["src"]]
