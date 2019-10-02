@@ -77,7 +77,7 @@ test-suite doctest
 flag hint-test
   description: Do tests that use Haskell interpreter (hint package).
                These tests depend on the behavior of the hint package, so it may be unstable.
-               Disable the flag to skip the tests.
+               Disable the flag to skip the tests. Or, maybe you should disable concurrent build.
   default: True
   manual: True
 
