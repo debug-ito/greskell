@@ -1,5 +1,9 @@
 # Revision history for greskell-core
 
+## 0.1.2.7  -- 2019-10-02
+
+* Confirm test with `hashable-1.3.0.0` and `semigroups-0.19.1`.
+
 ## 0.1.2.6  -- 2019-06-10
 
 * Adapt test spec to `aeson-1.4.3.0` (#1).
