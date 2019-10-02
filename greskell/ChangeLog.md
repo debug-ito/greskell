@@ -1,5 +1,9 @@
 # Revision history for greskell
 
+## 0.2.3.1  -- 2019-10-02
+
+* Confirm test with `semigroups-0.19.1`.
+
 ## 0.2.3.0  -- 2019-01-01
 
 * Add Extra module.
