@@ -6,14 +6,18 @@ import qualified Network.Greskell.WebSocket.Client as WS
 import System.IO (hPutStrLn, stderr)
 import Test.Hspec
 
+import Control.Category ((<<<))
+import Control.Monad (void)
+import Data.Text (Text)
 import Data.Greskell.Binder (newBind, runBinder)
 import Data.Greskell.Graph
-  ( AVertex, Key,
+  ( AVertex, Key, AEdge
   )
 import Data.Greskell.GTraversal
   ( Walk, GTraversal, SideEffect,
-    source, sV', sAddV', gProperty, gId, gValues, gHasId, gHasLabel, gHas2,
-    ($.), liftWalk
+    source, sV', sE', sAddV', gProperty, gId, gValues, gHasId, gHasLabel, gHas2,
+    ($.), liftWalk,
+    gAddE', gTo, gV'
   )
 
 import ServerTest.Common (withEnv, withClient)
@@ -61,14 +65,37 @@ spec_generic_element_ID = do
     let prop_key :: Key AVertex Int
         prop_key = "sample"
         prop_val = 125
-        make_v = liftWalk gId $. (liftWalk $ gProperty prop_key prop_val) $. (sAddV' "test" $ source "g")
+        make_v = liftWalk gId $. gProperty prop_key prop_val $. (sAddV' "test" $ source "g")
     clearGraph client
     got_ids <- fmap V.toList $ WS.slurpResults =<< WS.submit client make_v Nothing
-    hPutStrLn stderr ("Got IDs: " <> show got_ids)
+    hPutStrLn stderr ("Got Vertex IDs: " <> show got_ids)
     length got_ids `shouldBe` 1
     let (q, qbind) = runBinder $ do
           vid <- newBind (got_ids !! 0)
           return $ gValues [prop_key] $. (sV' [vid] $ source "g")
     got_vals <- fmap V.toList $ WS.slurpResults =<< WS.submit client q (Just qbind)
     got_vals `shouldBe` [125]
+  specify "get Edge ID as GValue, query Edge by GValue" $ withClient $ \client -> do
+    let vname_key :: Key AVertex Text
+        vname_key = "name"
+        ename_key :: Key AEdge Text
+        ename_key = "name"
+        makeV n = (liftWalk $ gProperty vname_key n) $. (sAddV' "test_v" $ source "g")
+        makeE fn tn = liftWalk gId
+                      $. gProperty ename_key "e_test"
+                      $. gAddE' "test_e" (gTo $ gHas2 vname_key tn <<< gV' [])
+                      $. gHas2 vname_key fn
+                      $. (liftWalk $ sV' [] $ source "g")
+    clearGraph client
+    void $ WS.slurpResults =<< WS.submit client (makeV "v_from") Nothing
+    void $ WS.slurpResults =<< WS.submit client (makeV "v_to") Nothing
+    got_ids <- fmap V.toList $ WS.slurpResults =<< WS.submit client (makeE "v_from" "v_to") Nothing
+    hPutStrLn stderr ("Got Edge IDs: " <> show got_ids)
+    length got_ids `shouldBe` 1
+    let (q, qbind) = runBinder $ do
+          eid <- newBind (got_ids !! 0)
+          return $ gValues [ename_key] $. (sE' [eid] $ source "g")
+    got_vals <- fmap V.toList $ WS.slurpResults =<< WS.submit client q (Just qbind)
+    got_vals `shouldBe` ["e_test"]
+    
     
