@@ -3,6 +3,7 @@ module Main (main,spec) where
 
 import qualified Data.Vector as V
 import qualified Network.Greskell.WebSocket.Client as WS
+import System.IO (hPutStrLn, stderr)
 import Test.Hspec
 
 import Data.Greskell.Binder (newBind, runBinder)
@@ -23,6 +24,7 @@ main = hspec spec
 spec :: Spec
 spec = withEnv $ do
   spec_values_type
+  spec_generic_element_ID
 
 clearGraph :: WS.Client -> IO ()
 clearGraph client = WS.drainResults =<< WS.submitRaw client "g.V().drop()" Nothing
@@ -52,3 +54,21 @@ spec_values_type = describe "return type of .values step" $ do
     got_ids <- putProp
     got <- getProp (got_ids V.! 0)
     V.toList got `shouldBe` [100]
+
+spec_generic_element_ID :: SpecWith (String, Int)
+spec_generic_element_ID = do
+  specify "get Vertex ID as GValue, query Vertex by GValue" $ withClient $ \client -> do
+    let prop_key :: Key AVertex Int
+        prop_key = "sample"
+        prop_val = 125
+        make_v = liftWalk gId $. (liftWalk $ gProperty prop_key prop_val) $. (sAddV' "test" $ source "g")
+    clearGraph client
+    got_ids <- fmap V.toList $ WS.slurpResults =<< WS.submit client make_v Nothing
+    hPutStrLn stderr ("Got IDs: " <> show got_ids)
+    length got_ids `shouldBe` 1
+    let (q, qbind) = runBinder $ do
+          vid <- newBind (got_ids !! 0)
+          return $ gValues [prop_key] $. (sV' [vid] $ source "g")
+    got_vals <- fmap V.toList $ WS.slurpResults =<< WS.submit client q (Just qbind)
+    got_vals `shouldBe` [125]
+    

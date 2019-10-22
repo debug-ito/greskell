@@ -65,8 +65,6 @@ spec = withEnv $ do
   spec_graph
   spec_as
   spec_selectBy
-  spec_generic_element_ID
-
 
 spec_basics :: SpecWith (String,Int)
 spec_basics = do
@@ -376,25 +374,3 @@ spec_selectBy = do
     got <- fmap V.toList $ WS.slurpResults =<< WS.submit client (withPrelude prelude gt) Nothing
     map (As.lookup src) got `shouldBe` [Just 23]
     map (As.lookup dest) got `shouldBe` [Just 18]
-
-spec_generic_element_ID :: SpecWith (String, Int)
-spec_generic_element_ID = do
-  let prelude :: Greskell ()
-      prelude = unsafeGreskell $ mconcat $ map (<> "; ")
-                [ "graph = org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph.open()",
-                  "g = graph.traversal()"
-                ]
-      withPrelude' = withPrelude prelude
-  specify "get Vertex ID as GValue, query Vertex by GValue" $ withClient $ \client -> do
-    let prop_key :: Key AVertex Int
-        prop_key = "sample"
-        prop_val = 125
-        make_v = liftWalk gId $. (liftWalk $ gProperty prop_key prop_val) $. (sAddV' "test" $ source "g")
-    got_ids <- fmap V.toList $ WS.slurpResults =<< WS.submit client (withPrelude' make_v) Nothing
-    length got_ids `shouldBe` 1
-    let (q, qbind) = runBinder $ do
-          vid <- newBind (got_ids !! 0)
-          return $ gValues [prop_key] $. (sV' [vid] $ source "g")
-    got_vals <- fmap V.toList $ WS.slurpResults =<< WS.submit client q (Just qbind)
-    got_vals `shouldBe` [125]
-    
