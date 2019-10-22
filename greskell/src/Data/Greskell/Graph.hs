@@ -27,6 +27,7 @@ module Data.Greskell.Graph
          -- * Typed Key (accessor of a Property)
          Key(..),
          key,
+         unsafeCastKey,
          -- ** key-value pair
          KeyValue(..),
          (=:),
@@ -202,6 +203,9 @@ instance ToGreskell (Key a b) where
 key :: Text -> Key a b
 key = Key . string
 
+-- | Unsafely cast the type signature of the 'Key'.
+unsafeCastKey :: Key a1 b1 -> Key a2 b2
+unsafeCastKey = Key . unKey
 
 -- | Pair of 'Key' and its value.
 --
