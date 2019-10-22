@@ -120,6 +120,7 @@ test-suite server-test-suite
 
 flag server-behavior-test
   description: Tests about the behavior of Gremlin Server, rather than greskell.
+               Note that this test clears the content of the Gremlin Server.
   default: False
   manual: True
 
