@@ -11,8 +11,10 @@ import Control.Monad (void)
 import Data.Text (Text)
 import Data.Greskell.Binder (newBind, runBinder)
 import Data.Greskell.Graph
-  ( AVertex, Key, AEdge
+  ( AVertex(..), Key, AEdge, Property(propertyKey, propertyValue),
+    PropertyMap(allProperties)
   )
+import Data.Greskell.GraphSON (parseEither)
 import Data.Greskell.GTraversal
   ( Walk, GTraversal, SideEffect,
     source, sV', sE', sAddV', gProperty, gId, gValues, gHasId, gHasLabel, gHas2,
@@ -29,6 +31,7 @@ spec :: Spec
 spec = withEnv $ do
   spec_values_type
   spec_generic_element_ID
+  spec_vertex_with_props
 
 clearGraph :: WS.Client -> IO ()
 clearGraph client = WS.drainResults =<< WS.submitRaw client "g.V().drop()" Nothing
@@ -98,4 +101,17 @@ spec_generic_element_ID = do
     got_vals <- fmap V.toList $ WS.slurpResults =<< WS.submit client q (Just qbind)
     got_vals `shouldBe` ["e_test"]
     
-    
+spec_vertex_with_props :: SpecWith (String, Int)
+spec_vertex_with_props = do
+  specify "get Vertex element as AVertex" $ withClient $ \client -> do
+    let prop_key :: Key AVertex Int
+        prop_key = "sample"
+        makeV = gProperty prop_key 1132 $. (sAddV' "test" $ source "g")
+        getPropKeyVal p = (propertyKey p, parseEither $ propertyValue p)
+        exp_prop_val :: Int
+        exp_prop_val = 1132
+    clearGraph client
+    got_vs <- fmap V.toList $ WS.slurpResults =<< WS.submit client makeV Nothing
+    (fmap avLabel $ got_vs) `shouldBe` ["test"]
+    (fmap (fmap getPropKeyVal . allProperties . avProperties) $ got_vs)
+      `shouldBe` [[("sample", Right exp_prop_val)]]
