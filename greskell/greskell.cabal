@@ -31,6 +31,7 @@ library
                         Data.Greskell.Gremlin,
                         Data.Greskell.Binder,
                         Data.Greskell.Graph,
+                        Data.Greskell.Graph.Full,
                         Data.Greskell.GTraversal,
                         Data.Greskell.AsLabel,
                         Data.Greskell.Extra

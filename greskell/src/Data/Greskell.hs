@@ -10,6 +10,7 @@
 -- packages. The following modules are excluded from re-export:
 --
 -- - "Data.Greskell.Extra": extra utility functions.
+-- - "Data.Greskell.Graph.Full": deprecated graph types.
 module Data.Greskell
        (
          module Data.Greskell.Greskell,
