@@ -1,5 +1,14 @@
 # Revision history for greskell
 
+## ?.?.?.?
+
+* Add some test cases to server-behavior-test
+
+### Graph module
+
+* Add `unsafeCastKey` function.
+
+
 ## 0.2.3.1  -- 2019-10-02
 
 * Confirm test with `semigroups-0.19.1`.
