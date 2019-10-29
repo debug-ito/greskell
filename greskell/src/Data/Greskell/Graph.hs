@@ -80,6 +80,10 @@ class Element e where
   type ElementProperty e :: * -> *
   -- ^ Property type of the 'Element'. It should be of 'Property'
   -- class.
+  elementId :: e -> GValue
+  -- ^ ID of this Element.
+  elementLabel :: e -> Text
+  -- ^ Label of this Element.
 
 -- | @org.apache.tinkerpop.gremlin.structure.Property@ interface in a
 -- TinkerPop graph.
@@ -227,6 +231,8 @@ data AVertex =
 
 instance Element AVertex where
   type ElementProperty AVertex = AVertexProperty
+  elementId = avId
+  elementLabel = avLabel
 
 instance GraphSONTyped AVertex where
   gsonTypeFor _ = "g:Vertex"
@@ -254,6 +260,8 @@ data AEdge =
 
 instance Element AEdge where
   type ElementProperty AEdge = AProperty
+  elementId = aeId
+  elementLabel = aeLabel
 
 instance GraphSONTyped AEdge where
   gsonTypeFor _ = "g:Edge"
@@ -347,6 +355,8 @@ instance GraphSONTyped (AVertexProperty v) where
 
 instance Element (AVertexProperty v) where
   type ElementProperty (AVertexProperty v) = AProperty
+  elementId = avpId
+  elementLabel = avpLabel
 
 instance Property AVertexProperty where
   propertyKey = avpLabel
