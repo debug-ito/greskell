@@ -7,6 +7,16 @@
 ### Graph module
 
 * Add `unsafeCastKey` function.
+* [BREAKING CHANGE] Remove `ElementID` type family from `Element` class.
+* [BREAKING CHANGE] Remove `Vertex`, `Edge`, `PropertyMap` and
+  `FromGraphSONWithKey` classes.
+* [BREAKING CHANGE] Remove `PropertyMapSingle` and `PropertyMapList`
+  types. Remove functions about those types.
+* [BREAKING CHANGE] Now `tKey` and `tValue` are monomorphic for `AVertexProperty`.
+* [BREAKING CHANGE] Remove `avProperties` field from `AVertex`.
+* [BREAKING CHANGE] Remove `aeInVLabel`, `aeOutVLabel`, `aeInV`,
+  `aeOutV` and `aeProperties` fields from `AEdge`.
+* [BREAKING CHANGE] Remove `avpProperties` field from `AVertexProperty`.
 
 
 ## 0.2.3.1  -- 2019-10-02
