@@ -10,6 +10,7 @@
 module Data.Greskell.Graph
        ( -- * TinkerPop graph structure types
          Element(..),
+         ElementID,
          Property(..),
          -- * T Enum
          T,
@@ -73,6 +74,10 @@ import Data.Greskell.Greskell
 --
 -- >>> import Data.Greskell.Greskell (toGremlin)
 
+-- | ID of a graph element (vertex, edge and vertex property). Data
+-- structure of an 'ElementID' depends on graph implementation, so you
+-- should not rely on it.
+type ElementID = GValue
 
 -- | @org.apache.tinkerpop.gremlin.structure.Element@ interface in a
 -- TinkerPop graph.
@@ -80,7 +85,7 @@ class Element e where
   type ElementProperty e :: * -> *
   -- ^ Property type of the 'Element'. It should be of 'Property'
   -- class.
-  elementId :: e -> GValue
+  elementId :: e -> ElementID
   -- ^ ID of this Element.
   elementLabel :: e -> Text
   -- ^ Label of this Element.
@@ -103,7 +108,7 @@ instance GraphSONTyped (T a b) where
 
 
 -- | @T.id@ token.
-tId :: Element a => Greskell (T a (ElementID a))
+tId :: Element a => Greskell (T a ElementID)
 tId = unsafeGreskellLazy "T.id"
 
 -- | @T.key@ token.
@@ -222,7 +227,7 @@ data KeyValue a where
 -- Aeson data types.
 data AVertex =
   AVertex
-  { avId :: GValue,
+  { avId :: ElementID,
     -- ^ ID of this vertex
     avLabel :: Text
     -- ^ Label of this vertex
@@ -251,7 +256,7 @@ instance FromGraphSON AVertex where
 -- data types.
 data AEdge =
   AEdge
-  { aeId :: GValue,
+  { aeId :: ElementID,
     -- ^ ID of this edge.
     aeLabel :: Text
     -- ^ Label of this edge.
@@ -328,7 +333,7 @@ instance Traversable AProperty where
 -- If you are not sure about the type @v@, just use 'GValue'.
 data AVertexProperty v =
   AVertexProperty
-  { avpId :: GValue,
+  { avpId :: ElementID,
     -- ^ ID of this vertex property.
     avpLabel :: Text,
     -- ^ Label and key of this vertex property.
