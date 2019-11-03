@@ -390,47 +390,44 @@ sourceMethod method_name args src =
   unsafeGreskellLazy $ (toGremlinLazy src <> methodCallText method_name (map toGremlin args))
 
 -- | @.V()@ method on 'GraphTraversalSource'.
-sV :: Vertex v
-   => [Greskell (ElementID v)] -- ^ vertex IDs
+sV :: [Greskell (ElementID AVertex)] -- ^ vertex IDs
    -> Greskell GraphTraversalSource
-   -> GTraversal Transform () v
+   -> GTraversal Transform () AVertex
 sV ids src = GTraversal $ sourceMethod "V" ids src
 
--- | Monomorphic version of 'sV'.
+-- | Alias for 'sV' (for backward-compatibility)
 --
 -- >>> toGremlin (source "g" & sV' (map gvalueInt ([1,2,3] :: [Int])))
 -- "g.V(1,2,3)"
-sV' :: [Greskell GValue]
+sV' :: [Greskell (ElementID AVertex)] -- ^ vertex IDs
     -> Greskell GraphTraversalSource
     -> GTraversal Transform () AVertex
 sV' = sV
 
 -- | @.E()@ method on 'GraphTraversalSource'.
-sE :: Edge e
-   => [Greskell (ElementID e)] -- ^ edge IDs
+sE :: [Greskell (ElementID AEdge)] -- ^ edge IDs
    -> Greskell GraphTraversalSource
-   -> GTraversal Transform () e
+   -> GTraversal Transform () AEdge
 sE ids src = GTraversal $ sourceMethod "E" ids src
 
--- | Monomorphic version of 'sE'.
+-- | Alias for 'sE' (for backward-compatibility)
 --
 -- >>> toGremlin (source "g" & sE' (map gvalueInt ([1] :: [Int])))
 -- "g.E(1)"
-sE' :: [Greskell GValue]
-       -> Greskell GraphTraversalSource
-       -> GTraversal Transform () AEdge
+sE' :: [Greskell (ElementID AEdge)] -- ^ edge IDs
+    -> Greskell GraphTraversalSource
+    -> GTraversal Transform () AEdge
 sE' = sE
 
 -- | @.addV()@ method on 'GraphTraversalSource'.
 --
 -- @since 0.2.0.0
-sAddV :: Vertex v
-      => Greskell Text -- ^ vertex label
+sAddV :: Greskell Text -- ^ vertex label
       -> Greskell GraphTraversalSource
-      -> GTraversal SideEffect () v
+      -> GTraversal SideEffect () AVertex
 sAddV label src = GTraversal $ sourceMethod "addV" [label] src
 
--- | Monomorphic version of 'sAddV'.
+-- | Alias for 'sAddV' (for backward-compatibility)
 --
 -- >>> toGremlin (source "g" & sAddV' "person")
 -- "g.addV(\"person\")"

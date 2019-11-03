@@ -20,6 +20,17 @@
   `aeOutV` and `aeProperties` fields from `AEdge`.
 * [BREAKING CHANGE] Remove `avpProperties` field from `AVertexProperty`.
 
+### GTraversal module
+
+* [BREAKING CHANGE] Change the signature of the following
+  functions. Now that `Vertex`, `Edge` and `PropertyMap` classes are
+  gone, they are all monomorphic.
+
+    * `sV`, `sV'`
+    * `sE`, `sE'`
+    * `sAddV`
+
+
 
 ## 0.2.3.1  -- 2019-10-02
 
