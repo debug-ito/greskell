@@ -19,12 +19,14 @@
 * [BREAKING CHANGE] Remove `aeInVLabel`, `aeOutVLabel`, `aeInV`,
   `aeOutV` and `aeProperties` fields from `AEdge`.
 * [BREAKING CHANGE] Remove `avpProperties` field from `AVertexProperty`.
+* [BREAKING CHANGE] Type of the ID field for `AVertex`, `AEdge` and
+  `AVertexProperty` is now `ElementID`, not `GValue`.
 
 ### GTraversal module
 
 * [BREAKING CHANGE] Change the signature of the following
-  functions. Now that `Vertex`, `Edge` and `PropertyMap` classes are
-  gone, they are all monomorphic.
+  functions. Because `Vertex`, `Edge` and `PropertyMap` classes are
+  gone, those functions are now all monomorphic.
 
     * `sV`, `sV'`
     * `sE`, `sE'`
