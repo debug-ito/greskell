@@ -44,9 +44,10 @@ module Data.Greskell.Graph
        ) where
 
 import Control.Applicative (empty, (<$>), (<*>), (<|>))
-import Data.Aeson (Value(..), FromJSON(..))
+import Data.Aeson (Value(..), FromJSON(..), ToJSON(..))
 import Data.Aeson.Types (Parser)
 import Data.Foldable (toList, Foldable(foldr), foldlM)
+import Data.Hashable (Hashable)
 import qualified Data.HashMap.Strict as HM
 import Data.List.NonEmpty (NonEmpty(..))
 import qualified Data.List.NonEmpty as NL
@@ -74,10 +75,15 @@ import Data.Greskell.Greskell
 --
 -- >>> import Data.Greskell.Greskell (toGremlin)
 
--- | ID of a graph element (vertex, edge and vertex property). Data
--- structure of an 'ElementID' depends on graph implementation, so you
--- should not rely on it.
-type ElementID = GValue
+-- | ID of a graph element @e@ (vertex, edge and vertex
+-- property). Data structure of an 'ElementID' depends on graph
+-- implementation, so you should not rely on it.
+newtype ElementID e = ElementID { unElementID :: GValue }
+                    deriving (Show,Eq,Ord,Generic, ToJSON, FromJSON, FromGraphSON, Hashable)
+
+-- | Unsafely convert the element type.
+instance Functor ElementID where
+  fmap _ (ElementID e) = ElementID e
 
 -- | @org.apache.tinkerpop.gremlin.structure.Element@ interface in a
 -- TinkerPop graph.
@@ -85,7 +91,7 @@ class Element e where
   type ElementProperty e :: * -> *
   -- ^ Property type of the 'Element'. It should be of 'Property'
   -- class.
-  elementId :: e -> ElementID
+  elementId :: e -> ElementID e
   -- ^ ID of this Element.
   elementLabel :: e -> Text
   -- ^ Label of this Element.
@@ -108,7 +114,7 @@ instance GraphSONTyped (T a b) where
 
 
 -- | @T.id@ token.
-tId :: Element a => Greskell (T a ElementID)
+tId :: Element a => Greskell (T a (ElementID a))
 tId = unsafeGreskellLazy "T.id"
 
 -- | @T.key@ token.
@@ -227,7 +233,7 @@ data KeyValue a where
 -- Aeson data types.
 data AVertex =
   AVertex
-  { avId :: ElementID,
+  { avId :: ElementID AVertex,
     -- ^ ID of this vertex
     avLabel :: Text
     -- ^ Label of this vertex
@@ -256,7 +262,7 @@ instance FromGraphSON AVertex where
 -- data types.
 data AEdge =
   AEdge
-  { aeId :: ElementID,
+  { aeId :: ElementID AEdge,
     -- ^ ID of this edge.
     aeLabel :: Text
     -- ^ Label of this edge.
@@ -333,7 +339,7 @@ instance Traversable AProperty where
 -- If you are not sure about the type @v@, just use 'GValue'.
 data AVertexProperty v =
   AVertexProperty
-  { avpId :: ElementID,
+  { avpId :: ElementID AVertexProperty,
     -- ^ ID of this vertex property.
     avpLabel :: Text,
     -- ^ Label and key of this vertex property.
