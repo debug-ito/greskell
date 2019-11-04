@@ -1,4 +1,4 @@
-{-# LANGUAGE TypeFamilies, OverloadedStrings, FlexibleInstances, GeneralizedNewtypeDeriving, DeriveTraversable, GADTs #-}
+{-# LANGUAGE TypeFamilies, OverloadedStrings, FlexibleInstances, GeneralizedNewtypeDeriving, DeriveTraversable, GADTs, DeriveGeneric #-}
 {-# OPTIONS_GHC -fno-warn-redundant-constraints #-}
 -- |
 -- Module: Data.Greskell.Graph
@@ -8,9 +8,11 @@
 -- This module defines types and functions about TinkerPop graph
 -- structure API.
 module Data.Greskell.Graph
-       ( -- * TinkerPop graph structure types
+       ( -- * Element
          Element(..),
          ElementID(..),
+         unsafeCastElementID,
+         -- * Property
          Property(..),
          -- * T Enum
          T,
@@ -59,6 +61,7 @@ import Data.String (IsString(..))
 import Data.Text (Text, unpack)
 import Data.Traversable (Traversable(traverse))
 import Data.Vector (Vector)
+import GHC.Generics (Generic)
 
 import Data.Greskell.GraphSON
   ( GraphSON(..), GraphSONTyped(..), FromGraphSON(..),
@@ -79,11 +82,15 @@ import Data.Greskell.Greskell
 -- property). Data structure of an 'ElementID' depends on graph
 -- implementation, so you should not rely on it.
 newtype ElementID e = ElementID { unElementID :: GValue }
-                    deriving (Show,Eq,Ord,Generic, ToJSON, FromJSON, FromGraphSON, Hashable)
+                    deriving (Show,Eq,Generic, ToJSON, FromJSON, FromGraphSON, Hashable)
 
 -- | Unsafely convert the element type.
 instance Functor ElementID where
-  fmap _ (ElementID e) = ElementID e
+  fmap _ e = unsafeCastElementID e
+
+-- | Unsafely cast the phantom type of 'ElementID'.
+unsafeCastElementID :: ElementID a -> ElementID b
+unsafeCastElementID (ElementID e) = ElementID e
 
 -- | @org.apache.tinkerpop.gremlin.structure.Element@ interface in a
 -- TinkerPop graph.
@@ -287,13 +294,6 @@ instance FromGraphSON AEdge where
                  <*> (o .: "label")
     _ -> empty
 
-optionalMonoid :: (Monoid m, FromGraphSON m) => HM.HashMap Text GValue -> Text -> Parser m
-optionalMonoid obj field_name = maybe (return mempty) parseGraphSON $ nullToNothing =<< HM.lookup field_name obj
-  where
-    nullToNothing gv = case gValueBody gv of
-      GNull -> Nothing
-      _ -> Just gv
-
 -- | General simple property type you can use for 'Property' class.
 --
 -- If you are not sure about the type @v@, just use 'GValue'.
@@ -339,7 +339,7 @@ instance Traversable AProperty where
 -- If you are not sure about the type @v@, just use 'GValue'.
 data AVertexProperty v =
   AVertexProperty
-  { avpId :: ElementID AVertexProperty,
+  { avpId :: ElementID (AVertexProperty v),
     -- ^ ID of this vertex property.
     avpLabel :: Text,
     -- ^ Label and key of this vertex property.
@@ -373,12 +373,18 @@ instance Property AVertexProperty where
   propertyKey = avpLabel
   propertyValue = avpValue
 
+-- | Map the property value.
 instance Functor AVertexProperty where
-  fmap f vp = vp { avpValue = f $ avpValue vp }
+  fmap f vp = vp { avpValue = f $ avpValue vp,
+                   avpId = unsafeCastElementID $ avpId vp
+                 }
 
 instance Foldable AVertexProperty where
   foldr f start vp = f (avpValue vp) start
 
+-- | Traverse the property value.
 instance Traversable AVertexProperty where
-  traverse f vp = fmap (\v -> vp { avpValue = v }) $ f $ avpValue vp
+  traverse f vp = fmap setValue $ f $ avpValue vp
+    where
+      setValue v = vp { avpValue = v, avpId = unsafeCastElementID $ avpId vp }
 

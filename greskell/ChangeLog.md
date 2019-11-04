@@ -9,6 +9,7 @@
 * Add `unsafeCastKey` function.
 * [BREAKING CHANGE] Remove `ElementID` type family from `Element` class.
 * [BREAKING CHANGE] Add `ElementID` as a newtype for `GValue`.
+* Add `unsafeCastElementID` function.
 * [BREAKING CHANGE] Add `elementId` and `elementLabel` functions to `Element` class.
 * [BREAKING CHANGE] Remove `Vertex`, `Edge`, `PropertyMap` and
   `FromGraphSONWithKey` classes.
@@ -47,6 +48,10 @@
     * `gTo`
     * `gAddE`
 
+### Extra module
+
+* [BREAKING CHANGE] Remove `writeAllProperties` because `PropertyMap`
+  is removed.
 
 
 ## 0.2.3.1  -- 2019-10-02

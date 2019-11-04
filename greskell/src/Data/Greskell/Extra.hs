@@ -7,14 +7,13 @@
 --
 -- @since 0.2.3.0
 module Data.Greskell.Extra
-  ( writePropertyKeyValues,
-    writeAllProperties
+  ( writePropertyKeyValues
   ) where
 
 import Data.Aeson (ToJSON)
 import Data.Greskell.Binder (Binder, newBind)
 import Data.Greskell.Graph
-  ( PropertyMap(..), Property(..), Element
+  ( Property(..), Element
   )
 import qualified Data.Greskell.Graph as Graph
 import Data.Greskell.GTraversal (Walk, SideEffect, gProperty)
@@ -30,12 +29,12 @@ writePropertyKeyValues pairs = fmap mconcat $ mapM toPropStep pairs
   where
     toPropStep (key, value) = fmap (gProperty $ Graph.key key) $ newBind value
 
--- | Make a series of @.property@ steps to write all properties in the
--- given 'PropertyMap'.
---
--- @since 0.2.3.0
-writeAllProperties :: (PropertyMap m, Property p, ToJSON v, Element e)
-                   => m p v -> Binder (Walk SideEffect e e)
-writeAllProperties ps = writePropertyKeyValues $ map toPair $ allProperties ps
-  where
-    toPair prop = (propertyKey prop, propertyValue prop)
+---- -- | Make a series of @.property@ steps to write all properties in the
+---- -- given 'PropertyMap'.
+---- --
+---- -- @since 0.2.3.0
+---- writeAllProperties :: (PropertyMap m, Property p, ToJSON v, Element e)
+----                    => m p v -> Binder (Walk SideEffect e e)
+---- writeAllProperties ps = writePropertyKeyValues $ map toPair $ allProperties ps
+----   where
+----     toPair prop = (propertyKey prop, propertyValue prop)

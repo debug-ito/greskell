@@ -165,8 +165,8 @@ import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
 
 import Data.Greskell.Graph
-  ( Element(..), Vertex, Edge, Property(..),
-    AVertex, AEdge,
+  ( Element(..), Property(..), ElementID,
+    AVertex, AEdge, AVertexProperty,
     T, Key, Cardinality,
     KeyValue(..)
   )
