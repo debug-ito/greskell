@@ -165,7 +165,7 @@ import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
 
 import Data.Greskell.Graph
-  ( Element(..), Property(..), ElementID,
+  ( Element(..), Property(..), ElementID(..),
     AVertex, AEdge, AVertexProperty,
     T, Key, Cardinality,
     KeyValue(..)
@@ -397,7 +397,7 @@ sV ids src = GTraversal $ sourceMethod "V" ids src
 
 -- | Alias for 'sV' (for backward-compatibility)
 --
--- >>> toGremlin (source "g" & sV' (map gvalueInt ([1,2,3] :: [Int])))
+-- >>> toGremlin (source "g" & sV' (map (fmap ElementID . gvalueInt) ([1,2,3] :: [Int])))
 -- "g.V(1,2,3)"
 sV' :: [Greskell (ElementID AVertex)] -- ^ vertex IDs
     -> Greskell GraphTraversalSource
@@ -412,7 +412,7 @@ sE ids src = GTraversal $ sourceMethod "E" ids src
 
 -- | Alias for 'sE' (for backward-compatibility)
 --
--- >>> toGremlin (source "g" & sE' (map gvalueInt ([1] :: [Int])))
+-- >>> toGremlin (source "g" & sE' (map (fmap ElementID . gvalueInt) ([1] :: [Int])))
 -- "g.E(1)"
 sE' :: [Greskell (ElementID AEdge)] -- ^ edge IDs
     -> Greskell GraphTraversalSource
@@ -600,7 +600,7 @@ gHasLabelP' p = unsafeWalk "hasLabel" [toGremlin p]
 
 -- | @.hasId@ step.
 --
--- >>> toGremlin (source "g" & sV' [] &. gHasId (gvalueInt $ (7 :: Int)))
+-- >>> toGremlin (source "g" & sV' [] &. gHasId (fmap ElementID $ gvalueInt $ (7 :: Int)))
 -- "g.V().hasId(7)"
 gHasId :: (Element s, WalkType c) => Greskell (ElementID s) -> Walk c s s
 gHasId = liftWalk . gHasId'
@@ -611,7 +611,7 @@ gHasId' i = unsafeWalk "hasId" [toGremlin i]
 
 -- | @.hasId@ step with 'P' type. Supported since TinkerPop 3.2.7.
 --
--- >>> toGremlin (source "g" & sV' [] &. gHasIdP (pLte $ gvalueInt (100 :: Int)))
+-- >>> toGremlin (source "g" & sV' [] &. gHasIdP (pLte $ fmap ElementID $ gvalueInt (100 :: Int)))
 -- "g.V().hasId(P.lte(100))"
 gHasIdP :: (Element s, WalkType c)
         => Greskell (P (ElementID s))
@@ -969,7 +969,7 @@ gOut = genericTraversalWalk "out"
 
 -- | Alias for 'gOut' (for backward-compatibility)
 --
--- >>> toGremlin (source "g" & sV' [gvalueInt (8 :: Int)] &. gOut' ["knows"])
+-- >>> toGremlin (source "g" & sV' [fmap ElementID $ gvalueInt (8 :: Int)] &. gOut' ["knows"])
 -- "g.V(8).out(\"knows\")"
 gOut' :: [Greskell Text] -- ^ edge labels
       -> Walk Transform AVertex AVertex

@@ -32,9 +32,9 @@ import Data.Greskell.Greskell
   )
 import Data.Greskell.Graph
   ( AVertex(..), AEdge(..), AProperty(..), AVertexProperty(..),
-    PropertyMapSingle, Key,
+    Key,
     T, tId, tLabel, tKey, tValue, cList, (=:),
-    fromProperties, allProperties
+    ElementID(..)
   )
 import Data.Greskell.GraphSON
   ( FromGraphSON, nonTypedGValue, GValue,
@@ -173,7 +173,7 @@ iterateTraversal gt = unsafeMethodCall (toGreskell gt) "iterate" []
 
 spec_T :: SpecWith (String,Int)
 spec_T = describe "T enum" $ do
-  specFor' "tId" (gMapT tId) parseEither [(Right 10 :: Either String Int)]
+  specFor' "tId" (gMapT tId) (parseEither . unElementID) [(Right 10 :: Either String Int)]
   specFor "tLabel" (gMapT tLabel) ["VLABEL"]
   specFor "tKey" (gMapT tKey <<< gProperties ["vprop"]) ["vprop"]
   specFor' "tValue" (gMapT tValue <<< gProperties ["vprop"]) parseEither [(Right 400 :: Either String Int)]
@@ -238,51 +238,55 @@ spec_graph = do
     (map (fmap parseEither) $ V.toList got) `shouldMatchList` expected
   specify "AEdge" $ withClient $ \client -> do
     let trav = sE' [] $ source "g"
-        expE :: Int -> Int -> Text -> (Text,Text,Text,Either String Int, Either String Int, PropertyMapSingle AProperty (Either String Text))
-        expE outv inv cond = ("depends_on", "package", "package", Right outv, Right inv, props)
-          where
-            props = fromProperties [AProperty "condition" $ Right cond]
-        getE e = ( aeLabel e, aeInVLabel e, aeOutVLabel e,
-                   parseEither $ aeOutV e, parseEither $ aeInV e,
-                   fmap parseEither $ aeProperties e
+        -- expE :: Int -> Int -> Text -> (Text,Text,Text,Either String Int, Either String Int)
+        -- expE outv inv cond = ("depends_on", "package", "package", Right outv, Right inv)
+        expE :: (Text)
+        expE = ("depends_on")
+        getE e = ( aeLabel e
+                   -- aeInVLabel e,
+                   -- aeOutVLabel e,
+                   -- parseEither $ aeOutV e,
+                   -- parseEither $ aeInV e
                  )
-        expected = [ expE 1 2 ">=0.11.2.1",
-                     expE 1 3 ">=1.2.2.1",
-                     expE 2 3 ">=1.2.3"
+        expected = [ -- expE 1 2 ">=0.11.2.1",
+                     -- expE 1 3 ">=1.2.2.1",
+                     -- expE 2 3 ">=1.2.3"
+                     expE,
+                     expE,
+                     expE
                    ]
     got <- WS.slurpResults =<< WS.submit client (withPrelude' trav) Nothing
     (map getE $ V.toList got) `shouldMatchList` expected
-  let getVP vp = (avpLabel vp, parseEither $ avpValue vp, fmap parseEither $ avpProperties vp)
+  -- let getVP vp = (avpLabel vp, parseEither $ avpValue vp, fmap parseEither $ avpProperties vp)
+  let getVP vp = (avpLabel vp, parseEither $ avpValue vp)
   specify "AVertexProperty" $ withClient $ \client -> do
     let trav = gProperties [] $. sV' [] $ source "g"
-        expName :: Text -> (Text,Either String Text, PropertyMapSingle AProperty (Either String Text))
-        expName val = ("name", Right val, mempty)
-        expVer :: Text -> Text -> (Text,Either String Text, PropertyMapSingle AProperty (Either String Text))
-        expVer val date = ("version", Right val, fromProperties [AProperty "date" $ Right date])
+        expName :: Text -> (Text,Either String Text)
+        expName val = ("name", Right val)
+        expVer :: Text -> (Text,Either String Text)
+        expVer val = ("version", Right val)
         expected = [ expName "greskell",
                      expName "aeson",
                      expName "text",
-                     expVer "0.1.1.0" "2018-04-08",
-                     expVer "1.3.1.1" "2018-05-10",
-                     expVer "1.2.2.0" "2017-09-20",
-                     expVer "1.2.3.0" "2017-12-27",
-                     expVer "1.2.2.0" "2017-12-23"
+                     expVer "0.1.1.0", -- "2018-04-08",
+                     expVer "1.3.1.1", -- "2018-05-10",
+                     expVer "1.2.2.0", -- "2017-09-20",
+                     expVer "1.2.3.0", -- "2017-12-27",
+                     expVer "1.2.2.0"  -- "2017-12-23"
                    ]
     got <- WS.slurpResults =<< WS.submit client (withPrelude' trav) Nothing
     (map getVP $ V.toList got) `shouldMatchList` expected
   specify "AVertex" $ withClient $ \client -> do
     let trav = sV' [] $ source "g"
-        getV v = ( parseEither $ avId v,
-                   avLabel v,
-                   sort' $ map getVP $ allProperties $ avProperties v
+        getV v = ( parseEither $ unElementID $ avId v,
+                   avLabel v
                  )
-        sort' = sortBy $ \(k1, v1, _) (k2, v2, _) -> compare (show k1,show v1) (show k2,show v2)
-        expV :: Int -> Text -> [(Text, Text)] -> (Either String Int,Text,[(Text,Either String Text,PropertyMapSingle AProperty (Either String Text))])
-        expV vid name ver_dates = (Right vid, "package", ("name", Right name, mempty) : map toVP ver_dates)
-        toVP (ver, date) = ("version", Right ver, fromProperties [AProperty "date" $ Right date])
-        expected = [ expV 1 "greskell" [("0.1.1.0", "2018-04-08")],
-                     expV 2 "aeson" [("1.2.2.0", "2017-09-20"), ("1.3.1.1", "2018-05-10")],
-                     expV 3 "text" [("1.2.2.0", "2017-12-23"), ("1.2.3.0", "2017-12-27")]
+        -- sort' = sortBy $ \(k1, v1, _) (k2, v2, _) -> compare (show k1,show v1) (show k2,show v2)
+        expV :: Int -> (Either String Int, Text)
+        expV vid = (Right vid, "package")
+        expected = [ expV 1,
+                     expV 2,
+                     expV 3
                    ]
     got <- WS.slurpResults =<< WS.submit client (withPrelude' trav) Nothing
     (map getV $ V.toList got) `shouldMatchList` expected
@@ -311,8 +315,8 @@ spec_graph = do
               )
     finalize :: GTraversal c s e -> Text
     finalize gt = toGremlin $ iterateTraversal gt
-    num :: Integer -> Greskell GValue
-    num = gvalueInt
+    num :: Integer -> Greskell (ElementID AVertex)
+    num = fmap ElementID . gvalueInt
     setName :: Integer -> Greskell Text -> GTraversal SideEffect () AVertex
     setName vid name = gProperty "name" name $. liftWalk $ sV' [num vid] $ source "g"
     dependsOn :: Integer -> Integer -> Greskell Text -> GTraversal SideEffect () AEdge

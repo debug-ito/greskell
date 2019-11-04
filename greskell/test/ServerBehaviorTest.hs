@@ -11,8 +11,7 @@ import Control.Monad (void)
 import Data.Text (Text)
 import Data.Greskell.Binder (newBind, runBinder)
 import Data.Greskell.Graph
-  ( AVertex(..), Key, AEdge, Property(propertyKey, propertyValue),
-    PropertyMap(allProperties)
+  ( AVertex(..), Key, AEdge, Property(propertyKey, propertyValue)
   )
 import Data.Greskell.GraphSON (parseEither)
 import Data.Greskell.GTraversal
@@ -107,11 +106,6 @@ spec_vertex_with_props = do
     let prop_key :: Key AVertex Int
         prop_key = "sample"
         makeV = gProperty prop_key 1132 $. (sAddV' "test" $ source "g")
-        getPropKeyVal p = (propertyKey p, parseEither $ propertyValue p)
-        exp_prop_val :: Int
-        exp_prop_val = 1132
     clearGraph client
     got_vs <- fmap V.toList $ WS.slurpResults =<< WS.submit client makeV Nothing
     (fmap avLabel $ got_vs) `shouldBe` ["test"]
-    (fmap (fmap getPropKeyVal . allProperties . avProperties) $ got_vs)
-      `shouldBe` [[("sample", Right exp_prop_val)]]
