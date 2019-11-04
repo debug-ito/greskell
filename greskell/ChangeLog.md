@@ -26,11 +26,26 @@
 
 * [BREAKING CHANGE] Change the signature of the following
   functions. Because `Vertex`, `Edge` and `PropertyMap` classes are
-  gone, those functions are now all monomorphic.
+  gone, those functions are now all monomorphic with `AVertex`,
+  `AEdge` and `AVertexProperty`.
 
     * `sV`, `sV'`
     * `sE`, `sE'`
     * `sAddV`
+    * `gHasKey`, `gHasKey'`, `gHasKeyP`, `gHasKeyP'`
+    * `gHasValue`, `gHasValue'`, `gHasValueP`, `gHasValueP'`
+    * `gV`, `gV'`
+    * `gOut`, `gOut'`
+    * `gOutE`, `gOutE'`
+    * `gOutV`, `gOutV'`
+    * `gIn`, `gIn'`
+    * `gInE`, `gInE'`
+    * `gInV`, `gInV'`
+    * `gAddV`
+    * `gPropertyV`
+    * `gFrom`
+    * `gTo`
+    * `gAddE`
 
 
 

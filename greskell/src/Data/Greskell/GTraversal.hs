@@ -624,49 +624,49 @@ gHasIdP' :: Element s
          -> Walk Filter s s
 gHasIdP' p = unsafeWalk "hasId" [toGremlin p]
 
--- | @.hasKey@ step. The input type should be a VertexProperty.
+-- | @.hasKey@ step.
 --
 -- >>> toGremlin (source "g" & sV' [] &. gProperties [] &. gHasKey "age")
 -- "g.V().properties().hasKey(\"age\")"
-gHasKey :: (Element (p v), Property p, WalkType c) => Greskell Text -> Walk c (p v) (p v)
+gHasKey :: WalkType c => Greskell Text -> Walk c (AVertexProperty v) (AVertexProperty v)
 gHasKey = liftWalk . gHasKey'
 
 -- | Monomorphic version of 'gHasKey'.
-gHasKey' :: (Element (p v), Property p) => Greskell Text -> Walk Filter (p v) (p v)
+gHasKey' :: Greskell Text -> Walk Filter (AVertexProperty v) (AVertexProperty v)
 gHasKey' k = unsafeWalk "hasKey" [toGremlin k]
 
 -- | @.hasKey@ step with 'P' type. Supported since TinkerPop 3.2.7.
-gHasKeyP :: (Element (p v), Property p, WalkType c)
+gHasKeyP :: WalkType c
          => Greskell (P Text) -- ^ predicate on the VertexProperty's key.
-         -> Walk c (p v) (p v)
+         -> Walk c (AVertexProperty v) (AVertexProperty v)
 gHasKeyP = liftWalk . gHasKeyP'
 
 -- | Monomorphic version of 'gHasKeyP'.
-gHasKeyP' :: (Element (p v), Property p) => Greskell (P Text) -> Walk Filter (p v) (p v)
+gHasKeyP' :: Greskell (P Text) -> Walk Filter (AVertexProperty v) (AVertexProperty v)
 gHasKeyP' p = unsafeWalk "hasKey" [toGremlin p]
 
--- | @.hasValue@ step. The input type should be a VertexProperty.
+-- | @.hasValue@ step.
 --
 -- >>> toGremlin (source "g" & sV' [] &. gProperties ["age"] &. gHasValue (32 :: Greskell Int))
 -- "g.V().properties(\"age\").hasValue(32)"
-gHasValue :: (Element (p v), Property p, WalkType c) => Greskell v -> Walk c (p v) (p v)
+gHasValue :: WalkType c => Greskell v -> Walk c (AVertexProperty v) (AVertexProperty v)
 gHasValue = liftWalk . gHasValue'
 
 -- | Monomorphic version of 'gHasValue'.
-gHasValue' :: (Element (p v), Property p) => Greskell v -> Walk Filter (p v) (p v)
+gHasValue' :: Greskell v -> Walk Filter (AVertexProperty v) (AVertexProperty v)
 gHasValue' v = unsafeWalk "hasValue" [toGremlin v]
 
 -- | @.hasValue@ step with 'P' type. Supported since TinkerPop 3.2.7.
 --
 -- >>> toGremlin (source "g" & sV' [] &. gProperties ["age"] &. gHasValueP (pBetween (30 :: Greskell Int) 40))
 -- "g.V().properties(\"age\").hasValue(P.between(30,40))"
-gHasValueP :: (Element (p v), Property p, WalkType c)
+gHasValueP :: WalkType c
            => Greskell (P v) -- ^ predicate on the VertexProperty's value
-           -> Walk c (p v) (p v)
+           -> Walk c (AVertexProperty v) (AVertexProperty v)
 gHasValueP = liftWalk . gHasValueP'
 
 -- | Monomorphic version of 'gHasValueP'.
-gHasValueP' :: (Element (p v), Property p) => Greskell (P v) -> Walk Filter (p v) (p v)
+gHasValueP' :: Greskell (P v) -> Walk Filter (AVertexProperty v) (AVertexProperty v)
 gHasValueP' p = unsafeWalk "hasValue" [toGremlin p]
 
 multiLogic :: (ToGTraversal g, WalkType c, WalkType p, Split c p)
@@ -871,13 +871,13 @@ gFlatMap gt = unsafeWalk "flatMap" [travToG gt]
 -- argument (or all vertices if the empty list is passed.)
 --
 -- @since 0.2.0.0
-gV :: Vertex v => [Greskell (ElementID v)] -> Walk Transform s v
+gV :: [Greskell (ElementID AVertex)] -> Walk Transform s AVertex
 gV ids = unsafeWalk "V" $ map toGremlin ids
 
--- | Monomorphic version of 'gV'.
+-- | Alias for 'gV' (for backward-compatibility)
 --
 -- @since 0.2.0.0
-gV' :: [Greskell GValue] -> Walk Transform s AVertex
+gV' :: [Greskell (ElementID AVertex)] -> Walk Transform s AVertex
 gV' = gV
 
 -- | @.as@ step.
@@ -959,82 +959,74 @@ gFold = unsafeWalk "fold" []
 gCount :: Walk Transform a Int
 gCount = unsafeWalk "count" []
 
-genericTraversalWalk :: Vertex v => Text -> [Greskell Text] -> Walk Transform v e
+genericTraversalWalk :: Text -> [Greskell Text] -> Walk Transform AVertex e
 genericTraversalWalk method_name = unsafeWalk method_name . map toGremlin
 
 -- | @.out@ step
-gOut :: (Vertex v1, Vertex v2)
-     => [Greskell Text] -- ^ edge labels
-     -> Walk Transform v1 v2
+gOut :: [Greskell Text] -- ^ edge labels
+     -> Walk Transform AVertex AVertex
 gOut = genericTraversalWalk "out"
 
--- | Monomorphic version of 'gOut'.
+-- | Alias for 'gOut' (for backward-compatibility)
 --
 -- >>> toGremlin (source "g" & sV' [gvalueInt (8 :: Int)] &. gOut' ["knows"])
 -- "g.V(8).out(\"knows\")"
-gOut' :: (Vertex v)
-      => [Greskell Text]
-      -> Walk Transform v AVertex
+gOut' :: [Greskell Text] -- ^ edge labels
+      -> Walk Transform AVertex AVertex
 gOut' = gOut
 
 -- | @.outE@ step
-gOutE :: (Vertex v, Edge e)
-      => [Greskell Text] -- ^ edge labels
-      -> Walk Transform v e
+gOutE :: [Greskell Text] -- ^ edge labels
+      -> Walk Transform AVertex AEdge
 gOutE = genericTraversalWalk "outE"
 
--- | Monomorphic version of 'gOutE'
-gOutE' :: (Vertex v)
-       => [Greskell Text]
-       -> Walk Transform v AEdge
+-- | Alias for 'gOutE' (for backward-compatibility)
+gOutE' :: [Greskell Text]
+       -> Walk Transform AVertex AEdge
 gOutE' = gOutE
 
 -- | @.outV@ step.
 --
 -- @since 0.2.2.0
-gOutV :: (Edge e, Vertex v) => Walk Transform e v
+gOutV :: Walk Transform AEdge AVertex
 gOutV = unsafeWalk "outV" []
 
--- | Monomorphic version of 'gOutV'.
+-- | Alias for 'gOutV' (for backward-compatibility)
 --
 -- @since 0.2.2.0
-gOutV' :: Edge e => Walk Transform e AVertex
+gOutV' :: Walk Transform AEdge AVertex
 gOutV' = gOutV
 
 -- | @.in@ step
-gIn :: (Vertex v1, Vertex v2)
-    => [Greskell Text] -- ^ edge labels
-    -> Walk Transform v1 v2
+gIn :: [Greskell Text] -- ^ edge labels
+    -> Walk Transform AVertex AVertex
 gIn = genericTraversalWalk "in"
 
--- | Monomorphic version of 'gIn'.
-gIn' :: (Vertex v)
-     => [Greskell Text]
-     -> Walk Transform v AVertex
+-- | Alias for 'gIn' (for backward-compatibility)
+gIn' :: [Greskell Text]
+     -> Walk Transform AVertex AVertex
 gIn' = gIn
 
 -- | @.inE@ step.
-gInE :: (Vertex v, Edge e)
-     => [Greskell Text] -- ^ edge labels
-     -> Walk Transform v e
+gInE :: [Greskell Text] -- ^ edge labels
+     -> Walk Transform AVertex AEdge
 gInE = genericTraversalWalk "inE"
 
--- | Monomorphic version of 'gInE'.
-gInE' :: (Vertex v)
-      => [Greskell Text] -- ^ edge labels
-      -> Walk Transform v AEdge
+-- | Alias for 'gInE' (for backward-compatibility)
+gInE' :: [Greskell Text] -- ^ edge labels
+      -> Walk Transform AVertex AEdge
 gInE' = gInE
 
 -- | @.inV@ step.
 --
 -- @since 0.2.2.0
-gInV :: (Edge e, Vertex v) => Walk Transform e v
+gInV :: Walk Transform AEdge AVertex
 gInV = unsafeWalk "inV" []
 
--- | Monomorphic version of 'gInV'.
+-- | Alias for 'gInV' (for backward-compatibility)
 --
 -- @since 0.2.2.0
-gInV' :: Edge e => Walk Transform e AVertex
+gInV' :: Walk Transform AEdge AVertex
 gInV' = gInV
 
 -- | @.sideEffect@ step that takes a traversal.
@@ -1049,17 +1041,11 @@ gSideEffect walk = unsafeWalk "sideEffect" [travToG walk]
 gSideEffect' :: (ToGTraversal g, WalkType c, Split c SideEffect) => g c s e -> Walk SideEffect s s
 gSideEffect' w = gSideEffect w
 
----- -- probably we can implement .as() step like this. GBuilder generates
----- -- some 'Label', which is passed to .as() step and can be passed later
----- -- to .select() step etc.
----- gAs :: GBuilder (Label, Walk Filter s s)
----- gAs = undefined
-
 -- | @.addV@ step with a label.
-gAddV :: Vertex v => Greskell Text -> Walk SideEffect a v
+gAddV :: Greskell Text -> Walk SideEffect a AVertex
 gAddV label = unsafeWalk "addV" [toGremlin label]
 
--- | Monomorphic version of 'gAddV'.
+-- | Alias for 'gAddV' (for backward-compatibility)
 gAddV' :: Greskell Text -> Walk SideEffect a AVertex
 gAddV' = gAddV
 
@@ -1077,7 +1063,7 @@ gDrop = unsafeWalk "drop" []
 gDropP :: Property p => Walk SideEffect (p a) (p a)
 gDropP = unsafeWalk "drop" []
 
--- | simple @.property@ step. It adds a value to the property.
+-- | Simple @.property@ step. It adds a value to the property.
 --
 -- >>> toGremlin (source "g" & sV' [] & liftWalk &. gProperty "age" (20 :: Greskell Int))
 -- "g.V().property(\"age\",20)"
@@ -1089,7 +1075,7 @@ gProperty :: Element e
           -> Walk SideEffect e e
 gProperty key val = unsafeWalk "property" [toGremlin key, toGremlin val]
 
--- | @.property@ step for 'Vertex'.
+-- | @.property@ step for Vertex.
 --
 -- >>> let key_location = "location" :: Key AVertex Text
 -- >>> let key_since = "since" :: Key (AVertexProperty Text) Text
@@ -1098,12 +1084,11 @@ gProperty key val = unsafeWalk "property" [toGremlin key, toGremlin val]
 -- "g.V().property(list,\"location\",\"New York\",\"since\",\"2012-09-23\",\"score\",8)"
 --
 -- @since 0.2.0.0
-gPropertyV :: (Vertex e, vp ~ ElementProperty e, Property vp, Element (vp v))
-           => Maybe (Greskell Cardinality) -- ^ optional cardinality of the vertex property.
-           -> Key e v -- ^ key of the vertex property
+gPropertyV :: Maybe (Greskell Cardinality) -- ^ optional cardinality of the vertex property.
+           -> Key AVertex v -- ^ key of the vertex property
            -> Greskell v -- ^ value of the vertex property
-           -> [KeyValue (vp v)] -- ^ optional meta-properties for the vertex property.
-           -> Walk SideEffect e e
+           -> [KeyValue (AVertexProperty v)] -- ^ optional meta-properties for the vertex property.
+           -> Walk SideEffect AVertex AVertex
 gPropertyV mcard key val metaprops = unsafeWalk "property" (arg_card ++ arg_keyval ++ arg_metaprops)
   where
     arg_card = maybe [] (\card -> [toGremlin card]) mcard
@@ -1119,22 +1104,25 @@ gPropertyV mcard key val metaprops = unsafeWalk "property" (arg_card ++ arg_keyv
 -- type of the anchor Vertex that the 'AddAnchor' yields. So, @.addE@
 -- step creates an edge between @s@ and @e@.
 --
+-- Note that @s@ and @e@ are basically 'AVertex', but those type
+-- variables are kept (for now) for backward-compatibility.
+--
 -- @since 0.2.0.0
 data AddAnchor s e = AddAnchor Text (GTraversal Transform s e)
 
-anchorStep :: WalkType c => AddAnchor s e -> Walk c edge edge
+anchorStep :: WalkType c => AddAnchor AVertex AVertex -> Walk c edge edge
 anchorStep (AddAnchor step_name subtraversal) = unsafeWalk step_name [toGremlin subtraversal]
 
 -- | @.from@ step with a traversal.
 -- 
 -- @since 0.2.0.0
-gFrom :: (ToGTraversal g) => g Transform s e -> AddAnchor s e
+gFrom :: (ToGTraversal g) => g Transform AVertex AVertex -> AddAnchor AVertex AVertex
 gFrom = AddAnchor "from" . toGTraversal
 
 -- | @.to@ step with a traversal.
 --
 -- @since 0.2.0.0
-gTo :: (ToGTraversal g) => g Transform s e -> AddAnchor s e
+gTo :: (ToGTraversal g) => g Transform AVertex AVertex -> AddAnchor AVertex AVertex
 gTo = AddAnchor "to" . toGTraversal
 
 -- | @.addE@ step. Supported since TinkerPop 3.1.0.
@@ -1146,13 +1134,12 @@ gTo = AddAnchor "to" . toGTraversal
 -- "g.V().has(\"name\",\"marko\").addE(\"knows\").to(__.V())"
 -- 
 -- @since 0.2.0.0
-gAddE :: (Vertex vs, Vertex ve, Edge e)
-      => Greskell Text
-      -> AddAnchor vs ve
-      -> Walk SideEffect vs e
+gAddE :: Greskell Text
+      -> AddAnchor AVertex AVertex
+      -> Walk SideEffect AVertex AEdge
 gAddE label anch = (unsafeWalk "addE" [toGremlin label]) >>> anchorStep anch
 
--- | Monomorphic version of 'gAddE'
+-- | Alias for 'gAddE' (for backward-compatibility)
 -- 
 -- @since 0.2.0.0
 gAddE' :: Greskell Text -> AddAnchor AVertex AVertex -> Walk SideEffect AVertex AEdge
