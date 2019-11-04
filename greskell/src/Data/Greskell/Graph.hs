@@ -10,7 +10,7 @@
 module Data.Greskell.Graph
        ( -- * TinkerPop graph structure types
          Element(..),
-         ElementID,
+         ElementID(..),
          Property(..),
          -- * T Enum
          T,
