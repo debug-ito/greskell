@@ -1,4 +1,4 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving, DeriveTraversable, TypeFamilies #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving, DeriveTraversable, TypeFamilies, OverloadedStrings #-}
 -- |
 -- Module: Data.Greskell.PMap
 -- Description: Property map, a map with Text keys and cardinality options
@@ -50,6 +50,12 @@ import Data.Text (Text)
 -- the 'PMapCardinality' of each item.
 newtype PMap c v = PMap (HM.HashMap Text (c v))
                  deriving (Show,Eq,Functor,Foldable,Traversable)
+
+instance GraphSONTyped (PMap c v) where
+  gsonTypeFor _ = "g:Map"
+
+instance FromGraphSON (c v) => FromGraphSON (PMap c v) where
+  parseGraphSON gv = fmap PMap $ parseGraphSON gv
 
 -- | An empty 'PMap'.
 empty :: PMap c v
@@ -156,7 +162,7 @@ class PMapKey k where
   -- | 'Text' representation of the key.
   keyText :: k -> Text
 
--- | An 'Exception' raised by 'lookupM' and 'lookupAsM'.
+-- | An 'Exception' raised when looking up values from 'PMap'.
 data PMapLookupException =
     PMapNoSuchKey Text
   -- ^ The 'PMap' doesn't have the given key.

@@ -58,6 +58,17 @@
 * [BREAKING CHANGE] Remove `writeAllProperties` because `PropertyMap`
   is removed.
 
+### AsLabel module
+
+* Now `SelectedMap` is generalized by `PMap`.
+* Make `AsLabel` an instance of `PMapKey`.
+* [BREAKING CHANGE] `lookup`, `lookupM`, `lookupAs` and `lookupAsM`
+  are now re-exports from `PMap` module, whose signature is more
+  polymorphic than the original ones and have different an exception
+  type.
+* [BREAKING CHANGE] `AsLookupException` is removed. Use
+  `PMapLookupException` instead.
+
 
 ## 0.2.3.1  -- 2019-10-02
 
