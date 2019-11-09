@@ -17,6 +17,8 @@ module Data.Greskell.PMap
     lookupAsM,
     -- ** List lookup
     lookupList,
+    lookupListAs,
+    lookupListAsM,
     -- ** Low-level lookup
     lookupRaw,
     -- * Cardinality
@@ -26,7 +28,7 @@ module Data.Greskell.PMap
     -- * PMapKey
     PMapKey(..),
     -- * Errors
-    AsLookupException(..)
+    PMapLookupException(..)
   ) where
 
 import Prelude hiding (lookup)
@@ -41,6 +43,7 @@ import Data.List.NonEmpty (NonEmpty((:|)))
 import Data.Maybe (listToMaybe)
 import Data.Semigroup (Semigroup, (<>))
 import qualified Data.Semigroup as S
+import Data.Traversable (Traversable(traverse))
 import Data.Text (Text)
 
 -- | A property map, which has text keys and @v@ values. @c@ specifies
@@ -70,15 +73,17 @@ lookup k pm = listToMaybe $ lookupList k pm
 -- | 'MonadThrow' version of 'lookup'. If there is no value for the
 -- key, it throws 'NoSuchAsLabel'.
 lookupM :: (PMapKey k, PMapCardinality c, MonadThrow m) => k -> PMap c v -> m v
-lookupM k pm = maybe (throwM NoSuchAsLabel) return $ lookup k pm
+lookupM k pm = maybe (throwM $ PMapNoSuchKey $ keyText k) return $ lookup k pm
 
 -- | Lookup the value and parse it into @a@.
 lookupAs :: (PMapKey k, PMapCardinality c, PMapValue k ~ a, FromGraphSON a)
-         => k -> PMap c GValue -> Either AsLookupException a
+         => k -> PMap c GValue -> Either PMapLookupException a
 lookupAs k pm =
   case lookup k pm of
-    Nothing -> Left NoSuchAsLabel
-    Just gv -> either (Left . ParseError) Right $ parseEither gv
+    Nothing -> Left $ PMapNoSuchKey kt
+    Just gv -> either (Left . PMapParseError kt) Right $ parseEither gv
+  where
+    kt = keyText k
 
 -- | 'MonadThrow' version of 'lookupAs'.
 lookupAsM :: (PMapKey k, PMapCardinality c, PMapValue k ~ a, FromGraphSON a, MonadThrow m)
@@ -89,6 +94,21 @@ lookupAsM k pm = either throwM return $ lookupAs k pm
 -- returns an empty list.
 lookupList :: (PMapKey k, PMapCardinality c) => k -> PMap c v -> [v]
 lookupList k pm = lookupRaw (keyText k) pm
+
+-- | Look up the values and parse them into @a@.
+lookupListAs :: (PMapKey k, PMapCardinality c, PMapValue k ~ a, FromGraphSON a)
+             => k -> PMap c GValue -> Either PMapLookupException (NonEmpty a)
+lookupListAs k pm =
+  case lookupList k pm of
+    [] -> Left $ PMapNoSuchKey kt
+    (x : rest) -> either (Left . PMapParseError kt) Right $ traverse parseEither (x :| rest)
+  where
+    kt = keyText k
+
+-- | 'MonadThrow' version of 'lookupListAs'
+lookupListAsM :: (PMapKey k, PMapCardinality c, PMapValue k ~ a, FromGraphSON a, MonadThrow m)
+              => k -> PMap c GValue -> m (NonEmpty a)
+lookupListAsM k pm = either throwM return $ lookupListAs k pm
 
 -- | Cardinality used for 'PMap' type. It's basically a non-empty
 -- container.
@@ -137,13 +157,13 @@ class PMapKey k where
   keyText :: k -> Text
 
 -- | An 'Exception' raised by 'lookupM' and 'lookupAsM'.
-data AsLookupException = NoSuchAsLabel
-                         -- ^ The 'SelectedMap' does not have the
-                         -- given 'AsLabel' as the key.
-                       | ParseError String
-                         -- ^ Failed to parse the value into the type
-                         -- that the 'AsLabel' indicates. The 'String'
-                         -- is the error message.
-                       deriving (Show,Eq,Ord)
+data PMapLookupException =
+    PMapNoSuchKey Text
+  -- ^ The 'PMap' doesn't have the given key.
+  | PMapParseError Text String
+  -- ^ Failed to parse the value into the type that the 'PMapKey'
+  -- indicates. The 'Text' is the key, and the 'String' is the error
+  -- message.
+  deriving (Show,Eq,Ord)
 
-instance Exception AsLookupException
+instance Exception PMapLookupException
