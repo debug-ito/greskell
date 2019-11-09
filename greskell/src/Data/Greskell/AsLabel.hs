@@ -7,12 +7,12 @@
 -- @since 0.2.2.0
 module Data.Greskell.AsLabel
        ( AsLabel(..),
-         SelectedMap,
-         lookup,
-         lookupM,
-         lookupAs,
-         lookupAsM,
-         AsLookupException(..)
+         SelectedMap
+         --- lookup,
+         --- lookupM,
+         --- lookupAs,
+         --- lookupAsM,
+         --- AsLookupException(..)
        ) where
 
 import Prelude hiding (lookup)
@@ -53,34 +53,34 @@ instance GraphSONTyped (SelectedMap a) where
 instance FromGraphSON a => FromGraphSON (SelectedMap a) where
   parseGraphSON gv = fmap SelectedMap $ parseGraphSON gv
 
--- | An 'Exception' raised by 'lookupM' and 'lookupAsM'.
-data AsLookupException = NoSuchAsLabel
-                         -- ^ The 'SelectedMap' does not have the
-                         -- given 'AsLabel' as the key.
-                       | ParseError String
-                         -- ^ Failed to parse the value into the type
-                         -- that the 'AsLabel' indicates. The 'String'
-                         -- is the error message.
-                       deriving (Show,Eq,Ord)
-
-instance Exception AsLookupException
-
--- | Get value from 'SelectedMap'.
-lookup :: AsLabel a -> SelectedMap b -> Maybe b
-lookup (AsLabel l) (SelectedMap m) = HM.lookup l m
-
--- | 'MonadThrow' version of 'lookup'. If there is no value for the
--- 'AsLabel', it throws 'NoSuchAsLabel'.
-lookupM :: MonadThrow m => AsLabel a -> SelectedMap b -> m b
-lookupM l m = maybe (throwM NoSuchAsLabel) return $ lookup l m
-
--- | Get value from 'SelectedMap' and parse the value into @a@.
-lookupAs :: FromGraphSON a => AsLabel a -> SelectedMap GValue -> Either AsLookupException a
-lookupAs l m =
-  case lookup l m of
-   Nothing -> Left NoSuchAsLabel
-   Just gv -> either (Left . ParseError) Right $ parseEither gv
-
--- | 'MonadThrow' version of 'lookupAs'.
-lookupAsM :: (MonadThrow m, FromGraphSON a) => AsLabel a -> SelectedMap GValue -> m a
-lookupAsM l m = either throwM return $ lookupAs l m
+---- -- | An 'Exception' raised by 'lookupM' and 'lookupAsM'.
+---- data AsLookupException = NoSuchAsLabel
+----                          -- ^ The 'SelectedMap' does not have the
+----                          -- given 'AsLabel' as the key.
+----                        | ParseError String
+----                          -- ^ Failed to parse the value into the type
+----                          -- that the 'AsLabel' indicates. The 'String'
+----                          -- is the error message.
+----                        deriving (Show,Eq,Ord)
+---- 
+---- instance Exception AsLookupException
+---- 
+---- -- | Get value from 'SelectedMap'.
+---- lookup :: AsLabel a -> SelectedMap b -> Maybe b
+---- lookup (AsLabel l) (SelectedMap m) = HM.lookup l m
+---- 
+---- -- | 'MonadThrow' version of 'lookup'. If there is no value for the
+---- -- 'AsLabel', it throws 'NoSuchAsLabel'.
+---- lookupM :: MonadThrow m => AsLabel a -> SelectedMap b -> m b
+---- lookupM l m = maybe (throwM NoSuchAsLabel) return $ lookup l m
+---- 
+---- -- | Get value from 'SelectedMap' and parse the value into @a@.
+---- lookupAs :: FromGraphSON a => AsLabel a -> SelectedMap GValue -> Either AsLookupException a
+---- lookupAs l m =
+----   case lookup l m of
+----    Nothing -> Left NoSuchAsLabel
+----    Just gv -> either (Left . ParseError) Right $ parseEither gv
+---- 
+---- -- | 'MonadThrow' version of 'lookupAs'.
+---- lookupAsM :: (MonadThrow m, FromGraphSON a) => AsLabel a -> SelectedMap GValue -> m a
+---- lookupAsM l m = either throwM return $ lookupAs l m

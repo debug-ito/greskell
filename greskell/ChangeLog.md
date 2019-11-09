@@ -3,6 +3,11 @@
 ## 1.0.0.0
 
 * Add some test cases to server-behavior-test
+* Add PMap module.
+
+### Data.Greskell module
+
+* Export PMap module.
 
 ### Graph module
 
