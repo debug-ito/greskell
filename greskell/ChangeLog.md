@@ -3,7 +3,7 @@
 ## 1.0.0.0
 
 * Add some test cases to server-behavior-test
-* Add PMap module.
+* Add PMap and NonEmptyLike modules.
 
 ### Data.Greskell module
 
