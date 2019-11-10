@@ -34,7 +34,8 @@ library
                         Data.Greskell.GTraversal,
                         Data.Greskell.AsLabel,
                         Data.Greskell.Extra,
-                        Data.Greskell.PMap
+                        Data.Greskell.PMap,
+                        Data.Greskell.NonEmptyLike
   -- other-modules:        
   build-depends:        base >=4.9.0.0 && <4.13,
                         greskell-core >=0.1.2.0 && <0.2,
