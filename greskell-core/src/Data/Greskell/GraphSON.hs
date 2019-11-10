@@ -42,11 +42,13 @@ import qualified Data.Aeson as Aeson
 import Data.Aeson.Types (Parser)
 import qualified Data.Aeson.Types as Aeson (parseEither)
 import Data.Foldable (Foldable(foldr))
+import Data.Functor.Identity (Identity(..))
 import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as HM
 import qualified Data.HashMap.Lazy as L (HashMap)
 import Data.HashSet (HashSet)
 import Data.Hashable (Hashable(..))
+import Data.List.NonEmpty (NonEmpty(..))
 import Data.Int (Int8, Int16, Int32, Int64)
 import qualified Data.IntMap.Lazy as L (IntMap)
 import qualified Data.IntMap.Lazy as LIntMap
@@ -54,8 +56,10 @@ import Data.IntSet (IntSet)
 import qualified Data.Map.Lazy as L (Map)
 import qualified Data.Map.Lazy as LMap
 import Data.Monoid (mempty)
+import qualified Data.Monoid as M
 import Data.Ratio (Ratio)
 import Data.Scientific (Scientific)
+import qualified Data.Semigroup as S
 import Data.Sequence (Seq)
 import Data.Set (Set)
 import Data.Text (Text, unpack)
@@ -97,6 +101,7 @@ import Data.Greskell.GraphSON.GValue
 -- - Map-like types (e.g. 'L.HashMap' and 'L.Map'): parse into 'GMap'
 --   first, then unwrap the 'GMap' wrapper. That way, all versions of
 --   GraphSON formats are handled properly.
+-- - Trivial wrapper types (e.g. 'Identity'): just parse the item inside.
 -- - Other types: see the individual instance documentation.
 --
 -- Note that 'Char' does not have 'FromGraphSON' instance. This is
@@ -215,6 +220,12 @@ instance FromGraphSON a => FromGraphSON (Vector a) where
   parseGraphSON = parseUnwrapList
 instance FromGraphSON a => FromGraphSON (Seq a) where
   parseGraphSON = parseUnwrapList
+instance FromGraphSON a => FromGraphSON (NonEmpty a) where
+  parseGraphSON gv = do
+    list <- parseGraphSON gv
+    case list of
+      [] -> fail ("Empty list.")
+      (a : rest) -> return (a :| rest)
 
 ---- Set instances
 
@@ -222,6 +233,33 @@ instance (FromGraphSON a, Ord a) => FromGraphSON (Set a) where
   parseGraphSON = parseUnwrapList
 instance (FromGraphSON a, Eq a, Hashable a) => FromGraphSON (HashSet a) where
   parseGraphSON = parseUnwrapList
+
+---- Trivial wrapper type instances
+
+instance FromGraphSON a => FromGraphSON (Identity a) where
+  parseGraphSON = fmap Identity . parseGraphSON
+instance FromGraphSON a => FromGraphSON (S.Min a) where
+  parseGraphSON = fmap S.Min . parseGraphSON
+instance FromGraphSON a => FromGraphSON (S.Max a) where
+  parseGraphSON = fmap S.Max . parseGraphSON
+instance FromGraphSON a => FromGraphSON (S.First a) where
+  parseGraphSON = fmap S.First . parseGraphSON
+instance FromGraphSON a => FromGraphSON (S.Last a) where
+  parseGraphSON = fmap S.Last . parseGraphSON
+instance FromGraphSON a => FromGraphSON (S.WrappedMonoid a) where
+  parseGraphSON = fmap S.WrapMonoid . parseGraphSON
+instance FromGraphSON a => FromGraphSON (S.Dual a) where
+  parseGraphSON = fmap S.Dual . parseGraphSON
+instance FromGraphSON a => FromGraphSON (M.Sum a) where
+  parseGraphSON = fmap M.Sum . parseGraphSON
+instance FromGraphSON a => FromGraphSON (M.Product a) where
+  parseGraphSON = fmap M.Product . parseGraphSON
+
+instance FromGraphSON M.All where
+  parseGraphSON = fmap M.All . parseGraphSON
+instance FromGraphSON M.Any where
+  parseGraphSON = fmap M.Any . parseGraphSON
+
 
 
 ---- GMap and others
@@ -282,6 +320,15 @@ instance FromGraphSON a => FromGraphSON (Maybe a) where
 -- | Try 'Left', then 'Right'.
 instance (FromGraphSON a, FromGraphSON b) => FromGraphSON (Either a b) where
   parseGraphSON gv = (fmap Left $ parseGraphSON gv) <|> (fmap Right $ parseGraphSON gv)
+
+---- Trivial wrapper for Maybe
+
+instance FromGraphSON a => FromGraphSON (S.Option a) where
+  parseGraphSON = fmap S.Option . parseGraphSON
+instance FromGraphSON a => FromGraphSON (M.First a) where
+  parseGraphSON = fmap M.First . parseGraphSON
+instance FromGraphSON a => FromGraphSON (M.Last a) where
+  parseGraphSON = fmap M.Last . parseGraphSON
 
 
 ---- Others

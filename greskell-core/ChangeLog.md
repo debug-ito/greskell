@@ -1,5 +1,32 @@
 # Revision history for greskell-core
 
+## 0.1.3.0  --
+
+### GraphSON module
+
+* Add `FromGraphSON` instances to the following wrapper types.
+
+    * `Identity` functor
+    * `NonEmpty` list
+    * From `Data.Semigroup`
+
+        * `Min`
+        * `Max`
+        * `First`
+        * `Last`
+        * `WrappedMonoid`
+        * `Dual`
+        * `Option`
+
+    * From `Data.Monoid`
+
+        * `First`
+        * `Last`
+        * `Sum`
+        * `Product`
+        * `All`
+        * `Any`
+
 ## 0.1.2.7  -- 2019-10-02
 
 * Confirm test with `hashable-1.3.0.0` and `semigroups-0.19.1`.
