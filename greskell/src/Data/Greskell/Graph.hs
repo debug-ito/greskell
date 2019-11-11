@@ -74,6 +74,7 @@ import Data.Greskell.Greskell
   ( Greskell, unsafeGreskellLazy, string,
     ToGreskell(..)
   )
+import Data.Greskell.PMap (PMapKey(..))
 
 -- $setup
 --
@@ -184,6 +185,8 @@ cSingle = unsafeGreskellLazy "single"
 -- "\"age\""
 -- >>> toGremlin (key "created_at" :: Key AEdge Text)
 -- "\"created_at\""
+-- >>> keyText ("name" :: Key AVertex Text)
+-- "name"
 newtype Key a b = Key { unKey :: Text }
                 deriving (Show,Eq)
 
@@ -198,6 +201,10 @@ instance IsString (Key a b) where
 instance ToGreskell (Key a b) where
   type GreskellReturn (Key a b) = Text
   toGreskell = string . unKey
+
+instance PMapKey (Key a b) where
+  type PMapValue (Key a b) = b
+  keyText (Key t) = t
 
 -- | Create a 'Key' a text.
 key :: Text -> Key a b
