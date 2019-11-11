@@ -96,9 +96,9 @@ pMapToList (PMap hm) = expandValues =<< HM.toList hm
 
 -- | Make a 'PMap' from list of entries.
 pMapFromList :: NonEmptyLike c => [(Text, v)] -> PMap c v
-pMapFromList = F.foldl' f mempty
+pMapFromList = F.foldr f mempty
   where
-    f pm (k, v) = pMapInsert k v pm
+    f (k, v) pm = pMapInsert k v pm
 
 -- | Lookup the first value for the key from 'PMap'.
 lookup :: (PMapKey k, NonEmptyLike c) => k -> PMap c v -> Maybe v
@@ -146,12 +146,13 @@ lookupListAsM k pm = either throwM return $ lookupListAs k pm
 
 -- | The single cardinality for 'PMap'. 'pMapInsert' method replaces
 -- the old value. '(<>)' on 'PMap' prefers the items from the left
--- 'PMap'.
+-- 'PMap'. 'pMapFromList' prefers the first item for each key.
 type Single = S.First
 
 -- | The \"one or more\" cardinality for 'PMap'. 'pMapInsert' method
 -- prepends the new value at the head. '(<>)' on 'PMap' appends the
--- right items to the tail of the left items.
+-- right items to the tail of the left items. 'pMapFromList' preserves
+-- the order of the items for each key.
 newtype Multi a = Multi (NonEmpty a)
               deriving (Show,Eq,Ord,Functor,Semigroup,Foldable,Traversable,NonEmptyLike)
 
