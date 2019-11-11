@@ -107,6 +107,7 @@ module Data.Greskell.GTraversal
          gSelectN,
          gSelectBy1,
          gSelectByN,
+         gProject,
          -- ** Summarizing steps
          gFold,
          gCount,
@@ -145,9 +146,11 @@ module Data.Greskell.GTraversal
          ByProjection(..),
          ProjectionLike(..),
          ByComparator(..),
+         LabeledByProjection(..),
          gBy,
          gBy1,
-         gBy2
+         gBy2,
+         gByL
        ) where
 
 import Control.Applicative ((<$>), (<*>))
@@ -156,6 +159,7 @@ import Control.Category (Category, (>>>))
 import qualified Control.Category as Category
 import Data.Aeson (Value)
 import Data.Bifunctor (Bifunctor(bimap))
+import Data.Foldable (foldl')
 import Data.List.NonEmpty (NonEmpty(..))
 import Data.Monoid ((<>), mconcat, Monoid(..))
 import Data.Semigroup (Semigroup, sconcat)
@@ -182,7 +186,7 @@ import Data.Greskell.Greskell
   )
 import Data.Greskell.AsIterator (AsIterator(IteratorItem))
 import Data.Greskell.AsLabel (AsLabel, SelectedMap)
-import Data.Greskell.PMap (PMap)
+import Data.Greskell.PMap (PMap, Single)
 
 -- $setup
 --
@@ -849,6 +853,15 @@ gOrder bys = modulateWith order_step by_steps
       ByComparatorComp comp -> [toGremlin comp]
       ByComparatorProjComp (ByProjection p) comp -> [toGremlin p, toGremlin comp]
 
+-- | A 'ByProjection' associated with an 'AsLabel'. You can construct
+-- it by 'gByL'.
+data LabeledByProjection s where
+  LabeledByProjection :: AsLabel a -> ByProjection s a -> LabeledByProjection s
+
+-- | @.by@ step associated with an 'AsLabel'.
+gByL :: (ProjectionLike p, ToGreskell p) => AsLabel (ProjectionLikeEnd p) -> p -> LabeledByProjection (ProjectionLikeStart p)
+gByL l p = LabeledByProjection l $ gBy p
+
 -- | @.flatMap@ step.
 --
 -- @.flatMap@ step is a 'Transform' step even if the child walk is
@@ -961,6 +974,20 @@ gSelectBy1 l bp = modulateWith (unsafeChangeEnd $ gSelect1 l) [byStep bp]
 -- @since 0.2.2.0
 gSelectByN :: AsLabel a -> AsLabel a -> [AsLabel a] -> ByProjection a b -> Walk Transform s (SelectedMap b)
 gSelectByN l1 l2 ls bp = modulateWith (unsafeChangeEnd $ gSelectN l1 l2 ls) [byStep bp]
+
+-- | @.project@ step.
+--
+gProject :: LabeledByProjection s -> [LabeledByProjection s] -> Walk Transform s (PMap Single GValue)
+gProject lp_head lps = foldl' f (unsafeWalk "project" labels) (lp_head : lps)
+  where
+    labels = map toLabelGremlin (lp_head : lps)
+    toLabelGremlin (LabeledByProjection l _) = toGremlin l
+    f acc lp = acc >>> toByStep lp
+    toByStep :: LabeledByProjection s -> Walk Transform a a
+    toByStep (LabeledByProjection _ (ByProjection p)) = unsafeWalk "by" [toGremlin p]
+
+
+
 
 -- | @.fold@ step.
 gFold :: Walk Transform a [a]
