@@ -8,8 +8,6 @@
 module Data.Greskell.PMap
   ( -- * PMap
     PMap,
-    emptyPMap,
-    insertPMap,
     -- ** Single lookup
     lookup,
     lookupM,
@@ -19,8 +17,12 @@ module Data.Greskell.PMap
     lookupList,
     lookupListAs,
     lookupListAsM,
-    -- ** Low-level lookup
-    lookupRaw,
+    -- ** Others
+    pMapInsert,
+    pMapDelete,
+    pMapLookup,
+    pMapToList,
+    pMapFromList,
     -- * Cardinality
     Single,
     Multi,
@@ -40,7 +42,8 @@ import Data.Greskell.GraphSON (GValue, GraphSONTyped(..), FromGraphSON(..), pars
 import qualified Data.HashMap.Strict as HM
 import Data.List.NonEmpty (NonEmpty((:|)))
 import Data.Maybe (listToMaybe)
-import Data.Semigroup (Semigroup, (<>))
+import Data.Monoid (Monoid(..))
+import Data.Semigroup (Semigroup((<>)))
 import qualified Data.Semigroup as S
 import Data.Traversable (Traversable(traverse))
 import Data.Text (Text)
@@ -60,20 +63,42 @@ instance GraphSONTyped (PMap c v) where
 instance FromGraphSON (c v) => FromGraphSON (PMap c v) where
   parseGraphSON gv = fmap PMap $ parseGraphSON gv
 
--- | An empty 'PMap'.
-emptyPMap :: PMap c v
-emptyPMap = PMap HM.empty
+-- | Make a union of the two 'PMap's. If the two 'PMap's share some
+-- keys, those values are merged by 'NEL.append' method from
+-- 'NonEmptyLike'.
+instance NonEmptyLike c => Semigroup (PMap c v) where
+  (PMap a) <> (PMap b) = PMap (HM.unionWith NEL.append a b)
+
+instance NonEmptyLike c => Monoid (PMap c v) where
+  mempty = PMap $ HM.empty
+  mappend = (<>)
 
 -- | Insert a key-value pair to 'PMap'. It depends on the 'NEL.append'
 -- method of the 'NonEmptyLike' type @c@ how it behaves when it
 -- already has items for that key.
-insertPMap :: NonEmptyLike c => Text -> v -> PMap c v -> PMap c v
-insertPMap k v (PMap hm) = PMap $ HM.insertWith NEL.append k (NEL.singleton v) hm
+pMapInsert :: NonEmptyLike c => Text -> v -> PMap c v -> PMap c v
+pMapInsert k v (PMap hm) = PMap $ HM.insertWith NEL.append k (NEL.singleton v) hm
 
--- | Lookup all items for the key. If there is no item for the key, it
--- returns an empty list.
-lookupRaw :: NonEmptyLike c => Text -> PMap c v -> [v]
-lookupRaw k (PMap hm) = maybe [] (F.toList . NEL.toNonEmpty) $ HM.lookup k hm
+-- | Delete a key and all values associated with it.
+pMapDelete :: Text -> PMap c v -> PMap c v
+pMapDelete k (PMap hm) = PMap $ HM.delete k hm
+
+-- | Lookup all items for the key (low-level function). If there is no
+-- item for the key, it returns an empty list.
+pMapLookup :: NonEmptyLike c => Text -> PMap c v -> [v]
+pMapLookup k (PMap hm) = maybe [] (F.toList . NEL.toNonEmpty) $ HM.lookup k hm
+
+-- | List up all entries.
+pMapToList :: F.Foldable c => PMap c v -> [(Text, v)]
+pMapToList (PMap hm) = expandValues =<< HM.toList hm
+  where
+    expandValues (k, cv) = map ((,) k) $ F.toList cv
+
+-- | Make a 'PMap' from list of entries.
+pMapFromList :: NonEmptyLike c => [(Text, v)] -> PMap c v
+pMapFromList = F.foldl' f mempty
+  where
+    f pm (k, v) = pMapInsert k v pm
 
 -- | Lookup the first value for the key from 'PMap'.
 lookup :: (PMapKey k, NonEmptyLike c) => k -> PMap c v -> Maybe v
@@ -102,7 +127,7 @@ lookupAsM k pm = either throwM return $ lookupAs k pm
 -- | Lookup all items for the key. If there is no item for the key, it
 -- returns an empty list.
 lookupList :: (PMapKey k, NonEmptyLike c) => k -> PMap c v -> [v]
-lookupList k pm = lookupRaw (keyText k) pm
+lookupList k pm = pMapLookup (keyText k) pm
 
 -- | Look up the values and parse them into @a@.
 lookupListAs :: (PMapKey k, NonEmptyLike c, PMapValue k ~ a, FromGraphSON a)
@@ -119,12 +144,14 @@ lookupListAsM :: (PMapKey k, NonEmptyLike c, PMapValue k ~ a, FromGraphSON a, Mo
               => k -> PMap c GValue -> m (NonEmpty a)
 lookupListAsM k pm = either throwM return $ lookupListAs k pm
 
--- | The single cardinality for 'PMap'. 'insert' method replaces the
--- old value.
+-- | The single cardinality for 'PMap'. 'pMapInsert' method replaces
+-- the old value. '(<>)' on 'PMap' prefers the items from the left
+-- 'PMap'.
 type Single = S.First
 
--- | The "one or more" cardinality for 'PMap'. 'insert' method appends
--- the new value at the tail.
+-- | The \"one or more\" cardinality for 'PMap'. 'pMapInsert' method
+-- prepends the new value at the head. '(<>)' on 'PMap' appends the
+-- right items to the tail of the left items.
 newtype Multi a = Multi (NonEmpty a)
               deriving (Show,Eq,Ord,Functor,Semigroup,Foldable,Traversable,NonEmptyLike)
 
@@ -135,6 +162,11 @@ class PMapKey k where
 
   -- | 'Text' representation of the key.
   keyText :: k -> Text
+
+-- | For simple 'Text', the 'GValue' is returned without being parsed.
+instance PMapKey Text where
+  type PMapValue Text = GValue
+  keyText = id
 
 -- | An 'Exception' raised when looking up values from 'PMap'.
 data PMapLookupException =
