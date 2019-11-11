@@ -49,7 +49,8 @@ import Data.Greskell.NonEmptyLike (NonEmptyLike)
 import qualified Data.Greskell.NonEmptyLike as NEL
 
 -- | A property map, which has text keys and @v@ values. @c@ specifies
--- the 'PMapCardinality' of each item.
+-- the cardinality of each item, and should be an instance of
+-- 'NonEmptyLike'.
 newtype PMap c v = PMap (HM.HashMap Text (c v))
                  deriving (Show,Eq,Functor,Foldable,Traversable)
 
