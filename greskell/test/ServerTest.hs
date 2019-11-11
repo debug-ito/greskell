@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings, TypeFamilies #-}
 module Main (main,spec) where
 
-import Control.Category ((<<<))
+import Control.Category ((<<<), (>>>))
 import qualified Data.Aeson as Aeson
 import Data.Either (isRight)
 import Data.HashMap.Strict (HashMap)
@@ -32,7 +32,7 @@ import Data.Greskell.Greskell
   )
 import Data.Greskell.Graph
   ( AVertex(..), AEdge(..), AProperty(..), AVertexProperty(..),
-    Key,
+    Key, Keys(..),
     T, tId, tLabel, tKey, tValue, cList, (=:),
     ElementID(..)
   )
@@ -43,12 +43,14 @@ import Data.Greskell.GraphSON
 import Data.Greskell.GTraversal
   ( Walk, GTraversal, SideEffect,
     source, sV', sE', gV', sAddV', gAddE', gTo,
-    ($.), gOrder, gBy1, gBy,
+    ($.), gOrder, gBy1, gBy, gByL,
     Transform, unsafeWalk, unsafeGTraversal,
     gProperties, gProperty, gPropertyV, liftWalk, gValues,
     gAs, gSelect1, gSelectN, gSelectBy1, gSelectByN,
-    gFilter, gOut', gId
+    gFilter, gOut', gOutV, gInV, gId, gLabel, gProject,
+    gValueMap
   )
+import Data.Greskell.PMap (lookupAsM)
 
 import ServerTest.Common (withEnv, withClient)
 
@@ -237,26 +239,33 @@ spec_graph = do
     got <- WS.slurpResults =<< WS.submit client (withPrelude' trav) Nothing
     (map (fmap parseEither) $ V.toList got) `shouldMatchList` expected
   specify "AEdge" $ withClient $ \client -> do
-    let trav = sE' [] $ source "g"
-        -- expE :: Int -> Int -> Text -> (Text,Text,Text,Either String Int, Either String Int)
-        -- expE outv inv cond = ("depends_on", "package", "package", Right outv, Right inv)
-        expE :: (Text)
-        expE = ("depends_on")
-        getE e = ( aeLabel e
-                   -- aeInVLabel e,
-                   -- aeOutVLabel e,
-                   -- parseEither $ aeOutV e,
-                   -- parseEither $ aeInV e
-                 )
-        expected = [ -- expE 1 2 ">=0.11.2.1",
-                     -- expE 1 3 ">=1.2.2.1",
-                     -- expE 2 3 ">=1.2.3"
-                     expE,
-                     expE,
-                     expE
+    let lOutV :: AsLabel Text
+        lOutV = "outV_name"
+        lInV :: AsLabel Text
+        lInV = "inV_name"
+        lLabel = "label"
+        lProps = "props"
+        kCond :: Key AEdge Text
+        kCond = "condition"
+        trav = ( gProject
+                 (gByL lLabel gLabel)
+                 [ gByL lOutV (gOutV >>> gValues ["name"]),
+                   gByL lInV  (gInV  >>> gValues ["name"]),
+                   gByL lProps (gValueMap KeysNil)
+                 ]
+               )
+               $. sE' [] $ source "g"
+        parseEdgeMap pm = (,,,)
+                          <$> (lookupAsM lLabel pm)
+                          <*> (lookupAsM lOutV pm)
+                          <*> (lookupAsM lInV pm)
+                          <*> (lookupAsM kCond =<< lookupAsM lProps pm)
+        expected = [ ("depends_on", "greskell", "aeson", ">=0.11.2.1"),
+                     ("depends_on", "greskell", "text", ">=1.2.2.1"),
+                     ("depends_on", "aeson", "text", ">=1.2.3")
                    ]
-    got <- WS.slurpResults =<< WS.submit client (withPrelude' trav) Nothing
-    (map getE $ V.toList got) `shouldMatchList` expected
+    got <- traverse parseEdgeMap =<< WS.slurpResults =<< WS.submit client (withPrelude' trav) Nothing
+    V.toList got `shouldMatchList` expected
   -- let getVP vp = (avpLabel vp, parseEither $ avpValue vp, fmap parseEither $ avpProperties vp)
   let getVP vp = (avpLabel vp, parseEither $ avpValue vp)
   specify "AVertexProperty" $ withClient $ \client -> do
