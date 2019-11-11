@@ -184,25 +184,24 @@ cSingle = unsafeGreskellLazy "single"
 -- "\"age\""
 -- >>> toGremlin (key "created_at" :: Key AEdge Text)
 -- "\"created_at\""
-newtype Key a b = Key { unKey :: Greskell Text }
+newtype Key a b = Key { unKey :: Text }
                 deriving (Show,Eq)
 
 -- | Unsafely convert the value type @b@.
 instance Functor (Key a) where
   fmap _ (Key t) = Key t
 
--- | Gremlin String literal as a 'Key'.
 instance IsString (Key a b) where
   fromString = Key . fromString
 
--- | Unwrap 'Key' constructor.
+-- | Return Gremlin String literal.
 instance ToGreskell (Key a b) where
   type GreskellReturn (Key a b) = Text
-  toGreskell = unKey
+  toGreskell = string . unKey
 
--- | Create a 'Key' from a literal string.
+-- | Create a 'Key' a text.
 key :: Text -> Key a b
-key = Key . string
+key = Key
 
 -- | Unsafely cast the type signature of the 'Key'.
 unsafeCastKey :: Key a1 b1 -> Key a2 b2

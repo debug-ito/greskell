@@ -28,6 +28,8 @@
 * [BREAKING CHANGE] Remove `avpProperties` field from `AVertexProperty`.
 * [BREAKING CHANGE] Type of the ID field for `AVertex`, `AEdge` and
   `AVertexProperty` is now `ElementID`, not `GValue`.
+* [BREAKING CHANGE] Internal of `Key` is modified from `Greskell Text`
+  to `Text`, so that it can be an instance of `PMapKey` class.
 
 ### GTraversal module
 
