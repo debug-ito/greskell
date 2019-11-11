@@ -154,7 +154,7 @@ type Single = S.First
 -- right items to the tail of the left items. 'pMapFromList' preserves
 -- the order of the items for each key.
 newtype Multi a = Multi (NonEmpty a)
-              deriving (Show,Eq,Ord,Functor,Semigroup,Foldable,Traversable,NonEmptyLike)
+              deriving (Show,Eq,Ord,Functor,Semigroup,Foldable,Traversable,NonEmptyLike,FromGraphSON)
 
 -- | A typed key for 'PMap'.
 class PMapKey k where
