@@ -10,6 +10,9 @@
 -- packages. The following modules are excluded from re-export:
 --
 -- - "Data.Greskell.Extra": extra utility functions.
+-- - "Data.Greskell.NonEmptyLike": NonEmptyLike class, which is a
+--   class of non-empty containers.
+-- - "Data.Greskell.Graph.PropertyMap": deprected PropertyMap class.
 module Data.Greskell
        (
          module Data.Greskell.Greskell,

@@ -16,10 +16,11 @@
 * [BREAKING CHANGE] Add `ElementID` as a newtype for `GValue`.
 * Add `unsafeCastElementID` function.
 * [BREAKING CHANGE] Add `elementId` and `elementLabel` functions to `Element` class.
-* [BREAKING CHANGE] Remove `Vertex`, `Edge`, `PropertyMap` and
-  `FromGraphSONWithKey` classes.
-* [BREAKING CHANGE] Remove `PropertyMapSingle` and `PropertyMapList`
-  types. Remove functions about those types.
+* [BREAKING CHANGE] Remove `Vertex` and `Edge` classes.
+* [BREAKING CHANGE] `PropertyMap` class, `FromGraphSONWithKey` class,
+  `PropertyMapSingle` type, `PropertyMapList` types and related
+  functions are moved to `Graph.PropertyMap` module and are now
+  deprected. Use `PMap` module instead.
 * [BREAKING CHANGE] Now `tKey` and `tValue` are monomorphic for `AVertexProperty`.
 * [BREAKING CHANGE] Remove `avProperties` field from `AVertex`.
 * [BREAKING CHANGE] Remove `aeInVLabel`, `aeOutVLabel`, `aeInV`,
@@ -56,7 +57,7 @@
 ### Extra module
 
 * [BREAKING CHANGE] Remove `writeAllProperties` because `PropertyMap`
-  is removed.
+  is deprecated.
 
 ### AsLabel module
 

@@ -31,6 +31,7 @@ library
                         Data.Greskell.Gremlin,
                         Data.Greskell.Binder,
                         Data.Greskell.Graph,
+                        Data.Greskell.Graph.PropertyMap,
                         Data.Greskell.GTraversal,
                         Data.Greskell.AsLabel,
                         Data.Greskell.Extra,
@@ -52,7 +53,7 @@ test-suite spec
   type:                 exitcode-stdio-1.0
   default-language:     Haskell2010
   hs-source-dirs:       test
-  ghc-options:          -Wall -fno-warn-unused-imports "-with-rtsopts=-M512m"
+  ghc-options:          -Wall -fno-warn-unused-imports -fno-warn-deprecations "-with-rtsopts=-M512m"
   main-is:              Spec.hs
   -- default-extensions:   
   other-extensions:     OverloadedStrings
@@ -60,6 +61,7 @@ test-suite spec
                         Data.Greskell.GTraversalSpec,
                         Data.Greskell.GremlinSpec,
                         Data.Greskell.GraphSpec,
+                        Data.Greskell.Graph.PropertyMapSpec,
                         Data.Greskell.ExtraSpec
   build-depends:        base, text, aeson,  unordered-containers,
                         greskell, greskell-core,
