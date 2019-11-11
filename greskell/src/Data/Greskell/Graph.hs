@@ -26,6 +26,7 @@ module Data.Greskell.Graph
          cList,
          cSet,
          cSingle,
+
          -- * Typed Key (accessor of a Property)
          Key(..),
          key,
@@ -33,6 +34,11 @@ module Data.Greskell.Graph
          -- ** key-value pair
          KeyValue(..),
          (=:),
+         -- ** heterogeneous list of keys
+         Keys(..),
+         singletonKeys,
+         (-:),
+
          -- * Concrete data types
          -- $concrete_types
          
@@ -55,7 +61,7 @@ import qualified Data.HashMap.Strict as HM
 import Data.List.NonEmpty (NonEmpty(..))
 import qualified Data.List.NonEmpty as NL
 import Data.Maybe (listToMaybe)
-import Data.Monoid (Monoid)
+import Data.Monoid (Monoid(..))
 import Data.Semigroup ((<>), Semigroup)
 import qualified Data.Semigroup as Semigroup
 import Data.String (IsString(..))
@@ -229,6 +235,32 @@ data KeyValue a where
 -- @since 0.2.0.0
 (=:) :: Key a b -> Greskell b -> KeyValue a
 (=:) = KeyValue
+
+-- | Heterogeneous list of 'Key's. It keeps the parent type @a@, but
+-- discards the value type @b@.
+data Keys a where
+  KeysNil :: Keys a
+  KeysCons :: Key a b -> Keys a -> Keys a
+
+instance Semigroup (Keys a) where
+  a <> b =
+    case a of
+      KeysNil -> b
+      KeysCons x rest -> KeysCons x (rest <> b)
+
+instance Monoid (Keys a) where
+  mempty = KeysNil
+  mappend = (<>)
+
+-- | 'Keys' with a single 'Key'.
+singletonKeys :: Key a b -> Keys a
+singletonKeys k = KeysCons k KeysNil
+
+-- | Prepend a 'Key' to 'Keys'.
+(-:) :: Key a b -> Keys a -> Keys a
+(-:) = KeysCons
+
+infixr 5 -:
 
 -- $concrete_types
 -- Concrete data types based on Aeson data types.
