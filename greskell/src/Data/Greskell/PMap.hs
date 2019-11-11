@@ -8,8 +8,8 @@
 module Data.Greskell.PMap
   ( -- * PMap
     PMap,
-    empty,
-    insert,
+    emptyPMap,
+    insertPMap,
     -- ** Single lookup
     lookup,
     lookupM,
@@ -60,14 +60,14 @@ instance FromGraphSON (c v) => FromGraphSON (PMap c v) where
   parseGraphSON gv = fmap PMap $ parseGraphSON gv
 
 -- | An empty 'PMap'.
-empty :: PMap c v
-empty = PMap HM.empty
+emptyPMap :: PMap c v
+emptyPMap = PMap HM.empty
 
 -- | Insert a key-value pair to 'PMap'. It depends on the 'NEL.append'
 -- method of the 'NonEmptyLike' type @c@ how it behaves when it
 -- already has items for that key.
-insert :: NonEmptyLike c => Text -> v -> PMap c v -> PMap c v
-insert k v (PMap hm) = PMap $ HM.insertWith NEL.append k (NEL.singleton v) hm
+insertPMap :: NonEmptyLike c => Text -> v -> PMap c v -> PMap c v
+insertPMap k v (PMap hm) = PMap $ HM.insertWith NEL.append k (NEL.singleton v) hm
 
 -- | Lookup all items for the key. If there is no item for the key, it
 -- returns an empty list.
