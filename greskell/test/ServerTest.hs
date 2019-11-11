@@ -32,7 +32,7 @@ import Data.Greskell.Greskell
   )
 import Data.Greskell.Graph
   ( AVertex(..), AEdge(..), AProperty(..), AVertexProperty(..),
-    Key, Keys(..),
+    Key, Keys(..), singletonKeys,
     T, tId, tLabel, tKey, tValue, cList, (=:),
     ElementID(..)
   )
@@ -248,15 +248,14 @@ spec_graph = do
         lProj = "projections"
         kCond :: Key AEdge Text
         kCond = "condition"
-        trav = gSelectN lEdge lProj [] $. gAs lProj
-               $.
+        trav = gSelectN lEdge lProj [] $. gAs lProj $.
                ( gProject
-                 (gByL lOutV (gOutV >>> gValues ["name"]))
+                 ( gByL lOutV (gOutV >>> gValues ["name"]) )
                  [ gByL lInV  (gInV  >>> gValues ["name"]),
                    gByL lProps (gValueMap KeysNil)
                  ]
-               )
-               $. gAs lEdge $. sE' [] $ source "g"
+               ) $.
+               gAs lEdge $. sE' [] $ source "g"
         parseResult pm = do
           edge <- lookupAsM lEdge pm
           pj <- lookupAsM lProj pm
@@ -270,25 +269,33 @@ spec_graph = do
                    ]
     got <- traverse parseResult =<< WS.slurpResults =<< WS.submit client (withPrelude' trav) Nothing
     V.toList got `shouldMatchList` expected
-  -- let getVP vp = (avpLabel vp, parseEither $ avpValue vp, fmap parseEither $ avpProperties vp)
-  let getVP vp = (avpLabel vp, parseEither $ avpValue vp)
   specify "AVertexProperty" $ withClient $ \client -> do
-    let trav = gProperties [] $. sV' [] $ source "g"
-        expName :: Text -> (Text,Either String Text)
-        expName val = ("name", Right val)
-        expVer :: Text -> (Text,Either String Text)
-        expVer val = ("version", Right val)
-        expected = [ expName "greskell",
-                     expName "aeson",
-                     expName "text",
-                     expVer "0.1.1.0", -- "2018-04-08",
-                     expVer "1.3.1.1", -- "2018-05-10",
-                     expVer "1.2.2.0", -- "2017-09-20",
-                     expVer "1.2.3.0", -- "2017-12-27",
-                     expVer "1.2.2.0"  -- "2017-12-23"
+    let lAV = "vertex_property"
+        lProps = "props"
+        kDate :: Key (AVertexProperty GValue) Text
+        kDate = "date"
+        trav = gSelectN lAV lProps [] $. gAs lProps $. gValueMap (singletonKeys kDate) $.
+               gAs lAV $. gProperties [] $. sV' [] $ source "g"
+        parseResult pm = do
+          av <- lookupAsM lAV pm
+          let label = avpLabel av
+              e_val = parseEither $ avpValue av
+          m_date <- if label == "version"
+                    then fmap Just (lookupAsM kDate =<< lookupAsM lProps pm)
+                    else return Nothing
+          return (label, e_val, m_date)
+        expected :: [(Text, Either String Text, Maybe Text)]
+        expected = [ ("name", Right "greskell", Nothing),
+                     ("name", Right "aeson", Nothing),
+                     ("name", Right "text", Nothing),
+                     ("version", Right "0.1.1.0", Just "2018-04-08"),
+                     ("version", Right "1.3.1.1", Just "2018-05-10"),
+                     ("version", Right "1.2.2.0", Just "2017-09-20"),
+                     ("version", Right "1.2.3.0", Just "2017-12-27"),
+                     ("version", Right "1.2.2.0", Just "2017-12-23")
                    ]
-    got <- WS.slurpResults =<< WS.submit client (withPrelude' trav) Nothing
-    (map getVP $ V.toList got) `shouldMatchList` expected
+    got <- traverse parseResult =<< WS.slurpResults =<< WS.submit client (withPrelude' trav) Nothing
+    V.toList got `shouldMatchList` expected
   specify "AVertex" $ withClient $ \client -> do
     let trav = sV' [] $ source "g"
         getV v = ( parseEither $ unElementID $ avId v,
