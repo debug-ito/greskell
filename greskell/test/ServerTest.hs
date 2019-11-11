@@ -4,9 +4,10 @@ module Main (main,spec) where
 import Control.Category ((<<<), (>>>))
 import qualified Data.Aeson as Aeson
 import Data.Either (isRight)
+import Data.Foldable (toList)
 import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as HM
-import Data.List (sortBy)
+import Data.List (sort)
 import Data.Monoid (mempty, (<>))
 import Data.Scientific (Scientific)
 import Data.Text (unpack, Text)
@@ -32,7 +33,7 @@ import Data.Greskell.Greskell
   )
 import Data.Greskell.Graph
   ( AVertex(..), AEdge(..), AProperty(..), AVertexProperty(..),
-    Key, Keys(..), singletonKeys,
+    Key, Keys(..), (-:), singletonKeys,
     T, tId, tLabel, tKey, tValue, cList, (=:),
     ElementID(..)
   )
@@ -50,7 +51,7 @@ import Data.Greskell.GTraversal
     gFilter, gOut', gOutV, gInV, gId, gLabel, gProject,
     gValueMap
   )
-import Data.Greskell.PMap (lookupAsM)
+import Data.Greskell.PMap (lookupAsM, lookupListAsM)
 
 import ServerTest.Common (withEnv, withClient)
 
@@ -297,19 +298,29 @@ spec_graph = do
     got <- traverse parseResult =<< WS.slurpResults =<< WS.submit client (withPrelude' trav) Nothing
     V.toList got `shouldMatchList` expected
   specify "AVertex" $ withClient $ \client -> do
-    let trav = sV' [] $ source "g"
-        getV v = ( parseEither $ unElementID $ avId v,
-                   avLabel v
-                 )
-        -- sort' = sortBy $ \(k1, v1, _) (k2, v2, _) -> compare (show k1,show v1) (show k2,show v2)
-        expV :: Int -> (Either String Int, Text)
-        expV vid = (Right vid, "package")
-        expected = [ expV 1,
-                     expV 2,
-                     expV 3
+    let lVertex = "vertex"
+        kName :: Key AVertex Text
+        kName = "name"
+        kVer :: Key AVertex Text
+        kVer = "version"
+        lProps = "props"
+        trav = gSelectN lVertex lProps [] $. gAs lProps $. gValueMap (kName -: kVer -: KeysNil) $.
+               gAs lVertex $. sV' [] $ source "g"
+        parseResult pm = do
+          v <- lookupAsM lVertex pm
+          let label = avLabel v
+              evid = parseEither $ unElementID $ avId v
+          props <- lookupAsM lProps pm
+          names <- fmap toList $ lookupListAsM kName props
+          vers <- fmap (sort . toList) $ lookupListAsM kVer props
+          return (evid, label, names, vers)
+        expected :: [(Either String Int, Text, [Text], [Text])]
+        expected = [ (Right 1, "package", ["greskell"], ["0.1.1.0"]),
+                     (Right 2, "package", ["aeson"], ["1.2.2.0", "1.3.1.1"]),
+                     (Right 3, "package", ["text"], ["1.2.2.0", "1.2.3.0"])
                    ]
-    got <- WS.slurpResults =<< WS.submit client (withPrelude' trav) Nothing
-    (map getV $ V.toList got) `shouldMatchList` expected
+    got <- traverse parseResult =<< WS.slurpResults =<< WS.submit client (withPrelude' trav) Nothing
+    V.toList got `shouldMatchList` expected
   where
     withPrelude' :: (ToGreskell a) => a -> Greskell (GreskellReturn a)
     withPrelude' = withPrelude prelude
