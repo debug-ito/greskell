@@ -62,7 +62,8 @@ test-suite spec
                         Data.Greskell.GremlinSpec,
                         Data.Greskell.GraphSpec,
                         Data.Greskell.Graph.PropertyMapSpec,
-                        Data.Greskell.ExtraSpec
+                        Data.Greskell.ExtraSpec,
+                        Data.Greskell.PMapSpec
   build-depends:        base, text, aeson,  unordered-containers,
                         greskell, greskell-core,
                         hspec >=2.2.3,
