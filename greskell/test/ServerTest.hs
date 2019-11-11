@@ -243,28 +243,32 @@ spec_graph = do
         lOutV = "outV_name"
         lInV :: AsLabel Text
         lInV = "inV_name"
-        lLabel = "label"
         lProps = "props"
+        lEdge = "edge"
+        lProj = "projections"
         kCond :: Key AEdge Text
         kCond = "condition"
-        trav = ( gProject
-                 (gByL lLabel gLabel)
-                 [ gByL lOutV (gOutV >>> gValues ["name"]),
-                   gByL lInV  (gInV  >>> gValues ["name"]),
+        trav = gSelectN lEdge lProj [] $. gAs lProj
+               $.
+               ( gProject
+                 (gByL lOutV (gOutV >>> gValues ["name"]))
+                 [ gByL lInV  (gInV  >>> gValues ["name"]),
                    gByL lProps (gValueMap KeysNil)
                  ]
                )
-               $. sE' [] $ source "g"
-        parseEdgeMap pm = (,,,)
-                          <$> (lookupAsM lLabel pm)
-                          <*> (lookupAsM lOutV pm)
-                          <*> (lookupAsM lInV pm)
-                          <*> (lookupAsM kCond =<< lookupAsM lProps pm)
+               $. gAs lEdge $. sE' [] $ source "g"
+        parseResult pm = do
+          edge <- lookupAsM lEdge pm
+          pj <- lookupAsM lProj pm
+          (,,,) (aeLabel edge)
+            <$> (lookupAsM lOutV pj)
+            <*> (lookupAsM lInV pj)
+            <*> (lookupAsM kCond =<< lookupAsM lProps pj)
         expected = [ ("depends_on", "greskell", "aeson", ">=0.11.2.1"),
                      ("depends_on", "greskell", "text", ">=1.2.2.1"),
                      ("depends_on", "aeson", "text", ">=1.2.3")
                    ]
-    got <- traverse parseEdgeMap =<< WS.slurpResults =<< WS.submit client (withPrelude' trav) Nothing
+    got <- traverse parseResult =<< WS.slurpResults =<< WS.submit client (withPrelude' trav) Nothing
     V.toList got `shouldMatchList` expected
   -- let getVP vp = (avpLabel vp, parseEither $ avpValue vp, fmap parseEither $ avpProperties vp)
   let getVP vp = (avpLabel vp, parseEither $ avpValue vp)
