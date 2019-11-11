@@ -179,6 +179,11 @@ cSingle = unsafeGreskellLazy "single"
 
 -- | A property key accessing value @b@ in an Element @a@. In Gremlin,
 -- it's just a String type.
+--
+-- >>> toGremlin ("age" :: Key AVertex Int)
+-- "\"age\""
+-- >>> toGremlin (key "created_at" :: Key AEdge Text)
+-- "\"created_at\""
 newtype Key a b = Key { unKey :: Greskell Text }
                 deriving (Show,Eq)
 
