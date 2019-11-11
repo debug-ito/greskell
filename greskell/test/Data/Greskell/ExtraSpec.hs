@@ -7,8 +7,8 @@ import Test.Hspec
 
 import Data.Aeson (Value(..))
 import Data.Greskell.Binder (Binder, Binding, runBinder)
-import Data.Greskell.Extra (writePropertyKeyValues)
-import Data.Greskell.Graph (AVertex)
+import Data.Greskell.Extra (writePropertyKeyValues, writePropertyKeyValues')
+import Data.Greskell.Graph (AVertex, (=:), Key, KeyValue)
 import Data.Greskell.Greskell (toGremlin)
 import Data.Greskell.GTraversal (Walk, WalkType)
 import qualified Data.HashMap.Strict as HM
@@ -46,3 +46,13 @@ spec = do
                                    ("__v2", String "bar")
                                  ]
                    )
+  describe "writePropertyKeyValues'" $ do
+    specify "empty" $ do
+      (toGremlin $ writePropertyKeyValues' ([] :: [KeyValue AVertex])) `shouldBe` "__.identity()"
+    specify "key-values" $ do
+      let name :: Key AVertex Text
+          name = "name"
+          age :: Key AVertex Int
+          age = "age"
+          input = writePropertyKeyValues' [name =: "toshio", age =: 30]
+      (toGremlin input) `shouldBe` "__.property(\"name\",\"toshio\").property(\"age\",30).identity()"
