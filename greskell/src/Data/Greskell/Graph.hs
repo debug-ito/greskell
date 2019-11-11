@@ -80,7 +80,8 @@ import Data.Greskell.Greskell
   ( Greskell, unsafeGreskellLazy, string,
     ToGreskell(..)
   )
-import Data.Greskell.PMap (PMapKey(..))
+import Data.Greskell.NonEmptyLike (NonEmptyLike)
+import Data.Greskell.PMap (PMapKey(..), Single, Multi)
 
 -- $setup
 --
@@ -113,6 +114,10 @@ class ElementData e => Element e where
   -- | Property type of the 'Element'. It should be of 'Property'
   -- class.
   type ElementProperty e :: * -> *
+
+  -- | Container type of the properties of the 'Element'. It should be
+  -- of 'NonEmptyLike' class.
+  type ElementPropertyContainer e :: * -> *
 
 -- | @org.apache.tinkerpop.gremlin.structure.Property@ interface in a
 -- TinkerPop graph.
@@ -300,6 +305,7 @@ instance ElementData AVertex where
 
 instance Element AVertex where
   type ElementProperty AVertex = AVertexProperty
+  type ElementPropertyContainer AVertex = Multi
 
 instance GraphSONTyped AVertex where
   gsonTypeFor _ = "g:Vertex"
@@ -331,6 +337,7 @@ instance ElementData AEdge where
 
 instance Element AEdge where
   type ElementProperty AEdge = AProperty
+  type ElementPropertyContainer AEdge = Single
 
 instance GraphSONTyped AEdge where
   gsonTypeFor _ = "g:Edge"
@@ -421,6 +428,7 @@ instance ElementData (AVertexProperty v) where
 
 instance Element (AVertexProperty v) where
   type ElementProperty (AVertexProperty v) = AProperty
+  type ElementPropertyContainer (AVertexProperty v) = Single
 
 instance Property AVertexProperty where
   propertyKey = avpLabel

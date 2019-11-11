@@ -102,6 +102,7 @@ module Data.Greskell.GTraversal
          gProperties,
          gId,
          gLabel,
+         gValueMap,
          gSelect1,
          gSelectN,
          gSelectBy1,
@@ -168,7 +169,7 @@ import Data.Greskell.Graph
   ( Element(..), Property(..), ElementID(..),
     AVertex, AEdge, AVertexProperty,
     T, Key, Cardinality,
-    KeyValue(..)
+    KeyValue(..), Keys(..)
   )
 import Data.Greskell.GraphSON (GValue)
 import Data.Greskell.Gremlin
@@ -181,6 +182,7 @@ import Data.Greskell.Greskell
   )
 import Data.Greskell.AsIterator (AsIterator(IteratorItem))
 import Data.Greskell.AsLabel (AsLabel, SelectedMap)
+import Data.Greskell.PMap (PMap)
 
 -- $setup
 --
@@ -919,6 +921,15 @@ gId = unsafeWalk "id" []
 -- @since 0.2.1.0
 gLabel :: Element s => Walk Transform s Text
 gLabel = unsafeWalk "label" []
+
+-- | @.valueMap@ step.
+gValueMap :: Element s
+          => Keys s
+          -> Walk Transform s (PMap (ElementPropertyContainer s) GValue)
+gValueMap keys = unsafeWalk "valueMap" $ toGremlinKeys keys
+  where
+    toGremlinKeys KeysNil = []
+    toGremlinKeys (KeysCons k rest) = toGremlin k : toGremlinKeys rest
 
 -- | @.select@ step with one argument.
 --

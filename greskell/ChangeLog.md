@@ -13,6 +13,7 @@
 
 * Add `unsafeCastKey` function.
 * [BREAKING CHANGE] Remove `ElementID` type family from `Element` class.
+* Add `ElementPropertyContainer` type family to `Element` class.
 * [BREAKING CHANGE] Add `ElementData` class, and set it as a super class of `Element`.
 * [BREAKING CHANGE] Add `ElementID` as a newtype for `GValue`.
 * Add `unsafeCastElementID` function.
@@ -30,6 +31,7 @@
   `AVertexProperty` is now `ElementID`, not `GValue`.
 * [BREAKING CHANGE] Internal of `Key` is modified from `Greskell Text`
   to `Text`, so that it can be an instance of `PMapKey` class.
+* Add `Keys` type and related functions.
 
 ### GTraversal module
 
@@ -72,6 +74,9 @@
 * [BREAKING CHANGE] `AsLookupException` is removed. Use
   `PMapLookupException` instead.
 
+### GTraversal module
+
+* Add `gValueMap` function.
 
 ## 0.2.3.1  -- 2019-10-02
 
