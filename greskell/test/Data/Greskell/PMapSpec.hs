@@ -92,7 +92,7 @@ spec = do
       lookupList ("HOGE" :: Text) pm `shouldBe` []
     specify "pMapInsert prepends" $ do
       let pm2 = pMapInsert "bar" 500 pm
-      pMapToList pm `shouldMatchList`
+      pMapToList pm2 `shouldMatchList`
         [ ("bar", 500),
           ("foo", 100),
           ("foo", 200),
