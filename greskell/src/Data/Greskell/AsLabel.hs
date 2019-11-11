@@ -27,6 +27,7 @@ import qualified Data.HashMap.Strict as HM
 import Data.Greskell.GraphSON (GValue, GraphSONTyped(..), FromGraphSON(..), parseEither)
 import Data.Greskell.Greskell (ToGreskell(..))
 import qualified Data.Greskell.Greskell as Greskell
+import Data.String (IsString(..))
 import Data.Text (Text)
 import Data.Traversable (Traversable)
 
@@ -39,6 +40,9 @@ import Data.Greskell.PMap
 -- pointing to the data of type @a@.
 newtype AsLabel a = AsLabel { unAsLabel :: Text }
                deriving (Show,Eq,Ord)
+
+instance IsString (AsLabel a) where
+  fromString = AsLabel . fromString
 
 -- | Returns the 'Text' as a Gremlin string.
 instance ToGreskell (AsLabel a) where

@@ -58,6 +58,9 @@
     * `gTo`
     * `gAddE`
 
+* Add `gValueMap`, `gProject` and `gByL` functions.
+* Add `LabeledByProjection` type.
+
 ### Extra module
 
 * [BREAKING CHANGE] Remove `writeAllProperties` because `PropertyMap`
@@ -73,10 +76,8 @@
   type.
 * [BREAKING CHANGE] `AsLookupException` is removed. Use
   `PMapLookupException` instead.
+* Add `IsString` instance to `AsLabel`.
 
-### GTraversal module
-
-* Add `gValueMap` function.
 
 ## 0.2.3.1  -- 2019-10-02
 
