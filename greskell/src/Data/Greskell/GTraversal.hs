@@ -194,7 +194,7 @@ import Data.Greskell.PMap (PMap, Single)
 -- >>> import Data.Function ((&))
 -- >>> import Data.Greskell.Greskell (gvalueInt)
 -- >>> import Data.Greskell.Gremlin (pBetween, pEq, pLte, oDecr, oIncr)
--- >>> import Data.Greskell.Graph (tId, cList, (=:), AVertex, AVertexProperty)
+-- >>> import Data.Greskell.Graph (tId, cList, (=:), AVertex, AVertexProperty, (-:))
 -- >>> import Data.Greskell.GraphSON (GValueBody(..))
 
 -- | @GraphTraversal@ class object of TinkerPop. It takes data @s@
@@ -936,6 +936,11 @@ gLabel :: Element s => Walk Transform s Text
 gLabel = unsafeWalk "label" []
 
 -- | @.valueMap@ step.
+--
+-- >>> toGremlin (source "g" & sV' [] &. gValueMap KeysNil)
+-- "g.V().valueMap()"
+-- >>> toGremlin (source "g" & sV' [] &. gValueMap ("name" -: "age" -: KeysNil))
+-- "g.V().valueMap(\"name\",\"age\")"
 gValueMap :: Element s
           => Keys s
           -> Walk Transform s (PMap (ElementPropertyContainer s) GValue)
@@ -977,6 +982,12 @@ gSelectByN l1 l2 ls bp = modulateWith (unsafeChangeEnd $ gSelectN l1 l2 ls) [byS
 
 -- | @.project@ step.
 --
+-- >>> let name_label = ("a" :: AsLabel Text)
+-- >>> let name_key = ("name" :: Key AVertex Text)
+-- >>> let count_label = ("b" :: AsLabel Int)
+-- >>> let id_label = "c"
+-- >>> toGremlin (source "g" & sV' [] &. gProject (gByL name_label name_key) [gByL count_label (gOut [] >>> gCount), gByL "c" tId])
+-- "g.V().project(\"a\",\"b\",\"c\").by(\"name\").by(__.out().count()).by(T.id)"
 gProject :: LabeledByProjection s -> [LabeledByProjection s] -> Walk Transform s (PMap Single GValue)
 gProject lp_head lps = foldl' f (unsafeWalk "project" labels) (lp_head : lps)
   where
@@ -985,9 +996,6 @@ gProject lp_head lps = foldl' f (unsafeWalk "project" labels) (lp_head : lps)
     f acc lp = acc >>> toByStep lp
     toByStep :: LabeledByProjection s -> Walk Transform a a
     toByStep (LabeledByProjection _ (ByProjection p)) = unsafeWalk "by" [toGremlin p]
-
-
-
 
 -- | @.fold@ step.
 gFold :: Walk Transform a [a]
