@@ -10,6 +10,7 @@
 module Data.Greskell.Graph
        ( -- * Element
          Element(..),
+         ElementData(..),
          ElementID(..),
          unsafeCastElementID,
          -- * Property
@@ -92,24 +93,27 @@ instance Functor ElementID where
 unsafeCastElementID :: ElementID a -> ElementID b
 unsafeCastElementID (ElementID e) = ElementID e
 
+-- | Types that keep reference to TinkerPop graph Elements.
+class ElementData e where
+  -- | ID of this Element.
+  elementId :: e -> ElementID e
+  -- | Label of this Element.
+  elementLabel :: e -> Text
+
 -- | @org.apache.tinkerpop.gremlin.structure.Element@ interface in a
 -- TinkerPop graph.
-class Element e where
-  type ElementProperty e :: * -> *
-  -- ^ Property type of the 'Element'. It should be of 'Property'
+class ElementData e => Element e where
+  -- | Property type of the 'Element'. It should be of 'Property'
   -- class.
-  elementId :: e -> ElementID e
-  -- ^ ID of this Element.
-  elementLabel :: e -> Text
-  -- ^ Label of this Element.
+  type ElementProperty e :: * -> *
 
 -- | @org.apache.tinkerpop.gremlin.structure.Property@ interface in a
 -- TinkerPop graph.
 class Property p where
+  -- | Get key of this property.
   propertyKey :: p v -> Text
-  -- ^ Get key of this property.
+  -- | Get value of this property.
   propertyValue :: p v -> v
-  -- ^ Get value of this property.
 
 -- | @org.apache.tinkerpop.gremlin.structure.T@ enum.
 --
@@ -247,10 +251,12 @@ data AVertex =
   }
   deriving (Show,Eq)
 
-instance Element AVertex where
-  type ElementProperty AVertex = AVertexProperty
+instance ElementData AVertex where
   elementId = avId
   elementLabel = avLabel
+
+instance Element AVertex where
+  type ElementProperty AVertex = AVertexProperty
 
 instance GraphSONTyped AVertex where
   gsonTypeFor _ = "g:Vertex"
@@ -276,10 +282,12 @@ data AEdge =
   }
   deriving (Show,Eq)
 
-instance Element AEdge where
-  type ElementProperty AEdge = AProperty
+instance ElementData AEdge where
   elementId = aeId
   elementLabel = aeLabel
+
+instance Element AEdge where
+  type ElementProperty AEdge = AProperty
 
 instance GraphSONTyped AEdge where
   gsonTypeFor _ = "g:Edge"
@@ -364,10 +372,12 @@ instance FromGraphSON v => FromGraphSON (AVertexProperty v) where
 instance GraphSONTyped (AVertexProperty v) where
   gsonTypeFor _ = "g:VertexProperty"
 
-instance Element (AVertexProperty v) where
-  type ElementProperty (AVertexProperty v) = AProperty
+instance ElementData (AVertexProperty v) where
   elementId = avpId
   elementLabel = avpLabel
+
+instance Element (AVertexProperty v) where
+  type ElementProperty (AVertexProperty v) = AProperty
 
 instance Property AVertexProperty where
   propertyKey = avpLabel
