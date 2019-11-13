@@ -11,6 +11,7 @@ module Data.Greskell.AsIterator
 
 import qualified Data.HashMap.Lazy as L (HashMap)
 import Data.HashSet (HashSet)
+import Data.List.NonEmpty (NonEmpty)
 import Data.Int (Int8, Int16, Int32, Int64)
 import qualified Data.IntMap.Lazy as L (IntMap)
 import Data.IntSet (IntSet)
@@ -107,6 +108,8 @@ instance AsIterator (Set a) where
   type IteratorItem (Set a) = a
 instance AsIterator IntSet where
   type IteratorItem IntSet = Int
+instance AsIterator (NonEmpty a) where
+  type IteratorItem (NonEmpty a) = a
 
 instance AsIterator (GMap c k v) where
   type IteratorItem (GMap c k v) = GMapEntry k v

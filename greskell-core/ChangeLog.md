@@ -27,6 +27,8 @@
         * `All`
         * `Any`
 
+* Add `AsIterator` instance to `NonEmpty`.
+
 ## 0.1.2.7  -- 2019-10-02
 
 * Confirm test with `hashable-1.3.0.0` and `semigroups-0.19.1`.
