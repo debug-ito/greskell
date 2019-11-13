@@ -38,6 +38,8 @@ import Control.Exception (Exception)
 import Control.Monad.Catch (MonadThrow(..))
 import qualified Data.Foldable as F
 import Data.Functor.Identity (Identity)
+import Data.Greskell.AsIterator (AsIterator(..))
+import Data.Greskell.GMap (GMapEntry)
 import Data.Greskell.GraphSON (GValue, GraphSONTyped(..), FromGraphSON(..), parseEither)
 import qualified Data.HashMap.Strict as HM
 import Data.List.NonEmpty (NonEmpty((:|)))
@@ -72,6 +74,9 @@ instance NonEmptyLike c => Semigroup (PMap c v) where
 instance NonEmptyLike c => Monoid (PMap c v) where
   mempty = PMap $ HM.empty
   mappend = (<>)
+
+instance AsIterator (PMap c v) where
+  type IteratorItem (PMap c v) = GMapEntry Text (c v)
 
 -- | Insert a key-value pair to 'PMap'. It depends on the 'NEL.append'
 -- method of the 'NonEmptyLike' type @c@ how it behaves when it
