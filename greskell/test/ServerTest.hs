@@ -49,7 +49,8 @@ import Data.Greskell.GTraversal
     gProperties, gProperty, gPropertyV, liftWalk, gValues,
     gAs, gSelect1, gSelectN, gSelectBy1, gSelectByN,
     gFilter, gOut', gOutV, gInV, gId, gLabel, gProject,
-    gValueMap
+    gValueMap,
+    gProject, gByL
   )
 import Data.Greskell.PMap (lookupAsM, lookupListAsM)
 
@@ -68,6 +69,7 @@ spec = withEnv $ do
   spec_graph
   spec_as
   spec_selectBy
+  spec_project
 
 spec_basics :: SpecWith (String,Int)
 spec_basics = do
@@ -360,13 +362,14 @@ spec_graph = do
       [ finalize $ gPropertyV (Just cList) "version" ver ["date" =: date] $. liftWalk $ sV' [num vid] $ source "g"
       ]
 
+multiplyWalk :: Greskell Int -> Walk Transform Int Int
+multiplyWalk factor = unsafeWalk "map" ["{ it.get() * " <> toGremlin factor <> " }"]
 
 spec_as :: SpecWith (String,Int)
 spec_as = do
   let start :: GTraversal Transform () Int
       start = unsafeGTraversal "__(1,2,3)"
-      mult :: Greskell Int -> Walk Transform Int Int
-      mult factor = unsafeWalk "map" ["{ it.get() * " <> toGremlin factor <> " }"]
+      mult = multiplyWalk
   specify "gAs and gSelect1" $ withClient $ \client -> do
     let label :: AsLabel Int
         label = AsLabel "a"
@@ -409,3 +412,23 @@ spec_selectBy = do
     got <- fmap V.toList $ WS.slurpResults =<< WS.submit client (withPrelude prelude gt) Nothing
     map (As.lookup src) got `shouldBe` [Just 23]
     map (As.lookup dest) got `shouldBe` [Just 18]
+
+spec_project :: SpecWith (String,Int)
+spec_project = do
+  let start :: GTraversal Transform () Int
+      start = unsafeGTraversal "__(1,2,3)"
+  specify "gProject with single item" $ withClient $ \client -> do
+    let l2 = "l2"
+        trav = gProject (gByL l2 $ multiplyWalk 2) [] $. start
+    got <- fmap V.toList $ WS.slurpResults =<< WS.submit client trav Nothing
+    got_l2 <- traverse (lookupAsM l2) got
+    got_l2 `shouldBe` [2,4,6]
+  specify "gProject with two items" $ withClient $ \client -> do
+    let l2 = "l2"
+        l3 = "l3"
+        trav = gProject (gByL l2 $ multiplyWalk 2) [gByL l3 $ multiplyWalk 3] $. start
+    got <- fmap V.toList $ WS.slurpResults =<< WS.submit client trav Nothing
+    got_l2 <- traverse (lookupAsM l2) got
+    got_l2 `shouldBe` [2,4,6]
+    got_l3 <- traverse (lookupAsM l3) got
+    got_l3 `shouldBe` [3,6,9]
