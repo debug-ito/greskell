@@ -22,7 +22,6 @@
   `PropertyMapSingle` type, `PropertyMapList` types and related
   functions are moved to `Graph.PropertyMap` module and are now
   deprected. Use `PMap` module instead.
-* [BREAKING CHANGE] Now `tKey` and `tValue` are monomorphic for `AVertexProperty`.
 * [BREAKING CHANGE] Remove `avProperties` field from `AVertex`.
 * [BREAKING CHANGE] Remove `aeInVLabel`, `aeOutVLabel`, `aeInV`,
   `aeOutV` and `aeProperties` fields from `AEdge`.

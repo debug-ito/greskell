@@ -151,7 +151,7 @@ tId :: Element a => Greskell (T a (ElementID a))
 tId = unsafeGreskellLazy "T.id"
 
 -- | @T.key@ token.
-tKey :: Greskell (T (AVertexProperty v) Text)
+tKey :: (Element (p v), Property p) => Greskell (T (p v) Text)
 tKey = unsafeGreskellLazy "T.key"
 
 -- | @T.label@ token.
@@ -159,7 +159,7 @@ tLabel :: Element a => Greskell (T a Text)
 tLabel = unsafeGreskellLazy "T.label"
 
 -- | @T.value@ token.
-tValue :: Greskell (T (AVertexProperty v) v)
+tValue :: (Element (p v), Property p) => Greskell (T (p v) v)
 tValue = unsafeGreskellLazy "T.value"
 
 -- | @org.apache.tinkerpop.gremlin.structure.VertexProperty.Cardinality@ enum.
