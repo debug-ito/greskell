@@ -34,28 +34,12 @@
 
 ### GTraversal module
 
-* [BREAKING CHANGE] Change the signature of the following
-  functions. Because `Vertex`, `Edge` and `PropertyMap` classes are
-  gone, those functions are now all monomorphic with `AVertex`,
-  `AEdge` and `AVertexProperty`.
+* [BREAKING CHANGE] Change the signature of the following functions
+  because now `ElementID` is a new type, not a type alias.
 
-    * `sV`, `sV'`
-    * `sE`, `sE'`
-    * `sAddV`
-    * `gHasKey`, `gHasKey'`, `gHasKeyP`, `gHasKeyP'`
-    * `gHasValue`, `gHasValue'`, `gHasValueP`, `gHasValueP'`
-    * `gV`, `gV'`
-    * `gOut`, `gOut'`
-    * `gOutE`, `gOutE'`
-    * `gOutV`, `gOutV'`
-    * `gIn`, `gIn'`
-    * `gInE`, `gInE'`
-    * `gInV`, `gInV'`
-    * `gAddV`
-    * `gPropertyV`
-    * `gFrom`
-    * `gTo`
-    * `gAddE`
+    * `sV'`
+    * `gV'`
+    * `sE'`
 
 * Add `gValueMap`, `gProject` and `gByL` functions.
 * Add `LabeledByProjection` type.
