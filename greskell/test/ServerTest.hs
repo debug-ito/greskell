@@ -432,3 +432,25 @@ spec_project = do
     got_l2 `shouldBe` [2,4,6]
     got_l3 <- traverse (lookupAsM l3) got
     got_l3 `shouldBe` [3,6,9]
+  specify "gProject with more than one items in 'by' traversal" $ withClient $ \client -> do
+    let rep_mul3 :: Walk Transform Int Int
+        rep_mul3 = unsafeWalk "flatMap" ["{ def a = it.get(); return [a * 3, a * 4, a * 5].iterator() }"]
+        lab = "rep_mul3"
+        trav = gProject (gByL lab $ rep_mul3) [] $. start
+    got_simple <- fmap V.toList $ WS.slurpResults =<< WS.submit client (rep_mul3 $. start) Nothing
+    got_simple `shouldBe` [3, 4, 5, 6, 8, 10, 9, 12, 15]
+    got <- fmap V.toList $ WS.slurpResults =<< WS.submit client trav Nothing
+    got_l <- traverse (lookupAsM lab) got
+    got_l `shouldBe` [3, 6, 9]
+    -- only the first item from the by-projection traversal.
+  specify "gProject with gSelect1 in by-projection" $ withClient $ \client -> do
+    let as_orig = "as_orig"
+        l_orig = "orig"
+        l_mapped = "mapped"
+        trav = gProject
+               (gByL l_mapped $ multiplyWalk 4)
+               [gByL l_orig $ gSelect1 as_orig ] $.
+               gAs as_orig $. start
+    got <- fmap V.toList $ WS.slurpResults =<< WS.submit client trav Nothing
+    traverse (lookupAsM l_mapped) got `shouldReturn` [4, 8, 12]
+    traverse (lookupAsM l_orig) got `shouldReturn` [1, 2, 3]
