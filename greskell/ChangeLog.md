@@ -13,11 +13,11 @@
 
 * Add `unsafeCastKey` function.
 * [BREAKING CHANGE] Remove `ElementID` type family from `Element` class.
-* Add `ElementPropertyContainer` type family to `Element` class.
-* [BREAKING CHANGE] Add `ElementData` class, and set it as a super class of `Element`.
 * [BREAKING CHANGE] Add `ElementID` as a newtype for `GValue`.
 * Add `unsafeCastElementID` function.
-* [BREAKING CHANGE] Remove `Vertex` and `Edge` classes.
+* Add `ElementPropertyContainer` type family to `Element` class.
+* [BREAKING CHANGE] Add `ElementData` class, and set it as a super class of `Element`.
+* [BREAKING CHANGE] Remove `EdgeVertexID` type family from `Edge` class.
 * [BREAKING CHANGE] `PropertyMap` class, `FromGraphSONWithKey` class,
   `PropertyMapSingle` type, `PropertyMapList` types and related
   functions are moved to `Graph.PropertyMap` module and are now

@@ -13,6 +13,8 @@ module Data.Greskell.Graph
          ElementData(..),
          ElementID(..),
          unsafeCastElementID,
+         Vertex,
+         Edge,
          -- * Property
          Property(..),
          -- * T Enum
@@ -118,6 +120,14 @@ class ElementData e => Element e where
   -- | Container type of the properties of the 'Element'. It should be
   -- of 'NonEmptyLike' class.
   type ElementPropertyContainer e :: * -> *
+
+-- | @org.apache.tinkerpop.gremlin.structure.Vertex@ interface in a
+-- TinkerPop graph.
+class (Element v) => Vertex v
+
+-- | @org.apache.tinkerpop.gremlin.structure.Edge@ interface in a
+-- TinkerPop graph.
+class (Element e) => Edge e
 
 -- | @org.apache.tinkerpop.gremlin.structure.Property@ interface in a
 -- TinkerPop graph.
@@ -307,6 +317,8 @@ instance Element AVertex where
   type ElementProperty AVertex = AVertexProperty
   type ElementPropertyContainer AVertex = Multi
 
+instance Vertex AVertex
+
 instance GraphSONTyped AVertex where
   gsonTypeFor _ = "g:Vertex"
 
@@ -338,6 +350,8 @@ instance ElementData AEdge where
 instance Element AEdge where
   type ElementProperty AEdge = AProperty
   type ElementPropertyContainer AEdge = Single
+
+instance Edge AEdge
 
 instance GraphSONTyped AEdge where
   gsonTypeFor _ = "g:Edge"
