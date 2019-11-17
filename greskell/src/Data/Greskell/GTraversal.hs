@@ -989,7 +989,7 @@ gSelectByN l1 l2 ls bp = modulateWith (unsafeChangeEnd $ gSelectN l1 l2 ls) [byS
 -- >>> let name_key = ("name" :: Key AVertex Text)
 -- >>> let count_label = ("b" :: AsLabel Int)
 -- >>> let id_label = "c"
--- >>> toGremlin (source "g" & sV' [] &. gProject (gByL name_label name_key) [gByL count_label (gOut [] >>> gCount), gByL "c" tId])
+-- >>> toGremlin (source "g" & sV' [] &. gProject (gByL name_label name_key) [gByL count_label (gOut' [] >>> gCount), gByL "c" tId])
 -- "g.V().project(\"a\",\"b\",\"c\").by(\"name\").by(__.out().count()).by(T.id)"
 gProject :: LabeledByProjection s -> [LabeledByProjection s] -> Walk Transform s (PMap Single GValue)
 gProject lp_head lps = foldl' f (unsafeWalk "project" labels) (lp_head : lps)

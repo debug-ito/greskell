@@ -48,7 +48,7 @@ import Data.Greskell.GTraversal
     Transform, unsafeWalk, unsafeGTraversal,
     gProperties, gProperty, gPropertyV, liftWalk, gValues,
     gAs, gSelect1, gSelectN, gSelectBy1, gSelectByN,
-    gFilter, gOut', gOutV, gInV, gId, gLabel, gProject,
+    gFilter, gOut', gOutV, gOutV', gInV, gInV', gId, gLabel, gProject,
     gValueMap,
     gProject, gByL
   )
@@ -253,8 +253,8 @@ spec_graph = do
         kCond = "condition"
         trav = gSelectN lEdge lProj [] $. gAs lProj $.
                ( gProject
-                 ( gByL lOutV (gOutV >>> gValues ["name"]) )
-                 [ gByL lInV  (gInV  >>> gValues ["name"]),
+                 ( gByL lOutV (gOutV' >>> gValues ["name"]) )
+                 [ gByL lInV  (gInV'  >>> gValues ["name"]),
                    gByL lProps (gValueMap KeysNil)
                  ]
                ) $.
