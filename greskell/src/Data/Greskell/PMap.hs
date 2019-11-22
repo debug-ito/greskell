@@ -13,10 +13,12 @@ module Data.Greskell.PMap
     lookupM,
     lookupAs,
     lookupAsM,
+    lookupAsF,
     -- ** List lookup
     lookupList,
     lookupListAs,
     lookupListAsM,
+    lookupListAsF,
     -- ** Others
     pMapInsert,
     pMapDelete,
@@ -36,6 +38,8 @@ import Prelude hiding (lookup)
 
 import Control.Exception (Exception)
 import Control.Monad.Catch (MonadThrow(..))
+import Control.Monad.Fail (MonadFail)
+import Data.Aeson.Types (Parser)
 import qualified Data.Foldable as F
 import Data.Functor.Identity (Identity)
 import Data.Greskell.AsIterator (AsIterator(..))
@@ -48,7 +52,7 @@ import Data.Monoid (Monoid(..))
 import Data.Semigroup (Semigroup((<>)))
 import qualified Data.Semigroup as S
 import Data.Traversable (Traversable(traverse))
-import Data.Text (Text)
+import Data.Text (Text, unpack)
 
 import Data.Greskell.NonEmptyLike (NonEmptyLike)
 import qualified Data.Greskell.NonEmptyLike as NEL
@@ -129,6 +133,11 @@ lookupAsM :: (PMapKey k, NonEmptyLike c, PMapValue k ~ a, FromGraphSON a, MonadT
           => k -> PMap c GValue -> m a
 lookupAsM k pm = either throwM return $ lookupAs k pm
 
+-- | 'MonadFail' version of 'lookupAs'.
+lookupAsF :: (PMapKey k, NonEmptyLike c, PMapValue k ~ a, FromGraphSON a, MonadFail m)
+          => k -> PMap c GValue -> m a
+lookupAsF k pm = either (fail . describeError) return $ lookupAs k pm
+
 -- | Lookup all items for the key. If there is no item for the key, it
 -- returns an empty list.
 lookupList :: (PMapKey k, NonEmptyLike c) => k -> PMap c v -> [v]
@@ -148,6 +157,11 @@ lookupListAs k pm =
 lookupListAsM :: (PMapKey k, NonEmptyLike c, PMapValue k ~ a, FromGraphSON a, MonadThrow m)
               => k -> PMap c GValue -> m (NonEmpty a)
 lookupListAsM k pm = either throwM return $ lookupListAs k pm
+
+-- | 'MonadFail' version of 'lookupListAs'.
+lookupListAsF :: (PMapKey k, NonEmptyLike c, PMapValue k ~ a, FromGraphSON a, MonadFail m)
+              => k -> PMap c GValue -> m (NonEmpty a)
+lookupListAsF k pm = either (fail . describeError) return $ lookupListAs k pm
 
 -- | The single cardinality for 'PMap'. 'pMapInsert' method replaces
 -- the old value. '(<>)' on 'PMap' prefers the items from the left
@@ -185,3 +199,8 @@ data PMapLookupException =
   deriving (Show,Eq,Ord)
 
 instance Exception PMapLookupException
+
+describeError :: PMapLookupException -> String
+describeError (PMapNoSuchKey k) = "Property '" ++ unpack k ++ "' does not exist."
+describeError (PMapParseError k pe) = "Parse error of property '" ++ unpack k ++ "': " ++ pe
+
