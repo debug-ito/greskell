@@ -175,7 +175,7 @@ import Data.Greskell.Graph
     T, Key, Cardinality,
     KeyValue(..), Keys(..)
   )
-import Data.Greskell.GraphSON (GValue)
+import Data.Greskell.GraphSON (GValue, FromGraphSON)
 import Data.Greskell.Gremlin
   ( Comparator(..),
     P
@@ -243,11 +243,23 @@ class ToGTraversal g where
   toGTraversal :: WalkType c => g c s e -> GTraversal c s e
   liftWalk :: (WalkType from, WalkType to, Lift from to) => g from s e -> g to s e
   -- ^ Lift 'WalkType' @from@ to @to@. Use this for type matching.
+  
+  unsafeCastStart :: WalkType c => g c s1 e -> g c s2 e
+  -- ^ Unsafely cast the start type @s1@ into @s2@.
+  --
+  -- It is recommended that @s2@ is coercible to @s1@ in terms of
+  -- 'FromGraphSON'. That is, if @s2@ can parse a 'GValue', @s1@
+  -- should also be able to parse that 'GValue'.
+
+  unsafeCastEnd :: WalkType c => g c s e1 -> g c s e2
+  -- ^ Unsafely cast the end type @e1@ into @e2@. See
+  -- 'unsafeCastStart'.
 
 instance ToGTraversal GTraversal where
   toGTraversal = id
   liftWalk (GTraversal g) = GTraversal $ unsafeGreskellLazy $ toGremlinLazy g
-
+  unsafeCastStart (GTraversal g) = GTraversal $ unsafeGreskellLazy $ toGremlinLazy g
+  unsafeCastEnd (GTraversal g) = GTraversal $ unsafeGreskellLazy $ toGremlinLazy g
 
 -- | A chain of one or more Gremlin steps. Like 'GTraversal', type @s@
 -- is the input, type @e@ is the output, and type @c@ is a marker to
@@ -294,6 +306,8 @@ instance Bifunctor (Walk c) where
 instance ToGTraversal Walk where
   toGTraversal (Walk t) = GTraversal $ unsafeGreskellLazy ("__" <> t)
   liftWalk (Walk t) = Walk t
+  unsafeCastStart (Walk t) = Walk t
+  unsafeCastEnd (Walk t) = Walk t
 
 -- | The 'Walk' is first converted to 'GTraversal', and it's converted
 -- to 'Greskell'.

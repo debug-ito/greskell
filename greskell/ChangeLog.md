@@ -43,6 +43,7 @@
 
 * Add `gValueMap`, `gProject` and `gByL` functions.
 * Add `LabeledByProjection` type.
+* Add `unsafeCastStart` and `unsafeCastEnd` functions.
 
 ### Extra module
 
