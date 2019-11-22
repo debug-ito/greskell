@@ -50,6 +50,7 @@
 * [BREAKING CHANGE] Remove `writeAllProperties` because `PropertyMap`
   is deprecated.
 * Add `writePropertyKeyValues'` function.
+* Add `writePMapProperties` function.
 
 ### AsLabel module
 
