@@ -31,13 +31,16 @@ module Data.Greskell.PMap
     -- * PMapKey
     PMapKey(..),
     -- * Errors
-    PMapLookupException(..)
+    PMapLookupException(..),
+    describePMapLookupException,
+    maybeNotFound,
+    catchNotFound
   ) where
 
 import Prelude hiding (lookup)
 
 import Control.Exception (Exception)
-import Control.Monad.Catch (MonadThrow(..))
+import Control.Monad.Catch (MonadThrow(..), MonadCatch(..))
 import Control.Monad.Fail (MonadFail)
 import Data.Aeson.Types (Parser)
 import qualified Data.Foldable as F
@@ -136,7 +139,7 @@ lookupAsM k pm = either throwM return $ lookupAs k pm
 -- | 'MonadFail' version of 'lookupAs'.
 lookupAsF :: (PMapKey k, NonEmptyLike c, PMapValue k ~ a, FromGraphSON a, MonadFail m)
           => k -> PMap c GValue -> m a
-lookupAsF k pm = either (fail . describeError) return $ lookupAs k pm
+lookupAsF k pm = either (fail . describePMapLookupException) return $ lookupAs k pm
 
 -- | Lookup all items for the key. If there is no item for the key, it
 -- returns an empty list.
@@ -161,7 +164,7 @@ lookupListAsM k pm = either throwM return $ lookupListAs k pm
 -- | 'MonadFail' version of 'lookupListAs'.
 lookupListAsF :: (PMapKey k, NonEmptyLike c, PMapValue k ~ a, FromGraphSON a, MonadFail m)
               => k -> PMap c GValue -> m (NonEmpty a)
-lookupListAsF k pm = either (fail . describeError) return $ lookupListAs k pm
+lookupListAsF k pm = either (fail . describePMapLookupException) return $ lookupListAs k pm
 
 -- | The single cardinality for 'PMap'. 'pMapInsert' method replaces
 -- the old value. '(<>)' on 'PMap' prefers the items from the left
@@ -200,7 +203,25 @@ data PMapLookupException =
 
 instance Exception PMapLookupException
 
-describeError :: PMapLookupException -> String
-describeError (PMapNoSuchKey k) = "Property '" ++ unpack k ++ "' does not exist."
-describeError (PMapParseError k pe) = "Parse error of property '" ++ unpack k ++ "': " ++ pe
+-- | Make a human-readable description on 'PMapLookupException'.
+describePMapLookupException :: PMapLookupException -> String
+describePMapLookupException (PMapNoSuchKey k) = "Property '" ++ unpack k ++ "' does not exist."
+describePMapLookupException (PMapParseError k pe) = "Parse error of property '" ++ unpack k ++ "': " ++ pe
 
+-- | Convert 'PMapNoSuchKey' into 'Nothing'. Other exceptions are left intact.
+maybeNotFound :: Either PMapLookupException (Maybe a)
+              -- ^ Parsing @null@ into 'Nothing'.
+              -> Either PMapLookupException (Maybe a)
+maybeNotFound (Left (PMapNoSuchKey _)) = return Nothing
+maybeNotFound p = p
+
+-- | Catch 'PMapNoSuchKey' and return 'Nothing'. Rethrow other
+-- exceptions.
+catchNotFound :: (MonadCatch m, MonadThrow m)
+              => m (Maybe a)
+              -- ^ Parsing @null@ into 'Nothing'.
+              -> m (Maybe a)
+catchNotFound orig = catch orig f
+  where
+    f (PMapNoSuchKey _) = return Nothing
+    f e = throwM e
