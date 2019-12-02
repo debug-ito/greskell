@@ -10,15 +10,17 @@ module Data.Greskell.PMap
     PMap,
     -- ** Single lookup
     lookup,
-    lookupM,
+    lookupThrow,
     lookupAs,
     lookupAsM,
-    lookupAsF,
+    ---- lookupAsM,
+    ---- lookupAsF,
     -- ** List lookup
     lookupList,
     lookupListAs,
     lookupListAsM,
-    lookupListAsF,
+    ---- lookupListAsM,
+    ---- lookupListAsF,
     -- ** Others
     pMapInsert,
     pMapDelete,
@@ -50,7 +52,7 @@ import Data.Greskell.GMap (GMapEntry)
 import Data.Greskell.GraphSON (GValue, GraphSONTyped(..), FromGraphSON(..), parseEither)
 import qualified Data.HashMap.Strict as HM
 import Data.List.NonEmpty (NonEmpty((:|)))
-import Data.Maybe (listToMaybe)
+import Data.Maybe (listToMaybe, catMaybes)
 import Data.Monoid (Monoid(..))
 import Data.Semigroup (Semigroup((<>)))
 import qualified Data.Semigroup as S
@@ -118,8 +120,8 @@ lookup k pm = listToMaybe $ lookupList k pm
 
 -- | 'MonadThrow' version of 'lookup'. If there is no value for the
 -- key, it throws 'NoSuchAsLabel'.
-lookupM :: (PMapKey k, NonEmptyLike c, MonadThrow m) => k -> PMap c v -> m v
-lookupM k pm = maybe (throwM $ PMapNoSuchKey $ keyText k) return $ lookup k pm
+lookupThrow :: (PMapKey k, NonEmptyLike c, MonadThrow m) => k -> PMap c v -> m v
+lookupThrow k pm = maybe (throwM $ PMapNoSuchKey $ keyText k) return $ lookup k pm
 
 -- | Lookup the value and parse it into @a@.
 lookupAs :: (PMapKey k, NonEmptyLike c, PMapValue k ~ a, FromGraphSON a)
@@ -131,15 +133,27 @@ lookupAs k pm =
   where
     kt = keyText k
 
--- | 'MonadThrow' version of 'lookupAs'.
-lookupAsM :: (PMapKey k, NonEmptyLike c, PMapValue k ~ a, FromGraphSON a, MonadThrow m)
-          => k -> PMap c GValue -> m a
-lookupAsM k pm = either throwM return $ lookupAs k pm
+-- | Similar to 'lookupAs', but this function converts a @null@ result
+-- into 'Nothing'.
+--
+-- A @null@ result is either (1) the key @k@ is not found in the map,
+-- or (2) the key is found, but the value is @null@.
+lookupAsM :: (PMapKey k, NonEmptyLike c, PMapValue k ~ a, FromGraphSON a)
+          => k -> PMap c GValue -> Either PMapLookupException (Maybe a)
+lookupAsM k pm = either fromError Right $ lookupAs k pm
+  where
+    fromError (PMapNoSuchKey _) = Right Nothing
+    fromError e = Left e
 
--- | 'MonadFail' version of 'lookupAs'.
-lookupAsF :: (PMapKey k, NonEmptyLike c, PMapValue k ~ a, FromGraphSON a, MonadFail m)
-          => k -> PMap c GValue -> m a
-lookupAsF k pm = either (fail . describePMapLookupException) return $ lookupAs k pm
+---- -- | 'MonadThrow' version of 'lookupAs'.
+---- lookupAsM :: (PMapKey k, NonEmptyLike c, PMapValue k ~ a, FromGraphSON a, MonadThrow m)
+----           => k -> PMap c GValue -> m a
+---- lookupAsM k pm = either throwM return $ lookupAs k pm
+---- 
+---- -- | 'MonadFail' version of 'lookupAs'.
+---- lookupAsF :: (PMapKey k, NonEmptyLike c, PMapValue k ~ a, FromGraphSON a, MonadFail m)
+----           => k -> PMap c GValue -> m a
+---- lookupAsF k pm = either (fail . describePMapLookupException) return $ lookupAs k pm
 
 -- | Lookup all items for the key. If there is no item for the key, it
 -- returns an empty list.
@@ -156,15 +170,24 @@ lookupListAs k pm =
   where
     kt = keyText k
 
--- | 'MonadThrow' version of 'lookupListAs'
-lookupListAsM :: (PMapKey k, NonEmptyLike c, PMapValue k ~ a, FromGraphSON a, MonadThrow m)
-              => k -> PMap c GValue -> m (NonEmpty a)
-lookupListAsM k pm = either throwM return $ lookupListAs k pm
+-- | Similar to 'lookupListAs', but this function converts a @null@
+-- result into an empty list. See also 'lookupAsM'.
+lookupListAsM :: (PMapKey k, NonEmptyLike c, PMapValue k ~ a, FromGraphSON a)
+              => k -> PMap c GValue -> Either PMapLookupException [a]
+lookupListAsM k pm = either fromError (Right . fromMaybeList) $ lookupListAs k pm
+  fromError (PMapNoSuchKey _) = Right []
+  fromError e = Left e
+  fromMaybeList = catMaybes . F.toList
 
--- | 'MonadFail' version of 'lookupListAs'.
-lookupListAsF :: (PMapKey k, NonEmptyLike c, PMapValue k ~ a, FromGraphSON a, MonadFail m)
-              => k -> PMap c GValue -> m (NonEmpty a)
-lookupListAsF k pm = either (fail . describePMapLookupException) return $ lookupListAs k pm
+---- -- | 'MonadThrow' version of 'lookupListAs'
+---- lookupListAsM :: (PMapKey k, NonEmptyLike c, PMapValue k ~ a, FromGraphSON a, MonadThrow m)
+----               => k -> PMap c GValue -> m (NonEmpty a)
+---- lookupListAsM k pm = either throwM return $ lookupListAs k pm
+---- 
+---- -- | 'MonadFail' version of 'lookupListAs'.
+---- lookupListAsF :: (PMapKey k, NonEmptyLike c, PMapValue k ~ a, FromGraphSON a, MonadFail m)
+----               => k -> PMap c GValue -> m (NonEmpty a)
+---- lookupListAsF k pm = either (fail . describePMapLookupException) return $ lookupListAs k pm
 
 -- | The single cardinality for 'PMap'. 'pMapInsert' method replaces
 -- the old value. '(<>)' on 'PMap' prefers the items from the left
