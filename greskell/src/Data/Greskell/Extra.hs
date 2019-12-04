@@ -7,8 +7,9 @@
 --
 -- @since 0.2.3.0
 module Data.Greskell.Extra
-  ( writePropertyKeyValues,
-    writePropertyKeyValues',
+  ( writeKeyValues,
+    (<=:>),
+    writePropertyKeyValues,
     writePMapProperties
   ) where
 
@@ -16,7 +17,7 @@ import Data.Aeson (ToJSON)
 import Data.Foldable (Foldable)
 import Data.Greskell.Binder (Binder, newBind)
 import Data.Greskell.Graph
-  ( Property(..), Element, KeyValue(..)
+  ( Property(..), Element, KeyValue(..), (=:), Key
   )
 import qualified Data.Greskell.Graph as Graph
 import Data.Greskell.GTraversal (Walk, SideEffect, gProperty)
@@ -34,12 +35,10 @@ writePropertyKeyValues pairs = fmap mconcat $ mapM toPropStep pairs
     toPropStep (key, value) = fmap (gProperty $ Graph.key key) $ newBind value
 
 -- | Make a series of @.property@ steps to write the given key-value
--- pairs as properties.
---
--- This one allows heterogeneous value types, but it's not based on
--- 'Binder' monad.
-writePropertyKeyValues' :: Element e => [KeyValue e] -> Walk SideEffect e e
-writePropertyKeyValues' pairs = mconcat $ map toPropStep pairs
+-- pairs as properties. Use '(<=:>)' to make a 'KeyValue' within
+-- 'Binder'.
+writeKeyValues :: Element e => [KeyValue e] -> Walk SideEffect e e
+writeKeyValues pairs = mconcat $ map toPropStep pairs
   where
     toPropStep (KeyValue k v) = gProperty k v
 
@@ -48,3 +47,8 @@ writePropertyKeyValues' pairs = mconcat $ map toPropStep pairs
 writePMapProperties :: (Foldable c, ToJSON v, Element e)
                     => PMap c v -> Binder (Walk SideEffect e e)
 writePMapProperties = writePropertyKeyValues . pMapToList
+
+-- | Like '(=:)', but this one takes a real value, binds it into a
+-- 'Greskell' value and returns 'KeyValue'.
+(<=:>) :: ToJSON b => Key a b -> b -> Binder (KeyValue a)
+(<=:>) k v = (=:) k <$> newBind v
