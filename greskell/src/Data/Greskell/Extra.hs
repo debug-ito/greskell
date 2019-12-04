@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 -- |
 -- Module: Data.Greskell.Extra
 -- Description: Extra utility functions implemented by Greskell
@@ -25,10 +26,27 @@ import Data.Greskell.PMap (PMap, pMapToList)
 import Data.Monoid (mconcat)
 import Data.Text (Text)
 
+-- $setup
+--
+-- >>> :set -XOverloadedStrings
+-- >>> import Data.Greskell.Binder (runBinder)
+-- >>> import Data.Greskell.Greskell (toGremlin)
+-- >>> import Data.Greskell.Graph (AVertex)
+-- >>> import Data.List (sortBy)
+-- >>> import Data.Ord (comparing)
+-- >>> import qualified Data.HashMap.Strict as HashMap
+
 -- | Make a series of @.property@ steps to write the given key-value
 -- pairs as properties.
 --
 -- @since 0.2.3.0
+--
+-- >>> let binder = (writePropertyKeyValues [("age", (21 :: Int))] :: Binder (Walk SideEffect AVertex AVertex))
+-- >>> let (walk, binding) = runBinder binder
+-- >>> toGremlin walk
+-- "__.property(\"age\",__v0).identity()"
+-- >>> sortBy (comparing fst) $ HashMap.toList binding
+-- [("__v0",Number 21.0)]
 writePropertyKeyValues :: (ToJSON v, Element e) => [(Text, v)] -> Binder (Walk SideEffect e e)
 writePropertyKeyValues pairs = fmap mconcat $ mapM toPropStep pairs
   where
@@ -37,6 +55,14 @@ writePropertyKeyValues pairs = fmap mconcat $ mapM toPropStep pairs
 -- | Make a series of @.property@ steps to write the given key-value
 -- pairs as properties. Use '(<=:>)' to make a 'KeyValue' within
 -- 'Binder'.
+--
+-- >>> let keyAge = ("age" :: Key AVertex Int)
+-- >>> let keyName = ("name" :: Key AVertex Text)
+-- >>> let (walk, binding) = runBinder $ writeKeyValues <$> sequence [keyAge <=:> 21, keyName <=:> "Josh"]
+-- >>> toGremlin walk
+-- "__.property(\"age\",__v0).property(\"name\",__v1).identity()"
+-- >>> sortBy (comparing fst) $ HashMap.toList binding
+-- [("__v0",Number 21.0),("__v1",String "Josh")]
 writeKeyValues :: Element e => [KeyValue e] -> Walk SideEffect e e
 writeKeyValues pairs = mconcat $ map toPropStep pairs
   where
