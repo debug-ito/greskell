@@ -10,17 +10,14 @@ module Data.Greskell.PMap
     PMap,
     -- ** Single lookup
     lookup,
-    lookupThrow,
+    lookupM,
     lookupAs,
+    lookupAs',
     lookupAsM,
-    ---- lookupAsM,
-    ---- lookupAsF,
     -- ** List lookup
     lookupList,
     lookupListAs,
-    lookupListAsM,
-    ---- lookupListAsM,
-    ---- lookupListAsF,
+    lookupListAs',
     -- ** Others
     pMapInsert,
     pMapDelete,
@@ -34,9 +31,9 @@ module Data.Greskell.PMap
     PMapKey(..),
     -- * Errors
     PMapLookupException(..),
-    describePMapLookupException,
-    maybeNotFound,
-    catchNotFound
+    pMapDecribeError,
+    pMapToThrow,
+    pMapToFail
   ) where
 
 import Prelude hiding (lookup)
@@ -52,7 +49,7 @@ import Data.Greskell.GMap (GMapEntry)
 import Data.Greskell.GraphSON (GValue, GraphSONTyped(..), FromGraphSON(..), parseEither)
 import qualified Data.HashMap.Strict as HM
 import Data.List.NonEmpty (NonEmpty((:|)))
-import Data.Maybe (listToMaybe, catMaybes)
+import Data.Maybe (listToMaybe)
 import Data.Monoid (Monoid(..))
 import Data.Semigroup (Semigroup((<>)))
 import qualified Data.Semigroup as S
@@ -120,8 +117,8 @@ lookup k pm = listToMaybe $ lookupList k pm
 
 -- | 'MonadThrow' version of 'lookup'. If there is no value for the
 -- key, it throws 'NoSuchAsLabel'.
-lookupThrow :: (PMapKey k, NonEmptyLike c, MonadThrow m) => k -> PMap c v -> m v
-lookupThrow k pm = maybe (throwM $ PMapNoSuchKey $ keyText k) return $ lookup k pm
+lookupM :: (PMapKey k, NonEmptyLike c, MonadThrow m) => k -> PMap c v -> m v
+lookupM k pm = maybe (throwM $ PMapNoSuchKey $ keyText k) return $ lookup k pm
 
 -- | Lookup the value and parse it into @a@.
 lookupAs :: (PMapKey k, NonEmptyLike c, PMapValue k ~ a, FromGraphSON a)
@@ -138,22 +135,17 @@ lookupAs k pm =
 --
 -- A @null@ result is either (1) the key @k@ is not found in the map,
 -- or (2) the key is found, but the value is @null@.
-lookupAsM :: (PMapKey k, NonEmptyLike c, PMapValue k ~ a, FromGraphSON a)
+lookupAs' :: (PMapKey k, NonEmptyLike c, PMapValue k ~ (Maybe a), FromGraphSON a)
           => k -> PMap c GValue -> Either PMapLookupException (Maybe a)
-lookupAsM k pm = either fromError Right $ lookupAs k pm
+lookupAs' k pm = either fromError Right $ lookupAs k pm
   where
     fromError (PMapNoSuchKey _) = Right Nothing
     fromError e = Left e
 
----- -- | 'MonadThrow' version of 'lookupAs'.
----- lookupAsM :: (PMapKey k, NonEmptyLike c, PMapValue k ~ a, FromGraphSON a, MonadThrow m)
-----           => k -> PMap c GValue -> m a
----- lookupAsM k pm = either throwM return $ lookupAs k pm
----- 
----- -- | 'MonadFail' version of 'lookupAs'.
----- lookupAsF :: (PMapKey k, NonEmptyLike c, PMapValue k ~ a, FromGraphSON a, MonadFail m)
-----           => k -> PMap c GValue -> m a
----- lookupAsF k pm = either (fail . describePMapLookupException) return $ lookupAs k pm
+-- | 'MonadThrow' version of 'lookupAs'.
+lookupAsM :: (PMapKey k, NonEmptyLike c, PMapValue k ~ a, FromGraphSON a, MonadThrow m)
+          => k -> PMap c GValue -> m a
+lookupAsM k pm = pMapToThrow $ lookupAs k pm
 
 -- | Lookup all items for the key. If there is no item for the key, it
 -- returns an empty list.
@@ -170,24 +162,18 @@ lookupListAs k pm =
   where
     kt = keyText k
 
--- | Similar to 'lookupListAs', but this function converts a @null@
--- result into an empty list. See also 'lookupAsM'.
-lookupListAsM :: (PMapKey k, NonEmptyLike c, PMapValue k ~ a, FromGraphSON a)
-              => k -> PMap c GValue -> Either PMapLookupException [a]
-lookupListAsM k pm = either fromError (Right . fromMaybeList) $ lookupListAs k pm
-  fromError (PMapNoSuchKey _) = Right []
-  fromError e = Left e
-  fromMaybeList = catMaybes . F.toList
-
----- -- | 'MonadThrow' version of 'lookupListAs'
----- lookupListAsM :: (PMapKey k, NonEmptyLike c, PMapValue k ~ a, FromGraphSON a, MonadThrow m)
-----               => k -> PMap c GValue -> m (NonEmpty a)
----- lookupListAsM k pm = either throwM return $ lookupListAs k pm
----- 
----- -- | 'MonadFail' version of 'lookupListAs'.
----- lookupListAsF :: (PMapKey k, NonEmptyLike c, PMapValue k ~ a, FromGraphSON a, MonadFail m)
-----               => k -> PMap c GValue -> m (NonEmpty a)
----- lookupListAsF k pm = either (fail . describePMapLookupException) return $ lookupListAs k pm
+-- | Similar to 'lookupListAs', but this function accepts @null@
+-- results.
+--
+-- If the key @k@ is not found in the map, it returns an empty
+-- list. If the key @k@ is found and @null@s are included in the
+-- values, they are obtained as 'Nothing'.
+lookupListAs' :: (PMapKey k, NonEmptyLike c, PMapValue k ~ (Maybe a), FromGraphSON a)
+              => k -> PMap c GValue -> Either PMapLookupException [Maybe a]
+lookupListAs' k pm = either fromError (Right . F.toList) $ lookupListAs k pm
+  where
+    fromError (PMapNoSuchKey _) = Right []
+    fromError e = Left e
 
 -- | The single cardinality for 'PMap'. 'pMapInsert' method replaces
 -- the old value. '(<>)' on 'PMap' prefers the items from the left
@@ -227,24 +213,18 @@ data PMapLookupException =
 instance Exception PMapLookupException
 
 -- | Make a human-readable description on 'PMapLookupException'.
-describePMapLookupException :: PMapLookupException -> String
-describePMapLookupException (PMapNoSuchKey k) = "Property '" ++ unpack k ++ "' does not exist."
-describePMapLookupException (PMapParseError k pe) = "Parse error of property '" ++ unpack k ++ "': " ++ pe
+pMapDecribeError :: PMapLookupException -> String
+pMapDecribeError (PMapNoSuchKey k) = "Property '" ++ unpack k ++ "' does not exist."
+pMapDecribeError (PMapParseError k pe) = "Parse error of property '" ++ unpack k ++ "': " ++ pe
 
--- | Convert 'PMapNoSuchKey' into 'Nothing'. Other exceptions are left intact.
-maybeNotFound :: Either PMapLookupException (Maybe a)
-              -- ^ Parsing @null@ into 'Nothing'.
-              -> Either PMapLookupException (Maybe a)
-maybeNotFound (Left (PMapNoSuchKey _)) = return Nothing
-maybeNotFound p = p
+-- | Convert the lookup result into a 'MonadThrow'. It throws
+-- 'PMapLookupException'.
+pMapToThrow :: MonadThrow m => Either PMapLookupException a -> m a
+pMapToThrow (Left e) = throwM e
+pMapToThrow (Right a) = return a
 
--- | Catch 'PMapNoSuchKey' and return 'Nothing'. Rethrow other
--- exceptions.
-catchNotFound :: (MonadCatch m, MonadThrow m)
-              => m (Maybe a)
-              -- ^ Parsing @null@ into 'Nothing'.
-              -> m (Maybe a)
-catchNotFound orig = catch orig f
-  where
-    f (PMapNoSuchKey _) = return Nothing
-    f e = throwM e
+-- | Convert the lookup result into a 'MonadFail'. It fails with the
+-- description returned by 'pMapDecribeError'.
+pMapToFail :: MonadFail m => Either PMapLookupException a -> m a
+pMapToFail (Left e) = fail $ pMapDecribeError e
+pMapToFail (Right a) = return a
