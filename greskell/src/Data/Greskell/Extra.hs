@@ -10,6 +10,7 @@
 module Data.Greskell.Extra
   ( writeKeyValues,
     (<=:>),
+    (<=?>),
     writePropertyKeyValues,
     writePMapProperties
   ) where
@@ -79,3 +80,18 @@ writePMapProperties = writePropertyKeyValues . pMapToList
 -- 'Greskell' value and returns 'KeyValue'.
 (<=:>) :: ToJSON b => Key a b -> b -> Binder (KeyValue a)
 (<=:>) k v = (=:) k <$> newBind v
+
+-- | Like '(<=:>)', but this one is for an optional property. If the
+-- value is 'Just', it's equivalent to '(<=:>)'. If the value is
+-- 'Nothing', it returns 'KeyNoValue'.
+--
+-- >>> let keyNName = ("nickname" :: Key AVertex (Maybe Text))
+-- >>> let keyCompany = ("company" :: Key AVertex (Maybe Text))
+-- >>> let (walk, binding) = runBinder $ writeKeyValues <$> sequence [keyNName <=?> Nothing, keyCompany <=?> Just "foobar.com"]
+-- >>> toGremlin walk
+-- "__.property(\"company\",__v0).identity()"
+-- >>> sortBy (comparing fst) $ HashMap.toList binding
+-- [("__v0",String "foobar.com")]
+(<=?>) :: ToJSON b => Key a (Maybe b) -> Maybe b -> Binder (KeyValue a)
+(<=?>) k v@(Just _) = k <=:> v
+(<=?>) k Nothing = return $ KeyNoValue k
