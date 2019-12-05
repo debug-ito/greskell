@@ -48,9 +48,9 @@ import Data.Text (Text)
 -- >>> sortBy (comparing fst) $ HashMap.toList binding
 -- [("__v0",Number 21.0)]
 writePropertyKeyValues :: (ToJSON v, Element e) => [(Text, v)] -> Binder (Walk SideEffect e e)
-writePropertyKeyValues pairs = fmap mconcat $ mapM toPropStep pairs
+writePropertyKeyValues pairs = fmap writeKeyValues $ mapM toKeyValue pairs
   where
-    toPropStep (key, value) = fmap (gProperty $ Graph.key key) $ newBind value
+    toKeyValue (key, value) = Graph.key key <=:> value
 
 -- | Make a series of @.property@ steps to write the given key-value
 -- pairs as properties. Use '(<=:>)' to make a 'KeyValue' within
