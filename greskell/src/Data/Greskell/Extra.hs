@@ -8,7 +8,14 @@
 --
 -- @since 0.2.3.0
 module Data.Greskell.Extra
-  ( writeKeyValues,
+  ( -- * Property readers (re-exports)
+    lookupAs,
+    lookupAs',
+    lookupListAs,
+    lookupListAs',
+    pMapToFail,
+    -- * Property writers
+    writeKeyValues,
     (<=:>),
     (<=?>),
     writePropertyKeyValues,
@@ -23,7 +30,14 @@ import Data.Greskell.Graph
   )
 import qualified Data.Greskell.Graph as Graph
 import Data.Greskell.GTraversal (Walk, SideEffect, gProperty)
-import Data.Greskell.PMap (PMap, pMapToList)
+import Data.Greskell.PMap
+  ( PMap, pMapToList,
+    lookupAs,
+    lookupAs',
+    lookupListAs,
+    lookupListAs',
+    pMapToFail
+  )
 import Data.Monoid (mconcat)
 import Data.Text (Text)
 

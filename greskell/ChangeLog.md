@@ -53,7 +53,8 @@
   is deprecated.
 * Add `writeKeyValues` function.
 * Add `writePMapProperties` function.
-* Add `(<=:>)` operator.
+* Add `(<=:>)` and `(<=?>)` operators.
+* Re-export property reader functions such as `lookupAs`.
 
 ### AsLabel module
 
