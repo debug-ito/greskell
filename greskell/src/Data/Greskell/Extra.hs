@@ -64,9 +64,10 @@ writePropertyKeyValues pairs = fmap writeKeyValues $ mapM toKeyValue pairs
 -- >>> sortBy (comparing fst) $ HashMap.toList binding
 -- [("__v0",Number 21.0),("__v1",String "Josh")]
 writeKeyValues :: Element e => [KeyValue e] -> Walk SideEffect e e
-writeKeyValues pairs = mconcat $ map toPropStep pairs
+writeKeyValues pairs = mconcat $ toPropStep =<< pairs
   where
-    toPropStep (KeyValue k v) = gProperty k v
+    toPropStep (KeyValue k v) = [gProperty k v]
+    toPropStep (KeyNoValue _) = []
 
 -- | Make a series of @.property@ steps to write all properties in the
 -- given 'PMap'.

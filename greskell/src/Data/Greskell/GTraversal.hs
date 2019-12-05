@@ -1168,6 +1168,7 @@ gPropertyV mcard key val metaprops = unsafeWalk "property" (arg_card ++ arg_keyv
     arg_metaprops = expand =<< metaprops
       where
         expand (KeyValue meta_key meta_val) = [toGremlin meta_key, toGremlin meta_val]
+        expand (KeyNoValue _) = []
 
 -- | Vertex anchor for 'gAddE'. It corresponds to @.from@ or @.to@
 -- step following an @.addE@ step.

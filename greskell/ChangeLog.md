@@ -31,6 +31,8 @@
 * [BREAKING CHANGE] Internal of `Key` is modified from `Greskell Text`
   to `Text`, so that it can be an instance of `PMapKey` class.
 * Add `Keys` type and related functions.
+* [BREAKING CHANGE] Add `KeyNoValue` data constructor for `KeyValue`
+  type.
 
 ### GTraversal module
 

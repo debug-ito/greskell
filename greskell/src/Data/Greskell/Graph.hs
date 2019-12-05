@@ -235,7 +235,8 @@ key = Key
 unsafeCastKey :: Key a1 b1 -> Key a2 b2
 unsafeCastKey = Key . unKey
 
--- | Pair of 'Key' and its value.
+-- | Pair of 'Key' and its value. Mainly used for writing properties
+-- into the database.
 --
 -- Type @a@ is the type of 'Element' that keeps the 'KeyValue'
 -- pair. It drops the type of the value, so that you can construct a
@@ -243,7 +244,10 @@ unsafeCastKey = Key . unKey
 --
 -- @since 0.2.0.0
 data KeyValue a where
+  -- | Key and value
   KeyValue :: Key a b -> Greskell b -> KeyValue a
+  -- | Key without value
+  KeyNoValue :: Key a b -> KeyValue a
 
 -- | Constructor operator of 'KeyValue'.
 --
