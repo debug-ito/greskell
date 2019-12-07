@@ -40,7 +40,7 @@ test-suite readme-Greskell
                         hspec,
                         greskell, greskell-core,
                         markdown-unlit,
-                        text, unordered-containers, aeson, heredoc
+                        text, unordered-containers, aeson
 
 test-suite readme-Binder
   type:                 exitcode-stdio-1.0
@@ -52,7 +52,7 @@ test-suite readme-Binder
                         hspec,
                         greskell, greskell-core,
                         markdown-unlit,
-                        text, unordered-containers, aeson, heredoc
+                        text, unordered-containers, aeson
 
 test-suite readme-submit
   type:                 exitcode-stdio-1.0
@@ -64,7 +64,7 @@ test-suite readme-submit
                         hspec,
                         greskell, greskell-core,
                         markdown-unlit,
-                        text, unordered-containers, aeson, heredoc,
+                        text, unordered-containers, aeson,
                         greskell-websocket,
                         safe-exceptions
 
@@ -79,7 +79,7 @@ test-suite readme-GTraversal
                         hspec,
                         greskell, greskell-core,
                         markdown-unlit,
-                        text, unordered-containers, aeson, heredoc
+                        text, unordered-containers, aeson
 
 test-suite readme-WalkType
   type:                 exitcode-stdio-1.0
@@ -91,7 +91,7 @@ test-suite readme-WalkType
                         hspec,
                         greskell, greskell-core,
                         markdown-unlit,
-                        text, unordered-containers, aeson, heredoc,
+                        text, unordered-containers, aeson,
                         greskell-websocket
 
 
@@ -105,19 +105,7 @@ test-suite readme-monomorphic
                         hspec,
                         greskell, greskell-core,
                         markdown-unlit,
-                        text, unordered-containers, aeson, heredoc
-
-test-suite readme-GraphSON
-  type:                 exitcode-stdio-1.0
-  default-language:     Haskell2010
-  ghc-options:          -Wall -fno-warn-unused-imports "-with-rtsopts=-M512m" -fno-warn-missing-signatures -pgmL markdown-unlit
-                        "-optL=common GraphSON" -fno-warn-unused-top-binds
-  main-is:              README.lhs
-  build-depends:        base,
-                        hspec,
-                        greskell, greskell-core,
-                        markdown-unlit,
-                        text, unordered-containers, aeson, heredoc
+                        text, unordered-containers, aeson,
 
 test-suite readme-own_types
   type:                 exitcode-stdio-1.0
@@ -129,5 +117,5 @@ test-suite readme-own_types
                         hspec,
                         greskell, greskell-core,
                         markdown-unlit,
-                        text, unordered-containers, aeson, heredoc
+                        text, unordered-containers, aeson,
 

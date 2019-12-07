@@ -14,6 +14,8 @@ Contents:
 - [Graph structure types](#graph-structure-types)
 - [GraphSON parser](#graphson-parser)
 - [Make your own graph structure types](#make-your-own-graph-structure-types)
+- [Write properties into the graph](#write-properties-into-the-graph)
+- [Read properties from the graph](#read-properties-from-the-graph)
 
 
 ## Prelude
@@ -21,7 +23,7 @@ Contents:
 Because this README is also a test script, first we import common modules.
 
 ```haskell common
-{-# LANGUAGE OverloadedStrings, QuasiQuotes, TypeFamilies #-}
+{-# LANGUAGE OverloadedStrings, TypeFamilies #-}
 import Control.Category ((>>>))
 import Control.Monad (guard)
 import Data.Monoid (mempty)
@@ -30,7 +32,6 @@ import qualified Data.HashMap.Strict as HM
 import qualified Data.Aeson as A
 import qualified Data.Aeson.Types as A
 import Data.Function ((&))
-import Text.Heredoc (here)
 import Test.Hspec
 ```
 
@@ -298,7 +299,7 @@ In the above example, `sV` and `gOut` are polymorphic with `Vertex` constraint, 
 
 `A` in `AVertex` stands for "Aeson". That means this type is based on the data type from [Data.Aeson](http://hackage.haskell.org/package/aeson/docs/Data-Aeson.html) module. With Aeson, greskell implements parsers for GraphSON.
 
-[GraphSON](http://tinkerpop.apache.org/docs/current/dev/io/#graphson) is a format to encode graph structure types into JSON. As of this writing, there are three slightly different versions of GraphSON. This makes the graph structure types a little complicated.
+[GraphSON](http://tinkerpop.apache.org/docs/current/dev/io/#graphson) is a format to encode graph structure types into JSON. [greskell-websocket](http://hackage.haskell.org/package/greskell-websocket) uses GraphSON to communicate with the Gremlin Server.
 
 To support GraphSON decoding, we introduced the following symbols:
 
@@ -306,92 +307,14 @@ To support GraphSON decoding, we introduced the following symbols:
 - `GValue` type: basically Aeson's `Value` enhanced with `GraphSON`.
 - `FromGraphSON` type-class: types that can be parsed from `GValue`. It's analogous to Aeson's `FromJSON`.
 
-`AVertex`, `AEdge`, `AVertexProperty` and `AProperty` types implement `FromGraphSON` instance, so they can be parsed from GraphSON v1, v2 and v3 formats.
+`AVertex`, `AEdge`, `AVertexProperty` and `AProperty` types implement `FromGraphSON` instance, so you can directly obtain those types from the Gremlin Server.
 
-```haskell GraphSON
-import Data.Greskell.GraphSON
-  ( nonTypedGValue, typedGValue', GValueBody(GNumber, GString)
-  )
-import Data.Greskell.Graph
-  ( AVertex(..), AVertexProperty(..),
-    fromProperties
-  )
-
-vertex_GraphSONv1 = [here|
-{
-  "id" : 1,
-  "label" : "person",
-  "type" : "vertex",
-  "properties" : {
-    "name" : [ {
-      "id" : 0,
-      "value" : "marko"
-    } ]
-  }
-}
-|]
-
-vertex_GraphSONv3 = [here|
-{
-  "@type" : "g:Vertex",
-  "@value" : {
-    "id" : {
-      "@type" : "g:Int32",
-      "@value" : 1
-    },
-    "label" : "person",
-    "properties" : {
-      "name" : [ {
-        "@type" : "g:VertexProperty",
-        "@value" : {
-          "id" : {
-            "@type" : "g:Int64",
-            "@value" : 0
-          },
-          "value" : "marko",
-          "label" : "name"
-        }
-      } ]
-    }
-  }
-}
-|]
-
-decoded_vertex_GraphSONv1 =
-  AVertex 
-  { avId = nonTypedGValue $ GNumber 1,
-    avLabel = "person",
-    avProperties = fromProperties [
-      AVertexProperty
-      { avpId = nonTypedGValue $ GNumber 0,
-        avpLabel = "name",
-        avpValue = nonTypedGValue $ GString "marko",
-        avpProperties = mempty
-      }
-    ]
-  }
-
-decoded_vertex_GraphSONv3 =
-  AVertex 
-  { avId = typedGValue' "g:Int32" $ GNumber 1,
-    avLabel = "person",
-    avProperties = fromProperties [
-      AVertexProperty
-      { avpId = typedGValue' "g:Int64" $ GNumber 0,
-        avpLabel = "name",
-        avpValue = nonTypedGValue $ GString "marko",
-        avpProperties = mempty
-      }
-    ]
-  }
-
-
-main = hspec $ specify "GraphSON" $ do
-  A.eitherDecode vertex_GraphSONv1 `shouldBe` Right decoded_vertex_GraphSONv1
-  A.eitherDecode vertex_GraphSONv3 `shouldBe` Right decoded_vertex_GraphSONv3
+```haskell WalkType
+getAllVertices :: Client -> IO (ResultHanlde AVertex)
+getAllVertices client = submit client (source "g" & sV []) Nothing
 ```
 
-As you can see in the above example, the vertex object in GraphSON version 3 has `@type` and `@value` fields, while version 1 does not. `AVertex` can parse both versions. The `@type` field, if present, is stored in `GValue` type.
+Since greskell-1.0.0.0, `AVertex`, `AEdge` and `AVertexProperty` are just references to graph elements, and they don't keep any properties. To read properties from graph elements, see "[Read properties from the graph](#read-properties-from-the-graph)" below.
 
 
 ## Make your own graph structure types
@@ -508,6 +431,14 @@ instance Property MyVertexProperty where
   propertyKey _ = "key"
   propertyValue (MyVertexProperty v) = v
 ```
+
+## Write properties into the graph
+
+TODO
+
+## Read properties from the graph
+
+TODO
 
 
 ## Todo
