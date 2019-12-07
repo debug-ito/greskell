@@ -23,7 +23,7 @@ Contents:
 Because this README is also a test script, first we import common modules.
 
 ```haskell common
-{-# LANGUAGE OverloadedStrings, TypeFamilies #-}
+{-# LANGUAGE OverloadedStrings, TypeFamilies, GeneralizedNewtypeDeriving, UndecidableInstances #-}
 import Control.Category ((>>>))
 import Control.Monad (guard)
 import Data.Monoid (mempty)
@@ -310,7 +310,7 @@ To support GraphSON decoding, we introduced the following symbols:
 `AVertex`, `AEdge`, `AVertexProperty` and `AProperty` types implement `FromGraphSON` instance, so you can directly obtain those types from the Gremlin Server.
 
 ```haskell WalkType
-getAllVertices :: Client -> IO (ResultHanlde AVertex)
+getAllVertices :: Client -> IO (ResultHandle AVertex)
 getAllVertices client = submit client (source "g" & sV []) Nothing
 ```
 
@@ -318,6 +318,94 @@ Since greskell-1.0.0.0, `AVertex`, `AEdge` and `AVertexProperty` are just refere
 
 
 ## Make your own graph structure types
+
+Often your graph data model is heterogeneous, that is, you have more than one types of vertices and edges with different meanings. Just using `AVertex` and `AEdge` for them easily leads to invalid graph operations. Let's distinguish them by Haskell's type system.
+
+To make your own graph structure types, just wrap the base types with `newtype`.
+
+```haskell own_types2
+import Data.Greskell.Graph (AVertex, AEdge, ElementData, Element, Vertex, Edge)
+import Data.Greskell.GraphSON (FromGraphSON)
+import Data.Greskell.Greskell (toGremlin)
+import Data.Greskell.GTraversal
+  ( GTraversal, Walk, Transform, gOut, gOutE, gHasLabel,
+    source, sV, (&.)
+  )
+
+-- | A @person@ vertex.
+newtype VPerson = VPerson AVertex
+        deriving (Eq,Show,FromGraphSON,ElementData,Element,Vertex)
+
+-- | A @software@ vertex.
+newtype VSoftware = VSoftware AVertex
+        deriving (Eq,Show,FromGraphSON,ElementData,Element,Vertex)
+
+-- | A @knows@ edge.
+newtype EKnows = EKnows AEdge
+        deriving (Eq,Show,FromGraphSON,ElementData,Element,Edge)
+
+-- | A @created@ edge.
+newtype ECreated = ECreated AEdge
+        deriving (Eq,Show,FromGraphSON,ElementData,Element,Edge)
+```
+
+You need to derive `FromGraphSON`, `ElementData`, `Element` and `Vertex` or `Edge`. Note that you need to enable `GeneralizedNewtypeDeriving` and `UndecidableInstances` extensions of GHC.
+
+With those graph element types, you can also define your own traversal steps.
+
+```haskell own_types2
+allPersons :: GTraversal Transform () VPerson
+allPersons = source "g" & sV [] &. gHasLabel "person"
+
+gOutKnows :: Walk Transform VPerson VPerson
+gOutKnows = gOut ["knows"]
+
+gOutCreated :: Walk Transform VPerson VSoftware
+gOutCreated = gOut ["created"]
+
+gOutEKnows :: Walk Transform VPerson EKnows
+gOutEKnows = gOutE ["knows"]
+```
+
+Using those customized traversal steps, you can make your Gremlin scripts more type-safe and rich in semantics.
+
+```haskell own_types2
+main = hspec $ specify "own types" $ do
+  toGremlin (allPersons &. gOutCreated)
+    `shouldBe` "g.V().hasLabel(\"person\").out(\"created\")"
+
+  toGremlin (allPersons &. gOutKnows)
+    `shouldBe` "g.V().hasLabel(\"person\").out(\"knows\")"
+
+  ---- This doesn't compile because the end of gOutCreated is VSoftware
+  ---- but the start of gOutKnows is VPerson.
+  -- toGremlin (allPersons &. gOutCreated &. gOutKnows)
+  --   `shouldBe` "g.V().hasLabel(\"person\").out(\"created\").out(\"knows\")"
+```
+
+## Write properties into the graph
+
+TODO
+
+## Read properties from the graph
+
+TODO
+
+
+## Todo
+
+- Complete graph traversal steps API.
+
+
+## Author
+
+Toshio Ito <debug.ito@gmail.com>
+
+
+
+
+
+------------
 
 When you use a graph database, I think you usually encode your application-specific data types as graph data structures, and store them in the database. greskell supports directly embedding your application-specific data types into graph data structures.
 
@@ -432,20 +520,3 @@ instance Property MyVertexProperty where
   propertyValue (MyVertexProperty v) = v
 ```
 
-## Write properties into the graph
-
-TODO
-
-## Read properties from the graph
-
-TODO
-
-
-## Todo
-
-- Complete graph traversal steps API.
-
-
-## Author
-
-Toshio Ito <debug.ito@gmail.com>
