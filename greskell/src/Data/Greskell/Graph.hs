@@ -89,10 +89,14 @@ import Data.Greskell.PMap (PMapKey(..), Single, Multi)
 --
 -- >>> import Data.Greskell.Greskell (toGremlin)
 
--- | ID of a graph element @e@ (vertex, edge and vertex
--- property). Data structure of an 'ElementID' depends on graph
--- implementation, so you should not rely on it.
-newtype ElementID e = ElementID { unElementID :: GValue }
+-- | ID of a graph element @e@ (vertex, edge and vertex property).
+newtype ElementID e =
+  ElementID
+  { unElementID :: GValue
+    -- ^ Although it's exposed, it is recommended NOT to rely on the
+    -- internal of 'ElementID'. That's because it depends on graph
+    -- implementation.
+  }
                     deriving (Show,Eq,Generic, ToJSON, FromJSON, FromGraphSON, Hashable)
 
 -- | Unsafely convert the element type.
@@ -284,23 +288,19 @@ infixr 5 -:
 -- $concrete_types
 -- Concrete data types based on Aeson data types.
 --
--- Element IDs and property values are all 'GValue', because they are
--- highly polymorphic. 'ElementID' and 'EdgeVertexID' are 'GValue',
--- too.
---
--- As for properties, you can use 'PropertyMap' and other type-classes
--- to manipulate them.
---
--- If you want to define your own graph structure types, see
+-- You can use those types directly in your programs. You can also
+-- define your own graph types by wrapping those with @newtype@. See
 -- [README.md](https://github.com/debug-ito/greskell#make-your-own-graph-structure-types)
--- for detail. Basically you can use 'FromGraphSON' instances of these
--- concrete data types to implement parsers for your own types.
+-- for detail.
 --
--- NOTE: In version 0.1.1.0 and before, these conrete data types were
--- based on @GraphSON Value@. In version 0.2.0.0, this was changed to
--- 'GValue', so that it can parse nested data structures encoded in
--- GraphSON.
-
+-- Historical note:
+--
+-- - Since version 1.0.0.0, the concrete data types don't keep
+--   properties.
+-- - In version 0.1.1.0 and before, these conrete data types were
+--   based on @GraphSON Value@. In version 0.2.0.0, this was changed to
+--   'GValue', so that it can parse nested data structures encoded in
+--   GraphSON.
 
 -- | General vertex type you can use for 'Vertex' class, based on
 -- Aeson data types.

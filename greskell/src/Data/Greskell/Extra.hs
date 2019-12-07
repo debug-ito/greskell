@@ -68,7 +68,7 @@ writePropertyKeyValues pairs = fmap writeKeyValues $ mapM toKeyValue pairs
     toKeyValue (key, value) = Graph.key key <=:> value
 
 -- | Make a series of @.property@ steps to write the given key-value
--- pairs as properties. Use '(<=:>)' to make a 'KeyValue' within
+-- pairs as properties. Use '<=:>' to make a 'KeyValue' within
 -- 'Binder'.
 --
 -- >>> let keyAge = ("age" :: Key AVertex Int)
@@ -90,13 +90,13 @@ writePMapProperties :: (Foldable c, ToJSON v, Element e)
                     => PMap c v -> Binder (Walk SideEffect e e)
 writePMapProperties = writePropertyKeyValues . pMapToList
 
--- | Like '(=:)', but this one takes a real value, binds it into a
+-- | Like '=:', but this one takes a real value, binds it into a
 -- 'Greskell' value and returns 'KeyValue'.
 (<=:>) :: ToJSON b => Key a b -> b -> Binder (KeyValue a)
 (<=:>) k v = (=:) k <$> newBind v
 
--- | Like '(<=:>)', but this one is for an optional property. If the
--- value is 'Just', it's equivalent to '(<=:>)'. If the value is
+-- | Like '<=:>', but this one is for an optional property. If the
+-- value is 'Just', it's equivalent to '<=:>'. If the value is
 -- 'Nothing', it returns 'KeyNoValue'.
 --
 -- >>> let keyNName = ("nickname" :: Key AVertex (Maybe Text))

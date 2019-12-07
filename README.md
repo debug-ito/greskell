@@ -188,7 +188,7 @@ Walk       walk_type start end
 
 `GTraversal` and `Walk` both take the traversers with data of type `start`, and emit the traversers with data of type `end`. We will explain `walk_type` [later](#restrict-effect-of-gtraversal-by-walktype).
 
-`Walk` is very similar to function `(->)`. That is why it is an instance of `Category`, so you can compose `Walk`s together. The example in the last section can also be written as
+`Walk` is very similar to function `(->)`. That is why it is an instance of `Category`, so you can compose `Walk`s together. The example in the previous section can also be written as
 
 ```haskell GTraversal
   let composite_walk = isPerson >>> isMarko
@@ -247,7 +247,7 @@ main = hspec $ specify "liftWalk" $ do
   --   `shouldBe` "g.V().hasLabel(\"person\").addV(\"person\").values(\"name\")"
 ```
 
-In the above example, `nameOfPeople` function takes a `Filter` walk and creates a `Transform` walk. There is no way to pass a `SideEffect` walk (like `gAddV`) to `nameOfPeople` because `Filter` is weaker than `SideEffect`. That way, we can be sure that the result traversal of `nameOfPeople` function never has any side-effect (thus its walk type is just `Transform`.)
+In the above example, `nameOfPeople` function takes a `Filter` walk and creates a `Transform` GTraversal. There is no way to pass a `SideEffect` walk (like `gAddV`) to `nameOfPeople` because `Filter` is weaker than `SideEffect`. That way, we can be sure that the result traversal of `nameOfPeople` function never has any side-effect (thus its walk type is just `Transform`.)
 
 
 ## Submit GTraversal
@@ -266,9 +266,7 @@ Graph structure interfaces in Gremlin are represented as type-classes in greskel
 
 The reason why we use type-classes is that it allows you to define your own data types as a graph structure. See ["Make your own graph structure types"](#make-your-own-graph-structure-types) below in detail.
 
-Nonetheless, it is convenient to have some generic data types we can use for graph structure types. For that purpose, we have `AVertex`, `AEdge`, `AVertexProperty` and `AProperty` types.
-
-Those types are useful because some functions are too polymorphic for the compiler to infer the types for its "start" and "end".
+As the basis of graph structure types, we have `AVertex`, `AEdge`, `AVertexProperty` and `AProperty` types. Those types are useful because some functions are too polymorphic for the compiler to infer the types for its "start" and "end".
 
 ```haskell monomorphic
 import Data.Greskell.Greskell (toGremlin)
