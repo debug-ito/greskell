@@ -15,7 +15,7 @@ import qualified Data.Vector as V
 import qualified Network.Greskell.WebSocket.Client as WS
 import Test.Hspec
 
-import Data.Greskell.AsLabel (AsLabel(..), lookupAsM)
+import Data.Greskell.AsLabel (AsLabel(..))
 import qualified Data.Greskell.AsLabel as As
 import Data.Greskell.AsIterator
   ( AsIterator(IteratorItem)
@@ -52,7 +52,7 @@ import Data.Greskell.GTraversal
     gValueMap,
     gProject, gByL
   )
-import Data.Greskell.PMap (lookupAsM, lookupListAsM)
+import Data.Greskell.PMap (lookupAsM, lookupListAs, pMapToThrow)
 
 import ServerTest.Common (withEnv, withClient)
 
@@ -313,8 +313,8 @@ spec_graph = do
           let label = avLabel v
               evid = parseEither $ unElementID $ avId v
           props <- lookupAsM lProps pm
-          names <- fmap toList $ lookupListAsM kName props
-          vers <- fmap (sort . toList) $ lookupListAsM kVer props
+          names <- fmap toList $ pMapToThrow $ lookupListAs kName props
+          vers <- fmap (sort . toList) $ pMapToThrow $ lookupListAs kVer props
           return (evid, label, names, vers)
         expected :: [(Either String Int, Text, [Text], [Text])]
         expected = [ (Right 1, "package", ["greskell"], ["0.1.1.0"]),
