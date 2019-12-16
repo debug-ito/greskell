@@ -14,9 +14,11 @@ Contents:
 - [Graph structure types](#graph-structure-types)
 - [GraphSON parser](#graphson-parser)
 - [Make your own graph structure types](#make-your-own-graph-structure-types)
-- [Write properties into the graph](#write-properties-into-the-graph)
-- [Read properties from the graph](#read-properties-from-the-graph)
-- [Embed property data types](#embed-property-data-types)
+- [Write and read properties to/from the graph](#write-and-read-properties-to-from-the-graph)
+
+    - [Write properties](#write-properties)
+    - [Read properties](#read-properties)
+    - [Embed property data types](#embed-property-data-types)
 
 
 ## Prelude
@@ -28,7 +30,7 @@ Because this README is also a test script, first we import common modules.
 import Control.Applicative ((<$>), (<*>))
 import Control.Category ((>>>))
 import Control.Monad (guard)
-import Data.Monoid (mempty)
+import Data.Monoid (mempty, (<>))
 import Data.Text (Text)
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Aeson as A
@@ -316,7 +318,7 @@ getAllVertices :: Client -> IO (ResultHandle AVertex)
 getAllVertices client = submit client (source "g" & sV []) Nothing
 ```
 
-Since greskell-1.0.0.0, `AVertex`, `AEdge` and `AVertexProperty` are just references to graph elements, and they don't keep any properties. To read properties from graph elements, see "[Read properties from the graph](#read-properties-from-the-graph)" below.
+Since greskell-1.0.0.0, `AVertex`, `AEdge` and `AVertexProperty` are just references to graph elements, and they don't keep any properties. To read properties from graph elements, see "[Read properties](#read-properties)" below.
 
 
 ## Make your own graph structure types
@@ -385,11 +387,11 @@ main = hspec $ specify "own types" $ do
   --   `shouldBe` "g.V().hasLabel(\"person\").out(\"created\").out(\"knows\")"
 ```
 
-## Write properties into the graph
+## Write and read properties to/from the graph
 
-To write properties of graph elements into the database, you use ".property" step of Gremlin. greskell also offers some utility functions to make it a little easier.
+Writing and reading complex properties to/from the graph database is a little tricky. This section explains how we do that with greskell.
 
-First, define a data type for your application, and its corresponding vertex type.
+As a prelude for this section, we import the following modules first.
 
 ```haskell graph_io
 import Control.Exception.Safe (bracket)
@@ -422,21 +424,28 @@ import Network.Greskell.WebSocket
 
 import Test.Hspec.NeedEnv (EnvMode(Want), needEnvHostPort)
 
-
 main = hspec $ do
   specWrite
   specRead1
   specRead2
   specIO
+```
 
+### Write properties
+
+To write properties of graph elements into the database, you use ".property" step of Gremlin. greskell offers some utility functions to make it a little easier.
+
+First, define a data type for your application, and its corresponding vertex type.
+
+```haskell graph_io
 type Name = Text
 
 data Person =
   Person
   { personName :: Name,
     personAge :: Int,
-    personBestFriend :: Maybe Name
-    -- ^ Name of the best friend of this person, if any.
+    personCompany :: Maybe Text
+    -- ^ Name of the company the person works for, if any.
   }
   deriving (Show,Eq,Ord)
 
@@ -454,11 +463,11 @@ keyName = "name"
 keyAge :: Key VPerson Int
 keyAge = "age"
 
-keyBestFriend :: Key VPerson (Maybe Name)
-keyBestFriend = "best_friend"
+keyCompany :: Key VPerson (Maybe Text)
+keyCompany = "company"
 ```
 
-We will use those `Key`s to write and read properties to/from the graph database. I know it's boring to define `Key`s manually like the above example. Future versions of greskell may support a way to generate keys from a record type.
+We will use those `Key`s to write and read properties to/from the graph database. I know it's boring to define `Key`s manually like the above example. Future versions of greskell may support some ways to generate keys from a record type.
 
 Anyway, once you set up the `Key`s, you can use `writeKeyValues` to make a series of ".property" steps for a `Person`.
 
@@ -468,7 +477,7 @@ writePerson :: Person -> Binder (Walk SideEffect VPerson VPerson)
 writePerson p = fmap writeKeyValues $ sequence $
                 [ keyName <=:> personName p,
                   keyAge <=:> personAge p,
-                  keyBestFriend <=?> personBestFriend p
+                  keyCompany <=?> personCompany p
                 ]
 -- | Add a new 'VPerson' vertex.
 addPerson :: Person -> Binder (GTraversal SideEffect () VPerson)
@@ -480,7 +489,7 @@ specWrite =
     let p1 = Person "josh" 32 (Just "marko")
         (script1, binding1) = runBinder $ addPerson p1
     toGremlin script1 `shouldBe`
-      "g.addV(\"person\").property(\"name\",__v0).property(\"age\",__v1).property(\"best_friend\",__v2).identity()"
+      "g.addV(\"person\").property(\"name\",__v0).property(\"age\",__v1).property(\"company\",__v2).identity()"
     binding1 `shouldBe`
       HM.fromList [ ("__v0", A.String "josh"),
                     ("__v1", A.Number 32),
@@ -490,7 +499,7 @@ specWrite =
 
 Note that properties in the Haskell program are sent to the Gremlin Server using variable binding. That is why we use `Binder` monad and monadic operators like `<=:>`, `<=?>` and `<*.>`.
 
-Note also that we should use `<=?>` (not `<=:>`) to write an optional field `personBestFriend`. Basically TinkerPop's graph implementation doesn't allow writing "null" as a property value. If the optional field does not have a value, you cannot generate ".property" step for it. The operator `<=?>` and `writeKeyValues` function take care of it.
+Note also that we should use `<=?>` (not `<=:>`) to write an optional field `personCompany`. Basically TinkerPop's graph implementations don't allow writing "null" as a property value. So, if the optional field does not have a value, you should not generate ".property" step for it. The operator `<=?>` and `writeKeyValues` function take care of it.
 
 ```haskell graph_io
     let p2 = Person "peter" 35 Nothing
@@ -503,7 +512,7 @@ Note also that we should use `<=?>` (not `<=:>`) to write an optional field `per
                   ]
 ```
 
-## Read properties from the graph
+### Read properties
 
 The most basic way to read properties from the graph is to use ".valueMap" step. In greskell, you can use `gValueMap` function, which generates a `PMap` object as a result.
 
@@ -524,20 +533,20 @@ parsePerson pm =
   Person
   <$> (lookupAs keyName pm)
   <*> (lookupAs keyAge pm)
-  <*> (lookupAs' keyBestFriend pm)
+  <*> (lookupAs' keyCompany pm)
 ```
 
 Note that you should use `lookupAs'` (not `lookupAs`) to read an optional field. `lookupAs'` treats lack of the key as `Nothing`, while `lookupAs` treats it as an error.
 
-In some cases, you need more information than `gValueMap` can provide. You should use `gProject` in that case. You often see such a case when you deal with data models for edges.
+If you need more information than `gValueMap` can provide, you should probably use `gProject`. You often see such a case when you deal with data models for edges.
 
 ```haskell graph_io
 data Knows =
   Knows
   { knowSubject :: Name,
-    -- ^ a person's name who knows
+    -- ^ Name of a person who knows
     knowObject :: Name,
-    -- ^ a person's name who is known
+    -- ^ Name of a person who is known
     knowWeight :: Double
   }
   deriving (Show,Eq,Ord)
@@ -577,7 +586,10 @@ knowsInfo = gProject
 specRead2 :: Spec
 specRead2 = specify "property readers2" $ do
   toGremlin (source "g" & sE [] &. knowsInfo)
-    `shouldBe` "g.E().project(\"sub\",\"obj\",\"props\").by(__.outV().values(\"name\")).by(__.inV().values(\"name\")).by(__.valueMap())"
+    `shouldBe`
+    ( "g.E().project(\"sub\",\"obj\",\"props\")"
+      <> ".by(__.outV().values(\"name\")).by(__.inV().values(\"name\")).by(__.valueMap())"
+    )
 ```
 
 `gProject` takes one or more pairs of label and sub-traversal. Its result is a `PMap` where the key is the label and the value is the result of the sub-traversal. If you use `gValueMap` in a sub-traversal, its result `PMap` is nested.
@@ -593,9 +605,9 @@ parseKnows pm =
   <*> (lookupAs keyWeight =<< lookupAs labelProps pm)
 ```
 
-## Embed property data types
+### Embed property data types
 
-In the above example, you cannot use property data types (`Person` and `Knows`) directly in greskell expressions. Instead, you first have to read out a `PMap` from the Gremlin Server, and then parse it into `Person` or `Knows`. Often it'd be more type-safe and semantic to read `Person` and `Knows` directly from the Gremlin Server.
+In the above examples, you cannot use property data types (`Person` and `Knows`) directly in greskell expressions. Instead, you first have to read out a `PMap` from the Gremlin Server, and then parse it into `Person` or `Knows`. Often it'd be more type-safe and semantic to read `Person` and `Knows` directly from the Gremlin Server.
 
 To embed your property data types directly into greskell, you have to define `FromGraphSON` instance for them. That's acutally so easy, because we already define parsers for them.
 
@@ -604,7 +616,7 @@ instance FromGraphSON Person where
   parseGraphSON gv = (pMapToFail . parsePerson) =<< parseGraphSON gv
 ```
 
-In the above, `gv` is first parsed into a `PMap`, which is then parsed by `parsePerson`.
+In the above, `gv` is first parsed into a `PMap`, which is then parsed by `parsePerson`. `pMapToFail` just converts `Either` into `Parser`.
 
 To make it type-safe, you should define a dedicated traversal to get a `Person` object.
 
@@ -613,7 +625,7 @@ getPerson :: Walk Transform VPerson Person
 getPerson = unsafeCastEnd personProps
 ```
 
-`unsafeCastEnd` function converts the end type of the walk from `PMap` to `Person`. We know that `Person` is parsed from `PMap`, so we can tolerate this unsafe cast.
+`unsafeCastEnd` function converts the end type of the walk from `PMap` to `Person`. We know that `Person` is parsed from the `PMap`, so we can tolerate this unsafe cast here.
 
 The same goes for `Knows`, too.
 
@@ -625,7 +637,7 @@ getKnows :: Walk Transform EKnows Knows
 getKnows = unsafeCastEnd knowsInfo
 ```
 
-By putting them all together, we can write and read data to/from the graph database like the following.
+Now, by putting them all together, we can write and read data to/from the graph database like the following.
 
 ```haskell graph_io
 addKnows :: Name -> Double -> Binder (Walk SideEffect VPerson EKnows)
@@ -637,7 +649,9 @@ addKnows target_name weight = do
 
 specIO :: Spec
 specIO = specify "write and read graph properties" $ do
+  -- Run this test only when we get host and port from the environment variables
   (host, port) <- needEnvHostPort Want "GRESKELL_TEST_README"
+  
   bracket (connect host port) close $ \client -> do
     -- Clear graph.
     drainResults =<< submit client (gDrop $. liftWalk $ sV' [] $ source "g") Nothing
@@ -645,7 +659,8 @@ specIO = specify "write and read graph properties" $ do
     -- Add and get a Person vertex.
     let input_p1 = Person "josh" 32 (Just "marko")
     drainResults =<< (submitPair client $ runBinder $ addPerson input_p1)
-    got_p1 <- fmap toList $ slurpResults =<< submit client (getPerson $. sV [] $ source "g") Nothing
+    got_p1 <- fmap toList $ slurpResults =<<
+              submit client (getPerson $. sV [] $ source "g") Nothing
     got_p1 `shouldBe` [input_p1]
 
     -- Add another Person, add a Knows edge and get it.
