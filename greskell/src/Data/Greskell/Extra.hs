@@ -68,8 +68,8 @@ writePropertyKeyValues pairs = fmap writeKeyValues $ mapM toKeyValue pairs
     toKeyValue (key, value) = Graph.key key <=:> value
 
 -- | Make a series of @.property@ steps to write the given key-value
--- pairs as properties. Use '<=:>' to make a 'KeyValue' within
--- 'Binder'.
+-- pairs as properties. Use '<=:>' and '<=?>' to make a 'KeyValue'
+-- within 'Binder'.
 --
 -- >>> let keyAge = ("age" :: Key AVertex Int)
 -- >>> let keyName = ("name" :: Key AVertex Text)
