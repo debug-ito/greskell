@@ -15,7 +15,6 @@ Contents:
 - [GraphSON parser](#graphson-parser)
 - [Make your own graph structure types](#make-your-own-graph-structure-types)
 - [Write and read properties to/from the graph](#write-and-read-properties-to-from-the-graph)
-
     - [Write properties](#write-properties)
     - [Read properties](#read-properties)
     - [Embed property data types](#embed-property-data-types)
