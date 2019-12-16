@@ -118,6 +118,14 @@ submit :: (ToGreskell g, r ~ GreskellReturn g, AsIterator r, v ~ IteratorItem r,
        -> IO (ResultHandle v)
 submit client greskell bindings = submitBase client (toGremlin greskell) bindings
 
+-- | Submit a pair of Gremlin script and variable binding. It's just a
+-- simple wrapper around 'submit'.
+submitPair :: (ToGreskell g, r ~ GreskellReturn g, AsIterator r, v ~ IteratorItem r, FromGraphSON v)
+           => Client
+           -> (g, Object)
+           -> IO (ResultHandle v)
+submitPair c (g, b) = submit c g (Just b)
+
 -- | Less type-safe version of 'submit'.
 submitRaw :: Client
           -> Text -- ^ Gremlin script

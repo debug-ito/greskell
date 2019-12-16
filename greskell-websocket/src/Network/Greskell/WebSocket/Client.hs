@@ -16,6 +16,7 @@ module Network.Greskell.WebSocket.Client
          module Network.Greskell.WebSocket.Client.Options,
          -- * Submit evaluation requests
          submit,
+         submitPair,
          submitRaw,
          ResultHandle,
          nextResult,
