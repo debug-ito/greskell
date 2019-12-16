@@ -478,6 +478,7 @@ writePerson p = fmap writeKeyValues $ sequence $
                   keyAge <=:> personAge p,
                   keyCompany <=?> personCompany p
                 ]
+
 -- | Add a new 'VPerson' vertex.
 addPerson :: Person -> Binder (GTraversal SideEffect () VPerson)
 addPerson p = writePerson p <*.> (pure $ sAddV "person" $ source "g")
@@ -524,7 +525,7 @@ specRead1 = specify "property readers1" $ do
   toGremlin (source "g" & sV [] &. personProps) `shouldBe` "g.V().valueMap()"
 ```
 
-`PMap` is a map of property key-values. You can use `Key`s to get values from it.
+`PMap` is a map of property key-values. You can use the `Key`s to get values from it.
 
 ```haskell graph_io
 parsePerson :: PMap Multi GValue -> Either PMapLookupException Person
