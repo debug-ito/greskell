@@ -395,7 +395,7 @@ First, define a data type for your application, and its corresponding vertex typ
 import Control.Exception.Safe (bracket)
 import Data.Foldable (toList)
 import Data.Greskell.AsLabel (AsLabel)
-import Data.Greskell.Binder (Binder, runBinder)
+import Data.Greskell.Binder (Binder, runBinder, newBind)
 import Data.Greskell.Extra (writeKeyValues, (<=:>), (<=?>))
 import Data.Greskell.Greskell (toGremlin)
 import Data.Greskell.GraphSON (FromGraphSON(..), GValue)
@@ -406,23 +406,28 @@ import Data.Greskell.Graph
 import Data.Greskell.GTraversal
   ( Walk, GTraversal, SideEffect, Transform, liftWalk,
     source, sAddV, gValueMap, gProject, gByL,
-    gOutV, gInV, gValues, sV, sE,
+    gOutV, gInV, gValues, sV, sV', sE,
     (<*.>), (&.), ($.), (<$.>),
     unsafeCastEnd,
-    gHas2, gTo, gV, gAddE, gProperty
+    gHas2, gTo, gV, gAddE, gProperty, gDrop
   )
 import Data.Greskell.PMap
   ( PMap, Multi, Single, PMapLookupException,
     lookupAs, lookupAs', pMapToFail
   )
 import Network.Greskell.WebSocket
-  (connect, close, submit, submitPair, slurpResults, drainResults)
+  ( connect, close, submit, submitPair,
+    slurpResults, drainResults
+  )
+
+import Test.Hspec.NeedEnv (EnvMode(Want), needEnvHostPort)
 
 
 main = hspec $ do
   specWrite
   specRead1
   specRead2
+  specIO
 
 type Name = Text
 
@@ -497,7 +502,6 @@ Note also that we should use `<=?>` (not `<=:>`) to write an optional field `per
                     ("__v1", A.Number 35)
                   ]
 ```
-
 
 ## Read properties from the graph
 
@@ -624,24 +628,32 @@ getKnows = unsafeCastEnd knowsInfo
 By putting them all together, we can write and read data to/from the graph database like the following.
 
 ```haskell graph_io
-graphIOExample :: IO ()
-graphIOExample =
-  bracket (connect "localhost" 8182) close $ \client -> do
+addKnows :: Name -> Double -> Binder (Walk SideEffect VPerson EKnows)
+addKnows target_name weight = do
+  vtarget <- newBind target_name
+  vweight <- newBind weight
+  return $
+    gAddE "knows" (gTo (gV [] >>> gHas2 keyName vtarget)) >>> gProperty keyWeight vweight
+
+specIO :: Spec
+specIO = specify "write and read graph properties" $ do
+  (host, port) <- needEnvHostPort Want "GRESKELL_TEST_README"
+  bracket (connect host port) close $ \client -> do
+    -- Clear graph.
+    drainResults =<< submit client (gDrop $. liftWalk $ sV' [] $ source "g") Nothing
+
+    -- Add and get a Person vertex.
     let input_p1 = Person "josh" 32 (Just "marko")
     drainResults =<< (submitPair client $ runBinder $ addPerson input_p1)
     got_p1 <- fmap toList $ slurpResults =<< submit client (getPerson $. sV [] $ source "g") Nothing
     got_p1 `shouldBe` [input_p1]
 
+    -- Add another Person, add a Knows edge and get it.
     let input_p2 = Person "marko" 29 Nothing
         expected_k = Knows "marko" "josh" 1.0
     got_k <- fmap toList $ slurpResults =<<
-             ( submitPair client $
-               runBinder
-               ( liftWalk getKnows <$.>
-                 gProperty keyWeight 1.0 <$.>
-                 gAddE "knows" (gTo (gV [] >>> gHas2 keyName "josh")) <$.>
-                 addPerson input_p2
-               )
+             ( submitPair client $ runBinder $
+               liftWalk getKnows <$.> addKnows "josh" 1.0 <*.> addPerson input_p2
              )
     got_k `shouldBe` [expected_k]
 ```

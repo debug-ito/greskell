@@ -143,5 +143,6 @@ test-suite readme-graph_io
                         markdown-unlit,
                         text, unordered-containers, aeson,
                         greskell-websocket,
-                        safe-exceptions
+                        safe-exceptions,
+                        hspec-need-env
 
