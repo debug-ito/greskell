@@ -16,6 +16,7 @@ Contents:
 - [Make your own graph structure types](#make-your-own-graph-structure-types)
 - [Write properties into the graph](#write-properties-into-the-graph)
 - [Read properties from the graph](#read-properties-from-the-graph)
+- [Embed property data types](#embed-property-data-types)
 
 
 ## Prelude
@@ -391,29 +392,37 @@ To write properties of graph elements into the database, you use ".property" ste
 First, define a data type for your application, and its corresponding vertex type.
 
 ```haskell graph_io
+import Control.Exception.Safe (bracket)
+import Data.Foldable (toList)
 import Data.Greskell.AsLabel (AsLabel)
 import Data.Greskell.Binder (Binder, runBinder)
 import Data.Greskell.Extra (writeKeyValues, (<=:>), (<=?>))
 import Data.Greskell.Greskell (toGremlin)
-import Data.Greskell.GraphSON (FromGraphSON, GValue)
+import Data.Greskell.GraphSON (FromGraphSON(..), GValue)
 import Data.Greskell.Graph
   ( AVertex, AEdge, ElementData, Element, Vertex, Edge,
     Key, Keys(KeysNil)
   )
 import Data.Greskell.GTraversal
-  ( Walk, GTraversal, SideEffect, Transform,
+  ( Walk, GTraversal, SideEffect, Transform, liftWalk,
     source, sAddV, gValueMap, gProject, gByL,
     gOutV, gInV, gValues, sV, sE,
-    (<*.>), (&.)
+    (<*.>), (&.), ($.), (<$.>),
+    unsafeCastEnd,
+    gHas2, gTo, gV, gAddE, gProperty
   )
 import Data.Greskell.PMap
   ( PMap, Multi, Single, PMapLookupException,
-    lookupAs, lookupAs'
+    lookupAs, lookupAs', pMapToFail
   )
+import Network.Greskell.WebSocket
+  (connect, close, submit, submitPair, slurpResults, drainResults)
+
 
 main = hspec $ do
   specWrite
   specRead1
+  specRead2
 
 type Name = Text
 
@@ -424,6 +433,7 @@ data Person =
     personBestFriend :: Maybe Name
     -- ^ Name of the best friend of this person, if any.
   }
+  deriving (Show,Eq,Ord)
 
 -- | A Vertex corresponding to 'Person'.
 newtype VPerson = VPerson AVertex
@@ -524,14 +534,15 @@ data Knows =
     -- ^ a person's name who knows
     knowObject :: Name,
     -- ^ a person's name who is known
-    knowWeight :: Int
+    knowWeight :: Double
   }
+  deriving (Show,Eq,Ord)
 
 -- | An Edge corresponding to 'Knows'.
 newtype EKnows = EKnows AEdge
         deriving (Eq,Show,FromGraphSON,ElementData,Element,Edge)
 
-keyWeight :: Key EKnows Int
+keyWeight :: Key EKnows Double
 keyWeight = "weight"
 ```
 
@@ -576,6 +587,63 @@ parseKnows pm =
   <$> (lookupAs labelSubject pm)
   <*> (lookupAs labelObject pm)
   <*> (lookupAs keyWeight =<< lookupAs labelProps pm)
+```
+
+## Embed property data types
+
+In the above example, you cannot use property data types (`Person` and `Knows`) directly in greskell expressions. Instead, you first have to read out a `PMap` from the Gremlin Server, and then parse it into `Person` or `Knows`. Often it'd be more type-safe and semantic to read `Person` and `Knows` directly from the Gremlin Server.
+
+To embed your property data types directly into greskell, you have to define `FromGraphSON` instance for them. That's acutally so easy, because we already define parsers for them.
+
+```haskell graph_io
+instance FromGraphSON Person where
+  parseGraphSON gv = (pMapToFail . parsePerson) =<< parseGraphSON gv
+```
+
+In the above, `gv` is first parsed into a `PMap`, which is then parsed by `parsePerson`.
+
+To make it type-safe, you should define a dedicated traversal to get a `Person` object.
+
+```haskell graph_io
+getPerson :: Walk Transform VPerson Person
+getPerson = unsafeCastEnd personProps
+```
+
+`unsafeCastEnd` function converts the end type of the walk from `PMap` to `Person`. We know that `Person` is parsed from `PMap`, so we can tolerate this unsafe cast.
+
+The same goes for `Knows`, too.
+
+```haskell graph_io
+instance FromGraphSON Knows where
+  parseGraphSON gv = (pMapToFail . parseKnows) =<< parseGraphSON gv
+
+getKnows :: Walk Transform EKnows Knows
+getKnows = unsafeCastEnd knowsInfo
+```
+
+By putting them all together, we can write and read data to/from the graph database like the following.
+
+```haskell graph_io
+graphIOExample :: IO ()
+graphIOExample =
+  bracket (connect "localhost" 8182) close $ \client -> do
+    let input_p1 = Person "josh" 32 (Just "marko")
+    drainResults =<< (submitPair client $ runBinder $ addPerson input_p1)
+    got_p1 <- fmap toList $ slurpResults =<< submit client (getPerson $. sV [] $ source "g") Nothing
+    got_p1 `shouldBe` [input_p1]
+
+    let input_p2 = Person "marko" 29 Nothing
+        expected_k = Knows "marko" "josh" 1.0
+    got_k <- fmap toList $ slurpResults =<<
+             ( submitPair client $
+               runBinder
+               ( liftWalk getKnows <$.>
+                 gProperty keyWeight 1.0 <$.>
+                 gAddE "knows" (gTo (gV [] >>> gHas2 keyName "josh")) <$.>
+                 addPerson input_p2
+               )
+             )
+    got_k `shouldBe` [expected_k]
 ```
 
 ## Todo

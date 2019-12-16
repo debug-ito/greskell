@@ -141,5 +141,7 @@ test-suite readme-graph_io
                         hspec,
                         greskell, greskell-core,
                         markdown-unlit,
-                        text, unordered-containers, aeson
+                        text, unordered-containers, aeson,
+                        greskell-websocket,
+                        safe-exceptions
 
