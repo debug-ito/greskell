@@ -108,6 +108,7 @@ instance AsIterator (Set a) where
   type IteratorItem (Set a) = a
 instance AsIterator IntSet where
   type IteratorItem IntSet = Int
+-- | @since 0.1.3.0
 instance AsIterator (NonEmpty a) where
   type IteratorItem (NonEmpty a) = a
 

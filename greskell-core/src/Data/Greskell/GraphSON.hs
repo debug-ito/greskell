@@ -220,6 +220,7 @@ instance FromGraphSON a => FromGraphSON (Vector a) where
   parseGraphSON = parseUnwrapList
 instance FromGraphSON a => FromGraphSON (Seq a) where
   parseGraphSON = parseUnwrapList
+-- | @since 0.1.3.0
 instance FromGraphSON a => FromGraphSON (NonEmpty a) where
   parseGraphSON gv = do
     list <- parseGraphSON gv
@@ -236,27 +237,38 @@ instance (FromGraphSON a, Eq a, Hashable a) => FromGraphSON (HashSet a) where
 
 ---- Trivial wrapper type instances
 
+-- | @since 0.1.3.0
 instance FromGraphSON a => FromGraphSON (Identity a) where
   parseGraphSON = fmap Identity . parseGraphSON
+-- | @since 0.1.3.0
 instance FromGraphSON a => FromGraphSON (S.Min a) where
   parseGraphSON = fmap S.Min . parseGraphSON
+-- | @since 0.1.3.0
 instance FromGraphSON a => FromGraphSON (S.Max a) where
   parseGraphSON = fmap S.Max . parseGraphSON
+-- | @since 0.1.3.0
 instance FromGraphSON a => FromGraphSON (S.First a) where
   parseGraphSON = fmap S.First . parseGraphSON
+-- | @since 0.1.3.0
 instance FromGraphSON a => FromGraphSON (S.Last a) where
   parseGraphSON = fmap S.Last . parseGraphSON
+-- | @since 0.1.3.0
 instance FromGraphSON a => FromGraphSON (S.WrappedMonoid a) where
   parseGraphSON = fmap S.WrapMonoid . parseGraphSON
+-- | @since 0.1.3.0
 instance FromGraphSON a => FromGraphSON (S.Dual a) where
   parseGraphSON = fmap S.Dual . parseGraphSON
+-- | @since 0.1.3.0
 instance FromGraphSON a => FromGraphSON (M.Sum a) where
   parseGraphSON = fmap M.Sum . parseGraphSON
+-- | @since 0.1.3.0
 instance FromGraphSON a => FromGraphSON (M.Product a) where
   parseGraphSON = fmap M.Product . parseGraphSON
 
+-- | @since 0.1.3.0
 instance FromGraphSON M.All where
   parseGraphSON = fmap M.All . parseGraphSON
+-- | @since 0.1.3.0
 instance FromGraphSON M.Any where
   parseGraphSON = fmap M.Any . parseGraphSON
 
@@ -323,10 +335,13 @@ instance (FromGraphSON a, FromGraphSON b) => FromGraphSON (Either a b) where
 
 ---- Trivial wrapper for Maybe
 
+-- | @since 0.1.3.0
 instance FromGraphSON a => FromGraphSON (S.Option a) where
   parseGraphSON = fmap S.Option . parseGraphSON
+-- | @since 0.1.3.0
 instance FromGraphSON a => FromGraphSON (M.First a) where
   parseGraphSON = fmap M.First . parseGraphSON
+-- | @since 0.1.3.0
 instance FromGraphSON a => FromGraphSON (M.Last a) where
   parseGraphSON = fmap M.Last . parseGraphSON
 

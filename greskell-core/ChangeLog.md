@@ -27,6 +27,8 @@
         * `All`
         * `Any`
 
+### AsIterator module
+
 * Add `AsIterator` instance to `NonEmpty`.
 
 ## 0.1.2.7  -- 2019-10-02
