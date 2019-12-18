@@ -41,6 +41,7 @@ import Data.Greskell.PMap
 newtype AsLabel a = AsLabel { unAsLabel :: Text }
                deriving (Show,Eq,Ord)
 
+-- | @since 1.0.0.0
 instance IsString (AsLabel a) where
   fromString = AsLabel . fromString
 
@@ -53,6 +54,7 @@ instance ToGreskell (AsLabel a) where
 instance Functor AsLabel where
   fmap _ (AsLabel t) = AsLabel t
 
+-- | @since 1.0.0.0
 instance PMapKey (AsLabel a) where
   type PMapValue (AsLabel a) = a
   keyText = unAsLabel
