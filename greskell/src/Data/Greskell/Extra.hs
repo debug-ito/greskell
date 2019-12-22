@@ -8,7 +8,8 @@
 --
 -- @since 0.2.3.0
 module Data.Greskell.Extra
-  ( -- * Property readers (re-exports)
+  ( -- * Property readers
+    -- $readers
     lookupAs,
     lookupAs',
     lookupListAs,
@@ -51,6 +52,12 @@ import Data.Text (Text)
 -- >>> import Data.Ord (comparing)
 -- >>> import qualified Data.HashMap.Strict as HashMap
 
+-- $readers
+--
+-- Re-export property readers.
+--
+-- @since 1.0.0.0
+
 -- | Make a series of @.property@ steps to write the given key-value
 -- pairs as properties.
 --
@@ -78,6 +85,8 @@ writePropertyKeyValues pairs = fmap writeKeyValues $ mapM toKeyValue pairs
 -- "__.property(\"age\",__v0).property(\"name\",__v1).identity()"
 -- >>> sortBy (comparing fst) $ HashMap.toList binding
 -- [("__v0",Number 21.0),("__v1",String "Josh")]
+--
+-- @since 1.0.0.0
 writeKeyValues :: Element e => [KeyValue e] -> Walk SideEffect e e
 writeKeyValues pairs = mconcat $ toPropStep =<< pairs
   where
@@ -86,12 +95,16 @@ writeKeyValues pairs = mconcat $ toPropStep =<< pairs
 
 -- | Make a series of @.property@ steps to write all properties in the
 -- given 'PMap'.
+--
+-- @since 1.0.0.0
 writePMapProperties :: (Foldable c, ToJSON v, Element e)
                     => PMap c v -> Binder (Walk SideEffect e e)
 writePMapProperties = writePropertyKeyValues . pMapToList
 
 -- | Like '=:', but this one takes a real value, binds it into a
 -- 'Greskell' value and returns 'KeyValue'.
+--
+-- @since 1.0.0.0
 (<=:>) :: ToJSON b => Key a b -> b -> Binder (KeyValue a)
 (<=:>) k v = (=:) k <$> newBind v
 
@@ -106,6 +119,8 @@ writePMapProperties = writePropertyKeyValues . pMapToList
 -- "__.property(\"company\",__v0).identity()"
 -- >>> sortBy (comparing fst) $ HashMap.toList binding
 -- [("__v0",String "foobar.com")]
+--
+-- @since 1.0.0.0
 (<=?>) :: ToJSON b => Key a (Maybe b) -> Maybe b -> Binder (KeyValue a)
 (<=?>) k v@(Just _) = k <=:> v
 (<=?>) k Nothing = return $ KeyNoValue k

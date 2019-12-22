@@ -56,7 +56,7 @@ when it returns graph elements. See #6.
     * `sE'`
 * Add `gValueMap`, `gProject` and `gByL` functions.
 * Add `LabeledByProjection` type.
-* Add `unsafeCastStart` and `unsafeCastEnd` functions.
+* Add `unsafeCastStart` and `unsafeCastEnd` functions to `ToGTraversal` class.
 
 ### Extra module
 

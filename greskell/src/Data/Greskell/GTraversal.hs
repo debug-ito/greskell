@@ -250,10 +250,14 @@ class ToGTraversal g where
   -- It is recommended that @s2@ is coercible to @s1@ in terms of
   -- 'FromGraphSON'. That is, if @s2@ can parse a 'GValue', @s1@
   -- should also be able to parse that 'GValue'.
+  --
+  -- @since 1.0.0.0
 
   unsafeCastEnd :: WalkType c => g c s e1 -> g c s e2
   -- ^ Unsafely cast the end type @e1@ into @e2@. See
   -- 'unsafeCastStart'.
+  --
+  -- @since 1.0.0.0
 
 instance ToGTraversal GTraversal where
   toGTraversal = id
@@ -548,12 +552,6 @@ travToG = toGremlin . unGTraversal . toGTraversal
 -- "g.V().filter(__.out(\"knows\"))"
 gFilter :: (ToGTraversal g, WalkType c, WalkType p, Split c p) => g c s e -> Walk p s s
 gFilter walk = unsafeWalk "filter" [travToG walk]
-
-
--- TODO
--- gValueMap, gProperty etc. should use Key type as an argument.
--- Note that .property step is very tricky. Read the doc carefully.
--- 
 
 -- | @.has@ step with one argument.
 --
@@ -872,10 +870,14 @@ gOrder bys = modulateWith order_step by_steps
 
 -- | A 'ByProjection' associated with an 'AsLabel'. You can construct
 -- it by 'gByL'.
+--
+-- @since 1.0.0.0
 data LabeledByProjection s where
   LabeledByProjection :: AsLabel a -> ByProjection s a -> LabeledByProjection s
 
 -- | @.by@ step associated with an 'AsLabel'.
+--
+-- @since 1.0.0.0
 gByL :: (ProjectionLike p, ToGreskell p) => AsLabel (ProjectionLikeEnd p) -> p -> LabeledByProjection (ProjectionLikeStart p)
 gByL l p = LabeledByProjection l $ gBy p
 
@@ -958,6 +960,8 @@ gLabel = unsafeWalk "label" []
 -- "g.V().valueMap()"
 -- >>> toGremlin (source "g" & sV' [] &. gValueMap ("name" -: "age" -: KeysNil))
 -- "g.V().valueMap(\"name\",\"age\")"
+--
+-- @since 1.0.0.0
 gValueMap :: Element s
           => Keys s
           -> Walk Transform s (PMap (ElementPropertyContainer s) GValue)
@@ -1002,9 +1006,10 @@ gSelectByN l1 l2 ls bp = modulateWith (unsafeChangeEnd $ gSelectN l1 l2 ls) [byS
 -- >>> let name_label = ("a" :: AsLabel Text)
 -- >>> let name_key = ("name" :: Key AVertex Text)
 -- >>> let count_label = ("b" :: AsLabel Int)
--- >>> let id_label = "c"
 -- >>> toGremlin (source "g" & sV' [] &. gProject (gByL name_label name_key) [gByL count_label (gOut' [] >>> gCount), gByL "c" tId])
 -- "g.V().project(\"a\",\"b\",\"c\").by(\"name\").by(__.out().count()).by(T.id)"
+--
+-- @since 1.0.0.0
 gProject :: LabeledByProjection s -> [LabeledByProjection s] -> Walk Transform s (PMap Single GValue)
 gProject lp_head lps = foldl' f (unsafeWalk "project" labels) (lp_head : lps)
   where

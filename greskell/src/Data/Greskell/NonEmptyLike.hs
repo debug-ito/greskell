@@ -3,7 +3,7 @@
 -- Description: Class of non-empty containers
 -- Maintainer: Toshio Ito <debug.ito@gmail.com>
 --
--- 
+-- @since 1.0.0.0
 module Data.Greskell.NonEmptyLike
   ( NonEmptyLike(..)
   ) where
@@ -14,6 +14,8 @@ import Data.Semigroup (Semigroup, (<>))
 import qualified Data.Semigroup as S
 
 -- | Non-empty containers. Its cardinality is one or more.
+--
+-- @since 1.0.0.0
 class F.Foldable t => NonEmptyLike t where
   -- | Make a container with a single value.
   singleton :: a -> t a

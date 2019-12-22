@@ -33,10 +33,10 @@ module Data.Greskell.Graph
          Key(..),
          key,
          unsafeCastKey,
-         -- ** key-value pair
+         -- ** Key-value pair
          KeyValue(..),
          (=:),
-         -- ** heterogeneous list of keys
+         -- ** Heterogeneous list of keys
          Keys(..),
          singletonKeys,
          (-:),
@@ -90,6 +90,8 @@ import Data.Greskell.PMap (PMapKey(..), Single, Multi)
 -- >>> import Data.Greskell.Greskell (toGremlin)
 
 -- | ID of a graph element @e@ (vertex, edge and vertex property).
+--
+-- @since 1.0.0.0
 newtype ElementID e =
   ElementID
   { unElementID :: GValue
@@ -104,10 +106,14 @@ instance Functor ElementID where
   fmap _ e = unsafeCastElementID e
 
 -- | Unsafely cast the phantom type of 'ElementID'.
+--
+-- @since 1.0.0.0
 unsafeCastElementID :: ElementID a -> ElementID b
 unsafeCastElementID (ElementID e) = ElementID e
 
 -- | Types that keep reference to TinkerPop graph Elements.
+--
+-- @since 1.0.0.0
 class ElementData e where
   -- | ID of this Element.
   elementId :: e -> ElementID e
@@ -116,6 +122,9 @@ class ElementData e where
 
 -- | @org.apache.tinkerpop.gremlin.structure.Element@ interface in a
 -- TinkerPop graph.
+--
+-- Since greskell-1.0.0.0, 'ElementData' is a super-class of
+-- 'Element'.
 class ElementData e => Element e where
   -- | Property type of the 'Element'. It should be of 'Property'
   -- class.
@@ -123,6 +132,8 @@ class ElementData e => Element e where
 
   -- | Container type of the properties of the 'Element'. It should be
   -- of 'NonEmptyLike' class.
+  --
+  -- @since 1.0.0.0
   type ElementPropertyContainer e :: * -> *
 
 -- | @org.apache.tinkerpop.gremlin.structure.Vertex@ interface in a
@@ -212,6 +223,9 @@ cSingle = unsafeGreskellLazy "single"
 -- "\"created_at\""
 -- >>> keyText ("name" :: Key AVertex Text)
 -- "name"
+--
+-- Since greskell-1.0.0.0, 'Key' is newtype of 'Text'. Before that, it
+-- was newtype of 'Greskell' 'Text'.
 newtype Key a b = Key { unKey :: Text }
                 deriving (Show,Eq)
 
@@ -227,6 +241,7 @@ instance ToGreskell (Key a b) where
   type GreskellReturn (Key a b) = Text
   toGreskell = string . unKey
 
+-- | @since 1.0.0.0
 instance PMapKey (Key a b) where
   type PMapValue (Key a b) = b
   keyText (Key t) = t
@@ -236,6 +251,8 @@ key :: Text -> Key a b
 key = Key
 
 -- | Unsafely cast the type signature of the 'Key'.
+--
+-- @since 1.0.0.0
 unsafeCastKey :: Key a1 b1 -> Key a2 b2
 unsafeCastKey = Key . unKey
 
@@ -251,6 +268,8 @@ data KeyValue a where
   -- | Key and value
   KeyValue :: Key a b -> Greskell b -> KeyValue a
   -- | Key without value
+  --
+  -- @since 1.0.0.0
   KeyNoValue :: Key a b -> KeyValue a
 
 -- | Constructor operator of 'KeyValue'.
@@ -261,8 +280,12 @@ data KeyValue a where
 
 -- | Heterogeneous list of 'Key's. It keeps the parent type @a@, but
 -- discards the value type @b@.
+--
+-- @since 1.0.0.0
 data Keys a where
+  -- | Empty 'Keys'.
   KeysNil :: Keys a
+  -- | Add a 'Key' to 'Keys'.
   KeysCons :: Key a b -> Keys a -> Keys a
 
 instance Semigroup (Keys a) where
@@ -276,17 +299,21 @@ instance Monoid (Keys a) where
   mappend = (<>)
 
 -- | 'Keys' with a single 'Key'.
+--
+-- @since 1.0.0.0
 singletonKeys :: Key a b -> Keys a
 singletonKeys k = KeysCons k KeysNil
 
 -- | Prepend a 'Key' to 'Keys'.
+--
+-- @since 1.0.0.0
 (-:) :: Key a b -> Keys a -> Keys a
 (-:) = KeysCons
 
 infixr 5 -:
 
 -- $concrete_types
--- Concrete data types based on Aeson data types.
+-- Graph structure data types based on Aeson.
 --
 -- You can use those types directly in your programs. You can also
 -- define your own graph types by wrapping those with @newtype@. See
@@ -296,14 +323,13 @@ infixr 5 -:
 -- Historical note:
 --
 -- - Since version 1.0.0.0, the concrete data types don't keep
---   properties.
+--   properties, and IDs are of 'ElementID' type.
 -- - In version 0.1.1.0 and before, these conrete data types were
 --   based on @GraphSON Value@. In version 0.2.0.0, this was changed to
 --   'GValue', so that it can parse nested data structures encoded in
 --   GraphSON.
 
--- | General vertex type you can use for 'Vertex' class, based on
--- Aeson data types.
+-- | General vertex type you can use for 'Vertex' class.
 data AVertex =
   AVertex
   { avId :: ElementID AVertex,
@@ -313,6 +339,7 @@ data AVertex =
   }
   deriving (Show,Eq)
 
+-- | @since 1.0.0.0
 instance ElementData AVertex where
   elementId = avId
   elementLabel = avLabel
@@ -336,8 +363,7 @@ instance FromGraphSON AVertex where
                  <*> (o .: "label")
     _ -> empty
 
--- | General edge type you can use for 'Edge' class, based on Aeson
--- data types.
+-- | General edge type you can use for 'Edge' class.
 data AEdge =
   AEdge
   { aeId :: ElementID AEdge,
@@ -347,6 +373,7 @@ data AEdge =
   }
   deriving (Show,Eq)
 
+-- | @since 1.0.0.0
 instance ElementData AEdge where
   elementId = aeId
   elementLabel = aeLabel
@@ -409,8 +436,7 @@ instance Foldable AProperty where
 instance Traversable AProperty where
   traverse f sp = fmap (\v -> sp { apValue = v } ) $ f $ apValue sp
 
--- | General vertex property type you can use for VertexProperty,
--- based on Aeson data types.
+-- | General vertex property type you can use for VertexProperty.
 --
 -- If you are not sure about the type @v@, just use 'GValue'.
 data AVertexProperty v =
@@ -440,6 +466,7 @@ instance FromGraphSON v => FromGraphSON (AVertexProperty v) where
 instance GraphSONTyped (AVertexProperty v) where
   gsonTypeFor _ = "g:VertexProperty"
 
+-- | @since 1.0.0.0
 instance ElementData (AVertexProperty v) where
   elementId = avpId
   elementLabel = avpLabel
