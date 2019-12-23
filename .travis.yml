@@ -124,15 +124,15 @@ matrix:
   #   compiler: ": #stack 8.0.2 osx"
   #   os: osx
 
-  - env: BUILD=stack ARGS="--resolver lts-12"
+  - env: BUILD=stack ARGS="--resolver lts-12" TESTARGS="--flag greskell:-hint-test"
     compiler: ": #stack lts-12 osx"
     os: osx
 
-  - env: BUILD=stack ARGS="--resolver lts-13"
+  - env: BUILD=stack ARGS="--resolver lts-13" TESTARGS="--flag greskell:-hint-test"
     compiler: ": #stack lts-13 osx"
     os: osx
 
-  - env: BUILD=stack ARGS="--resolver nightly"
+  - env: BUILD=stack ARGS="--resolver nightly" TESTARGS="--flag greskell:-hint-test"
     compiler: ": #stack nightly osx"
     os: osx
 
@@ -203,7 +203,7 @@ script:
   set -ex
   case "$BUILD" in
     stack)
-      stack --no-terminal -j 1 $ARGS test --bench --no-run-benchmarks --haddock --no-haddock-deps
+      stack --no-terminal -j 1 $ARGS test --bench --no-run-benchmarks --haddock --no-haddock-deps $TESTARGS
       ;;
     cabal)
       cabal install --enable-tests --enable-benchmarks --force-reinstalls --ghc-options=-O0 --reorder-goals --max-backjumps=-1 $CABALARGS $PACKAGES
