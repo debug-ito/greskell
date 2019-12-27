@@ -1,15 +1,13 @@
 # Revision history for greskell-core
 
-## 0.1.3.0  --
+## 0.1.3.0  -- 2019-12-27
 
 ### GraphSON module
 
 * Add `FromGraphSON` instances to the following wrapper types.
-
     * `Identity` functor
     * `NonEmpty` list
     * From `Data.Semigroup`
-
         * `Min`
         * `Max`
         * `First`
@@ -17,9 +15,7 @@
         * `WrappedMonoid`
         * `Dual`
         * `Option`
-
     * From `Data.Monoid`
-
         * `First`
         * `Last`
         * `Sum`
