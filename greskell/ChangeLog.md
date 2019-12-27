@@ -1,6 +1,6 @@
 # Revision history for greskell
 
-## 1.0.0.0
+## 1.0.0.0  -- 2019-12-27
 
 * Add some test cases to server-behavior-test
 * Add PMap and NonEmptyLike modules.
