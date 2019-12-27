@@ -1,6 +1,6 @@
 # Revision history for greskell-websocket
 
-## 0.1.2.0  --
+## 0.1.2.0  -- 2019-12-27
 
 * Add `submitPair` function to Client module.
 
