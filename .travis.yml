@@ -99,30 +99,9 @@ matrix:
     addons: {apt: {packages: [libgmp-dev]}}
 
   # Build on macOS in addition to Linux
-  - env: BUILD=stack ARGS=""
-    compiler: ": #stack default osx"
+  - env: BUILD=stack ARGS="" 
+    compiler: ": #stack default osx" TESTARGS="--flag greskell:-hint-test"
     os: osx
-
-  # Travis includes an macOS which is incompatible with GHC 7.8.4
-  #- env: BUILD=stack ARGS="--resolver lts-2"
-  #  compiler: ": #stack 7.8.4 osx"
-  #  os: osx
-
-  #- env: BUILD=stack ARGS="--resolver lts-3"
-  #  compiler: ": #stack 7.10.2 osx"
-  #  os: osx
-  #
-  #- env: BUILD=stack ARGS="--resolver lts-6"
-  #  compiler: ": #stack 7.10.3 osx"
-  #  os: osx
-  #
-  #- env: BUILD=stack ARGS="--resolver lts-7"
-  #  compiler: ": #stack 8.0.1 osx"
-  #  os: osx
-
-  # - env: BUILD=stack ARGS="--resolver lts-9"
-  #   compiler: ": #stack 8.0.2 osx"
-  #   os: osx
 
   - env: BUILD=stack ARGS="--resolver lts-12" TESTARGS="--flag greskell:-hint-test"
     compiler: ": #stack lts-12 osx"
@@ -139,6 +118,7 @@ matrix:
   allow_failures:
   - env: BUILD=cabal GHCVER=head  CABALVER=head HAPPYVER=1.19.5 ALEXVER=3.1.7
   - env: BUILD=stack ARGS="--resolver nightly"
+  - env: BUILD=stack ARGS="--resolver nightly" TESTARGS="--flag greskell:-hint-test"
 
 before_install:
 # Using compiler above sets CC to an invalid value, so unset it
