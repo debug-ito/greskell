@@ -1,5 +1,5 @@
 name:                   test-readme
-version:                0.1.0.0
+version:                0.1.0.1
 author:                 Toshio Ito <debug.ito@gmail.com>
 maintainer:             Toshio Ito <debug.ito@gmail.com>
 license:                BSD3
@@ -27,7 +27,7 @@ executable test-readme-dummy
   hs-source-dirs:       app
   main-is:              Main.hs
   ghc-options:          -Wall -fno-warn-unused-imports
-  build-depends:        base >=4.9.0.0 && <4.13
+  build-depends:        base >=4.9.0.0 && <5.0
 
 
 test-suite readme-Greskell
