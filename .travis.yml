@@ -99,8 +99,8 @@ matrix:
     addons: {apt: {packages: [libgmp-dev]}}
 
   # Build on macOS in addition to Linux
-  - env: BUILD=stack ARGS="" 
-    compiler: ": #stack default osx" TESTARGS="--flag greskell:-hint-test"
+  - env: BUILD=stack ARGS="" TESTARGS="--flag greskell:-hint-test"
+    compiler: ": #stack default osx"
     os: osx
 
   - env: BUILD=stack ARGS="--resolver lts-12" TESTARGS="--flag greskell:-hint-test"
