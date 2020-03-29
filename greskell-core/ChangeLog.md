@@ -1,5 +1,9 @@
 # Revision history for greskell-core
 
+## 0.1.3.2  -- 2020-03-29
+
+* Confirm test with `QuickCheck-2.14`.
+
 ## 0.1.3.1  -- 2019-12-30
 
 * Confirm test with `base-4.13.0.0`
