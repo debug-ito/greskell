@@ -226,4 +226,12 @@ public class TestGremlin {
         32        // final result
       ]);
   }
+
+  @Test
+  public void repeat_step_dedup_emit_and_final_results() throws Exception {
+    def got = __.__(1).repeat(__.map { it.get() * 2 }).emit().times(5).toList();
+    assertThat got, is([
+      2, 4, 8, 16, 32 // the final result is output by emit. It's not output as the final result again.
+    ]);
+  }
 }
