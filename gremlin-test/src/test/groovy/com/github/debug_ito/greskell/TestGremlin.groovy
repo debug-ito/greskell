@@ -194,4 +194,27 @@ public class TestGremlin {
       g.V().has("name", "marko").repeat(__.out()).path().toList().collect { p -> return pathToString(p); };
     assertThat paths_str, is([]);
   }
+
+  @Test
+  public void repeat_step_times() throws Exception {
+    def g = MyModern.make().traversal();
+    def paths_str_first0 = g.V().has("name", "marko").times(0).repeat(__.out()).path().toList().collect { p -> return pathToString(p); };
+    def paths_str_first1 = g.V().has("name", "marko").times(1).repeat(__.out()).path().toList().collect { p -> return pathToString(p); };
+    def paths_str_first2 = g.V().has("name", "marko").times(2).repeat(__.out()).path().toList().collect { p -> return pathToString(p); };
+    def paths_str_last0 = g.V().has("name", "marko").repeat(__.out()).times(0).path().toList().collect { p -> return pathToString(p); };
+    def paths_str_last1 = g.V().has("name", "marko").repeat(__.out()).times(1).path().toList().collect { p -> return pathToString(p); };
+    def paths_str_last2 = g.V().has("name", "marko").repeat(__.out()).times(2).path().toList().collect { p -> return pathToString(p); };
+    assertThat paths_str_first0.sort(), is(["v(marko)"]);
+    assertThat paths_str_first1.sort(), is(["v(marko),v(josh)", "v(marko),v(lop)", "v(marko),v(vadas)"]);
+    assertThat paths_str_first2.sort(), is([
+      "v(marko),v(josh),v(lop)",
+      "v(marko),v(josh),v(ripple)",
+    ]);
+    assertThat paths_str_last0.sort(), is(["v(marko),v(josh)", "v(marko),v(lop)", "v(marko),v(vadas)"]);
+    assertThat paths_str_last1.sort(), is(["v(marko),v(josh)", "v(marko),v(lop)", "v(marko),v(vadas)"]);
+    assertThat paths_str_last2.sort(), is([
+      "v(marko),v(josh),v(lop)",
+      "v(marko),v(josh),v(ripple)",
+    ]);
+  }
 }
