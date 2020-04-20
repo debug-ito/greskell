@@ -217,4 +217,13 @@ public class TestGremlin {
       "v(marko),v(josh),v(ripple)",
     ]);
   }
+
+  @Test
+  public void repeat_step_outputs_both_emit_and_final_results() throws Exception {
+    def got = __.__(1).repeat(__.map { it.get() * 2 }).emit { it.get() < 10 }.times(5).toList();
+    assertThat got, is([
+        2, 4, 8,  // emit result
+        32        // final result
+      ]);
+  }
 }
