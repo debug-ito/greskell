@@ -186,4 +186,12 @@ public class TestGremlin {
       g.V().has("name", "marko").repeat(__.identity()).times(2).path().toList().collect { p -> return pathToString(p); };
     assertThat paths_str, is(["v(marko)"]);
   }
+
+  @Test
+  public void repeat_step_without_until_or_times() throws Exception {
+    def g = MyModern.make().traversal();
+    def paths_str =
+      g.V().has("name", "marko").repeat(__.out()).path().toList().collect { p -> return pathToString(p); };
+    assertThat paths_str, is([]);
+  }
 }
