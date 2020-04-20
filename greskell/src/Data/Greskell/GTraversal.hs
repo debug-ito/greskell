@@ -820,8 +820,11 @@ gRepeat :: (ToGTraversal g, WalkType c)
         -> Walk c s s
 gRepeat = undefined
 
--- | @.times@ modulator. It always returns 'Just'.
-gTimes :: Int -> Maybe (RepeatPos, RepeatUntil c s)
+-- | @.times@ modulator before the @.repeat@ step. It always returns
+-- 'Just'.
+gTimes :: Int -- ^ Repeat count. If it's less than or equal to 0, the
+              -- repeated traversal is never executed.
+       -> Maybe (RepeatPos, RepeatUntil c s)
 gTimes = undefined
 
 -- | @.until@ modulator before the @.repeat@ step. It always returns
