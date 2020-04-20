@@ -58,6 +58,11 @@ module Data.Greskell.GTraversal
          gIdentity,
          gIdentity',
          gFilter,
+         -- ** Is step
+         gIs,
+         gIs',
+         gIsP,
+         gIsP',
          -- ** Has steps
          gHas1,
          gHas1',
@@ -568,6 +573,28 @@ travToG = toGremlin . unGTraversal . toGTraversal
 -- "g.V().filter(__.out(\"knows\"))"
 gFilter :: (ToGTraversal g, WalkType c, WalkType p, Split c p) => g c s e -> Walk p s s
 gFilter walk = unsafeWalk "filter" [travToG walk]
+
+-- | @.is@ step of simple equality.
+--
+-- >>> toGremlin (source "g" & sV' [] &. gValues ["age" :: Key AVertex Int] &. gIs 30)
+-- "g.V().values(\"age\").is(30)"
+gIs :: (WalkType c) => Greskell v -> Walk c v v
+gIs = liftWalk . gIs'
+
+-- | Monomorphic version of 'gIs'.
+gIs' :: Greskell v -> Walk Filter v v
+gIs' v = unsafeWalk "is" [toGremlin v]
+
+-- | @.is@ step with predicate 'P'.
+--
+-- >>> toGremlin (source "g" & sV' [] &. gValues ["age" :: Key AVertex Int] &. gIsP (pLte 30))
+-- "g.V().values(\"age\").is(P.lte(30))"
+gIsP :: (WalkType c) => Greskell (P v) -> Walk c v v
+gIsP = liftWalk . gIsP'
+
+-- | Monomorphic version of 'gIsP'.
+gIsP' :: Greskell (P v) -> Walk Filter v v
+gIsP' p = unsafeWalk "is" [toGremlin p]
 
 -- | @.has@ step with one argument.
 --

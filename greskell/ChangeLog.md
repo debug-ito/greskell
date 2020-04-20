@@ -14,6 +14,10 @@
   * `gEmitAlwaysHead`
   * `gEmitAlwaysTail`
   * `gLoops`
+  * `gIs`
+  * `gIs'`
+  * `gIsP`
+  * `gIsP'`
 * Add the follwing types.
   * `RepeatUntil`
   * `RepeatEmit`
