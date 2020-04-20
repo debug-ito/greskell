@@ -578,10 +578,14 @@ gFilter walk = unsafeWalk "filter" [travToG walk]
 --
 -- >>> toGremlin (source "g" & sV' [] &. gValues ["age" :: Key AVertex Int] &. gIs 30)
 -- "g.V().values(\"age\").is(30)"
+--
+-- @since 1.0.1.0
 gIs :: (WalkType c) => Greskell v -> Walk c v v
 gIs = liftWalk . gIs'
 
 -- | Monomorphic version of 'gIs'.
+--
+-- @since 1.0.1.0
 gIs' :: Greskell v -> Walk Filter v v
 gIs' v = unsafeWalk "is" [toGremlin v]
 
@@ -589,10 +593,14 @@ gIs' v = unsafeWalk "is" [toGremlin v]
 --
 -- >>> toGremlin (source "g" & sV' [] &. gValues ["age" :: Key AVertex Int] &. gIsP (pLte 30))
 -- "g.V().values(\"age\").is(P.lte(30))"
+--
+-- @since 1.0.1.0
 gIsP :: (WalkType c) => Greskell (P v) -> Walk c v v
 gIsP = liftWalk . gIsP'
 
 -- | Monomorphic version of 'gIsP'.
+--
+-- @since 1.0.1.0
 gIsP' :: Greskell (P v) -> Walk Filter v v
 gIsP' p = unsafeWalk "is" [toGremlin p]
 
@@ -793,6 +801,8 @@ gSkip num = unsafeWalk "skip" [toGremlin num]
 
 -- | A label that points to a loop created by @.repeat@ step. It can
 -- be used by @.loops@ step to specify the loop.
+--
+-- @since 1.0.1.0
 newtype RepeatLabel =
   RepeatLabel { unRepeatLabel :: Text }
   deriving (Show,Eq,Ord,IsString)
@@ -803,6 +813,8 @@ instance ToGreskell RepeatLabel where
   toGreskell (RepeatLabel t) = Greskell.string t
 
 -- | Position of a step modulator relative to @.repeat@ step.
+--
+-- @since 1.0.1.0
 data RepeatPos = RepeatHead -- ^ Modulator before the @.repeat@ step.
                | RepeatTail -- ^ Modulator after the @.repeat@ step.
                deriving (Show,Eq,Ord,Enum,Bounded)
@@ -811,6 +823,8 @@ data RepeatPos = RepeatHead -- ^ Modulator before the @.repeat@ step.
 --
 -- Type @c@ is the 'WalkType' of the parent @.repeat@ step. Type @s@
 -- is the start (and end) type of the @.repeat@ step.
+--
+-- @since 1.0.1.0
 data RepeatUntil c s where
   -- | @.times@ modulator.
   RepeatTimes :: Greskell Int -> RepeatUntil c s
@@ -828,6 +842,8 @@ makeUntilWalk (RepeatUntilT trav) = unsafeWalk "until" [toGremlin trav]
 --
 -- Type @c@ is the 'WalkType' of the parent @.repeat@ step. Type @s@
 -- is the start (and end) type of the @.repeat@ step.
+--
+-- @since 1.0.1.0
 data RepeatEmit c s where
   -- | @.emit@ modulator without argument. It always emits the input
   -- traverser of type @s@.
@@ -845,6 +861,8 @@ makeEmitWalk (RepeatEmitT trav) = unsafeWalk "emit" [toGremlin trav]
 
 
 -- | Zero or more Gremlin steps.
+--
+-- @since 1.0.1.0
 newtype MWalk c s e = MWalk (Maybe (Walk c s e))
                     deriving (Show)
 
@@ -862,6 +880,8 @@ fromMWalk (MWalk (Just w)) = w
 
 
 -- | @.repeat@ step.
+--
+-- @since 1.0.1.0
 gRepeat :: (ToGTraversal g, WalkType c)
         => Maybe RepeatLabel -- ^ Label for the loop.
         -> g c s s -- ^ Repeated traversal
@@ -898,6 +918,8 @@ gRepeat mlabel repeated_trav muntil memit = fromMWalk (head_walk <> toMWalk repe
 --
 -- >>> toGremlin (source "g" & sV' [] &. gRepeat Nothing (gOut' []) (gTimes 3) Nothing)
 -- "g.V().times(3).repeat(__.out())"
+--
+-- @since 1.0.1.0
 gTimes :: Greskell Int
        -- ^ Repeat count. If it's less than or equal to 0, the
        -- repeated traversal is never executed.
@@ -909,6 +931,8 @@ gTimes c = Just (RepeatHead, RepeatTimes c)
 --
 -- >>> toGremlin (source "g" & sV' [] &. gRepeat Nothing (gOut' []) (gUntilHead $ gHasLabel' "person") Nothing)
 -- "g.V().until(__.hasLabel(\"person\")).repeat(__.out())"
+--
+-- @since 1.0.1.0
 gUntilHead :: (ToGTraversal g, WalkType c, WalkType cc, Split cc c) => g cc s e -> Maybe (RepeatPos, RepeatUntil c s)
 gUntilHead trav = Just (RepeatHead, RepeatUntilT $ toGTraversal trav)
 
@@ -917,6 +941,8 @@ gUntilHead trav = Just (RepeatHead, RepeatUntilT $ toGTraversal trav)
 --
 -- >>> toGremlin (source "g" & sV' [] &. gRepeat Nothing (gOut' []) (gUntilTail $ gHasLabel' "person") Nothing)
 -- "g.V().repeat(__.out()).until(__.hasLabel(\"person\"))"
+--
+-- @since 1.0.1.0
 gUntilTail :: (ToGTraversal g, WalkType c, WalkType cc, Split cc c) => g cc s e -> Maybe (RepeatPos, RepeatUntil c s)
 gUntilTail trav = Just (RepeatTail, RepeatUntilT $ toGTraversal trav)
 
@@ -925,6 +951,8 @@ gUntilTail trav = Just (RepeatTail, RepeatUntilT $ toGTraversal trav)
 --
 -- >>> toGremlin (source "g" & sV' [] &. gRepeat Nothing (gOut' []) Nothing gEmitAlwaysHead)
 -- "g.V().emit().repeat(__.out())"
+--
+-- @since 1.0.1.0
 gEmitAlwaysHead :: Maybe (RepeatPos, RepeatEmit c s)
 gEmitAlwaysHead = Just (RepeatHead, RepeatEmitAlways)
 
@@ -933,6 +961,8 @@ gEmitAlwaysHead = Just (RepeatHead, RepeatEmitAlways)
 --
 -- >>> toGremlin (source "g" & sV' [] &. gRepeat Nothing (gOut' []) Nothing gEmitAlwaysTail)
 -- "g.V().repeat(__.out()).emit()"
+--
+-- @since 1.0.1.0
 gEmitAlwaysTail :: Maybe (RepeatPos, RepeatEmit c s)
 gEmitAlwaysTail = Just (RepeatTail, RepeatEmitAlways)
 
@@ -941,6 +971,8 @@ gEmitAlwaysTail = Just (RepeatTail, RepeatEmitAlways)
 --
 -- >>> toGremlin (source "g" & sV' [] &. gRepeat Nothing (gOut' []) Nothing (gEmitHead $ gHasLabel' "person"))
 -- "g.V().emit(__.hasLabel(\"person\")).repeat(__.out())"
+--
+-- @since 1.0.1.0
 gEmitHead :: (ToGTraversal g, WalkType c, WalkType cc, Split cc c) => g cc s e -> Maybe (RepeatPos, RepeatEmit c s)
 gEmitHead trav = Just (RepeatHead, RepeatEmitT $ toGTraversal trav)
 
@@ -949,6 +981,8 @@ gEmitHead trav = Just (RepeatHead, RepeatEmitT $ toGTraversal trav)
 --
 -- >>> toGremlin (source "g" & sV' [] &. gRepeat Nothing (gOut' []) Nothing (gEmitTail $ gHasLabel' "person"))
 -- "g.V().repeat(__.out()).emit(__.hasLabel(\"person\"))"
+--
+-- @since 1.0.1.0
 gEmitTail :: (ToGTraversal g, WalkType c, WalkType cc, Split cc c) => g cc s e -> Maybe (RepeatPos, RepeatEmit c s)
 gEmitTail trav = Just (RepeatTail, RepeatEmitT $ toGTraversal trav)
 
@@ -957,6 +991,8 @@ gEmitTail trav = Just (RepeatTail, RepeatEmitT $ toGTraversal trav)
 -- >>> let loop_label = Just "the_loop"
 -- >>> toGremlin (source "g" & sV' [] &. gRepeat loop_label (gOut' []) (gUntilTail $ gLoops loop_label >>> gIs 3) Nothing)
 -- "g.V().repeat(\"the_loop\",__.out()).until(__.loops(\"the_loop\").is(3))"
+--
+-- @since 1.0.1.0
 gLoops :: Maybe RepeatLabel -> Walk Transform s Int
 gLoops mlabel = unsafeWalk "loops" $ maybe [] (\l -> [toGremlin l]) mlabel
 
