@@ -813,12 +813,16 @@ data RepeatPos = RepeatHead -- ^ Modulator before the @.repeat@ step.
 -- is the start (and end) type of the @.repeat@ step.
 data RepeatUntil c s where
   -- | @.times@ modulator.
-  RepeatTimes :: Int -> RepeatUntil c s
+  RepeatTimes :: Greskell Int -> RepeatUntil c s
   -- | @.until@ modulator with a sub-traversal as the predicate to
   -- decide if the repetition should stop.
   RepeatUntilT :: (WalkType cc, WalkType c, Split cc c) => GTraversal cc s e -> RepeatUntil c s
 
 deriving instance Show (RepeatUntil c s)
+
+makeUntilWalk :: WalkType c => RepeatUntil c s -> Walk c s s
+makeUntilWalk (RepeatTimes count) = unsafeWalk "times" [toGremlin count]
+makeUntilWalk (RepeatUntilT trav) = unsafeWalk "until" [toGremlin trav]
 
 -- | @.emit@ modulator step.
 --
@@ -834,6 +838,29 @@ data RepeatEmit c s where
 
 deriving instance Show (RepeatEmit c s)
 
+makeEmitWalk :: WalkType c => RepeatEmit c s -> Walk c s s
+makeEmitWalk (RepeatEmitAlways) = unsafeWalk "emit" []
+makeEmitWalk (RepeatEmitT trav) = unsafeWalk "emit" [toGremlin trav]
+
+
+
+-- | Zero or more Gremlin steps.
+newtype MWalk c s e = MWalk (Maybe (Walk c s e))
+                    deriving (Show)
+
+deriving instance WalkType c => Semigroup (MWalk c s s)
+deriving instance WalkType c => Monoid (MWalk c s s)
+
+toMWalk :: Walk c s e -> MWalk c s e
+toMWalk = MWalk . Just
+
+-- | @MWalk Nothing@ is coverted to identity step.
+fromMWalk :: WalkType c => MWalk c s s -> Walk c s s
+fromMWalk (MWalk Nothing) = mempty
+fromMWalk (MWalk (Just w)) = w
+
+
+
 -- | @.repeat@ step.
 gRepeat :: (ToGTraversal g, WalkType c)
         => Maybe RepeatLabel -- ^ Label for the loop.
@@ -845,48 +872,68 @@ gRepeat :: (ToGTraversal g, WalkType c)
         -- ^ @.emit@ modulator. You can use 'gEmitHead', 'gEmitTail',
         -- 'gEmitAlwaysHead', 'gEmitAlwaysTail' to make this argument.
         -> Walk c s s
-gRepeat = undefined
+gRepeat mlabel repeated_trav muntil memit = fromMWalk (head_walk <> toMWalk repeat_body <> tail_walk)
+  where
+    repeat_body = unsafeWalk "repeat" (label_args ++ [toGremlin $ toGTraversal repeated_trav])
+    label_args = maybe [] (\l -> [toGremlin l]) mlabel
+    head_walk = head_until <> head_emit
+    tail_walk = tail_until <> tail_emit
+    (head_until, tail_until) =
+      case muntil of
+        Nothing -> (mempty, mempty)
+        Just (pos, u) ->
+          case pos of
+            RepeatHead -> (toMWalk $ makeUntilWalk u, mempty)
+            RepeatTail -> (mempty, toMWalk $ makeUntilWalk u)
+    (head_emit, tail_emit) =
+      case memit of
+        Nothing -> (mempty, mempty)
+        Just (pos, e) ->
+          case pos of
+            RepeatHead -> (toMWalk $ makeEmitWalk e, mempty)
+            RepeatTail -> (mempty, toMWalk $ makeEmitWalk e)
 
 -- | @.times@ modulator before the @.repeat@ step. It always returns
 -- 'Just'.
-gTimes :: Int -- ^ Repeat count. If it's less than or equal to 0, the
-              -- repeated traversal is never executed.
+gTimes :: Greskell Int
+       -- ^ Repeat count. If it's less than or equal to 0, the
+       -- repeated traversal is never executed.
        -> Maybe (RepeatPos, RepeatUntil c s)
-gTimes = undefined
+gTimes c = Just (RepeatHead, RepeatTimes c)
 
 -- | @.until@ modulator before the @.repeat@ step. It always returns
 -- 'Just'.
 gUntilHead :: (ToGTraversal g, WalkType c, WalkType cc, Split cc c) => g cc s e -> Maybe (RepeatPos, RepeatUntil c s)
-gUntilHead = undefined
+gUntilHead trav = Just (RepeatHead, RepeatUntilT $ toGTraversal trav)
 
 -- | @.until@ modulator after the @.repeat@ step. It always returns
 -- 'Just'.
 gUntilTail :: (ToGTraversal g, WalkType c, WalkType cc, Split cc c) => g cc s e -> Maybe (RepeatPos, RepeatUntil c s)
-gUntilTail = undefined
+gUntilTail trav = Just (RepeatTail, RepeatUntilT $ toGTraversal trav)
 
 -- | @.emit@ modulator without argument before the @.repeat@ step. It
 -- always returns 'Just'.
 gEmitAlwaysHead :: Maybe (RepeatPos, RepeatEmit c s)
-gEmitAlwaysHead = undefined
+gEmitAlwaysHead = Just (RepeatHead, RepeatEmitAlways)
 
 -- | @.emit@ modulator without argument after the @.repeat@ step. It
 -- always returns 'Just'.
 gEmitAlwaysTail :: Maybe (RepeatPos, RepeatEmit c s)
-gEmitAlwaysTail = undefined
+gEmitAlwaysTail = Just (RepeatTail, RepeatEmitAlways)
 
 -- | @.emit@ modulator with a sub-traversal argument before the
 -- @.repeat@ step. It always returns 'Just'.
 gEmitHead :: (ToGTraversal g, WalkType c, WalkType cc, Split cc c) => g cc s e -> Maybe (RepeatPos, RepeatEmit c s)
-gEmitHead = undefined
+gEmitHead trav = Just (RepeatHead, RepeatEmitT $ toGTraversal trav)
 
 -- | @.emit@ modulator with a sub-traversal argument after the
 -- @.repeat@ step. It always returns 'Just'.
 gEmitTail :: (ToGTraversal g, WalkType c, WalkType cc, Split cc c) => g cc s e -> Maybe (RepeatPos, RepeatEmit c s)
-gEmitTail = undefined
+gEmitTail trav = Just (RepeatTail, RepeatEmitT $ toGTraversal trav)
 
 -- | @.loops@ step.
 gLoops :: Maybe RepeatLabel -> Walk Transform s Int
-gLoops = undefined
+gLoops mlabel = unsafeWalk "loops" $ maybe [] (\l -> [toGremlin l]) mlabel
 
 -- | Data types that mean a projection from one type to another.
 class ProjectionLike p where
