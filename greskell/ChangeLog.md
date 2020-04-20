@@ -1,5 +1,26 @@
 # Revision history for greskell
 
+## 1.0.1.0  -- ???
+
+### GTraversal module
+
+* Add the following functions.
+  * `gRepeat`
+  * `gTimes`
+  * `gUntilHead`
+  * `gUntilTail`
+  * `gEmitHead`
+  * `gEmitTail`
+  * `gEmitAlwaysHead`
+  * `gEmitAlwaysTail`
+  * `gLoops`
+* Add the follwing types.
+  * `RepeatUntil`
+  * `RepeatEmit`
+  * `RepeatPos`
+  * `RepeatLabel`
+
+
 ## 1.0.0.1  -- 2019-12-30
 
 * Confirm test with `base-4.13.0.0`

@@ -1,4 +1,5 @@
-{-# LANGUAGE OverloadedStrings, FlexibleInstances, FlexibleContexts, MultiParamTypeClasses, TypeFamilies, GADTs #-}
+{-# LANGUAGE OverloadedStrings, FlexibleInstances, FlexibleContexts, MultiParamTypeClasses,
+    TypeFamilies, GADTs, GeneralizedNewtypeDeriving, StandaloneDeriving #-}
 {-# OPTIONS_GHC -fno-warn-redundant-constraints #-}
 -- |
 -- Module: Data.Greskell.GTraversal
@@ -91,6 +92,20 @@ module Data.Greskell.GTraversal
          gLimit,
          gTail,
          gSkip,
+         -- ** Repeat step
+         gRepeat,
+         gTimes,
+         gUntilHead,
+         gUntilTail,
+         gEmitHead,
+         gEmitTail,
+         gEmitAlwaysHead,
+         gEmitAlwaysTail,
+         gLoops,
+         RepeatUntil(..),
+         RepeatEmit(..),
+         RepeatPos(..),
+         RepeatLabel(..),
          -- ** Transformation steps
          gFlatMap,
          gV,
@@ -175,6 +190,7 @@ import Data.Greskell.Graph
     T, Key, Cardinality,
     KeyValue(..), Keys(..)
   )
+import qualified Data.Greskell.Greskell as Greskell
 import Data.Greskell.GraphSON (GValue, FromGraphSON)
 import Data.Greskell.Gremlin
   ( Comparator(..),
@@ -748,6 +764,99 @@ gTail num = unsafeWalk "tail" [toGremlin num]
 gSkip :: Greskell Int -> Walk Transform s s
 gSkip num = unsafeWalk "skip" [toGremlin num]
 
+-- | A label that points to a loop created by @.repeat@ step. It can
+-- be used by @.loops@ step to specify the loop.
+newtype RepeatLabel =
+  RepeatLabel { unRepeatLabel :: Text }
+  deriving (Show,Eq,Ord,IsString)
+
+-- | Return Gremlin String literal.
+instance ToGreskell RepeatLabel where
+  type GreskellReturn RepeatLabel = Text
+  toGreskell (RepeatLabel t) = Greskell.string t
+
+-- | Position of a step modulator relative to @.repeat@ step.
+data RepeatPos = RepeatHead -- ^ Modulator before the @.repeat@ step.
+               | RepeatTail -- ^ Modulator after the @.repeat@ step.
+               deriving (Show,Eq,Ord,Enum,Bounded)
+
+-- | @.until@ or @.times@ modulator step.
+--
+-- Type @c@ is the 'WalkType' of the parent @.repeat@ step. Type @s@
+-- is the start (and end) type of the @.repeat@ step.
+data RepeatUntil c s where
+  -- | @.times@ modulator.
+  RepeatTimes :: Int -> RepeatUntil c s
+  -- | @.until@ modulator with a sub-traversal as the predicate to
+  -- decide if the repetition should stop.
+  RepeatUntilT :: (WalkType cc, WalkType c, Split cc c) => GTraversal cc s e -> RepeatUntil c s
+
+deriving instance Show (RepeatUntil c s)
+
+-- | @.emit@ modulator step.
+--
+-- Type @c@ is the 'WalkType' of the parent @.repeat@ step. Type @s@
+-- is the start (and end) type of the @.repeat@ step.
+data RepeatEmit c s where
+  -- | @.emit@ modulator without argument. It always emits the input
+  -- traverser of type @s@.
+  RepeatEmitAlways :: RepeatEmit c s
+  -- | @.emit@ modulator with a sub-traversal as the predicate to
+  -- decide if it emits the traverser.
+  RepeatEmitT :: (WalkType cc, WalkType c, Split cc c) => GTraversal cc s e -> RepeatEmit c s
+
+deriving instance Show (RepeatEmit c s)
+
+-- | @.repeat@ step.
+gRepeat :: (ToGTraversal g, WalkType c)
+        => Maybe RepeatLabel -- ^ Label for the loop.
+        -> g c s s -- ^ Repeated traversal
+        -> Maybe (RepeatPos, RepeatUntil c s)
+        -- ^ @.until@ or @.times@ modulator. You can use 'gTimes',
+        -- 'gUntilHead', 'gUntilTail' to make this argument.
+        -> Maybe (RepeatPos, RepeatEmit c s)
+        -- ^ @.emit@ modulator. You can use 'gEmitHead', 'gEmitTail',
+        -- 'gEmitAlwaysHead', 'gEmitAlwaysTail' to make this argument.
+        -> Walk c s s
+gRepeat = undefined
+
+-- | @.times@ modulator. It always returns 'Just'.
+gTimes :: Int -> Maybe (RepeatPos, RepeatUntil c s)
+gTimes = undefined
+
+-- | @.until@ modulator before the @.repeat@ step. It always returns
+-- 'Just'.
+gUntilHead :: (ToGTraversal g, WalkType c, WalkType cc, Split cc c) => g cc s e -> Maybe (RepeatPos, RepeatUntil c s)
+gUntilHead = undefined
+
+-- | @.until@ modulator after the @.repeat@ step. It always returns
+-- 'Just'.
+gUntilTail :: (ToGTraversal g, WalkType c, WalkType cc, Split cc c) => g cc s e -> Maybe (RepeatPos, RepeatUntil c s)
+gUntilTail = undefined
+
+-- | @.emit@ modulator without argument before the @.repeat@ step. It
+-- always returns 'Just'.
+gEmitAlwaysHead :: Maybe (RepeatPos, RepeatEmit c s)
+gEmitAlwaysHead = undefined
+
+-- | @.emit@ modulator without argument after the @.repeat@ step. It
+-- always returns 'Just'.
+gEmitAlwaysTail :: Maybe (RepeatPos, RepeatEmit c s)
+gEmitAlwaysTail = undefined
+
+-- | @.emit@ modulator with a sub-traversal argument before the
+-- @.repeat@ step. It always returns 'Just'.
+gEmitHead :: (ToGTraversal g, WalkType c, WalkType cc, Split cc c) => g cc s e -> Maybe (RepeatPos, RepeatEmit c s)
+gEmitHead = undefined
+
+-- | @.emit@ modulator with a sub-traversal argument after the
+-- @.repeat@ step. It always returns 'Just'.
+gEmitTail :: (ToGTraversal g, WalkType c, WalkType cc, Split cc c) => g cc s e -> Maybe (RepeatPos, RepeatEmit c s)
+gEmitTail = undefined
+
+-- | @.loops@ step.
+gLoops :: Maybe RepeatLabel -> Walk Transform s Int
+gLoops = undefined
 
 -- | Data types that mean a projection from one type to another.
 class ProjectionLike p where

@@ -1,5 +1,5 @@
 name:                   greskell
-version:                1.0.0.1
+version:                1.0.1.0
 author:                 Toshio Ito <debug.ito@gmail.com>
 maintainer:             Toshio Ito <debug.ito@gmail.com>
 license:                BSD3
@@ -26,7 +26,7 @@ library
   -- default-extensions:   
   other-extensions:     OverloadedStrings, GeneralizedNewtypeDeriving,
                         FlexibleInstances, FlexibleContexts, MultiParamTypeClasses, TypeFamilies,
-                        GADTs, DeriveTraversable, DeriveGeneric
+                        GADTs, DeriveTraversable, DeriveGeneric, StandaloneDeriving
   exposed-modules:      Data.Greskell,
                         Data.Greskell.Gremlin,
                         Data.Greskell.Binder,
