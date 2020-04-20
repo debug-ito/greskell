@@ -9,6 +9,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
+import org.apache.tinkerpop.gremlin.process.traversal.Path;
 
 
 public class TestGremlin {
@@ -149,21 +150,23 @@ public class TestGremlin {
     }
   }
 
+  private static String pathToString(Path p) {
+    return p.objects().collect { elem ->
+      if(elem instanceof Vertex) {
+        return "v(" + (String)(((Vertex)elem).value("name")) + ")";
+      }else if(elem instanceof Edge) {
+        def e = (Edge)elem;
+        return "e(" + (String)e.outVertex().value("name") + "-" + e.label() + "->" +
+          (String)e.inVertex().value("name") + ")";
+      }
+    }.join(",");
+  }
+
   @Test
   public void V_method_flatMaps_the_input_traverser() throws Exception {
     def g = MyModern.make().traversal();
     def paths = g.E().hasLabel("created").outV().as("creator").V().has("name", P.within("vadas", "ripple")).path().toList();
-    def paths_str = paths.collect { p ->
-      p.objects().collect { elem ->
-        if(elem instanceof Vertex) {
-          return "v(" + (String)(((Vertex)elem).value("name")) + ")";
-        }else if(elem instanceof Edge) {
-          def e = (Edge)elem;
-          return "e(" + (String)e.outVertex().value("name") + "-" + e.label() + "->" +
-            (String)e.inVertex().value("name") + ")";
-        }
-      }.join(",");
-    };
+    def paths_str = paths.collect { p -> return pathToString(p); };
     assertThat paths_str.sort(), is([
       "e(josh-created->lop),v(josh),v(ripple)",
       "e(josh-created->lop),v(josh),v(vadas)",
@@ -174,5 +177,13 @@ public class TestGremlin {
       "e(peter-created->lop),v(peter),v(ripple)",
       "e(peter-created->lop),v(peter),v(vadas)",
      ]);
+  }
+
+  @Test
+  public void repeat_step_is_transparent_about_internal_traversal() throws Exception {
+    def g = MyModern.make().traversal();
+    def paths_str =
+      g.V().has("name", "marko").repeat(__.identity()).times(2).path().toList().collect { p -> return pathToString(p); };
+    assertThat paths_str, is(["v(marko)"]);
   }
 }
