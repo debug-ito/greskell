@@ -234,4 +234,27 @@ public class TestGremlin {
       2, 4, 8, 16, 32 // the final result is output by emit. It's not output as the final result again.
     ]);
   }
+
+  @Test
+  public void union_step_without_arg() throws Exception {
+    def g = MyModern.make().traversal();
+    def paths_str = g.V().has("name", "marko").union().path().toList().collect { p -> return pathToString(p); };
+    assertThat paths_str, is([]);
+  }
+
+  @Test
+  public void union_step_with_identity() throws Exception {
+    def g = MyModern.make().traversal();
+    def paths_str = g.V().has("name", "marko")
+      .union(__.identity(), __.identity()).path().toList().collect { p -> return pathToString(p); };
+    assertThat paths_str, is(["v(marko)", "v(marko)"]);
+  }
+
+  @Test
+  public void union_step_with_transformation() throws Exception {
+    def g = MyModern.make().traversal();
+    def paths_str = g.V().has("name", "marko")
+      .union(__.out("knows").order().by("age"), __.out("created")).path().toList().collect { p -> return pathToString(p); };
+    assertThat paths_str, is(["v(marko),v(vadas)", "v(marko),v(josh)", "v(marko),v(lop)"]);
+  }
 }
