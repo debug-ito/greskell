@@ -18,6 +18,10 @@
   * `gIs'`
   * `gIsP`
   * `gIsP'`
+  * `gCyclicPath`
+  * `gCyclicPath'`
+  * `gSimplePath`
+  * `gSimplePath'`
 * Add the follwing types.
   * `RepeatUntil`
   * `RepeatEmit`

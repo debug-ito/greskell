@@ -58,6 +58,10 @@ module Data.Greskell.GTraversal
          gIdentity,
          gIdentity',
          gFilter,
+         gCyclicPath,
+         gCyclicPath',
+         gSimplePath,
+         gSimplePath',
          -- ** Is step
          gIs,
          gIs',
@@ -573,6 +577,22 @@ travToG = toGremlin . unGTraversal . toGTraversal
 -- "g.V().filter(__.out(\"knows\"))"
 gFilter :: (ToGTraversal g, WalkType c, WalkType p, Split c p) => g c s e -> Walk p s s
 gFilter walk = unsafeWalk "filter" [travToG walk]
+
+-- | @.cyclicPath@ step.
+gCyclicPath :: (WalkType c) => Walk c a a
+gCyclicPath = liftWalk gCyclicPath'
+
+-- | Monomorphic version of 'gCyclicPath'.
+gCyclicPath' :: Walk Filter a a
+gCyclicPath' = unsafeWalk "cyclicPath" []
+
+-- | @.simplePath@ step.
+gSimplePath :: (WalkType c) => Walk c a a
+gSimplePath = liftWalk gSimplePath'
+
+-- | Monomorphic version of 'gSimplePath'.
+gSimplePath' :: Walk Filter a a
+gSimplePath' = unsafeWalk "simplePath" []
 
 -- | @.is@ step of simple equality.
 --
