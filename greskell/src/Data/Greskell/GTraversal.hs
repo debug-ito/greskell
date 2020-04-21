@@ -115,6 +115,8 @@ module Data.Greskell.GTraversal
          RepeatEmit(..),
          RepeatPos(..),
          RepeatLabel(..),
+         -- ** Branching steps
+         gUnion,
          -- ** Transformation steps
          gFlatMap,
          gV,
@@ -1015,6 +1017,17 @@ gEmitTail trav = Just (RepeatTail, RepeatEmitT $ toGTraversal trav)
 -- @since 1.0.1.0
 gLoops :: Maybe RepeatLabel -> Walk Transform s Int
 gLoops mlabel = unsafeWalk "loops" $ maybe [] (\l -> [toGremlin l]) mlabel
+
+-- | @.union@ step.
+--
+-- >>> let key_age = ("age" :: Key AVertex Int)
+-- >>> let key_birth_year = ("birth_year" :: Key AVertex Int)
+-- >>> toGremlin (source "g" & sV' [] &. gUnion [gValues [key_age], gValues [key_birth_year]])
+-- "g.V().union(__.values(\"age\"),__.values(\"birth_year\"))"
+--
+-- @since 1.0.1.0
+gUnion :: (ToGTraversal g, WalkType c) => [g c s e] -> Walk c s e
+gUnion ts = unsafeWalk "union" $ map (toGremlin . toGTraversal) ts
 
 -- | Data types that mean a projection from one type to another.
 class ProjectionLike p where

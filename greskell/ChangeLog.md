@@ -22,6 +22,7 @@
   * `gCyclicPath'`
   * `gSimplePath`
   * `gSimplePath'`
+  * `gUnion`
 * Add the follwing types.
   * `RepeatUntil`
   * `RepeatEmit`
