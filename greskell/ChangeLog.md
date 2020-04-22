@@ -25,6 +25,7 @@
   * `gUnion`
   * `gChoose3`
   * `gConstant`
+  * `gLocal`
 * Add the follwing types.
   * `RepeatUntil`
   * `RepeatEmit`

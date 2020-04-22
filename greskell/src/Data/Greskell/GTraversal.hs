@@ -116,6 +116,7 @@ module Data.Greskell.GTraversal
          RepeatPos(..),
          RepeatLabel(..),
          -- ** Branching steps
+         gLocal,
          gUnion,
          gChoose3,
          -- ** Transformation steps
@@ -1019,6 +1020,15 @@ gEmitTailT trav = Just (RepeatTail, RepeatEmitT $ toGTraversal trav)
 -- @since 1.0.1.0
 gLoops :: Maybe RepeatLabel -> Walk Transform s Int
 gLoops mlabel = unsafeWalk "loops" $ maybe [] (\l -> [toGremlin l]) mlabel
+
+-- | @.local@ step.
+--
+-- >>> toGremlin (source "g" & sV' [] &. gLocal ( gOut' [] >>> gLimit 3 ))
+-- "g.V().local(__.out().limit(3))"
+--
+-- @since 1.0.1.0
+gLocal :: (ToGTraversal g, WalkType c) => g c s e -> Walk c s e
+gLocal t = unsafeWalk "local" [toGremlin $ toGTraversal t]
 
 -- | @.union@ step.
 --
