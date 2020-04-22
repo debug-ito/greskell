@@ -257,4 +257,32 @@ public class TestGremlin {
       .union(__.out("knows").order().by("age"), __.out("created")).path().toList().collect { p -> return pathToString(p); };
     assertThat paths_str, is(["v(marko),v(vadas)", "v(marko),v(josh)", "v(marko),v(lop)"]);
   }
+
+  @Test
+  public void choose_step_transform_in_predicate() throws Exception {
+    def g = MyModern.make().traversal();
+    def pathsWithAge = { age_thresh ->
+      return g.V().hasLabel("person").choose(
+        __.out("knows").has("name", "josh").has("age", P.gt(age_thresh)),
+        __.identity(),
+        __.not(__.identity()),
+      ).path().toList().collect { p -> return pathToString(p); };
+    };
+    assertThat pathsWithAge(30), is(["v(marko)"]);
+    assertThat pathsWithAge(40), is([]);
+  }
+
+  @Test
+  public void choose_step_transform_in_result() throws Exception {
+    def g = MyModern.make().traversal();
+    def pathsWithAge = { age_thresh ->
+      return g.V().has("name", "marko").choose(
+        __.has("age", P.gt(age_thresh)),
+        __.out("created"),
+        __.out("knows")
+      ).path().toList().collect { p -> return pathToString(p); };
+    };
+    assertThat pathsWithAge(25).sort(), is(["v(marko),v(lop)"]);
+    assertThat pathsWithAge(30).sort(), is(["v(marko),v(josh)", "v(marko),v(vadas)"]);
+  }
 }
