@@ -30,7 +30,7 @@ import Data.Greskell.GTraversal
     gProperties, gHasKeyP, gHasValueP,
     ByComparator(..), gBy2, gBy1, gBy,
     gRepeat, gTimes, gUntilHead, gUntilTail,
-    gEmitAlwaysHead, gEmitAlwaysTail, gEmitHead, gEmitTail,
+    gEmitHead, gEmitTail, gEmitHeadT, gEmitTailT,
     gLoops
   )
 
@@ -145,17 +145,17 @@ spec_repeat = do
     specify "no modulation" $ do
       toGremlin (source "g" & sV' [] &. gRepeat Nothing Nothing Nothing (gOut' []))
         `shouldBe` "g.V().repeat(__.out())"
-    specify "gTimes and gEmitAlwaysHead" $ do
-      toGremlin (source "g" & sV' [] &. gRepeat Nothing (gTimes 3) gEmitAlwaysHead (gOut' []))
+    specify "gTimes and gEmitHead" $ do
+      toGremlin (source "g" & sV' [] &. gRepeat Nothing (gTimes 3) gEmitHead (gOut' []))
         `shouldBe` "g.V().times(3).emit().repeat(__.out())"
-    specify "gUntilHead and gEmitAlwaysTail" $ do
-      toGremlin (source "g" & sV' [] &. gRepeat Nothing (gUntilHead $ hasName "foo") gEmitAlwaysTail (gOut' []))
+    specify "gUntilHead and gEmitTail" $ do
+      toGremlin (source "g" & sV' [] &. gRepeat Nothing (gUntilHead $ hasName "foo") gEmitTail (gOut' []))
         `shouldBe` "g.V().until(__.has(\"name\",\"foo\")).repeat(__.out()).emit()"
-    specify "gUntilTail and gEmitHead" $ do
-      toGremlin (source "g" & sV' [] &. gRepeat Nothing (gUntilTail $ hasName "foo") (gEmitHead $ hasName "bar") (gOut' []))
+    specify "gUntilTail and gEmitHeadT" $ do
+      toGremlin (source "g" & sV' [] &. gRepeat Nothing (gUntilTail $ hasName "foo") (gEmitHeadT $ hasName "bar") (gOut' []))
         `shouldBe` "g.V().emit(__.has(\"name\",\"bar\")).repeat(__.out()).until(__.has(\"name\",\"foo\"))"
-    specify "gUntilTail and gEmitTail" $ do
-      toGremlin (source "g" & sV' [] &. gRepeat Nothing (gUntilTail $ hasName "foo") (gEmitTail $ hasName "bar") (gOut' []))
+    specify "gUntilTail and gEmitTailT" $ do
+      toGremlin (source "g" & sV' [] &. gRepeat Nothing (gUntilTail $ hasName "foo") (gEmitTailT $ hasName "bar") (gOut' []))
         `shouldBe` "g.V().repeat(__.out()).until(__.has(\"name\",\"foo\")).emit(__.has(\"name\",\"bar\"))"
     specify "gLoops without label" $ do
       toGremlin (source "g" & sV' [] &. gRepeat Nothing (gUntilTail $ gLoops Nothing >>> gIs 5) Nothing (gOut' []))

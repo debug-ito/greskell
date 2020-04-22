@@ -51,7 +51,7 @@ import Data.Greskell.GTraversal
     gFilter, gOut', gOutV, gOutV', gInV, gInV', gId, gLabel, gProject,
     gValueMap,
     gProject, gByL,
-    gRepeat, gTimes, gEmitAlwaysHead, gUntilTail, gLoops, gIsP
+    gRepeat, gTimes, gEmitHead, gUntilTail, gLoops, gIsP
   )
 import Data.Greskell.PMap (lookupAsM, lookupListAs, pMapToThrow)
 
@@ -465,10 +465,10 @@ spec_repeat = do
         trav = gRepeat Nothing (gTimes 3) Nothing (multiplyWalk 2) $. start
     got <- fmap V.toList $ WS.slurpResults =<< WS.submit client trav Nothing
     got `shouldBe` [8, 16, 24]
-  specify "gRepeat, gTimes and gEmitAlwaysHead" $ withClient $ \client -> do
+  specify "gRepeat, gTimes and gEmitHead" $ withClient $ \client -> do
     let start :: GTraversal Transform () Int
         start = unsafeGTraversal "__(1, 10, 100)"
-        trav = gRepeat Nothing (gTimes 3) gEmitAlwaysHead (multiplyWalk 2) $. start
+        trav = gRepeat Nothing (gTimes 3) gEmitHead (multiplyWalk 2) $. start
     got <- fmap V.toList $ WS.slurpResults =<< WS.submit client trav Nothing
     sort got `shouldBe` [1, 2, 4, 8, 10, 20, 40, 80, 100, 200, 400, 800]
   specify "gRepeat, gUntilTail and gLoops" $ withClient $ \client -> do

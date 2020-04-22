@@ -108,8 +108,8 @@ module Data.Greskell.GTraversal
          gUntilTail,
          gEmitHead,
          gEmitTail,
-         gEmitAlwaysHead,
-         gEmitAlwaysTail,
+         gEmitHeadT,
+         gEmitTailT,
          gLoops,
          RepeatUntil(..),
          RepeatEmit(..),
@@ -870,7 +870,7 @@ makeUntilWalk (RepeatUntilT trav) = unsafeWalk "until" [toGremlin trav]
 data RepeatEmit c s where
   -- | @.emit@ modulator without argument. It always emits the input
   -- traverser of type @s@.
-  RepeatEmitAlways :: RepeatEmit c s
+  RepeatEmit :: RepeatEmit c s
   -- | @.emit@ modulator with a sub-traversal as the predicate to
   -- decide if it emits the traverser.
   RepeatEmitT :: (WalkType cc, WalkType c, Split cc c) => GTraversal cc s e -> RepeatEmit c s
@@ -878,7 +878,7 @@ data RepeatEmit c s where
 deriving instance Show (RepeatEmit c s)
 
 makeEmitWalk :: WalkType c => RepeatEmit c s -> Walk c s s
-makeEmitWalk (RepeatEmitAlways) = unsafeWalk "emit" []
+makeEmitWalk (RepeatEmit) = unsafeWalk "emit" []
 makeEmitWalk (RepeatEmitT trav) = unsafeWalk "emit" [toGremlin trav]
 
 
@@ -972,42 +972,42 @@ gUntilTail trav = Just (RepeatTail, RepeatUntilT $ toGTraversal trav)
 -- | @.emit@ modulator without argument before the @.repeat@ step. It
 -- always returns 'Just'.
 --
--- >>> toGremlin (source "g" & sV' [] &. gRepeat Nothing Nothing gEmitAlwaysHead (gOut' []))
+-- >>> toGremlin (source "g" & sV' [] &. gRepeat Nothing Nothing gEmitHead (gOut' []))
 -- "g.V().emit().repeat(__.out())"
 --
 -- @since 1.0.1.0
-gEmitAlwaysHead :: Maybe (RepeatPos, RepeatEmit c s)
-gEmitAlwaysHead = Just (RepeatHead, RepeatEmitAlways)
+gEmitHead :: Maybe (RepeatPos, RepeatEmit c s)
+gEmitHead = Just (RepeatHead, RepeatEmit)
 
 -- | @.emit@ modulator without argument after the @.repeat@ step. It
 -- always returns 'Just'.
 --
--- >>> toGremlin (source "g" & sV' [] &. gRepeat Nothing Nothing gEmitAlwaysTail (gOut' []))
+-- >>> toGremlin (source "g" & sV' [] &. gRepeat Nothing Nothing gEmitTail (gOut' []))
 -- "g.V().repeat(__.out()).emit()"
 --
 -- @since 1.0.1.0
-gEmitAlwaysTail :: Maybe (RepeatPos, RepeatEmit c s)
-gEmitAlwaysTail = Just (RepeatTail, RepeatEmitAlways)
+gEmitTail :: Maybe (RepeatPos, RepeatEmit c s)
+gEmitTail = Just (RepeatTail, RepeatEmit)
 
 -- | @.emit@ modulator with a sub-traversal argument before the
 -- @.repeat@ step. It always returns 'Just'.
 --
--- >>> toGremlin (source "g" & sV' [] &. gRepeat Nothing Nothing (gEmitHead $ gHasLabel' "person") (gOut' []))
+-- >>> toGremlin (source "g" & sV' [] &. gRepeat Nothing Nothing (gEmitHeadT $ gHasLabel' "person") (gOut' []))
 -- "g.V().emit(__.hasLabel(\"person\")).repeat(__.out())"
 --
 -- @since 1.0.1.0
-gEmitHead :: (ToGTraversal g, WalkType c, WalkType cc, Split cc c) => g cc s e -> Maybe (RepeatPos, RepeatEmit c s)
-gEmitHead trav = Just (RepeatHead, RepeatEmitT $ toGTraversal trav)
+gEmitHeadT :: (ToGTraversal g, WalkType c, WalkType cc, Split cc c) => g cc s e -> Maybe (RepeatPos, RepeatEmit c s)
+gEmitHeadT trav = Just (RepeatHead, RepeatEmitT $ toGTraversal trav)
 
 -- | @.emit@ modulator with a sub-traversal argument after the
 -- @.repeat@ step. It always returns 'Just'.
 --
--- >>> toGremlin (source "g" & sV' [] &. gRepeat Nothing Nothing (gEmitTail $ gHasLabel' "person") (gOut' []))
+-- >>> toGremlin (source "g" & sV' [] &. gRepeat Nothing Nothing (gEmitTailT $ gHasLabel' "person") (gOut' []))
 -- "g.V().repeat(__.out()).emit(__.hasLabel(\"person\"))"
 --
 -- @since 1.0.1.0
-gEmitTail :: (ToGTraversal g, WalkType c, WalkType cc, Split cc c) => g cc s e -> Maybe (RepeatPos, RepeatEmit c s)
-gEmitTail trav = Just (RepeatTail, RepeatEmitT $ toGTraversal trav)
+gEmitTailT :: (ToGTraversal g, WalkType c, WalkType cc, Split cc c) => g cc s e -> Maybe (RepeatPos, RepeatEmit c s)
+gEmitTailT trav = Just (RepeatTail, RepeatEmitT $ toGTraversal trav)
 
 -- | @.loops@ step.
 --
