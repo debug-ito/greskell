@@ -907,15 +907,15 @@ fromMWalk (MWalk (Just w)) = w
 -- @since 1.0.1.0
 gRepeat :: (ToGTraversal g, WalkType c)
         => Maybe RepeatLabel -- ^ Label for the loop.
-        -> g c s s -- ^ Repeated traversal
         -> Maybe (RepeatPos, RepeatUntil c s)
         -- ^ @.until@ or @.times@ modulator. You can use 'gTimes',
         -- 'gUntilHead', 'gUntilTail' to make this argument.
         -> Maybe (RepeatPos, RepeatEmit c s)
         -- ^ @.emit@ modulator. You can use 'gEmitHead', 'gEmitTail',
         -- 'gEmitAlwaysHead', 'gEmitAlwaysTail' to make this argument.
+        -> g c s s -- ^ Repeated traversal
         -> Walk c s s
-gRepeat mlabel repeated_trav muntil memit = fromMWalk (head_walk <> toMWalk repeat_body <> tail_walk)
+gRepeat mlabel muntil memit repeated_trav = fromMWalk (head_walk <> toMWalk repeat_body <> tail_walk)
   where
     repeat_body = unsafeWalk "repeat" (label_args ++ [toGremlin $ toGTraversal repeated_trav])
     label_args = maybe [] (\l -> [toGremlin l]) mlabel
@@ -939,7 +939,7 @@ gRepeat mlabel repeated_trav muntil memit = fromMWalk (head_walk <> toMWalk repe
 -- | @.times@ modulator before the @.repeat@ step. It always returns
 -- 'Just'.
 --
--- >>> toGremlin (source "g" & sV' [] &. gRepeat Nothing (gOut' []) (gTimes 3) Nothing)
+-- >>> toGremlin (source "g" & sV' [] &. gRepeat Nothing (gTimes 3) Nothing (gOut' []))
 -- "g.V().times(3).repeat(__.out())"
 --
 -- @since 1.0.1.0
@@ -952,7 +952,7 @@ gTimes c = Just (RepeatHead, RepeatTimes c)
 -- | @.until@ modulator before the @.repeat@ step. It always returns
 -- 'Just'.
 --
--- >>> toGremlin (source "g" & sV' [] &. gRepeat Nothing (gOut' []) (gUntilHead $ gHasLabel' "person") Nothing)
+-- >>> toGremlin (source "g" & sV' [] &. gRepeat Nothing (gUntilHead $ gHasLabel' "person") Nothing (gOut' []))
 -- "g.V().until(__.hasLabel(\"person\")).repeat(__.out())"
 --
 -- @since 1.0.1.0
@@ -962,7 +962,7 @@ gUntilHead trav = Just (RepeatHead, RepeatUntilT $ toGTraversal trav)
 -- | @.until@ modulator after the @.repeat@ step. It always returns
 -- 'Just'.
 --
--- >>> toGremlin (source "g" & sV' [] &. gRepeat Nothing (gOut' []) (gUntilTail $ gHasLabel' "person") Nothing)
+-- >>> toGremlin (source "g" & sV' [] &. gRepeat Nothing (gUntilTail $ gHasLabel' "person") Nothing (gOut' []))
 -- "g.V().repeat(__.out()).until(__.hasLabel(\"person\"))"
 --
 -- @since 1.0.1.0
@@ -972,7 +972,7 @@ gUntilTail trav = Just (RepeatTail, RepeatUntilT $ toGTraversal trav)
 -- | @.emit@ modulator without argument before the @.repeat@ step. It
 -- always returns 'Just'.
 --
--- >>> toGremlin (source "g" & sV' [] &. gRepeat Nothing (gOut' []) Nothing gEmitAlwaysHead)
+-- >>> toGremlin (source "g" & sV' [] &. gRepeat Nothing Nothing gEmitAlwaysHead (gOut' []))
 -- "g.V().emit().repeat(__.out())"
 --
 -- @since 1.0.1.0
@@ -982,7 +982,7 @@ gEmitAlwaysHead = Just (RepeatHead, RepeatEmitAlways)
 -- | @.emit@ modulator without argument after the @.repeat@ step. It
 -- always returns 'Just'.
 --
--- >>> toGremlin (source "g" & sV' [] &. gRepeat Nothing (gOut' []) Nothing gEmitAlwaysTail)
+-- >>> toGremlin (source "g" & sV' [] &. gRepeat Nothing Nothing gEmitAlwaysTail (gOut' []))
 -- "g.V().repeat(__.out()).emit()"
 --
 -- @since 1.0.1.0
@@ -992,7 +992,7 @@ gEmitAlwaysTail = Just (RepeatTail, RepeatEmitAlways)
 -- | @.emit@ modulator with a sub-traversal argument before the
 -- @.repeat@ step. It always returns 'Just'.
 --
--- >>> toGremlin (source "g" & sV' [] &. gRepeat Nothing (gOut' []) Nothing (gEmitHead $ gHasLabel' "person"))
+-- >>> toGremlin (source "g" & sV' [] &. gRepeat Nothing Nothing (gEmitHead $ gHasLabel' "person") (gOut' []))
 -- "g.V().emit(__.hasLabel(\"person\")).repeat(__.out())"
 --
 -- @since 1.0.1.0
@@ -1002,7 +1002,7 @@ gEmitHead trav = Just (RepeatHead, RepeatEmitT $ toGTraversal trav)
 -- | @.emit@ modulator with a sub-traversal argument after the
 -- @.repeat@ step. It always returns 'Just'.
 --
--- >>> toGremlin (source "g" & sV' [] &. gRepeat Nothing (gOut' []) Nothing (gEmitTail $ gHasLabel' "person"))
+-- >>> toGremlin (source "g" & sV' [] &. gRepeat Nothing Nothing (gEmitTail $ gHasLabel' "person") (gOut' []))
 -- "g.V().repeat(__.out()).emit(__.hasLabel(\"person\"))"
 --
 -- @since 1.0.1.0
@@ -1012,7 +1012,7 @@ gEmitTail trav = Just (RepeatTail, RepeatEmitT $ toGTraversal trav)
 -- | @.loops@ step.
 --
 -- >>> let loop_label = Just "the_loop"
--- >>> toGremlin (source "g" & sV' [] &. gRepeat loop_label (gOut' []) (gUntilTail $ gLoops loop_label >>> gIs 3) Nothing)
+-- >>> toGremlin (source "g" & sV' [] &. gRepeat loop_label (gUntilTail $ gLoops loop_label >>> gIs 3) Nothing (gOut' []))
 -- "g.V().repeat(\"the_loop\",__.out()).until(__.loops(\"the_loop\").is(3))"
 --
 -- @since 1.0.1.0

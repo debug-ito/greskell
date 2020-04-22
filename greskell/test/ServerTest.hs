@@ -462,18 +462,18 @@ spec_repeat = do
   specify "gRepeat and gTimes" $ withClient $ \client -> do
     let start :: GTraversal Transform () Int
         start = unsafeGTraversal "__(1,2,3)"
-        trav = gRepeat Nothing (multiplyWalk 2) (gTimes 3) Nothing $. start
+        trav = gRepeat Nothing (gTimes 3) Nothing (multiplyWalk 2) $. start
     got <- fmap V.toList $ WS.slurpResults =<< WS.submit client trav Nothing
     got `shouldBe` [8, 16, 24]
   specify "gRepeat, gTimes and gEmitAlwaysHead" $ withClient $ \client -> do
     let start :: GTraversal Transform () Int
         start = unsafeGTraversal "__(1, 10, 100)"
-        trav = gRepeat Nothing (multiplyWalk 2) (gTimes 3) gEmitAlwaysHead $. start
+        trav = gRepeat Nothing (gTimes 3) gEmitAlwaysHead (multiplyWalk 2) $. start
     got <- fmap V.toList $ WS.slurpResults =<< WS.submit client trav Nothing
     sort got `shouldBe` [1, 2, 4, 8, 10, 20, 40, 80, 100, 200, 400, 800]
   specify "gRepeat, gUntilTail and gLoops" $ withClient $ \client -> do
     let start :: GTraversal Transform () Int
         start = unsafeGTraversal "__(1, 10, 100)"
-        trav = gRepeat Nothing (multiplyWalk 2) (gUntilTail $ gIsP (pGte 4) <<< gLoops Nothing) Nothing $. start
+        trav = gRepeat Nothing (gUntilTail $ gIsP (pGte 4) <<< gLoops Nothing) Nothing (multiplyWalk 2) $. start
     got <- fmap V.toList $ WS.slurpResults =<< WS.submit client trav Nothing
     sort got `shouldBe` [16, 160, 1600]
