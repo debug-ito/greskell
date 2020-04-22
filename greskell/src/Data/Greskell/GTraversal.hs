@@ -117,6 +117,7 @@ module Data.Greskell.GTraversal
          RepeatLabel(..),
          -- ** Branching steps
          gUnion,
+         gChoose3,
          -- ** Transformation steps
          gFlatMap,
          gV,
@@ -1028,6 +1029,24 @@ gLoops mlabel = unsafeWalk "loops" $ maybe [] (\l -> [toGremlin l]) mlabel
 -- @since 1.0.1.0
 gUnion :: (ToGTraversal g, WalkType c) => [g c s e] -> Walk c s e
 gUnion ts = unsafeWalk "union" $ map (toGremlin . toGTraversal) ts
+
+-- | @.choose@ step with if-then-else style.
+--
+-- >>> let key_age = ("age" :: Key AVertex Int)
+-- >>> toGremlin (source "g" & sV' [] &. gChoose3 (gHas2' key_age 30) (gIn' []) (gOut' []))
+-- "g.V().choose(__.has(\"age\",30),__.in(),__.out())"
+--
+-- @since 1.0.1.0
+gChoose3 :: (ToGTraversal g, Split cc c, WalkType cc, WalkType c)
+         => g cc s ep -- ^ the predicate traversal.
+         -> g c s e -- ^ The traversal executed if the predicate traversal outputs something.
+         -> g c s e -- ^ The traversal executed if the predicate traversal outputs nothing.
+         -> Walk c s e
+gChoose3 pt tt ft = unsafeWalk "choose"
+                    [ toGremlin $ toGTraversal pt,
+                      toGremlin $ toGTraversal tt,
+                      toGremlin $ toGTraversal ft
+                    ]
 
 -- | Data types that mean a projection from one type to another.
 class ProjectionLike p where

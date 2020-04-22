@@ -23,6 +23,7 @@
   * `gSimplePath`
   * `gSimplePath'`
   * `gUnion`
+  * `gChoose3`
 * Add the follwing types.
   * `RepeatUntil`
   * `RepeatEmit`
