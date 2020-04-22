@@ -285,4 +285,16 @@ public class TestGremlin {
     assertThat pathsWithAge(25).sort(), is(["v(marko),v(lop)"]);
     assertThat pathsWithAge(30).sort(), is(["v(marko),v(josh)", "v(marko),v(vadas)"]);
   }
+
+  @Test
+  public void constant_step_and_path() throws Exception {
+    def path_objs = __.__(1,2,3).constant(999).path().toList().collect { p -> p.objects(); };
+    assertThat path_objs, is([[1,999], [2,999], [3,999]]);
+  }
+
+  @Test
+  public void constant_step_to_void() throws Exception {
+    def got = __.__(1,2,3).not(__.identity()).constant(999).toList();
+    assertThat got, is([]);
+  }
 }
