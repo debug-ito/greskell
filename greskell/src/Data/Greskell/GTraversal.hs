@@ -122,6 +122,7 @@ module Data.Greskell.GTraversal
          gFlatMap,
          gV,
          gV',
+         gConstant,
          -- ** As step
          gAs,
          -- ** Accessor steps
@@ -1212,6 +1213,15 @@ gV ids = unsafeWalk "V" $ map toGremlin ids
 -- @since 0.2.0.0
 gV' :: [Greskell (ElementID AVertex)] -> Walk Transform s AVertex
 gV' = gV
+
+-- | @.constant@ step.
+--
+-- >>> toGremlin (source "g" & sV' [] &. gConstant (10 :: Greskell Int))
+-- "g.V().constant(10)"
+--
+-- @since 1.0.1.0
+gConstant :: Greskell a -> Walk Transform s a
+gConstant v = unsafeWalk "constant" [toGremlin v]
 
 -- | @.as@ step.
 --
