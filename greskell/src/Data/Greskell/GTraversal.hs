@@ -119,6 +119,8 @@ module Data.Greskell.GTraversal
          gLocal,
          gUnion,
          gChoose3,
+         -- ** Barrier steps
+         gBarrier,
          -- ** Transformation steps
          gFlatMap,
          gV,
@@ -1058,6 +1060,15 @@ gChoose3 pt tt ft = unsafeWalk "choose"
                       toGremlin $ toGTraversal tt,
                       toGremlin $ toGTraversal ft
                     ]
+
+-- | @.barrier@ step.
+--
+-- @since 1.0.1.0
+gBarrier :: WalkType c
+         => Maybe (Greskell Int)
+         -- ^ Max number of traversers kept at this barrier.
+         -> Walk c s s
+gBarrier mmax = unsafeWalk "barrier" $ maybe [] (\m -> [toGremlin m]) mmax
 
 -- | Data types that mean a projection from one type to another.
 class ProjectionLike p where

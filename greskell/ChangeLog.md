@@ -26,6 +26,7 @@
   * `gChoose3`
   * `gConstant`
   * `gLocal`
+  * `gBarrier`
 * Add the follwing types.
   * `RepeatUntil`
   * `RepeatEmit`
