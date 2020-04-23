@@ -11,8 +11,8 @@
   * `gUntilTail`
   * `gEmitHead`
   * `gEmitTail`
-  * `gEmitAlwaysHead`
-  * `gEmitAlwaysTail`
+  * `gEmitHeadT`
+  * `gEmitTailT`
   * `gLoops`
   * `gIs`
   * `gIs'`
@@ -27,6 +27,8 @@
   * `gConstant`
   * `gLocal`
   * `gBarrier`
+  * `gDedup`
+  * `gDedupN`
 * Add the follwing types.
   * `RepeatUntil`
   * `RepeatEmit`

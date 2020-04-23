@@ -121,6 +121,8 @@ module Data.Greskell.GTraversal
          gChoose3,
          -- ** Barrier steps
          gBarrier,
+         gDedup,
+         gDedupN,
          -- ** Transformation steps
          gFlatMap,
          gV,
@@ -1069,6 +1071,45 @@ gBarrier :: WalkType c
          -- ^ Max number of traversers kept at this barrier.
          -> Walk c s s
 gBarrier mmax = unsafeWalk "barrier" $ maybe [] (\m -> [toGremlin m]) mmax
+
+-- | @.dedup@ step without argument.
+--
+-- @.dedup@ step is 'Transform' because the filtering decision depends
+-- on the sequence (order) of input elements.
+--
+-- >>> toGremlin (source "g" & sV' [] &. gDedup Nothing)
+-- "g.V().dedup()"
+-- >>> let key_age = ("age" :: Key AVertex Int)
+-- >>> toGremlin (source "g" & sV' [] &. gDedup (Just $ gBy key_age))
+-- "g.V().dedup().by(\"age\")"
+--
+-- @since 1.0.1.0
+gDedup :: Maybe (ByProjection s e)
+       -- ^ @.by@ modulator. If specified, the result of type @e@ is
+       -- used as the criterion of deduplication.
+       -> Walk Transform s s
+gDedup mp = gDedupGeneric [] mp
+
+-- | @.dedup@ step with at least one argument. The tuple specified by
+-- the 'AsLabel's is used as the criterion of deduplication.
+--
+-- >>> let label_a = ("a" :: AsLabel AVertex)
+-- >>> let label_b = ("b" :: AsLabel AVertex)
+-- >>> toGremlin (source "g" & sV' [] &. gAs label_a &. gOut' [] &. gAs label_b &. gDedupN label_a [label_b] Nothing)
+-- "g.V().as(\"a\").out().as(\"b\").dedup(\"a\",\"b\")"
+--
+-- @since 1.0.1.0
+gDedupN :: AsLabel a -> [AsLabel a] -> Maybe (ByProjection a e) -> Walk Transform s s
+gDedupN l ls mp = gDedupGeneric (map toGremlin (l : ls)) mp
+
+gDedupGeneric :: [Text] -> Maybe (ByProjection a b) -> Walk Transform s s
+gDedupGeneric args mp = 
+  case mp of
+    Nothing -> main_walk
+    Just (ByProjection g) -> modulateWith main_walk [unsafeWalk "by" [toGremlin g]]
+  where
+    main_walk = unsafeWalk "dedup" args
+
 
 -- | Data types that mean a projection from one type to another.
 class ProjectionLike p where
