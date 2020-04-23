@@ -128,6 +128,7 @@ module Data.Greskell.GTraversal
          gV,
          gV',
          gConstant,
+         gUnfold,
          -- ** As step
          gAs,
          -- ** Accessor steps
@@ -1284,6 +1285,21 @@ gV' = gV
 -- @since 1.0.1.0
 gConstant :: Greskell a -> Walk Transform s a
 gConstant v = unsafeWalk "constant" [toGremlin v]
+
+-- | @.unfold@ step.
+--
+-- Note that we use 'AsIterator' here because basically the @.unfold@
+-- step does the same thing as @IteratorUtils.asIterator@ function in
+-- Tinkerpop. However, Tinkerpop's implementation of @.unfold@ step
+-- doesn't necessarily use @asIterator@, so there may be some corner
+-- cases where @asIterator@ and @.unfold@ step behave differently.
+--
+-- >>> toGremlin (source "g" & sV' [] &. gFold &. gUnfold)
+-- "g.V().fold().unfold()"
+--
+-- @since 1.0.1.0
+gUnfold :: AsIterator a => Walk Transform a (IteratorItem a)
+gUnfold = unsafeWalk "unfold" []
 
 -- | @.as@ step.
 --

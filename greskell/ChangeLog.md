@@ -29,6 +29,7 @@
   * `gBarrier`
   * `gDedup`
   * `gDedupN`
+  * `gUnfold`
 * Add the follwing types.
   * `RepeatUntil`
   * `RepeatEmit`
