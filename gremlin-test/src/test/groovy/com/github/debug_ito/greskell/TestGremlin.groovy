@@ -7,6 +7,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.Edge;
+import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.Path;
@@ -296,5 +297,30 @@ public class TestGremlin {
   public void constant_step_to_void() throws Exception {
     def got = __.__(1,2,3).not(__.identity()).constant(999).toList();
     assertThat got, is([]);
+  }
+
+  @Test
+  public void dedup_step_depends_on_order() throws Exception {
+    def g = MyModern.make().traversal();
+
+    // josh (person)
+    // lop (software)
+    // marko (person)
+    // peter (person)
+    // ripple (software)
+    // vadas (person)
+
+    // Note: we need barrier() step before dedup() to ensure the order
+    // of the input to dedup.
+    
+    assertThat(
+      g.V().order().by("name", Order.incr).barrier().dedup().by(T.label).values("name").toList(),
+      is(["josh", "lop"])
+    );
+    assertThat(
+      g.V().order().by("name", Order.decr).barrier().dedup().by(T.label).values("name").toList(),
+      is(["vadas", "ripple"])
+    );
+    
   }
 }
