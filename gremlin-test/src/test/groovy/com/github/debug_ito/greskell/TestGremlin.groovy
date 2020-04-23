@@ -11,7 +11,7 @@ import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.Path;
-
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 
 public class TestGremlin {
   @Test
@@ -321,6 +321,52 @@ public class TestGremlin {
       g.V().order().by("name", Order.decr).barrier().dedup().by(T.label).values("name").toList(),
       is(["vadas", "ripple"])
     );
-    
+  }
+
+  @Test
+  public void addV_step_add_vertex_for_each_input() throws Exception {
+    def graph = TinkerGraph.open();
+    def g = graph.traversal();
+    assertThat g.V().count().next(), is(0L);
+    g.inject(1,2,3).addV("foobar").iterate();
+    assertThat g.V().count().next(), is(3L);
+  }
+
+  static private void getOrAdd(GraphTraversalSource g, String name) throws Exception {
+    getOrAdd_with_fold(g, name);
+  }
+
+  static private void getOrAdd_with_fold(GraphTraversalSource g, String name) throws Exception {
+    // This is often found on the web,
+    // e.g., https://stackoverflow.com/questions/51784430/why-do-you-need-to-fold-unfold-using-coalesce-for-a-conditional-insert
+    g.V().has("name", name).fold().coalesce(
+      __.unfold(),
+      __.addV("person").property("name", name)
+    ).iterate();
+  }
+  
+  static private void getOrAdd_with_inject(GraphTraversalSource g, String name) throws Exception {
+    g.inject(1).coalesce(
+      __.V().has("name", name),
+      __.addV("person").property("name", name)
+    ).iterate();
+  }
+
+  @Test
+  public void getOrAdd_should_get_or_add_vertex() throws Exception {
+    def graph = TinkerGraph.open();
+    def g = graph.traversal();
+    def getNames = {
+      return g.V().values("name").order().by(__.identity()).toList();
+    };
+    assertThat getNames(), is([]);
+    getOrAdd(g, "foo");
+    assertThat getNames(), is(["foo"]);
+    getOrAdd(g, "foo");
+    assertThat getNames(), is(["foo"]);
+    getOrAdd(g, "bar");
+    assertThat getNames(), is(["bar", "foo"]);
+    getOrAdd(g, "foo");
+    assertThat getNames(), is(["bar", "foo"]);
   }
 }
