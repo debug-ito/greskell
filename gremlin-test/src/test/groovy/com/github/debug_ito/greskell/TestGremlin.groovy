@@ -332,10 +332,6 @@ public class TestGremlin {
     assertThat g.V().count().next(), is(3L);
   }
 
-  static private void getOrAdd(GraphTraversalSource g, String name) throws Exception {
-    getOrAdd_with_fold(g, name);
-  }
-
   static private void getOrAdd_with_fold(GraphTraversalSource g, String name) throws Exception {
     // This is often found on the web,
     // e.g., https://stackoverflow.com/questions/51784430/why-do-you-need-to-fold-unfold-using-coalesce-for-a-conditional-insert
@@ -346,10 +342,19 @@ public class TestGremlin {
   }
   
   static private void getOrAdd_with_inject(GraphTraversalSource g, String name) throws Exception {
+    // This is relatively rare, but you can find it on the web.
+    //
+    // - https://stackoverflow.com/questions/56207963/the-gremlin-coalesce-step-is-inconsistent-cosmos-db-in-general
+    // - https://stackoverflow.com/questions/52447308/add-edge-if-not-exist-using-gremlin
+    // - https://stackoverflow.com/questions/41314091/how-to-add-a-vertex-only-if-it-doesnt-exist-and-continue-this-single-traversal
     g.inject(1).coalesce(
       __.V().has("name", name),
       __.addV("person").property("name", name)
     ).iterate();
+  }
+
+  static private void getOrAdd(GraphTraversalSource g, String name) throws Exception {
+    getOrAdd_with_fold(g, name);
   }
 
   @Test
