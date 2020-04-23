@@ -374,4 +374,19 @@ public class TestGremlin {
     getOrAdd(g, "foo");
     assertThat getNames(), is(["bar", "foo"]);
   }
+
+  @Test
+  public void coalesce_step_adds_a_path_step() throws Exception {
+    def got = __.__(1,2,3).coalesce(
+      __.is(P.gte(3)),
+      __.identity()
+    ).path().toList().collect { p -> p.objects(); };
+    assertThat got, is([[1, 1], [2, 2], [3, 3]]);
+  }
+
+  @Test
+  public void coalesce_step_with_empty_traversal() throws Exception {
+    def got = __.__(1,2,3).coalesce().toList();
+    assertThat got, is([]);
+  }
 }
