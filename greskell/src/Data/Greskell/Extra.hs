@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings, FlexibleContexts #-}
 -- |
 -- Module: Data.Greskell.Extra
 -- Description: Extra utility functions implemented by Greskell
@@ -20,17 +20,24 @@ module Data.Greskell.Extra
     (<=:>),
     (<=?>),
     writePropertyKeyValues,
-    writePMapProperties
+    writePMapProperties,
+    -- * Control idioms
+    gWhenEmptyInput
   ) where
 
 import Data.Aeson (ToJSON)
+import Control.Category ((<<<))
 import Data.Foldable (Foldable)
 import Data.Greskell.Binder (Binder, newBind)
 import Data.Greskell.Graph
   ( Property(..), Element, KeyValue(..), (=:), Key
   )
 import qualified Data.Greskell.Graph as Graph
-import Data.Greskell.GTraversal (Walk, SideEffect, gProperty)
+import Data.Greskell.GTraversal
+  ( Walk, WalkType, SideEffect, Transform,
+    ToGTraversal(..), Split, Lift, liftWalk,
+    gProperty, gCoalesce, gUnfold, gFold
+  )
 import Data.Greskell.PMap
   ( PMap, pMapToList,
     lookupAs,
@@ -45,9 +52,12 @@ import Data.Text (Text)
 -- $setup
 --
 -- >>> :set -XOverloadedStrings
+-- >>> import Control.Category ((>>>))
+-- >>> import Data.Function ((&))
 -- >>> import Data.Greskell.Binder (runBinder)
 -- >>> import Data.Greskell.Greskell (toGremlin)
 -- >>> import Data.Greskell.Graph (AVertex)
+-- >>> import Data.Greskell.GTraversal (GTraversal, source, sV', gHas2, (&.), gAddV)
 -- >>> import Data.List (sortBy)
 -- >>> import Data.Ord (comparing)
 -- >>> import qualified Data.HashMap.Strict as HashMap
@@ -124,3 +134,24 @@ writePMapProperties = writePropertyKeyValues . pMapToList
 (<=?>) :: ToJSON b => Key a (Maybe b) -> Maybe b -> Binder (KeyValue a)
 (<=?>) k v@(Just _) = k <=:> v
 (<=?>) k Nothing = return $ KeyNoValue k
+
+-- | The result 'Walk' emits the input elements as-is when there is at
+-- least one input element. If there is no input element, it runs the
+-- body traversal and outputs its result.
+--
+-- You can use this function to implement \"upsert\" a vertex
+-- (i.e. add a vertex if not exist).
+--
+-- >>> let getMarko = (source "g" & sV' [] &. gHas2 "name" "marko" :: GTraversal Transform () AVertex)
+-- >>> let upsertMarko = (liftWalk getMarko &. gWhenEmptyInput (gAddV "person" >>> gProperty "name" "marko") :: GTraversal SideEffect () AVertex)
+--
+-- See also: https://stackoverflow.com/questions/46027444/
+--
+-- @since 1.1.0.0
+gWhenEmptyInput :: (ToGTraversal g, Split cc c, Lift Transform cc, Lift Transform c, WalkType c, WalkType cc)
+                => g cc [s] s -- ^ the body traversal
+                -> Walk c s s
+gWhenEmptyInput body = gCoalesce
+                       [ liftWalk $ toGTraversal gUnfold,
+                         toGTraversal body
+                       ] <<< liftWalk gFold

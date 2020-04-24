@@ -10,6 +10,10 @@
   * `gFlatMap'`
   * `gCoalesce`
 
+### Extra module
+
+* Add `gWhenEmptyInput` function.
+
 ## 1.0.1.0  -- 2020-04-24
 
 ### GTraversal module
