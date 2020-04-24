@@ -28,6 +28,7 @@
 ### AsLabel module
 
 * Derive `Hashable` instance for `AsLabel`.
+* Add `unsafeCastAsLabel` function.
 
 ## 1.0.1.0  -- 2020-04-24
 

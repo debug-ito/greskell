@@ -9,6 +9,7 @@ module Data.Greskell.AsLabel
        ( -- * AsLabel
          AsLabel(..),
          SelectedMap,
+         unsafeCastAsLabel,
          -- * Re-exports
          lookup,
          lookupM,
@@ -64,3 +65,8 @@ instance PMapKey (AsLabel a) where
 -- example.
 type SelectedMap = PMap Single
 
+-- | Unsafely cast the phantom type of the 'AsLabel'.
+--
+-- @since 1.1.0.0
+unsafeCastAsLabel :: AsLabel a -> AsLabel b
+unsafeCastAsLabel = AsLabel . unAsLabel
