@@ -81,7 +81,7 @@ import Data.Vector (Vector)
 import GHC.Generics (Generic)
 
 import Data.Greskell.AsIterator (AsIterator(..))
-import Data.Greskell.AsLabel (AsLabel(..))
+import Data.Greskell.AsLabel (AsLabel(..), unsafeCastAsLabel)
 import Data.Greskell.GraphSON
   ( GraphSON(..), GraphSONTyped(..), FromGraphSON(..),
     (.:), GValue, GValueBody(..),
@@ -509,7 +509,7 @@ instance Traversable AVertexProperty where
 --
 -- @since 1.1.0.0
 newtype Path a = Path { unPath :: [PathEntry a] }
-            deriving (Show,Eq,Ord,Functor,Foldable,Semigroup,Monoid)
+            deriving (Show,Eq,Ord,Functor,Foldable,Traversable,Semigroup,Monoid)
 
 instance GraphSONTyped (Path a) where
   gsonTypeFor _ = "g:Path"
@@ -556,6 +556,14 @@ instance Functor PathEntry where
 
 instance Foldable PathEntry where
   foldr f acc pe = f (peObject pe) acc
+
+instance Traversable PathEntry where
+  traverse f pe = fmap mkPE $ f $ peObject pe
+    where
+      mkPE obj =
+        PathEntry { peLabels = HS.map unsafeCastAsLabel $ peLabels pe,
+                    peObject = obj
+                  }
 
 -- | Convert a 'Path' into 'PMap'.
 --
