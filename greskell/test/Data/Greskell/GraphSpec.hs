@@ -4,6 +4,7 @@ module Data.Greskell.GraphSpec (main,spec) where
 import Data.Aeson (toJSON, FromJSON)
 import qualified Data.Aeson as Aeson
 import qualified Data.ByteString.Lazy as BSL
+import qualified Data.HashSet as HS
 import Data.Monoid (Monoid(..), (<>))
 import Data.Text (Text)
 import Test.Hspec
@@ -122,15 +123,15 @@ spec_Path :: Spec
 spec_Path = describe "Path" $ do
   let exp_path_v1 =
         Path
-        [ PathEntry ["a"] $ AVertex (mkEID Nothing $ GNumber 1) "person",
-          PathEntry ["b", "c"] $ AVertex (mkEID Nothing $ GNumber 10) "software",
-          PathEntry [] $ AVertex (mkEID Nothing $ GNumber 11) "software"
+        [ PathEntry (HS.fromList ["a"]) $ AVertex (mkEID Nothing $ GNumber 1) "person",
+          PathEntry (HS.fromList ["b", "c"]) $ AVertex (mkEID Nothing $ GNumber 10) "software",
+          PathEntry HS.empty $ AVertex (mkEID Nothing $ GNumber 11) "software"
         ]
       exp_path_v2 =
         Path
-        [ PathEntry ["a"] $ AVertex (mkEID (Just "g:Int32") $ GNumber 1) "person",
-          PathEntry ["b", "c"] $ AVertex (mkEID (Just "g:Int32") $ GNumber 10) "software",
-          PathEntry [] $ AVertex (mkEID (Just "g:Int32") $ GNumber 11) "software"
+        [ PathEntry (HS.fromList ["a"]) $ AVertex (mkEID (Just "g:Int32") $ GNumber 1) "person",
+          PathEntry (HS.fromList ["b", "c"]) $ AVertex (mkEID (Just "g:Int32") $ GNumber 10) "software",
+          PathEntry HS.empty $ AVertex (mkEID (Just "g:Int32") $ GNumber 11) "software"
         ]
       exp_path_v3 = exp_path_v2
   it "should parse GraphSON v1" $ do

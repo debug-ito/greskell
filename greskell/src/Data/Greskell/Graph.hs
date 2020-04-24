@@ -64,6 +64,8 @@ import Data.Aeson (Value(..), FromJSON(..), ToJSON(..))
 import Data.Aeson.Types (Parser)
 import Data.Foldable (toList, Foldable(foldr), foldlM)
 import Data.Hashable (Hashable)
+import Data.HashSet (HashSet)
+import qualified Data.HashSet as HS
 import qualified Data.HashMap.Strict as HM
 import Data.List.NonEmpty (NonEmpty(..))
 import qualified Data.List.NonEmpty as NL
@@ -534,17 +536,22 @@ instance FromGraphSON a => FromGraphSON (Path a) where
                  <> show nlabels <> " labels, "
                  <> show nobjects <> " objects."
                )
-        return $ Path $ map (uncurry PathEntry) $ zip ((map . map) AsLabel labels) objects
+        return $ Path $ map (uncurry PathEntry) $ zip (map (HS.map AsLabel) labels) objects
 
 -- | An entry in a 'Path'.
 --
 -- @since 1.1.0.0
 data PathEntry a =
   PathEntry
-  { peLabels :: [AsLabel a],
+  { peLabels :: HashSet (AsLabel a),
     peObject :: a
   }
-  deriving (Show,Eq,Ord,Functor)
+  deriving (Show,Eq,Ord)
+
+instance Functor PathEntry where
+  fmap f pe = PathEntry { peLabels = HS.map (fmap f) $ peLabels pe,
+                          peObject = f $ peObject pe
+                        }
 
 instance Foldable PathEntry where
   foldr f acc pe = f (peObject pe) acc
