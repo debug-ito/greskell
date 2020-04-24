@@ -1,6 +1,6 @@
 # Revision history for greskell
 
-## 1.0.1.0  -- ???
+## 1.0.1.0  -- 2020-04-24
 
 ### GTraversal module
 
@@ -35,7 +35,6 @@
   * `RepeatEmit`
   * `RepeatPos`
   * `RepeatLabel`
-
 
 ## 1.0.0.1  -- 2019-12-30
 
