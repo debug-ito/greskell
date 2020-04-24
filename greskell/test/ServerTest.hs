@@ -36,7 +36,8 @@ import Data.Greskell.Graph
   ( AVertex(..), AEdge(..), AProperty(..), AVertexProperty(..),
     Key, Keys(..), (-:), singletonKeys,
     T, tId, tLabel, tKey, tValue, cList, (=:),
-    ElementID(..)
+    ElementID(..),
+    Path(..), makePathEntry
   )
 import Data.Greskell.GraphSON
   ( FromGraphSON, nonTypedGValue, GValue,
@@ -53,7 +54,8 @@ import Data.Greskell.GTraversal
     gValueMap,
     gProject, gByL,
     gRepeat, gTimes, gEmitHead, gUntilTail, gLoops, gIsP,
-    gHasLabel, gHas2, gAddV, gIterate
+    gHasLabel, gHas2, gAddV, gIterate,
+    gPath
   )
 import Data.Greskell.PMap (lookupAsM, lookupListAs, pMapToThrow)
 
@@ -75,6 +77,7 @@ spec = withEnv $ do
   spec_project
   spec_repeat
   spec_upsert
+  spec_path
 
 spec_basics :: SpecWith (String,Int)
 spec_basics = do
@@ -533,3 +536,33 @@ spec_upsert = do
     upsert name = gWhenEmptyInput (insert name) $. liftWalk $ getPerson name
     getName :: Walk Transform AVertex Text
     getName = gValues ["name"]
+
+spec_path :: SpecWith (String,Int)
+spec_path = do
+  let start :: GTraversal Transform () Int
+      start = unsafeGTraversal "__(1,2,3)"
+      mult = multiplyWalk
+  specify "gPath" $ withClient $ \client -> do
+    let g = gPath $. gAs "c" $. mult 10 $. mult 10 $. gAs "b" $. gAs "a" $. start
+    got <- fmap V.toList $ WS.slurpResults =<< WS.submit client g Nothing
+    let parsed = traverse (traverse parseEither) got
+        expected :: [Path Int]
+        expected = [ Path
+                     [ makePathEntry ["a", "b"] 1,
+                       makePathEntry [] 10,
+                       makePathEntry ["c"] 100
+                     ],
+                     Path
+                     [ makePathEntry ["a", "b"] 2,
+                       makePathEntry [] 20,
+                       makePathEntry ["c"] 200
+                     ],
+                     Path
+                     [ makePathEntry ["a", "b"] 3,
+                       makePathEntry [] 30,
+                       makePathEntry ["c"] 300
+                     ]
+                   ]
+    parsed `shouldBe` Right expected
+  specify "gPathBy" $ withClient $ \client -> do
+    True `shouldBe` False -- TODO
