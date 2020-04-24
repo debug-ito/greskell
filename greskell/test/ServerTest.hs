@@ -55,7 +55,7 @@ import Data.Greskell.GTraversal
     gProject, gByL,
     gRepeat, gTimes, gEmitHead, gUntilTail, gLoops, gIsP,
     gHasLabel, gHas2, gAddV, gIterate,
-    gPath
+    gPath, gPathBy
   )
 import Data.Greskell.PMap (lookupAsM, lookupListAs, pMapToThrow)
 
@@ -565,4 +565,23 @@ spec_path = do
                    ]
     parsed `shouldBe` Right expected
   specify "gPathBy" $ withClient $ \client -> do
-    True `shouldBe` False -- TODO
+    let g = gPathBy (gBy $ mult 50) [gBy $ mult 800] $. mult 10 $. gAs "b" $. mult 10 $. gAs "a" $. start
+    got <- fmap V.toList $ WS.slurpResults =<< WS.submit client g Nothing
+    let expected :: [Path Int]
+        expected = [ Path
+                     [ makePathEntry ["a"] 50,
+                       makePathEntry ["b"] 8000,
+                       makePathEntry []    5000
+                     ],
+                     Path
+                     [ makePathEntry ["a"] 100,
+                       makePathEntry ["b"] 16000,
+                       makePathEntry []    10000
+                     ],
+                     Path
+                     [ makePathEntry ["a"] 150,
+                       makePathEntry ["b"] 24000,
+                       makePathEntry []    15000
+                     ]
+                   ]
+    got `shouldBe` expected
