@@ -21,6 +21,7 @@ import Data.Greskell.AsIterator
   ( AsIterator(IteratorItem)
   )
 import Data.Greskell.Binder (newBind, runBinder)
+import Data.Greskell.Extra (gWhenEmptyInput)
 import Data.Greskell.GMap (GMapEntry, unGMapEntry)
 import Data.Greskell.Gremlin
   ( oIncr, oDecr, cCompare, Order,
@@ -51,7 +52,8 @@ import Data.Greskell.GTraversal
     gFilter, gOut', gOutV, gOutV', gInV, gInV', gId, gLabel, gProject,
     gValueMap,
     gProject, gByL,
-    gRepeat, gTimes, gEmitHead, gUntilTail, gLoops, gIsP
+    gRepeat, gTimes, gEmitHead, gUntilTail, gLoops, gIsP,
+    gHasLabel, gHas2, gAddV
   )
 import Data.Greskell.PMap (lookupAsM, lookupListAs, pMapToThrow)
 
@@ -72,6 +74,7 @@ spec = withEnv $ do
   spec_selectBy
   spec_project
   spec_repeat
+  spec_upsert
 
 spec_basics :: SpecWith (String,Int)
 spec_basics = do
@@ -477,3 +480,30 @@ spec_repeat = do
         trav = gRepeat Nothing (gUntilTail $ gIsP (pGte 4) <<< gLoops Nothing) Nothing (multiplyWalk 2) $. start
     got <- fmap V.toList $ WS.slurpResults =<< WS.submit client trav Nothing
     sort got `shouldBe` [16, 160, 1600]
+
+spec_upsert :: SpecWith (String,Int)
+spec_upsert = do
+  describe "upsert vertex" $ do
+    specify "upsert adds a vertex" $ withClient $ \client -> do
+      got_upsert <- WS.slurpResults =<< WS.submit client (withPrelude' (liftWalk getName $. upsert "foo")) Nothing
+      V.toList got_upsert `shouldBe` ["foo"]
+      got_all <- WS.slurpResults =<< WS.submit client (withPrelude' (getName $. getAllPersons)) Nothing
+      V.toList got_all `shouldBe` ["foo"]
+    specify "upsert adds different vertices" $ withClient $ \ _ -> True `shouldBe` False -- TODO
+    specify "upsert returns existing vertex" $ withClient $ \ _ -> True `shouldBe` False -- TODO
+  where
+    withPrelude' :: (ToGreskell a) => a -> Greskell (GreskellReturn a)
+    withPrelude' = withPrelude prelude
+    prelude :: Greskell ()
+    prelude =
+      unsafeGreskell "graph = org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph.open(); g = graph.traversal(); "
+    getAllPersons :: GTraversal Transform () AVertex
+    getAllPersons = gHasLabel "person" $. sV' [] $ source "g"
+    getPerson :: Greskell Text -> GTraversal Transform () AVertex
+    getPerson name = gHas2 "name" name $. getAllPersons
+    insert :: Greskell Text -> Walk SideEffect a AVertex
+    insert name = gProperty "name" name <<< gAddV "person"
+    upsert :: Greskell Text -> GTraversal SideEffect () AVertex
+    upsert name = gWhenEmptyInput (insert name) $. liftWalk $ getPerson name
+    getName :: Walk Transform AVertex Text
+    getName = gValues ["name"]
