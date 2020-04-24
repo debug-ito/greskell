@@ -150,7 +150,7 @@ writePMapProperties = writePropertyKeyValues . pMapToList
 -- @since 1.1.0.0
 gWhenEmptyInput :: (ToGTraversal g, Split cc c, Lift Transform cc, Lift Transform c, WalkType c, WalkType cc)
                 => g cc [s] s -- ^ the body traversal
-                -> Walk c s s
+                -> Walk c s s -- ^ the result walk
 gWhenEmptyInput body = gCoalesce
                        [ liftWalk $ toGTraversal gUnfold,
                          toGTraversal body
