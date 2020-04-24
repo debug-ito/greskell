@@ -933,7 +933,7 @@ gRepeat :: (ToGTraversal g, WalkType c)
         -> Walk c s s
 gRepeat mlabel muntil memit repeated_trav = fromMWalk (head_walk <> toMWalk repeat_body <> tail_walk)
   where
-    repeat_body = unsafeWalk "repeat" (label_args ++ [toGremlin $ toGTraversal repeated_trav])
+    repeat_body = unsafeWalk "repeat" (label_args ++ [travToG repeated_trav])
     label_args = maybe [] (\l -> [toGremlin l]) mlabel
     head_walk = head_until <> head_emit
     tail_walk = tail_until <> tail_emit
@@ -1042,7 +1042,7 @@ gLoops mlabel = unsafeWalk "loops" $ maybe [] (\l -> [toGremlin l]) mlabel
 --
 -- @since 1.0.1.0
 gLocal :: (ToGTraversal g, WalkType c) => g c s e -> Walk c s e
-gLocal t = unsafeWalk "local" [toGremlin $ toGTraversal t]
+gLocal t = unsafeWalk "local" [travToG t]
 
 -- | @.union@ step.
 --
@@ -1053,7 +1053,7 @@ gLocal t = unsafeWalk "local" [toGremlin $ toGTraversal t]
 --
 -- @since 1.0.1.0
 gUnion :: (ToGTraversal g, WalkType c) => [g c s e] -> Walk c s e
-gUnion ts = unsafeWalk "union" $ map (toGremlin . toGTraversal) ts
+gUnion ts = unsafeWalk "union" $ map travToG ts
 
 -- | @.choose@ step with if-then-else style.
 --
@@ -1068,9 +1068,9 @@ gChoose3 :: (ToGTraversal g, Split cc c, WalkType cc, WalkType c)
          -> g c s e -- ^ The traversal executed if the predicate traversal outputs nothing.
          -> Walk c s e
 gChoose3 pt tt ft = unsafeWalk "choose"
-                    [ toGremlin $ toGTraversal pt,
-                      toGremlin $ toGTraversal tt,
-                      toGremlin $ toGTraversal ft
+                    [ travToG pt,
+                      travToG tt,
+                      travToG ft
                     ]
 
 -- | @.barrier@ step.
