@@ -12,7 +12,8 @@ import Data.Greskell.Graph
   ( AProperty(..),
     -- PropertyMapSingle, PropertyMapList,
     AEdge(..), AVertexProperty(..), AVertex(..),
-    ElementID(..)
+    ElementID(..),
+    Path(..), PathEntry(..)
   )
 import Data.Greskell.GraphSON
   ( nonTypedGraphSON, typedGraphSON, typedGraphSON',
@@ -28,6 +29,7 @@ spec = do
   spec_AProperty
   spec_AVertexProperty
   spec_AVertex
+  spec_Path
 
 loadGraphSON :: FromJSON a => FilePath -> IO (Either String a)
 loadGraphSON filename = fmap Aeson.eitherDecode $ BSL.readFile ("test/graphson/" ++ filename)
@@ -109,3 +111,31 @@ spec_AVertex = describe "AVertex" $ do
     loadGraphSON "vertex_v2.json" `shouldReturn` Right ex23
   it "should parse GraphSON v3" $ do
     loadGraphSON "vertex_v3.json" `shouldReturn` Right ex23
+
+mkEID :: Maybe Text -> GValueBody -> ElementID a
+mkEID mtype vb =
+  case mtype of
+    Nothing -> ElementID $ nonTypedGValue vb
+    Just t -> ElementID $ typedGValue' t vb
+
+spec_Path :: Spec
+spec_Path = describe "Path" $ do
+  let exp_path_v1 =
+        Path
+        [ PathEntry ["a"] $ AVertex (mkEID Nothing $ GNumber 1) "person",
+          PathEntry ["b", "c"] $ AVertex (mkEID Nothing $ GNumber 10) "software",
+          PathEntry [] $ AVertex (mkEID Nothing $ GNumber 11) "software"
+        ]
+      exp_path_v2 =
+        Path
+        [ PathEntry ["a"] $ AVertex (mkEID (Just "g:Int32") $ GNumber 1) "person",
+          PathEntry ["b", "c"] $ AVertex (mkEID (Just "g:Int32") $ GNumber 10) "software",
+          PathEntry [] $ AVertex (mkEID (Just "g:Int32") $ GNumber 11) "software"
+        ]
+      exp_path_v3 = exp_path_v2
+  it "should parse GraphSON v1" $ do
+    loadGraphSON "path_v1.json" `shouldReturn` Right exp_path_v1
+  it "should parse GraphSON v2" $ do
+    loadGraphSON "path_v2.json" `shouldReturn` Right exp_path_v2
+  it "should parse GraphSON v3" $ do
+    loadGraphSON "path_v3.json" `shouldReturn` Right exp_path_v3
