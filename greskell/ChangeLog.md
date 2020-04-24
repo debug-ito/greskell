@@ -1,5 +1,13 @@
 # Revision history for greskell
 
+## 1.1.0.0  -- ?
+
+### GTraversal module
+
+* [BREAKING CHANGE] `gFlatMap` is now polymorphic about the
+  WalkTypes. Use `gFlatMap'`For monomorphic version.
+* Add `gFlatMap'` function.
+
 ## 1.0.1.0  -- 2020-04-24
 
 ### GTraversal module

@@ -125,6 +125,7 @@ module Data.Greskell.GTraversal
          gDedupN,
          -- ** Transformation steps
          gFlatMap,
+         gFlatMap',
          gV,
          gV',
          gConstant,
@@ -1254,21 +1255,22 @@ gByL l p = LabeledByProjection l $ gBy p
 
 -- | @.flatMap@ step.
 --
--- @.flatMap@ step is a 'Transform' step even if the child walk is
--- 'Filter' type. This is because @.flatMap@ step always modifies the
--- path of the Traverser.
+-- @.flatMap@ step is at least as powerful as 'Transform', even if the
+-- child walk is 'Filter' type. This is because @.flatMap@ step always
+-- modifies the path of the Traverser.
 --
 -- >>> toGremlin (source "g" & sV' [] &. gFlatMap (gOut' ["knows"] >>> gOut' ["created"]))
 -- "g.V().flatMap(__.out(\"knows\").out(\"created\"))"
-gFlatMap :: (ToGTraversal g) => g Transform s e -> Walk Transform s e
+--
+-- @since 1.1.0.0
+gFlatMap :: (Lift Transform c, Split cc c, ToGTraversal g, WalkType c, WalkType cc) => g cc s e -> Walk c s e
 gFlatMap gt = unsafeWalk "flatMap" [travToG gt]
 
--- -- | Polymorphic version of 'gFlatMap'. The following constraint is
--- -- accurate and semantic, but it's not allowed even if
--- -- FlexibleContexts is enabled. Probably it's because the type @m@ is
--- -- left ambiguous.
--- gFlatMap' :: (ToGTraversal g, Split c m, Lift Transform p, Lift m p) => g c s e -> Walk p s e
--- gFlatMap = undefined
+-- | Monomorphic version of 'gFlatMap'.
+--
+-- @since 1.1.0.0
+gFlatMap' :: ToGTraversal g => g Transform s e -> Walk Transform s e
+gFlatMap' gt = gFlatMap gt
 
 -- | @.V@ step.
 --
