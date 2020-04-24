@@ -1,4 +1,4 @@
-{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeFamilies, GeneralizedNewtypeDeriving #-}
 -- |
 -- Module: Data.Greskell.AsLabel
 -- Description: Label string used in .as step
@@ -22,6 +22,7 @@ import Prelude hiding (lookup)
 import Control.Exception (Exception)
 import Control.Monad.Catch (MonadThrow(..))
 import Data.Foldable (Foldable)
+import Data.Hashable (Hashable)
 import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as HM
 import Data.Greskell.GraphSON (GValue, GraphSONTyped(..), FromGraphSON(..), parseEither)
@@ -39,7 +40,7 @@ import Data.Greskell.PMap
 -- | 'AsLabel' @a@ represents a label string used in @.as@ step
 -- pointing to the data of type @a@.
 newtype AsLabel a = AsLabel { unAsLabel :: Text }
-               deriving (Show,Eq,Ord)
+               deriving (Show,Eq,Ord,Hashable)
 
 -- | @since 1.0.0.0
 instance IsString (AsLabel a) where

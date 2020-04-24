@@ -21,6 +21,10 @@
 
 * Add `gWhenEmptyInput` function.
 
+### AsLabel module
+
+* Derive `Hashable` instance for `AsLabel`.
+
 ## 1.0.1.0  -- 2020-04-24
 
 ### GTraversal module
