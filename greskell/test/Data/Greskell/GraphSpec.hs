@@ -4,22 +4,25 @@ module Data.Greskell.GraphSpec (main,spec) where
 import Data.Aeson (toJSON, FromJSON)
 import qualified Data.Aeson as Aeson
 import qualified Data.ByteString.Lazy as BSL
+import Data.HashSet (HashSet)
 import qualified Data.HashSet as HS
 import Data.Monoid (Monoid(..), (<>))
 import Data.Text (Text)
 import Test.Hspec
 
+import Data.Greskell.AsLabel (AsLabel(..))
 import Data.Greskell.Graph
   ( AProperty(..),
     -- PropertyMapSingle, PropertyMapList,
     AEdge(..), AVertexProperty(..), AVertex(..),
     ElementID(..),
-    Path(..), PathEntry(..)
+    Path(..), PathEntry(..), pathToPMap
   )
 import Data.Greskell.GraphSON
   ( nonTypedGraphSON, typedGraphSON, typedGraphSON',
     nonTypedGValue, typedGValue', GValueBody(..)
   )
+import Data.Greskell.PMap (pMapFromList, lookupList)
 
 main :: IO ()
 main = hspec spec
@@ -119,6 +122,12 @@ mkEID mtype vb =
     Nothing -> ElementID $ nonTypedGValue vb
     Just t -> ElementID $ typedGValue' t vb
 
+mkLabels :: [Text] -> HashSet (AsLabel a)
+mkLabels = HS.fromList . map AsLabel
+
+mkPE :: [Text] -> a -> PathEntry a
+mkPE labels obj = PathEntry (mkLabels labels) obj
+
 spec_Path :: Spec
 spec_Path = describe "Path" $ do
   let exp_path_v1 =
@@ -140,3 +149,60 @@ spec_Path = describe "Path" $ do
     loadGraphSON "path_v2.json" `shouldReturn` Right exp_path_v2
   it "should parse GraphSON v3" $ do
     loadGraphSON "path_v3.json" `shouldReturn` Right exp_path_v3
+  describe "pathToPMap" $ do
+    specify "empty path" $ do
+      let p :: Path Int
+          p = mempty
+      (pathToPMap p) `shouldBe` mempty
+    specify "objects without labels" $ do
+      let p :: Path Int
+          p = Path [ PathEntry mempty 10,
+                     PathEntry mempty 20,
+                     PathEntry mempty 30
+                   ]
+      (pathToPMap p) `shouldBe` mempty
+    specify "objects with unique single label" $ do
+      let p :: Path Int
+          p = Path
+              [ mkPE ["a"] 10,
+                mkPE ["b"] 20,
+                mkPE [] 30,
+                mkPE ["c"] 40
+              ]
+          expected = pMapFromList
+                     [ ("a", 10), ("b", 20), ("c", 40)
+                     ]
+      (pathToPMap p) `shouldBe` expected
+    specify "object with multiple labels" $ do
+      let p :: Path Int
+          p = Path
+              [ mkPE ["a", "b", "c"] 10,
+                mkPE ["d", "e"] 20,
+                mkPE [] 30
+              ]
+          expected = pMapFromList
+                     [ ("a", 10), ("b", 10), ("c", 10), ("d", 20), ("e", 20)
+                     ]
+      (pathToPMap p) `shouldBe` expected
+    specify "object with shared labels" $ do
+      let p :: Path Int
+          p = Path
+              [ mkPE ["a", "b", "c"] 10,
+                mkPE ["b", "c", "d"] 20,
+                mkPE ["d"] 30,
+                mkPE [] 40,
+                mkPE ["b"] 50
+              ]
+          got = pathToPMap p
+          expected = pMapFromList
+                     [ ("a", 10), ("b", 10), ("c", 10),
+                       ("b", 20), ("c", 20), ("d", 20),
+                       ("d", 30),
+                       ("b", 50)
+                     ]
+      got `shouldBe` expected
+      (lookupList ("a" :: AsLabel Int) got) `shouldBe` [10]
+      (lookupList ("b" :: AsLabel Int) got) `shouldBe` [10, 20, 50]
+      (lookupList ("c" :: AsLabel Int) got) `shouldBe` [10, 20]
+      (lookupList ("d" :: AsLabel Int) got) `shouldBe` [20, 30]
+      (lookupList ("e" :: AsLabel Int) got) `shouldBe` []

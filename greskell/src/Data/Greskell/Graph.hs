@@ -44,6 +44,7 @@ module Data.Greskell.Graph
          -- * Path
          Path(..),
          PathEntry(..),
+         pathToPMap,
 
          -- * Concrete data types
          -- $concrete_types
@@ -92,7 +93,7 @@ import Data.Greskell.Greskell
     ToGreskell(..)
   )
 import Data.Greskell.NonEmptyLike (NonEmptyLike)
-import Data.Greskell.PMap (PMapKey(..), Single, Multi)
+import Data.Greskell.PMap (PMapKey(..), Single, Multi, PMap, pMapInsert)
 
 -- $setup
 --
@@ -508,7 +509,7 @@ instance Traversable AVertexProperty where
 --
 -- @since 1.1.0.0
 newtype Path a = Path { unPath :: [PathEntry a] }
-            deriving (Show,Eq,Ord,Functor,Foldable)
+            deriving (Show,Eq,Ord,Functor,Foldable,Semigroup,Monoid)
 
 instance GraphSONTyped (Path a) where
   gsonTypeFor _ = "g:Path"
@@ -555,3 +556,17 @@ instance Functor PathEntry where
 
 instance Foldable PathEntry where
   foldr f acc pe = f (peObject pe) acc
+
+-- | Convert a 'Path' into 'PMap'.
+--
+-- In the result 'PMap', the keys are the labels in the 'Path', and
+-- the values are the objects associated with the labels. The values
+-- are stored in the same order in the 'Path'. Objects without any
+-- label are discarded.
+--
+-- @since 1.1.0.0
+pathToPMap :: Path a -> PMap Multi a
+pathToPMap (Path entries) = foldr fentry mempty entries
+  where
+    fentry entry pm = foldr (flabel $ peObject entry) pm $ peLabels entry
+    flabel obj label pm = pMapInsert (unAsLabel label) obj pm

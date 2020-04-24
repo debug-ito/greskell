@@ -18,6 +18,8 @@
 * Add the following types.
   * `Path`
   * `PathEntry`
+* Add the following functions.
+  * `pathToPMap`
 
 ### Extra module
 
