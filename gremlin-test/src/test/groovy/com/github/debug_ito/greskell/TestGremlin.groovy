@@ -389,4 +389,17 @@ public class TestGremlin {
     def got = __.__(1,2,3).coalesce().toList();
     assertThat got, is([]);
   }
+
+  @Test
+  public void coalesce_step_clear_path_history() throws Exception {
+    def got = __.__(1,2,3).coalesce(
+      __.is(P.gte(3)).map { it.get() * 2 }.map { it.get() + 10 }.map { it.get() + 20 },
+      __.map { it.get() * 10 }.map { it.get() + 8 },
+    ).path().toList().collect { p -> p.objects(); };
+    assertThat got, is([
+      [1, 18],
+      [2, 28],
+      [3, 36]
+    ]);
+  }
 }
