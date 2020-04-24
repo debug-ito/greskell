@@ -411,4 +411,10 @@ public class TestGremlin {
       [3, 36]
     ]);
   }
+
+  @Test
+  public void iterate_method_returns_empty_traversal() throws Exception {
+    def got = __.__(1,2,3).iterate();
+    assertThat got.hasNext(), is(false);
+  }
 }
