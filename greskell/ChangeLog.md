@@ -11,6 +11,12 @@
   * `gCoalesce`
   * `gIterate`
 
+### Graph module
+
+* Add the following types.
+  * `Path`
+  * `PathEntry`
+
 ### Extra module
 
 * Add `gWhenEmptyInput` function.

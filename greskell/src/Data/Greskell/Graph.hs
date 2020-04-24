@@ -41,6 +41,10 @@ module Data.Greskell.Graph
          singletonKeys,
          (-:),
 
+         -- * Path
+         Path(..),
+         PathEntry(..),
+
          -- * Concrete data types
          -- $concrete_types
          
@@ -72,6 +76,8 @@ import Data.Traversable (Traversable(traverse))
 import Data.Vector (Vector)
 import GHC.Generics (Generic)
 
+import Data.Greskell.AsIterator (AsIterator(..))
+import Data.Greskell.AsLabel (AsLabel)
 import Data.Greskell.GraphSON
   ( GraphSON(..), GraphSONTyped(..), FromGraphSON(..),
     (.:), GValue, GValueBody(..),
@@ -494,3 +500,26 @@ instance Traversable AVertexProperty where
     where
       setValue v = vp { avpValue = v, avpId = unsafeCastElementID $ avpId vp }
 
+
+-- | @org.apache.tinkerpop.gremlin.process.traversal.Path@ interface.
+--
+-- @since 1.1.0.0
+newtype Path a = Path { unPath :: [PathEntry a] }
+            deriving (Show,Eq,Ord,Functor)
+
+instance GraphSONTyped (Path a) where
+  gsonTypeFor _ = "g:Path"
+
+-- | @Path@ is an @Iterable@ that emits its objects.
+instance AsIterator (Path a) where
+  type IteratorItem (Path a) = a
+
+-- | An entry in a 'Path'.
+--
+-- @since 1.1.0.0
+data PathEntry a =
+  PathEntry
+  { peLabels :: [AsLabel a],
+    peObject :: a
+  }
+  deriving (Show,Eq,Ord,Functor)
