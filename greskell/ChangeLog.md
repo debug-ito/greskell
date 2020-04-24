@@ -6,7 +6,9 @@
 
 * [BREAKING CHANGE] `gFlatMap` is now polymorphic about the
   WalkTypes. Use `gFlatMap'`For monomorphic version.
-* Add `gFlatMap'` function.
+* Add the following functions.
+  * `gFlatMap'`
+  * `gCoalesce`
 
 ## 1.0.1.0  -- 2020-04-24
 

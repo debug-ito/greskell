@@ -118,6 +118,7 @@ module Data.Greskell.GTraversal
          -- ** Branching steps
          gLocal,
          gUnion,
+         gCoalesce,
          gChoose3,
          -- ** Barrier steps
          gBarrier,
@@ -1054,6 +1055,18 @@ gLocal t = unsafeWalk "local" [travToG t]
 -- @since 1.0.1.0
 gUnion :: (ToGTraversal g, WalkType c) => [g c s e] -> Walk c s e
 gUnion ts = unsafeWalk "union" $ map travToG ts
+
+-- | @.coalesce@ step.
+--
+-- Like 'gFlatMap', 'gCoalesce' always modifies path history.
+--
+-- >>> toGremlin (source "g" & sV' [] &. gCoalesce [gOut' [], gIn' []])
+-- "g.V().coalesce(__.out(),__.in())"
+--
+-- @since 1.1.0.0
+gCoalesce :: (ToGTraversal g, Split cc c, Lift Transform c, WalkType c, WalkType cc)
+          => [g cc s e] -> Walk c s e
+gCoalesce ts = unsafeWalk "coalesce" $ map travToG ts
 
 -- | @.choose@ step with if-then-else style.
 --
