@@ -255,8 +255,15 @@ public class TestGremlin {
   public void union_step_with_transformation() throws Exception {
     def g = MyModern.make().traversal();
     def paths_str = g.V().has("name", "marko")
-      .union(__.out("knows").order().by("age"), __.out("created")).path().toList().collect { p -> return pathToString(p); };
-    assertThat paths_str, is(["v(marko),v(vadas)", "v(marko),v(josh)", "v(marko),v(lop)"]);
+      .union(
+        __.outE("knows").inV().order().by("age"),
+        __.outE("created").inV()
+      ).path().toList().collect { p -> return pathToString(p); };
+    assertThat paths_str, is([
+      "v(marko),e(marko-knows->vadas),v(vadas)",
+      "v(marko),e(marko-knows->josh),v(josh)",
+      "v(marko),e(marko-created->lop),v(lop)"
+    ]);
   }
 
   @Test
