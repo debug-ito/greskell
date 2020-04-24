@@ -9,6 +9,7 @@
 * Add the following functions.
   * `gFlatMap'`
   * `gCoalesce`
+  * `gIterate`
 
 ### Extra module
 

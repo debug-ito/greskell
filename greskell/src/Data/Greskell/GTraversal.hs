@@ -37,6 +37,7 @@ module Data.Greskell.GTraversal
          ($.),
          (<$.>),
          (<*.>),
+         gIterate,
          unsafeGTraversal,
          -- * Walk/Steps
 
@@ -541,6 +542,19 @@ infixr 0 <*.>
 -- @since 0.2.1.0
 (<*.>) :: Applicative f => f (Walk c b d) -> f (GTraversal c a b) -> f (GTraversal c a d)
 gs <*.> gt = ($.) <$> gs <*> gt
+
+-- | @.iterate@ method on @GraphTraversal@.
+--
+-- 'gIterate' is not a 'Walk' because it's usually used to terminate
+-- the method chain of Gremlin steps. The returned 'GTraversal'
+-- outputs nothing, thus its end type is '()'.
+--
+-- >>> toGremlin (source "g" & sAddV' "person" &. gProperty "name" "marko" & gIterate)
+-- "g.addV(\"person\").property(\"name\",\"marko\").iterate()"
+--
+-- @since 1.1.0.0
+gIterate :: WalkType c => GTraversal c s e -> GTraversal c s ()
+gIterate gt = unsafeWalk "iterate" [] $. gt
 
 -- -- $walk-steps
 -- --
