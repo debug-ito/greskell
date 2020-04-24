@@ -505,14 +505,23 @@ instance Traversable AVertexProperty where
 --
 -- @since 1.1.0.0
 newtype Path a = Path { unPath :: [PathEntry a] }
-            deriving (Show,Eq,Ord,Functor)
+            deriving (Show,Eq,Ord,Functor,Foldable)
 
 instance GraphSONTyped (Path a) where
   gsonTypeFor _ = "g:Path"
 
--- | @Path@ is an @Iterable@ that emits its objects.
+-- | @Path@ is an @Iterable@ that emits its objects of type @a@.
 instance AsIterator (Path a) where
   type IteratorItem (Path a) = a
+
+instance FromJSON (Path a) where
+  parseJSON = undefined -- TODO
+
+instance ToJSON (Path a) where
+  toJSON = undefined -- TODO
+
+instance FromGraphSON (Path a) where
+  parseGraphSON = undefined -- TODO
 
 -- | An entry in a 'Path'.
 --
@@ -523,3 +532,6 @@ data PathEntry a =
     peObject :: a
   }
   deriving (Show,Eq,Ord,Functor)
+
+instance Foldable PathEntry where
+  foldr f acc pe = f (peObject pe) acc
