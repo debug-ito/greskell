@@ -589,18 +589,26 @@ gFilter :: (ToGTraversal g, WalkType c, WalkType p, Split c p) => g c s e -> Wal
 gFilter walk = unsafeWalk "filter" [travToG walk]
 
 -- | @.cyclicPath@ step.
+--
+-- @since 1.0.1.0
 gCyclicPath :: (WalkType c) => Walk c a a
 gCyclicPath = liftWalk gCyclicPath'
 
 -- | Monomorphic version of 'gCyclicPath'.
+--
+-- @since 1.0.1.0
 gCyclicPath' :: Walk Filter a a
 gCyclicPath' = unsafeWalk "cyclicPath" []
 
 -- | @.simplePath@ step.
+--
+-- @since 1.0.1.0
 gSimplePath :: (WalkType c) => Walk c a a
 gSimplePath = liftWalk gSimplePath'
 
 -- | Monomorphic version of 'gSimplePath'.
+--
+-- @since 1.0.1.0
 gSimplePath' :: Walk Filter a a
 gSimplePath' = unsafeWalk "simplePath" []
 
@@ -919,7 +927,7 @@ gRepeat :: (ToGTraversal g, WalkType c)
         -- 'gUntilHead', 'gUntilTail' to make this argument.
         -> Maybe (RepeatPos, RepeatEmit c s)
         -- ^ @.emit@ modulator. You can use 'gEmitHead', 'gEmitTail',
-        -- 'gEmitAlwaysHead', 'gEmitAlwaysTail' to make this argument.
+        -- 'gEmitHeadT', 'gEmitTailT' to make this argument.
         -> g c s s -- ^ Repeated traversal
         -> Walk c s s
 gRepeat mlabel muntil memit repeated_trav = fromMWalk (head_walk <> toMWalk repeat_body <> tail_walk)
