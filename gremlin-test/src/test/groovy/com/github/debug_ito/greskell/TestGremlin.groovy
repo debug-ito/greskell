@@ -340,8 +340,10 @@ public class TestGremlin {
   }
 
   static private void getOrAdd_with_fold(GraphTraversalSource g, String name) throws Exception {
-    // This is often found on the web,
-    // e.g., https://stackoverflow.com/questions/51784430/why-do-you-need-to-fold-unfold-using-coalesce-for-a-conditional-insert
+    // This is often found on the web, e.g.,
+    //
+    // - https://stackoverflow.com/questions/51784430/why-do-you-need-to-fold-unfold-using-coalesce-for-a-conditional-insert
+    // - https://stackoverflow.com/questions/46027444/gremlin-only-add-a-vertex-if-it-doesnt-exist
     g.V().has("name", name).fold().coalesce(
       __.unfold(),
       __.addV("person").property("name", name)
