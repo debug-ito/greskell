@@ -10,6 +10,8 @@
   * `gFlatMap'`
   * `gCoalesce`
   * `gIterate`
+  * `gPath`
+  * `gPathBy`
 
 ### Graph module
 

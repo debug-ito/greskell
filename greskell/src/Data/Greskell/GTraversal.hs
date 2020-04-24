@@ -145,6 +145,8 @@ module Data.Greskell.GTraversal
          gSelectBy1,
          gSelectByN,
          gProject,
+         gPath,
+         gPathBy,
          -- ** Summarizing steps
          gFold,
          gCount,
@@ -210,7 +212,7 @@ import Data.Greskell.Graph
   ( Element(..), Property(..), ElementID(..), Vertex, Edge,
     AVertex, AEdge, AVertexProperty,
     T, Key, Cardinality,
-    KeyValue(..), Keys(..)
+    KeyValue(..), Keys(..), Path,
   )
 import qualified Data.Greskell.Greskell as Greskell
 import Data.Greskell.GraphSON (GValue, FromGraphSON)
@@ -1442,6 +1444,20 @@ gProject lp_head lps = foldl' f (unsafeWalk "project" labels) (lp_head : lps)
     f acc lp = acc >>> toByStep lp
     toByStep :: LabeledByProjection s -> Walk Transform a a
     toByStep (LabeledByProjection _ (ByProjection p)) = unsafeWalk "by" [toGremlin p]
+
+-- | @.path@ step without modulation.
+gPath :: Walk Transform s (Path GValue)
+gPath = unsafeWalk "path" []
+
+-- | @.path@ step with one or more @.by@ modulations.
+--
+-- >>> let inE = (gInE' [] :: Walk Transform AVertex AEdge)
+-- >>> toGremlin (source "g" & sV' [] &. gOut' [] &. gPathBy "name" [gBy $ inE >>> gValues ["relation"]])
+-- "g.V().out().path().by(\"name\").by(__.inE().values(\"relation\"))"
+--
+-- @since 1.1.0.0
+gPathBy :: ByProjection a b -> [ByProjection a b] -> Walk Transform s (Path b)
+gPathBy b1 bn = modulateWith (unsafeWalk "path" []) $ map byStep $ b1 : bn
 
 -- | @.fold@ step.
 gFold :: Walk Transform a [a]
