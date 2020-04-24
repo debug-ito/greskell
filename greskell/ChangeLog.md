@@ -20,6 +20,7 @@
   * `PathEntry`
 * Add the following functions.
   * `pathToPMap`
+  * `makePathEntry`
 
 ### Extra module
 

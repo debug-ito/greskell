@@ -45,6 +45,7 @@ module Data.Greskell.Graph
          Path(..),
          PathEntry(..),
          pathToPMap,
+         makePathEntry,
 
          -- * Concrete data types
          -- $concrete_types
@@ -578,3 +579,11 @@ pathToPMap (Path entries) = foldr fentry mempty entries
   where
     fentry entry pm = foldr (flabel $ peObject entry) pm $ peLabels entry
     flabel obj label pm = pMapInsert (unAsLabel label) obj pm
+
+-- | Make a 'PathEntry'.
+--
+-- @since 1.1.0.0
+makePathEntry :: [AsLabel a] -- ^ labels
+              -> a -- ^ object
+              -> PathEntry a
+makePathEntry ls obj = PathEntry (HS.fromList ls) obj
