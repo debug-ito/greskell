@@ -59,6 +59,7 @@ module Data.Greskell.Graph
        ) where
 
 import Control.Applicative (empty, (<$>), (<*>), (<|>))
+import Control.Monad (when)
 import Data.Aeson (Value(..), FromJSON(..), ToJSON(..))
 import Data.Aeson.Types (Parser)
 import Data.Foldable (toList, Foldable(foldr), foldlM)
@@ -77,7 +78,7 @@ import Data.Vector (Vector)
 import GHC.Generics (Generic)
 
 import Data.Greskell.AsIterator (AsIterator(..))
-import Data.Greskell.AsLabel (AsLabel)
+import Data.Greskell.AsLabel (AsLabel(..))
 import Data.Greskell.GraphSON
   ( GraphSON(..), GraphSONTyped(..), FromGraphSON(..),
     (.:), GValue, GValueBody(..),
@@ -514,14 +515,26 @@ instance GraphSONTyped (Path a) where
 instance AsIterator (Path a) where
   type IteratorItem (Path a) = a
 
-instance FromJSON (Path a) where
-  parseJSON = undefined -- TODO
+instance FromGraphSON a => FromJSON (Path a) where
+  parseJSON = parseJSONViaGValue
 
-instance ToJSON (Path a) where
-  toJSON = undefined -- TODO
-
-instance FromGraphSON (Path a) where
-  parseGraphSON = undefined -- TODO
+instance FromGraphSON a => FromGraphSON (Path a) where
+  parseGraphSON gv =
+    case gValueBody gv of
+      GObject o -> parseObj o
+      _ -> empty
+    where
+      parseObj o = do
+        labels <- o .: "labels"
+        objects <- o .: "objects"
+        let nlabels = length labels
+            nobjects = length objects
+        when (nlabels /= nobjects) $ do
+          fail ( "Different number of labels and objects: "
+                 <> show nlabels <> " labels, "
+                 <> show nobjects <> " objects."
+               )
+        return $ Path $ map (uncurry PathEntry) $ zip ((map . map) AsLabel labels) objects
 
 -- | An entry in a 'Path'.
 --
