@@ -53,7 +53,7 @@ import Data.Greskell.GTraversal
     gValueMap,
     gProject, gByL,
     gRepeat, gTimes, gEmitHead, gUntilTail, gLoops, gIsP,
-    gHasLabel, gHas2, gAddV
+    gHasLabel, gHas2, gAddV, gIterate
   )
 import Data.Greskell.PMap (lookupAsM, lookupListAs, pMapToThrow)
 
@@ -221,6 +221,8 @@ spec_P = describe "P class" $ specify "pNot, pEq, pTest" $ withClient $ \client 
 withPrelude :: (ToGreskell a) => Greskell () -> a -> Greskell (GreskellReturn a)
 withPrelude prelude orig = unsafeGreskell (toGremlin prelude <> toGremlin orig)
 
+statements :: [Text] -> Greskell ()
+statements = unsafeGreskell . mconcat . map (<> "; ")
 
 -- | This test is supported TinkerPop 3.1.0 and above, because it uses
 -- 'gAddE'' function.
@@ -332,7 +334,7 @@ spec_graph = do
     withPrelude' :: (ToGreskell a) => a -> Greskell (GreskellReturn a)
     withPrelude' = withPrelude prelude
     prelude :: Greskell ()
-    prelude = unsafeGreskell $ mconcat $ map (<> "; ")
+    prelude = statements
               ( [ "graph = org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph.open()",
                   "g = graph.traversal()",
                   "graph.addVertex(id, 1, label, 'package')",
@@ -392,7 +394,7 @@ spec_as = do
 spec_selectBy :: SpecWith (String,Int)
 spec_selectBy = do
   let prelude :: Greskell ()
-      prelude = unsafeGreskell $ mconcat $ map (<> "; ")
+      prelude = statements
                 [ "graph = org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph.open()",
                   "g = graph.traversal()",
                   "graph.addVertex(id, 1, label, 'person')",
@@ -484,19 +486,43 @@ spec_repeat = do
 spec_upsert :: SpecWith (String,Int)
 spec_upsert = do
   describe "upsert vertex" $ do
+    specify "upsert outputs the vertex" $ withClient $ \client -> do
+      let body = liftWalk getName $. upsert "foo"
+          pre = statements prelude
+      got <- WS.slurpResults =<< WS.submit client (withPrelude pre body) Nothing
+      V.toList got `shouldBe` ["foo"]
     specify "upsert adds a vertex" $ withClient $ \client -> do
-      got_upsert <- WS.slurpResults =<< WS.submit client (withPrelude' (liftWalk getName $. upsert "foo")) Nothing
-      V.toList got_upsert `shouldBe` ["foo"]
-      got_all <- WS.slurpResults =<< WS.submit client (withPrelude' (getName $. getAllPersons)) Nothing
-      V.toList got_all `shouldBe` ["foo"]
-    specify "upsert adds different vertices" $ withClient $ \ _ -> True `shouldBe` False -- TODO
-    specify "upsert returns existing vertex" $ withClient $ \ _ -> True `shouldBe` False -- TODO
+      let pre = statements $ prelude ++
+                [ toGremlin (gIterate $ upsert "foo")
+                ]
+          body = getName $. getAllPersons
+      got <- WS.slurpResults =<< WS.submit client (withPrelude pre body) Nothing
+      V.toList got `shouldBe` ["foo"]
+    specify "upsert adds different vertices" $ withClient $ \client -> do
+      let pre = statements $ prelude ++
+                [ toGremlin (gIterate $ upsert "foo"),
+                  toGremlin (gIterate $ upsert "bar"),
+                  toGremlin (gIterate $ upsert "foo"),
+                  toGremlin (gIterate $ upsert "buzz"),
+                  toGremlin (gIterate $ upsert "bar")
+                ]
+          body = getName $. getAllPersons
+      got <- WS.slurpResults =<< WS.submit client (withPrelude pre body) Nothing
+      V.toList got `shouldMatchList` ["foo", "bar", "buzz"]
+    specify "upsert returns existing vertex" $ withClient $ \client -> do
+      let pre = statements $ prelude ++
+                [ toGremlin (gIterate $ upsert "foo"),
+                  toGremlin (gIterate $ upsert "foo")
+                ]
+          body = liftWalk getName $. upsert "foo"
+      got <- WS.slurpResults =<< WS.submit client (withPrelude pre body) Nothing
+      V.toList got `shouldBe` ["foo"]
   where
-    withPrelude' :: (ToGreskell a) => a -> Greskell (GreskellReturn a)
-    withPrelude' = withPrelude prelude
-    prelude :: Greskell ()
+    prelude :: [Text]
     prelude =
-      unsafeGreskell "graph = org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph.open(); g = graph.traversal(); "
+      [ "graph = org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph.open()",
+        "g = graph.traversal()"
+      ]
     getAllPersons :: GTraversal Transform () AVertex
     getAllPersons = gHasLabel "person" $. sV' [] $ source "g"
     getPerson :: Greskell Text -> GTraversal Transform () AVertex
