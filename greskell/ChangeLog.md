@@ -12,6 +12,8 @@
   * `gIterate`
   * `gPath`
   * `gPathBy`
+* Document change: Now `gProject` is a "Transformation step", and
+  `gUnfold` is an "Accessor step".
 
 ### Graph module
 
