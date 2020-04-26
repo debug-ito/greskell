@@ -137,7 +137,7 @@ writePMapProperties = writePropertyKeyValues . pMapToList
 
 -- | The result 'Walk' emits the input elements as-is when there is at
 -- least one input element. If there is no input element, it runs the
--- body traversal and outputs its result.
+-- body traversal once and outputs its result.
 --
 -- You can use this function to implement \"upsert\" a vertex
 -- (i.e. add a vertex if not exist).

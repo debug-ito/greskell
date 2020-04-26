@@ -1446,6 +1446,8 @@ gProject lp_head lps = foldl' f (unsafeWalk "project" labels) (lp_head : lps)
     toByStep (LabeledByProjection _ (ByProjection p)) = unsafeWalk "by" [toGremlin p]
 
 -- | @.path@ step without modulation.
+--
+-- @since 1.1.0.0
 gPath :: Walk Transform s (Path GValue)
 gPath = unsafeWalk "path" []
 
