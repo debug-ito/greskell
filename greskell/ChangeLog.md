@@ -1,6 +1,6 @@
 # Revision history for greskell
 
-## 1.1.0.0  -- ?
+## 1.1.0.0  -- 2020-04-26
 
 ### GTraversal module
 
