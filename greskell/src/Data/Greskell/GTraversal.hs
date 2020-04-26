@@ -131,7 +131,7 @@ module Data.Greskell.GTraversal
          gV,
          gV',
          gConstant,
-         gUnfold,
+         gProject,
          -- ** As step
          gAs,
          -- ** Accessor steps
@@ -144,7 +144,7 @@ module Data.Greskell.GTraversal
          gSelectN,
          gSelectBy1,
          gSelectByN,
-         gProject,
+         gUnfold,
          gPath,
          gPathBy,
          -- ** Summarizing steps
