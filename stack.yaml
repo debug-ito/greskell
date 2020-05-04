@@ -48,6 +48,8 @@ extra-deps:
 - hspec-need-env-0.1.0.3
 
 - base64-bytestring-1.1.0.0
+- websockets-0.12.7.1
+- clock-0.8
 
 #### confirmed on 2018-03-12
 ## - aeson-1.3.0.0
