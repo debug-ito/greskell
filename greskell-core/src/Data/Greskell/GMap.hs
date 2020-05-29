@@ -31,7 +31,6 @@ import Data.Aeson
     FromJSONKey, fromJSONKey, FromJSONKeyFunction(..), ToJSONKey
   )
 import Data.Aeson.Types (Parser)
-import Data.Coerce (coerce)
 import Data.Foldable (length, Foldable)
 import Data.Hashable (Hashable)
 import Data.HashMap.Strict (HashMap)
@@ -43,6 +42,12 @@ import Data.Vector ((!), Vector)
 import qualified Data.Vector as V
 import GHC.Exts (IsList(Item))
 import qualified GHC.Exts as List (IsList(fromList, toList))
+
+#if MIN_VERSION_aeson(1,5,0)
+import Data.Coerce (coerce)
+#else
+import Unsafe.Coerce (unsafeCoerce)
+#endif
 
 import Data.Greskell.GraphSON.GraphSONTyped (GraphSONTyped(..))
 
@@ -246,7 +251,7 @@ parseSingleEntryObjectToEntry vp o =
 #if MIN_VERSION_aeson(1,5,0)
       FromJSONKeyCoerce -> return $ fmap return coerce
 #else
-      FromJSONKeyCoerce _ -> return $ fmap return coerce
+      FromJSONKeyCoerce _ -> return $ fmap return unsafeCoerce
 #endif
 
 orElseM :: Monad m => m (Maybe a) -> m (Maybe a) -> m (Maybe a)
