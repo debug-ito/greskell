@@ -1,4 +1,4 @@
-{-# LANGUAGE TypeFamilies, OverloadedStrings, GeneralizedNewtypeDeriving, DeriveTraversable #-}
+{-# LANGUAGE TypeFamilies, OverloadedStrings, GeneralizedNewtypeDeriving, DeriveTraversable, CPP #-}
 -- |
 -- Module: Data.Greskell.GMap
 -- Description: data type for g:Map
@@ -31,6 +31,7 @@ import Data.Aeson
     FromJSONKey, fromJSONKey, FromJSONKeyFunction(..), ToJSONKey
   )
 import Data.Aeson.Types (Parser)
+import Data.Coerce (coerce)
 import Data.Foldable (length, Foldable)
 import Data.Hashable (Hashable)
 import Data.HashMap.Strict (HashMap)
@@ -42,7 +43,6 @@ import Data.Vector ((!), Vector)
 import qualified Data.Vector as V
 import GHC.Exts (IsList(Item))
 import qualified GHC.Exts as List (IsList(fromList, toList))
-import Unsafe.Coerce (unsafeCoerce)
 
 import Data.Greskell.GraphSON.GraphSONTyped (GraphSONTyped(..))
 
@@ -239,11 +239,15 @@ parseSingleEntryObjectToEntry vp o =
     getParser = case fromJSONKey of
       FromJSONKeyText p -> return $ fmap return p
       FromJSONKeyTextParser p -> return p
-      FromJSONKeyCoerce _ -> return $ fmap return unsafeCoerce
       FromJSONKeyValue _ -> fail ( "Unexpected FromJSONKeyValue."
                                    ++ " It expects that the entry key is parsed from the text key in JSON Object,"
                                    ++ " but the key type does not support it."
                                  )
+#if MIN_VERSION_aeson(1,5,0)
+      FromJSONKeyCoerce -> return $ fmap return coerce
+#else
+      FromJSONKeyCoerce _ -> return $ fmap return coerce
+#endif
 
 orElseM :: Monad m => m (Maybe a) -> m (Maybe a) -> m (Maybe a)
 orElseM act_a act_b = do
