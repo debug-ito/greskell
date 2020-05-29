@@ -31,7 +31,7 @@ library
   other-modules:        Data.Greskell.GraphSON.GraphSONTyped,
                         Data.Greskell.GraphSON.Core
   build-depends:        base >=4.9.0.0 && <4.14,
-                        aeson >=1.0.2.1 && <1.5,
+                        aeson >=1.0.2.1 && <1.6,
                         unordered-containers >=0.2.7.1 && <0.3,
                         hashable >=1.2.6.1 && <1.4,
                         scientific >=0.3.4.9 && <0.4,
