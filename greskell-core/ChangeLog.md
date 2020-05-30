@@ -1,5 +1,9 @@
 # Revision history for greskell-core
 
+## 0.1.3.3  -- 2020-05-30
+
+* Support `aeson-1.5.0.0`.
+
 ## 0.1.3.2  -- 2020-03-29
 
 * Confirm test with `QuickCheck-2.14`.
