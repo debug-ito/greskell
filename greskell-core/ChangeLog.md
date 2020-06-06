@@ -1,5 +1,9 @@
 # Revision history for greskell-core
 
+## 0.1.3.4  -- 2020-06-06
+
+* Support `doctest-0.17`.
+
 ## 0.1.3.3  -- 2020-05-30
 
 * Support `aeson-1.5.0.0`.
