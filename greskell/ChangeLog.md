@@ -1,5 +1,9 @@
 # Revision history for greskell
 
+## 1.1.0.2  -- 2020-06-06
+
+* Support `doctest-0.17`.
+
 ## 1.1.0.1  -- 2020-05-30
 
 * Support `aeson-1.5.0.0`.
