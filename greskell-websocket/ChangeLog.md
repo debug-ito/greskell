@@ -1,5 +1,9 @@
 # Revision history for greskell-websocket
 
+## 0.1.2.4  -- 2020-06-21
+
+* Confirm test with `base-4.14.0.0`.
+
 ## 0.1.2.3  -- 2020-05-30
 
 * Support `aeson-1.5.0.0`.
