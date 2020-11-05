@@ -469,6 +469,19 @@ public class TestGremlin {
 
   @Test
   public void match_nested() throws Exception {
-    throw new Exception("TODO: match step that includes another match step should outputs a result that has bindings made by all match steps.");
+    def got = __.__(1,2,3,4).as("a").map{ it.get() * 2 }.match(
+      __.as("b").map { it.get() + 3 }.match(
+        __.as("a").map { it.get() * 3 }.as("d"),
+        __.as("e").map { it.get() - 2 }.as("d")
+      ).as("c")
+    ).toList();
+    assertThat got, is([]);
+
+    // The above query throws exception : "The provided match pattern is unsolvable"
+  }
+
+  @Test
+  public void match_where_without_label() throws Exception {
+    throw new Exception("TODO: what will happen when where pattern without label is used?");
   }
 }
