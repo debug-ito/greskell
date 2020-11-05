@@ -2,6 +2,7 @@ package com.github.debug_ito.greskell;
 
 import org.junit.Test;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 import static org.hamcrest.CoreMatchers.*;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
@@ -144,11 +145,12 @@ public class TestGremlin {
     def g = MyModern.make().traversal();
     try {
       g.V().has("name", "vadas").addE("new_edge").from(__.out("created")).iterate();
-      fail("this operation is supposed to throw an exception");
     }catch(Exception e) {
       // expected.
       ;
+      return;
     }
+    fail("this operation is supposed to throw an exception");
   }
 
   private static String pathToString(Path p) {
@@ -456,7 +458,13 @@ public class TestGremlin {
 
   @Test
   public void match_without_pattern() throws Exception {
-    throw new Exception("TODO");
+    try {
+      def got = __.__(1,2,3,4).match().path().toList();
+    } catch(Exception e) {
+      ; // expected.
+      return;
+    }
+    fail("match step without pattern should throw exception.");
   }
 
   @Test
