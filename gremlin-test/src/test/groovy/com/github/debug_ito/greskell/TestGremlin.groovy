@@ -417,4 +417,50 @@ public class TestGremlin {
     def got = __.__(1,2,3).iterate();
     assertThat got.hasNext(), is(false);
   }
+
+  @Test
+  public void match_step_output() throws Exception {
+    def got = __.__(1,2,3,4).as("a").match(
+      __.or(
+        __.as("b").map { it.get() * 2 }.as("c"),
+        __.as("b").map { it.get() + 5 }.as("c"),
+      ),
+      __.as("b").map { it.get() + 2 }.as("d"),
+      __.as("c").is(6)
+    ).path().collect { p -> ["objects": p.objects(), "labels": p.labels()] }.toList();
+
+    // assertThat got, is([]);
+
+    // A traverser emitted from the match step has path history that
+    // includes all matched patterns. The path history includes `as`
+    // labels assigned both inside and outside of `match` step. The
+    // order of matched patterns that appear in the path history is
+    // not deterministic.
+    //
+    // However, I don't think `match` step has any contract on how it
+    // modifies the path history. `match` step just ensures that its
+    // output contains variable bindings.
+    
+    assertThat got.size(), is(2);
+    def got_results = got.collect { e ->
+      def objs = e["objects"];
+      def match_result = objs[objs.size() - 1];
+      return match_result;
+    }.toSet();
+
+    // Result of `match` step is the variable bindings made by the
+    // step. It does't include `as` labels made before the `match`
+    // step.
+    assertThat got_results, is([["b": 1, "c": 6, "d": 3], ["b": 3, "c": 6, "d": 5]] as Set);
+  }
+
+  @Test
+  public void match_without_pattern() throws Exception {
+    throw new Exception("TODO");
+  }
+
+  @Test
+  public void match_nested() throws Exception {
+    throw new Exception("TODO: match step that includes another match step should outputs a result that has bindings made by all match steps.");
+  }
 }
