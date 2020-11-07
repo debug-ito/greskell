@@ -470,12 +470,11 @@ public class TestGremlin {
   @Test
   public void match_referring_to_history_label() throws Exception {
     def got = __.__(1,2,3,4).as("a").map { it.get() * 2 }.as("b").match(
-      __.as("a").is(1),
-      __.as("b").identity().as("c"),
-      // __.as("e").map { it.get() + 3 }.as("d")
-      __.as("c").map { it.get() * 2 }.as("f")
+      __.as("a").or(__.is(1),  __.is(4)),     // the start label refers to a history label
+      __.as("b").identity().as("c"),          // the end label makes a new binding
+      __.as("c").map { it.get() - 1 }.as("a") // the end label refers to a history label
     ).toList();
-    assertThat got, is([]);
+    assertThat got, is([["a": 1, "b": 2, "c": 2]]);
   }
 
   @Test
