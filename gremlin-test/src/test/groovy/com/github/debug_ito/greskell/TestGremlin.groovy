@@ -429,23 +429,11 @@ public class TestGremlin {
       ),
       __.as("b").map { it.get() + 2 }.as("d"),
       __.as("c").is(6)
-    ).path().collect { p -> ["objects": p.objects(), "labels": p.labels()] }.toList();
-
-    // assertThat got, is([]);
-
-    // A traverser emitted from the match step has path history that
-    // includes all matched patterns. The path history includes `as`
-    // labels assigned both inside and outside of `match` step. The
-    // order of matched patterns that appear in the path history is
-    // not deterministic.
-    //
-    // However, I don't think `match` step has any contract on how it
-    // modifies the path history. `match` step just ensures that its
-    // output contains variable bindings.
+    ).path().toList();
     
     assertThat got.size(), is(2);
-    def got_results = got.collect { e ->
-      def objs = e["objects"];
+    def got_results = got.collect { p ->
+      def objs = p.objects();
       def match_result = objs[objs.size() - 1];
       return match_result;
     }.toSet();
@@ -454,6 +442,24 @@ public class TestGremlin {
     // step. It does't include `as` labels made before the `match`
     // step.
     assertThat got_results, is([["b": 1, "c": 6, "d": 3], ["b": 3, "c": 6, "d": 5]] as Set);
+
+    // A traverser emitted from the match step has path history that
+    // includes all matched patterns. The path history includes `as`
+    // labels assigned both inside and outside of `match` step. This
+    // is explicitly documented in TinkerPop reference manual in an
+    // "IMPORTANT" column.
+    // 
+    // However, the order of matched patterns that appear in the path
+    // history is not deterministic.
+
+    def got_history = got.collect { p ->
+      def his = [:];
+      ["a", "b", "c", "d"].each { label ->
+        his[label] = p.get(label);
+      };
+      return his;
+    }.toSet();
+    assertThat got_history, is([["a":1, "b": 1, "c": 6, "d": 3], ["a":3, "b":3, "c":6, "d":5]] as Set)
   }
 
   @Test
@@ -488,14 +494,19 @@ public class TestGremlin {
     // ).toList();
     // assertThat got, is([]);
 
-    def got = __.__(1,2,3,4).as("a").map{ it.get() * 2 }.match(
-      __.as("b").map { it.get() + 3 }.match(
-        // __.as("e").map { it.get() - 14 }.as("a"),
-        __.as("e").map { it.get() - 14 }.is(1),
-        __.as("d").map { it.get() * 3 }.as("e")
-      ).as("c")
+    def got = __.__(1,2,3,4).as("H").map{ it.get() * 2 }.match(
+      __.as("O1").map { it.get() + 3 }.match(
+        __.as("H").identity().as("I1"), // Inner match refers to history label
+        __.as("I1").map { it.get() + 9 }.as("O3"), // Inner match refers to a binding in outer match
+      ).as("O2"),
+      __.as("O1").map { it.get() * 2 }.as("O3"),
+
+      __.as("I1").identity().as("O4") // Outer match refers to a binding in inner match (is it just referring to path history?)
     ).toList();
     assertThat got, is([]);
+
+    // TODO: does the final result include the binding in the nested match step?
+    // TODO: can the nested match refer to the binding made in the outer match?
   }
 
   //// I think the start label is either of the following three cases:
