@@ -480,20 +480,11 @@ public class TestGremlin {
       __.as("b").identity().as("c"),          // the end label makes a new binding
       __.as("c").map { it.get() - 1 }.as("a") // the end label refers to a history label
     ).toList();
-    assertThat got, is([["a": 1, "b": 2, "c": 2]]);
+    assertThat got, is([["a": 1, "b": 2, "c": 2]]); // the result includes history labels the match refers to.
   }
 
   @Test
   public void match_nested() throws Exception {
-    // def got = __.__(1,2,3,4).as("a").map{ it.get() * 2 }.match(
-    //   __.as("b").map { it.get() + 3 }.match(
-    //     // __.as("e").map { it.get() - 14 }.as("a"),
-    //     __.as("e").map { it.get() - 14 }.is(1),
-    //     __.as("d").map { it.get() * 3 }.as("e")
-    //   ).as("c")
-    // ).toList();
-    // assertThat got, is([]);
-
     def got = __.__(1,2,3,4).as("H").map{ it.get() * 2 }.match(
       __.as("O1").map { it.get() + 3 }.match(
         __.as("H").identity().as("I1"), // Inner match refers to history label
@@ -503,10 +494,9 @@ public class TestGremlin {
 
       __.as("I1").identity().as("O4") // Outer match refers to a binding in inner match (is it just referring to path history?)
     ).toList();
-    assertThat got, is([]);
-
-    // TODO: does the final result include the binding in the nested match step?
-    // TODO: can the nested match refer to the binding made in the outer match?
+    
+    // The result of a match includes labels appeared in patterns (regardless of those labels are new bindings or not)
+    assertThat got, is([["O1":6, "O2":["H":3, "I1":3, "O3":12], "O3":12, "O4":3, "I1":3]]);
   }
 
   //// I think the start label is either of the following three cases:
