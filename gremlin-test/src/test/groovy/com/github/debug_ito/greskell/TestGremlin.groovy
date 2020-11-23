@@ -499,6 +499,19 @@ public class TestGremlin {
     assertThat got, is([["O1":6, "O2":["H":3, "I1":3, "O3":12], "O3":12, "O4":3, "I1":3]]);
   }
 
+  @Test
+  public void match_multiple_free_start_variables() throws Exception {
+    try {
+      __.__(1,2,3,4).match(
+        __.as("a").map { it.get() * 2 }.as("b"),
+        __.as("c").map { it.get() * 4 }.as("d")
+      ).iterate();
+    }catch(Exception e) {
+      return;
+    }
+    fail("This operation is supposed to throw an exception");
+  }
+
   //// I think the start label is either of the following three cases:
   //// 
   //// 1. Internally bound variable: a label that is also an end label of other
@@ -562,7 +575,7 @@ public class TestGremlin {
       __.as("a").map { it.get() * 3 }.as("b"),
       __.where( __.map { it.get()  }.as("a") )
     ).toList();
-    assertThat got, is([]);
+    assertThat got, is([]); // TODO
   }
 
   @Test
@@ -571,7 +584,7 @@ public class TestGremlin {
       __.as("a").map { it.get() * 3 }.as("b"),
       __.where(P.eq("b"))
     ).toList();
-    assertThat got, is([]);
+    assertThat got, is([]); // TODO
   }
 
   @Test
