@@ -512,6 +512,19 @@ public class TestGremlin {
     fail("This operation is supposed to throw an exception");
   }
 
+  @Test
+  public void match_start_labels_free_and_history() throws Exception {
+    try {
+      __.__(1,2,3,4).as("a").map { it.get() * 2 }.match(
+        __.as("a").map { it.get() * 4 }.as("b"),  // start label refers to a history label
+        __.as("c").map { it.get() * 2 }.as("d"),  // start label as a free variable
+      ).iterate();
+    }catch(Exception e) {
+      return;
+    }
+    fail("This operation is supposed to throw an exception.");
+  }
+
   //// I think the start label is either of the following three cases:
   //// 
   //// 1. Internally bound variable: a label that is also an end label of other
@@ -526,22 +539,8 @@ public class TestGremlin {
   //// contain a pattern of type 2, they cannot also include a pattern of type 3.
   //// Multiple patterns of type 2 can have different start labels. On the other hand,
   //// all patterns of type 1 must have the same start label.
-
-  
-  //// def got = __.__(1,2,3,4).as("a").map{ it.get() * 2 }.match(
-  ////   __.as("b").map { it.get() + 3 }.match(
-  ////     __.as("a").map { it.get() * 3 }.as("d"),
-  ////     __.as("e").map { it.get() - 2 }.as("d")
-  ////   ).as("c")
-  //// ).toList();
-  //// assertThat got, is([]);
   ////
-  //// The above query throws exception : "The provided match pattern
-  //// is unsolvable". However, I think it's solvable. The pattern
-  //// with as("a") refers to the "a" label in history (is it even
-  //// possible???), and the pattern with as("e") can just accept the
-  //// input traverser and makes a new variable binding. I think it's
-  //// limitation of CountMatchAlgorithm.
+  //// Maybe the above constraint is a bug, and will be (or has already been) fixed.
 
   @Test
   public void match_pattern_without_start_label() throws Exception {
