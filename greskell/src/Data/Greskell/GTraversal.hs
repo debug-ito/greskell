@@ -63,6 +63,9 @@ module Data.Greskell.GTraversal
          gCyclicPath',
          gSimplePath,
          gSimplePath',
+         gWhereP1,
+         gWhereP1',
+         gWhereP2',
          -- ** Is step
          gIs,
          gIs',
@@ -629,6 +632,34 @@ gSimplePath = liftWalk gSimplePath'
 -- @since 1.0.1.0
 gSimplePath' :: Walk Filter a a
 gSimplePath' = unsafeWalk "simplePath" []
+
+gWherePGeneric :: Maybe (Greskell (AsLabel a))
+               -> Greskell (P (AsLabel a))
+               -> Maybe (ByProjection a b)
+               -> Walk Filter x x
+gWherePGeneric mstart p mby = modulateWith wh mods
+  where
+    wh = unsafeWalk "where" $ start_args ++ [toGremlin p]
+    start_args = maybe [] (return . toGremlin) mstart
+    mods = maybe [] (return . byStep) mby
+
+-- | @.where@ step with @P@ argument only.
+--
+-- @since 1.1.1.0
+gWhereP1 :: WalkType c => Greskell (P (AsLabel a)) -> Maybe (ByProjection a b) -> Walk c a a
+gWhereP1 p mby = liftWalk $ gWhereP1' p mby
+
+-- | Monomorphic version of 'gWhereP1'.
+--
+-- @since 1.1.1.0
+gWhereP1' :: Greskell (P (AsLabel a)) -> Maybe (ByProjection a b) -> Walk Filter a a
+gWhereP1' p mby = gWherePGeneric Nothing p mby
+
+-- | Monomorphic version of 'gWhereP2'.
+--
+-- @since 1.1.1.0
+gWhereP2' :: Greskell (AsLabel a) -> Greskell (P (AsLabel a)) -> Maybe (ByProjection a b) -> Walk Filter x x
+gWhereP2' start mby = gWherePGeneric (Just start) mby
 
 -- | @.is@ step of simple equality.
 --
@@ -1411,7 +1442,7 @@ gSelectN l1 l2 ls = unsafeWalk "select" ([toGremlin l1, toGremlin l2] ++ map toG
 unsafeChangeEnd :: Walk c a b -> Walk c a b'
 unsafeChangeEnd (Walk t) = Walk t
 
-byStep :: ByProjection a b -> Walk Transform c c
+byStep :: WalkType t => ByProjection a b -> Walk t c c
 byStep (ByProjection p) = unsafeWalk "by" [toGremlin p]
 
 -- | @.select@ step with one argument followed by @.by@ step.

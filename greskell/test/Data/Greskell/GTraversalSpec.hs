@@ -9,6 +9,7 @@ import System.IO (stderr, hPutStrLn)
 
 import Test.Hspec
 
+import Data.Greskell.AsLabel (AsLabel)
 import Data.Greskell.Gremlin
   ( oIncr, oDecr, oShuffle,
     pEq, pNeq, pInside, pGte
@@ -31,7 +32,8 @@ import Data.Greskell.GTraversal
     ByComparator(..), gBy2, gBy1, gBy,
     gRepeat, gTimes, gUntilHead, gUntilTail,
     gEmitHead, gEmitTail, gEmitHeadT, gEmitTailT,
-    gLoops
+    gLoops,
+    gWhereP1, gAs
   )
 
 
@@ -45,6 +47,7 @@ spec = do
   spec_compose_steps
   spec_has
   spec_repeat
+  spec_where
 
 
 spec_GraphTraversalSource :: Spec
@@ -164,3 +167,12 @@ spec_repeat = do
       let loop_label = "LP"
       toGremlin (source "g" & sV' [] &. gRepeat (Just loop_label) (gUntilTail $ gLoops (Just loop_label) >>> gIs 5) Nothing (gOut' []))
         `shouldBe` "g.V().repeat(\"LP\",__.out()).until(__.loops(\"LP\").is(5))"
+
+spec_where :: Spec
+spec_where = do
+  describe "gWhereP1" $ do
+    specify "no modulation" $ do
+      let la :: AsLabel AVertex
+          la = "a"
+      toGremlin (source "g" & sV' [] &. gAs la &. gOut' [] &. gWhereP1 (pEq la) Nothing)
+        `shouldBe` "g.V().as(\"a\").out().where(P.eq(\"a\"))"
