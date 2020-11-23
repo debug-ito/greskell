@@ -4,8 +4,8 @@
 
 ### Gremlin module
 
-* Add `PParameter` class.
-* [BREAKING CHANGE] Generalize signatures of the following functions using `PParameter`.
+* Add `PLike` class.
+* [BREAKING CHANGE] Generalize signatures of the following functions using `PLike`.
   * `pEq`
   * `pNeq`
   * `pLt`

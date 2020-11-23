@@ -172,7 +172,8 @@ spec_where :: Spec
 spec_where = do
   describe "gWhereP1" $ do
     specify "no modulation" $ do
-      let la :: AsLabel AVertex
-          la = "a"
-      toGremlin (source "g" & sV' [] &. gAs la &. gOut' [] &. gWhereP1 (pEq la) Nothing)
-        `shouldBe` "g.V().as(\"a\").out().where(P.eq(\"a\"))"
+      False `shouldBe` True -- TODO
+      -- let la :: AsLabel AVertex
+      --     la = "a"
+      -- toGremlin (source "g" & sV' [] &. gAs la &. gOut' [] &. gWhereP1 (pEq la) Nothing)
+      --   `shouldBe` "g.V().as(\"a\").out().where(P.eq(\"a\"))"
