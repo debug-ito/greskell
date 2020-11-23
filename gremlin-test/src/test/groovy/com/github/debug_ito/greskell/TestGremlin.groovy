@@ -532,7 +532,85 @@ public class TestGremlin {
 
 
   @Test
-  public void match_where_without_label() throws Exception {
-    throw new Exception("TODO: what will happen when where pattern without label is used?");
+  public void match_where_with_no_label() throws Exception {
+    try {
+      __.__(1,2,3,4).match(
+        __.as("a").map { it.get() * 3 }.as("b"),
+        __.where( __.map { it.get() + 1 }.is(10) )
+      ).iterate();
+    }catch(Exception e) {
+      // expected
+      return;
+    }
+    fail("This operation is supposed to throw an exception");
+  }
+
+  @Test
+  public void match_where_with_no_start_label() throws Exception {
+    def got = __.__(1,2,3,4).match(
+      __.as("a").map { it.get() * 3 }.as("b"),
+      __.where( __.map { it.get()  }.as("a") )
+    ).toList();
+    assertThat got, is([]);
+  }
+
+  @Test
+  public void match_whereP_with_no_start_label() throws Exception {
+    def got = __.__(1,2,3,4).match(
+      __.as("a").map { it.get() * 3 }.as("b"),
+      __.where(P.eq("b"))
+    ).toList();
+    assertThat got, is([]);
+  }
+
+  @Test
+  public void match_with_or_exceptions() throws Exception {
+    Exception got;
+    
+    // "where" without start label inside "or". Exception from this
+    // pattern is reasonable, because traversals in "or" should be
+    // able to run in parallel.
+    try {
+      __.__(1,2,3,4).match(
+        __.or(
+          __.as("a").map { it.get() * 3 }.as("b"),
+          __.where(__.map { it.get() + 6 }.as("a"))
+        )
+      ).iterate();
+    }catch (Exception e) {
+      got = e;
+    }
+    assertThat got, is(not(null));
+
+    // "or" with single traversal. I don't understand why this emits
+    // an exception. Maybe this is a bug.
+    got = null;
+    try {
+      __.__(1,2,3,4).match(
+        __.or(
+          __.as("a").map { it.get() * 3 }.as("b"),
+        )
+      ).iterate();
+    }catch (Exception e) {
+      got = e;
+    }
+    assertThat got, is(not(null));
+    
+    // "where" in "or", but the "where" only refers to the label
+    // defined in the outer match pattern with "and" relationship. I
+    // think this is reasonable, but it emits an exception.
+    got = null;
+    try {
+      __.__(1,2,3,4).match(
+        __.as("c").map { it.get() * 3 }.as("d"),
+        __.or(
+          __.as("a").map { it.get() * 3 }.as("b"),
+          __.where(__.map { it.get() + 6 }.as("d")),
+        )
+      ).iterate();
+    }catch (Exception e) {
+      got = e;
+    }
+    assertThat got, is(not(null));
   }
 }
