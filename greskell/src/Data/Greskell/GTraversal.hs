@@ -640,24 +640,25 @@ gWherePGeneric :: Maybe (Greskell (AsLabel a))
 gWherePGeneric mstart p mby = modulateWith wh mods
   where
     wh = unsafeWalk "where" $ start_args ++ [toGremlin p]
-    start_args = maybe [] (return . toGremlin) mstart
+    -- start_args = maybe [] (return . toGremlin) mstart
+    start_args = undefined -- TODO.
     mods = maybe [] (return . byStep) mby
 
 -- | @.where@ step with @P@ argument only.
 --
--- @since 1.1.1.0
+-- @since 1.2.0.0
 gWhereP1 :: WalkType c => Greskell (P (AsLabel a)) -> Maybe (ByProjection a b) -> Walk c a a
 gWhereP1 p mby = liftWalk $ gWhereP1' p mby
 
 -- | Monomorphic version of 'gWhereP1'.
 --
--- @since 1.1.1.0
+-- @since 1.2.0.0
 gWhereP1' :: Greskell (P (AsLabel a)) -> Maybe (ByProjection a b) -> Walk Filter a a
 gWhereP1' p mby = gWherePGeneric Nothing p mby
 
 -- | Monomorphic version of 'gWhereP2'.
 --
--- @since 1.1.1.0
+-- @since 1.2.0.0
 gWhereP2' :: Greskell (AsLabel a) -> Greskell (P (AsLabel a)) -> Maybe (ByProjection a b) -> Walk Filter x x
 gWhereP2' start mby = gWherePGeneric (Just start) mby
 

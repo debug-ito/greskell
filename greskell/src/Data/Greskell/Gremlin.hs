@@ -12,6 +12,7 @@ module Data.Greskell.Gremlin
          PredicateA(..),
          -- ** P class
          P,
+         PParameter(..),
          pNot,
          pEq,
          pNeq,
@@ -39,7 +40,8 @@ import Data.Monoid ((<>))
 import Data.Greskell.GraphSON (GraphSONTyped(..))
 import Data.Greskell.Greskell
   ( Greskell, unsafeGreskellLazy,
-    toGremlin, toGremlinLazy, unsafeMethodCall, unsafeFunCall
+    toGremlin, toGremlinLazy, unsafeMethodCall, unsafeFunCall,
+    ToGreskell
   )
 
 -- $setup
@@ -84,6 +86,15 @@ instance Predicate (P a) where
 instance GraphSONTyped (P a) where
   gsonTypeFor _ = "g:P"
 
+-- | Type of parameters used to construct a 'P' type. By passing
+-- values of type @p@, you can construct a value of @Greskell (P (PPredicateArg p))@,
+-- where 'PPredicateArg' is a type family of @p@.
+class ToGreskell p => PParameter p where
+  type PPredicateArg p
+
+instance PParameter (Greskell a) where
+  type PPredicateArg (Greskell a) = a
+
 
 -- | @P.not@ static method.
 --
@@ -96,53 +107,53 @@ pNot a = unsafeFunCall "P.not" [toGremlin a]
 --
 -- >>> toGremlin $ pEq $ string "hoge"
 -- "P.eq(\"hoge\")"
-pEq :: Greskell a -> Greskell (P a)
+pEq :: PParameter p => p -> Greskell (P (PPredicateArg p))
 pEq arg = unsafeFunCall "P.eq" [toGremlin arg]
 
 -- | @P.neq@ static method.
-pNeq :: Greskell a -> Greskell (P a)
+pNeq :: PParameter p => p -> Greskell (P (PPredicateArg p))
 pNeq arg = unsafeFunCall "P.neq" [toGremlin arg]
 
 -- | @P.lt@ static method.
-pLt :: Greskell a -> Greskell (P a)
+pLt :: PParameter p => p -> Greskell (P (PPredicateArg p))
 pLt arg = unsafeFunCall "P.lt" [toGremlin arg]
 
 -- | @P.lte@ static method.
-pLte :: Greskell a -> Greskell (P a)
+pLte :: PParameter p => p -> Greskell (P (PPredicateArg p))
 pLte arg = unsafeFunCall "P.lte" [toGremlin arg]
 
 -- | @P.gt@ static method.
-pGt :: Greskell a -> Greskell (P a)
+pGt :: PParameter p => p -> Greskell (P (PPredicateArg p))
 pGt arg = unsafeFunCall "P.gt" [toGremlin arg]
 
 -- | @P.gte@ static method.
-pGte :: Greskell a -> Greskell (P a)
+pGte :: PParameter p => p -> Greskell (P (PPredicateArg p))
 pGte arg = unsafeFunCall "P.gte" [toGremlin arg]
 
 -- | @P.inside@ static method.
 --
 -- >>> toGremlin $ pInside (number 10) (number 20)
 -- "P.inside(10.0,20.0)"
-pInside :: Greskell a -> Greskell a -> Greskell (P a)
+pInside :: PParameter p => p -> p -> Greskell (P (PPredicateArg p))
 pInside a b = unsafeFunCall "P.inside" $ map toGremlin [a, b]
 
 -- | @P.outside@ static method.
-pOutside :: Greskell a -> Greskell a -> Greskell (P a)
+pOutside :: PParameter p => p -> p -> Greskell (P (PPredicateArg p))
 pOutside a b = unsafeFunCall "P.outside" $ map toGremlin [a, b]
 
 -- | @P.between@ static method.
-pBetween :: Greskell a -> Greskell a -> Greskell (P a)
+pBetween :: PParameter p => p -> p -> Greskell (P (PPredicateArg p))
 pBetween a b = unsafeFunCall "P.between" $ map toGremlin [a, b]
 
 -- | @P.within@ static method.
 --
 -- >>> toGremlin $ pWithin (["foo", "bar", "hoge"] :: [Greskell String])
 -- "P.within(\"foo\",\"bar\",\"hoge\")"
-pWithin :: [Greskell a] -> Greskell (P a)
+pWithin :: PParameter p => [p] -> Greskell (P (PPredicateArg p))
 pWithin = unsafeFunCall "P.within" . map toGremlin
 
 -- | @P.without@ static method.
-pWithout :: [Greskell a] -> Greskell (P a)
+pWithout :: PParameter p => [p] -> Greskell (P (PPredicateArg p))
 pWithout = unsafeFunCall "P.without" . map toGremlin
 
 -- | @java.util.Comparator@ interface.

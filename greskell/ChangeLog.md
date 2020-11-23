@@ -1,8 +1,30 @@
 # Revision history for greskell
 
-## 1.1.1.0  -- ?
+## 1.2.0.0  -- ?
+
+### Gremlin module
+
+* Add `PParameter` class.
+* [BREAKING CHANGE] Generalize signatures of the following functions using `PParameter`.
+  * `pEq`
+  * `pNeq`
+  * `pLt`
+  * `pLte`
+  * `pGt`
+  * `pGte`
+  * `pInside`
+  * `pOutside`
+  * `pBetween`
+  * `pWithin`
+  * `pWithout`
 
 
+### GTraversal module
+
+* Add the following functions.
+  * `gWhereP1`
+  * `gWhereP1'`
+  * `gWhereP2'`
 
 ## 1.1.0.3  -- 2020-06-21
 
