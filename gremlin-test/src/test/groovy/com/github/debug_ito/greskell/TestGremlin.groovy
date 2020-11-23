@@ -530,6 +530,17 @@ public class TestGremlin {
   //// input traverser and makes a new variable binding. I think it's
   //// limitation of CountMatchAlgorithm.
 
+  @Test
+  public void match_pattern_without_start_label() throws Exception {
+    try {
+      __.__(1,2,3,4).match(
+        __.map { it.get() * 3 }.as("b")
+      ).iterate();
+    }catch (Exception e) {
+      return;
+    }
+    fail("this operation is supposed to throw an exception");
+  }
 
   @Test
   public void match_where_with_no_label() throws Exception {
