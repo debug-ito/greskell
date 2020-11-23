@@ -541,6 +541,8 @@ public class TestGremlin {
   //// all patterns of type 1 must have the same start label.
   ////
   //// Maybe the above constraint is a bug, and will be (or has already been) fixed.
+  ////
+  //// Maybe https://issues.apache.org/jira/browse/TINKERPOP-2230 fixed it??
 
   @Test
   public void match_pattern_without_start_label() throws Exception {
