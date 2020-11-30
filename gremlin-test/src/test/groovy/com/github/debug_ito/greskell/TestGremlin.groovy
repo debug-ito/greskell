@@ -485,7 +485,7 @@ public class TestGremlin {
       __.as("a").or(__.is(1),  __.is(4)),     // the start label refers to a history label
       __.as("b").identity().as("c"),          // the end label makes a new binding
       __.as("c").map { it.get() - 1 }.as("a") // the end label refers to a history label
-    ).toList();
+    ).select("a", "b", "c").toList(); // We should select() the result labels explicitly.
     assertThat got, is([["a": 1, "b": 2, "c": 2]]); // the result includes history labels the match refers to.
   }
 
@@ -495,11 +495,11 @@ public class TestGremlin {
       __.as("O1").map { it.get() + 3 }.match(
         __.as("H").identity().as("I1"), // Inner match refers to history label
         __.as("I1").map { it.get() + 9 }.as("O3"), // Inner match refers to a binding in outer match
-      ).as("O2"),
+      ).select("H", "I1", "O3").as("O2"), // We should explicitly select()
       __.as("O1").map { it.get() * 2 }.as("O3"),
 
       __.as("I1").identity().as("O4") // Outer match refers to a binding in inner match (is it just referring to path history?)
-    ).toList();
+    ).select("O1", "O2", "O3", "O4", "I1").toList(); // We should explicitly select()
     
     // The result of a match includes labels appeared in patterns (regardless of those labels are new bindings or not)
     assertThat got, is([["O1":6, "O2":["H":3, "I1":3, "O3":12], "O3":12, "O4":3, "I1":3]]);
