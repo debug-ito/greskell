@@ -570,23 +570,24 @@ public class TestGremlin {
     fail("This operation is supposed to throw an exception");
   }
 
-  @Test
-  public void match_where_with_no_start_label() throws Exception {
-    def got = __.__(1,2,3,4).match(
-      __.as("a").map { it.get() * 3 }.as("b"),
-      __.where( __.map { it.get()  }.as("a") )
-    ).toList();
-    assertThat got, is([]); // TODO
-  }
-
-  @Test
-  public void match_whereP_with_no_start_label() throws Exception {
-    def got = __.__(1,2,3,4).match(
-      __.as("a").map { it.get() * 3 }.as("b"),
-      __.where(P.eq("b"))
-    ).toList();
-    assertThat got, is([]); // TODO
-  }
+  // It's practically undefined how it behaves when there is no start
+  // label in a match pattern.
+  //
+  // @Test
+  // public void match_where_with_no_start_label() throws Exception {
+  //   def got = __.__(1,2,3,4).match(
+  //     __.as("a").map { it.get() * 3 }.as("b"),
+  //     __.where( __.map { it.get()  }.as("a") )
+  //   ).toList();
+  // }
+  // 
+  // @Test
+  // public void match_whereP_with_no_start_label() throws Exception {
+  //   def got = __.__(1,2,3,4).match(
+  //     __.as("a").map { it.get() * 3 }.as("b"),
+  //     __.where(P.eq("b"))
+  //   ).toList();
+  // }
 
   @Test
   public void match_with_or_exceptions() throws Exception {
