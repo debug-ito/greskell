@@ -432,17 +432,23 @@ public class TestGremlin {
     ).path().toList();
     
     assertThat got.size(), is(2);
-    def got_results = got.collect { p ->
-      def objs = p.objects();
-      def match_result = objs[objs.size() - 1];
-      return match_result;
-    }.toSet();
 
-    // Result of `match` step is the variable bindings made by the
-    // step. It does't include `as` labels made before the `match`
-    // step.
-    assertThat got_results, is([["b": 1, "c": 6, "d": 3], ["b": 3, "c": 6, "d": 5]] as Set);
+    // In practice, the traverser value emitted from match() step is
+    // undefined. That's because it's so subject to query
+    // optimization. See the discussion in the following threads.
+    //
+    // - https://groups.google.com/g/gremlin-users/c/CD0EQNm7U3c/
+    // - https://groups.google.com/g/gremlin-users/c/HVtldzV0Xk8
+    //
+    //
+    // def got_results = got.collect { p ->
+    //   def objs = p.objects();
+    //   def match_result = objs[objs.size() - 1];
+    //   return match_result;
+    // }.toSet();
+    // assertThat got_results, is([["b": 1, "c": 6, "d": 3], ["b": 3, "c": 6, "d": 5]] as Set);
 
+    
     // A traverser emitted from the match step has path history that
     // includes all matched patterns. The path history includes `as`
     // labels assigned both inside and outside of `match` step. This
