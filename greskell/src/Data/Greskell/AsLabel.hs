@@ -15,7 +15,9 @@ module Data.Greskell.AsLabel
          lookupM,
          lookupAs,
          lookupAsM,
-         PMapLookupException(..)
+         PMapLookupException(..),
+         -- * LabelP
+         LabelP
        ) where
 
 import Prelude hiding (lookup)
@@ -33,6 +35,7 @@ import Data.String (IsString(..))
 import Data.Text (Text)
 import Data.Traversable (Traversable)
 
+import Data.Greskell.Gremlin (PLike(..), P)
 import Data.Greskell.PMap
   ( PMap, PMapKey(..), Single,
     lookup, lookupM, lookupAs, lookupAsM, PMapLookupException(..)
@@ -70,3 +73,16 @@ type SelectedMap = PMap Single
 -- @since 1.1.0.0
 unsafeCastAsLabel :: AsLabel a -> AsLabel b
 unsafeCastAsLabel = AsLabel . unAsLabel
+
+
+-- | 'LabelP' is just like 'P', a Haskell representation of
+-- TinkerPop's @P@ class. Unlike 'P', however, 'LabelP' keeps a label
+-- ('AsLabel') inside. It is used in @.where@ and @.match@ steps, for
+-- example.
+--
+-- @since 1.2.0.0
+data LabelP a
+
+-- | You can construct a 'LabelP' from 'AsLabel'.
+instance PLike (LabelP a) where
+  type PParameter (LabelP a) = AsLabel a

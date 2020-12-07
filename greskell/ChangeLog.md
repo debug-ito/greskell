@@ -26,6 +26,10 @@
   * `gWhereP1'`
   * `gWhereP2'`
 
+### Gremlin module
+
+* Add `LabelP` type.
+
 ## 1.1.0.3  -- 2020-06-21
 
 * Confirm test with `base-4.14.0.0`.
