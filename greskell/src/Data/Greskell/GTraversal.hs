@@ -645,8 +645,16 @@ gWherePGeneric mstart p mby = modulateWith wh mods
 
 -- | @.where@ step with @P@ argument only.
 --
+-- >>> let la = ("a" :: AsLabel AVertex)
+-- >>> let age = ("age" :: Key AVertex Int)
+-- >>> toGremlin (source "g" & sV' [] &. gAs la &. gOut' [] &. gWhereP1 (pEq la) (Just $ gBy age))
+-- "g.V().as(\"a\").out().where(P.eq(\"a\")).by(\"age\")"
+--
 -- @since 1.2.0.0
-gWhereP1 :: WalkType c => Greskell (LabelP a) -> Maybe (ByProjection a b) -> Walk c a a
+gWhereP1 :: WalkType c
+         => Greskell (LabelP a) -- ^ the argument to @.where@ step.
+         -> Maybe (ByProjection a b) -- ^ optional @.by@ modulation following the @.where@ step.
+         -> Walk c a a
 gWhereP1 p mby = liftWalk $ gWhereP1' p mby
 
 -- | Monomorphic version of 'gWhereP1'.

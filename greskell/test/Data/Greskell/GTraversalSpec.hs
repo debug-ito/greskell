@@ -33,7 +33,7 @@ import Data.Greskell.GTraversal
     gRepeat, gTimes, gUntilHead, gUntilTail,
     gEmitHead, gEmitTail, gEmitHeadT, gEmitTailT,
     gLoops,
-    gWhereP1, gAs
+    gWhereP1, gAs, gLabel
   )
 
 
@@ -176,3 +176,8 @@ spec_where = do
           la = "a"
       toGremlin (source "g" & sV' [] &. gAs la &. gOut' [] &. gWhereP1 (pEq la) Nothing)
         `shouldBe` "g.V().as(\"a\").out().where(P.eq(\"a\"))"
+    specify "with modulation (by traversal)" $ do
+      let la :: AsLabel AVertex
+          la = "a"
+      toGremlin (source "g" & sV' [] &. gAs la &. gOut' [] &. gWhereP1 (pGte la) (Just $ gBy gLabel))
+        `shouldBe` "g.V().as(\"a\").out().where(P.gte(\"a\")).by(__.label())"
