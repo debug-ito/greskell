@@ -24,6 +24,7 @@
 * Add the following functions.
   * `gWhereP1`
   * `gWhereP1'`
+  * `gWhereP2`
   * `gWhereP2'`
 
 ### Gremlin module

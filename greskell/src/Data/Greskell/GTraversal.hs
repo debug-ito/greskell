@@ -65,6 +65,7 @@ module Data.Greskell.GTraversal
          gSimplePath',
          gWhereP1,
          gWhereP1',
+         gWhereP2,
          gWhereP2',
          -- ** Is step
          gIs,
@@ -652,7 +653,7 @@ gWherePGeneric mstart p mby = modulateWith wh mods
 --
 -- @since 1.2.0.0
 gWhereP1 :: WalkType c
-         => Greskell (LabelP a) -- ^ the argument to @.where@ step.
+         => Greskell (LabelP a) -- ^ the @P@ argument for @.where@ step.
          -> Maybe (ByProjection a b) -- ^ optional @.by@ modulation following the @.where@ step.
          -> Walk c a a
 gWhereP1 p mby = liftWalk $ gWhereP1' p mby
@@ -663,11 +664,21 @@ gWhereP1 p mby = liftWalk $ gWhereP1' p mby
 gWhereP1' :: Greskell (LabelP a) -> Maybe (ByProjection a b) -> Walk Filter a a
 gWhereP1' p mby = gWherePGeneric Nothing p mby
 
+-- | @.where@ step with the starting label and @P@ arguments.
+--
+-- @since 1.2.0.0
+gWhereP2 :: WalkType c
+         => AsLabel a -- ^ the starting label of @.where@.
+         -> Greskell (LabelP a) -- ^ the @P@ argument for @.where@ step.
+         -> Maybe (ByProjection a b) -- ^ optional @.by@ modulation following the @.where@ step.
+         -> Walk c x x
+gWhereP2 s p b = liftWalk $ gWhereP2' s p b
+
 -- | Monomorphic version of 'gWhereP2'.
 --
 -- @since 1.2.0.0
 gWhereP2' :: AsLabel a -> Greskell (LabelP a) -> Maybe (ByProjection a b) -> Walk Filter x x
-gWhereP2' start mby = gWherePGeneric (Just start) mby
+gWhereP2' start p mby = gWherePGeneric (Just start) p mby
 
 -- | @.is@ step of simple equality.
 --
