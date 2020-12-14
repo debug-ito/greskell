@@ -16,8 +16,8 @@ module Data.Greskell.AsLabel
          lookupAs,
          lookupAsM,
          PMapLookupException(..),
-         -- * LabelP
-         LabelP
+         -- * LabeledP
+         LabeledP
        ) where
 
 import Prelude hiding (lookup)
@@ -75,14 +75,18 @@ unsafeCastAsLabel :: AsLabel a -> AsLabel b
 unsafeCastAsLabel = AsLabel . unAsLabel
 
 
--- | 'LabelP' is just like 'P', a Haskell representation of
--- TinkerPop's @P@ class. Unlike 'P', however, 'LabelP' keeps a label
--- ('AsLabel') inside. It is used in @.where@ and @.match@ steps, for
--- example.
+-- | 'LabeledP' is just like 'P', a Haskell representation of
+-- TinkerPop's @P@ class. Unlike 'P', however, 'LabeledP' keeps a
+-- label ('AsLabel') inside. It is used in @.where@ and @.match@
+-- steps, for example.
 --
 -- @since 1.2.0.0
-data LabelP a
+data LabeledP a
 
--- | You can construct a 'LabelP' from 'AsLabel'.
-instance PLike (LabelP a) where
-  type PParameter (LabelP a) = AsLabel a
+-- Design note: neo4j-gremlin has `LabelP` class, which has nothing to
+-- do with the 'LabeledP' type above.
+
+
+-- | You can construct a 'LabeledP' from 'AsLabel'.
+instance PLike (LabeledP a) where
+  type PParameter (LabeledP a) = AsLabel a

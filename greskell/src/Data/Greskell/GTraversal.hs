@@ -229,7 +229,7 @@ import Data.Greskell.Greskell
     toGremlinLazy, toGremlin
   )
 import Data.Greskell.AsIterator (AsIterator(IteratorItem))
-import Data.Greskell.AsLabel (AsLabel, SelectedMap, LabelP)
+import Data.Greskell.AsLabel (AsLabel, SelectedMap, LabeledP)
 import Data.Greskell.PMap (PMap, Single)
 
 -- $setup
@@ -635,7 +635,7 @@ gSimplePath' :: Walk Filter a a
 gSimplePath' = unsafeWalk "simplePath" []
 
 gWherePGeneric :: Maybe (AsLabel a)
-               -> Greskell (LabelP a)
+               -> Greskell (LabeledP a)
                -> Maybe (ByProjection a b)
                -> Walk Filter x x
 gWherePGeneric mstart p mby = modulateWith wh mods
@@ -653,7 +653,7 @@ gWherePGeneric mstart p mby = modulateWith wh mods
 --
 -- @since 1.2.0.0
 gWhereP1 :: WalkType c
-         => Greskell (LabelP a) -- ^ the @P@ argument for @.where@ step.
+         => Greskell (LabeledP a) -- ^ the @P@ argument for @.where@ step.
          -> Maybe (ByProjection a b) -- ^ optional @.by@ modulation following the @.where@ step.
          -> Walk c a a
 gWhereP1 p mby = liftWalk $ gWhereP1' p mby
@@ -661,7 +661,7 @@ gWhereP1 p mby = liftWalk $ gWhereP1' p mby
 -- | Monomorphic version of 'gWhereP1'.
 --
 -- @since 1.2.0.0
-gWhereP1' :: Greskell (LabelP a) -> Maybe (ByProjection a b) -> Walk Filter a a
+gWhereP1' :: Greskell (LabeledP a) -> Maybe (ByProjection a b) -> Walk Filter a a
 gWhereP1' p mby = gWherePGeneric Nothing p mby
 
 -- | @.where@ step with the starting label and @P@ arguments.
@@ -675,7 +675,7 @@ gWhereP1' p mby = gWherePGeneric Nothing p mby
 -- @since 1.2.0.0
 gWhereP2 :: WalkType c
          => AsLabel a -- ^ the starting label of @.where@.
-         -> Greskell (LabelP a) -- ^ the @P@ argument for @.where@ step.
+         -> Greskell (LabeledP a) -- ^ the @P@ argument for @.where@ step.
          -> Maybe (ByProjection a b) -- ^ optional @.by@ modulation following the @.where@ step.
          -> Walk c x x
 gWhereP2 s p b = liftWalk $ gWhereP2' s p b
@@ -683,7 +683,7 @@ gWhereP2 s p b = liftWalk $ gWhereP2' s p b
 -- | Monomorphic version of 'gWhereP2'.
 --
 -- @since 1.2.0.0
-gWhereP2' :: AsLabel a -> Greskell (LabelP a) -> Maybe (ByProjection a b) -> Walk Filter x x
+gWhereP2' :: AsLabel a -> Greskell (LabeledP a) -> Maybe (ByProjection a b) -> Walk Filter x x
 gWhereP2' start p mby = gWherePGeneric (Just start) p mby
 
 -- | @.is@ step of simple equality.

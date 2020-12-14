@@ -31,7 +31,7 @@
 
 ### Gremlin module
 
-* Add `LabelP` type.
+* Add `LabeledP` type.
 
 ## 1.1.0.3  -- 2020-06-21
 
