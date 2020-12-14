@@ -11,6 +11,7 @@ import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
+import org.apache.tinkerpop.gremlin.process.traversal.TextP;
 import org.apache.tinkerpop.gremlin.process.traversal.Path;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 
@@ -644,5 +645,41 @@ public class TestGremlin {
       got = e;
     }
     assertThat got, is(not(null));
+  }
+
+  @Test
+  public void where_with_TextP() throws Exception {
+    def got = __.__("abc", "def", "ghi").as("A").map { it.get() + "ghi" }.where(TextP.endingWith("A")).toList();
+    assertThat got, is(["ghighi"]);
+  }
+
+  @Test
+  public void where_with_TextP_and_by() throws Exception {
+    def got = __.__(1,2,3).as("A").map { it.get() + 1 }.where(TextP.endingWith("A")).by(__.map {
+        switch(it.get()) {
+          case 1:
+            return "aaa";
+            break;
+          case 2:
+            return "bbb";
+            break;
+          case 3:
+            return "ccc";
+            break;
+          case 4:
+            return "bbbccc";
+        }
+      }).toList();
+    assertThat got, is([4]);
+  }
+
+  @Test
+  public void where_with_TestP() throws Exception {
+    try {
+      __.__(1,2,3).as("A").map { it.get() * 2 }.where(TextP.endingWith("A")).iterate();
+    }catch (Exception e) {
+      return;
+    }
+    fail("this operation is supposed to throw an exception, because it tries to cast the Integer input to String.");
   }
 }
