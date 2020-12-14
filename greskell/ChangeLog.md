@@ -5,7 +5,9 @@
 ### Gremlin module
 
 * Add `PLike` class.
-* [BREAKING CHANGE] Generalize signatures of the following functions using `PLike`.
+* [BREAKING CHANGE] Generalize signatures of the following functions
+  using `PLike`. You may encounter compile errors if the compiler
+  fails to infer the type.
   * `pEq`
   * `pNeq`
   * `pLt`
