@@ -33,7 +33,7 @@ import Data.Greskell.GTraversal
     gRepeat, gTimes, gUntilHead, gUntilTail,
     gEmitHead, gEmitTail, gEmitHeadT, gEmitTailT,
     gLoops,
-    gWhereP1, gAs, gLabel
+    gWhereP1, gAs, gLabel, gWhereP2
   )
 
 
@@ -181,3 +181,18 @@ spec_where = do
           la = "a"
       toGremlin (source "g" & sV' [] &. gAs la &. gOut' [] &. gWhereP1 (pGte la) (Just $ gBy gLabel))
         `shouldBe` "g.V().as(\"a\").out().where(P.gte(\"a\")).by(__.label())"
+  describe "gWhereP2" $ do
+    specify "no modulation" $ do
+      let la = ("a" :: AsLabel AVertex)
+          lb = ("b" :: AsLabel AVertex)
+          age = ("age" :: Key AVertex Int)
+      toGremlin (source "g" & sV' [] &. gAs la &. gOut' [] &. gAs lb &. gValues [age] &. gWhereP2 la (pEq lb) Nothing)
+        `shouldBe` "g.V().as(\"a\").out().as(\"b\").values(\"age\").where(\"a\",P.eq(\"b\"))"
+    specify "with modulation" $ do
+      let la = ("a" :: AsLabel AVertex)
+          lb = ("b" :: AsLabel AVertex)
+          age = ("age" :: Key AVertex Int)
+          name = ("name" :: Key AVertex Text)
+      toGremlin (source "g" & sV' [] &. gAs la &. gOut' [] &. gAs lb &. gValues [name] &. gWhereP2 la (pGte lb) (Just $ gBy age))
+        `shouldBe` "g.V().as(\"a\").out().as(\"b\").values(\"name\").where(\"a\",P.gte(\"b\")).by(\"age\")"
+

@@ -666,6 +666,12 @@ gWhereP1' p mby = gWherePGeneric Nothing p mby
 
 -- | @.where@ step with the starting label and @P@ arguments.
 --
+-- >>> let la = ("a" :: AsLabel AVertex)
+-- >>> let lb = ("b" :: AsLabel AVertex)
+-- >>> let age = ("age" :: Key AVertex Int)
+-- >>> toGremlin (source "g" & sV' [] &. gAs la &. gOut' [] &. gAs lb &. gValues [age] &. gWhereP2 la (pEq lb) Nothing)
+-- "g.V().as(\"a\").out().as(\"b\").values(\"age\").where(\"a\",P.eq(\"b\"))"
+--
 -- @since 1.2.0.0
 gWhereP2 :: WalkType c
          => AsLabel a -- ^ the starting label of @.where@.
