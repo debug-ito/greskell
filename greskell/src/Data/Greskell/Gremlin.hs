@@ -164,7 +164,7 @@ class Comparator c where
   -- | @.compare@ method.
   cCompare :: Greskell c -> Greskell (CompareArg c) -> Greskell (CompareArg c) -> Greskell Int
   cCompare cmp a b = unsafeMethodCall cmp "compare" $ map toGremlin [a, b]
-  -- | @.reverse@ method.
+  -- | @.reversed@ method.
   cReversed :: Greskell c -> Greskell c
   cReversed cmp = unsafeMethodCall cmp "reversed" []
   -- | @.thenComparing@ method.
