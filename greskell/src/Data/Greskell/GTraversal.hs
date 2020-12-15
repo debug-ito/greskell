@@ -651,6 +651,16 @@ gWherePGeneric mstart p mby = modulateWith wh mods
 -- >>> toGremlin (source "g" & sV' [] &. gAs la &. gOut' [] &. gWhereP1 (pEq la) (Just $ gBy age))
 -- "g.V().as(\"a\").out().where(P.eq(\"a\")).by(\"age\")"
 --
+-- If the 'ByProjection' argument is 'Nothing', comparison is
+-- performed on the type @a@. You have to ensure that the comparator
+-- included in the 'LabeledP' argument can handle the type
+-- @a@. Usually this means the type @a@ should implement Java's
+-- @Comparable@ interface (this is true for most Java classes).
+--
+-- If the 'ByProjection' argument is given, comparison is performed on
+-- the projected values of type @b@. So, the type @b@ should implement
+-- Java's @Comparable@ interface.
+--
 -- @since 1.2.0.0
 gWhereP1 :: WalkType c
          => Greskell (LabeledP a) -- ^ the @P@ argument for @.where@ step.
@@ -664,7 +674,8 @@ gWhereP1 p mby = liftWalk $ gWhereP1' p mby
 gWhereP1' :: Greskell (LabeledP a) -> Maybe (ByProjection a b) -> Walk Filter a a
 gWhereP1' p mby = gWherePGeneric Nothing p mby
 
--- | @.where@ step with the starting label and @P@ arguments.
+-- | @.where@ step with the starting label and @P@ arguments. See also
+-- 'gWhereP1'.
 --
 -- >>> let la = ("a" :: AsLabel AVertex)
 -- >>> let lb = ("b" :: AsLabel AVertex)
