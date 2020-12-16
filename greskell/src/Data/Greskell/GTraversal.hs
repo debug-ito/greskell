@@ -697,6 +697,34 @@ gWhereP2 s p b = liftWalk $ gWhereP2' s p b
 gWhereP2' :: AsLabel a -> Greskell (LabeledP a) -> Maybe (ByProjection a b) -> Walk Filter x x
 gWhereP2' start p mby = gWherePGeneric (Just start) p mby
 
+
+-- Developer note: the @.where@ step with a traversal argument is not
+-- implemented yet, because @.match@ basically covers the same
+-- capability. If we are to implement it, consider the following.
+--
+-- - The @.where@ step with a traversal argument doesn't take @.by@
+--   modulation.
+--
+-- - The traversal argument is a logic tree (zero or more combination
+--   of @__.and()@, @__.or()@ and @__.not()@ methods) of filtering
+--   traversals.
+--
+-- - If a filtering traversal starts with @__.as()@ step,
+--   it has a special meaning. The @__.as()@ step works just like
+--   @__.select()@, fetching a value specified by the label from the
+--   path history. In this case, the input value passed to the
+--   @.where@ step is discarded.
+--
+-- - If a filtering traversal ends with @.as()@ step, it works like a
+--   predicate step. If fetches a value specified by the label from
+--   the path history, and checks if it's equal to the input
+--   value. This behavior is like the one in @.match@ step, but
+--   without variable binding.
+--
+-- - If a filtering traversal doesn't have @.as()@ step at the
+--   beginning or end, it works just like it's in @.filter@ step.
+
+
 -- | @.is@ step of simple equality.
 --
 -- >>> toGremlin (source "g" & sV' [] &. gValues ["age" :: Key AVertex Int] &. gIs 30)
