@@ -89,6 +89,10 @@ instance GraphSONTyped (P a) where
 
 -- | Type that is compatible with 'P'. You can construct a value of
 -- type @Greskell p@ using values of @PParameter p@.
+--
+-- Note that the type of constuctor arguments (i.e. @GreskellReturn (PParameter p)@)
+-- should implement Java's @Comparable@ interface. This is true for most types,
+-- so greskell doesn't have any explicit constraint about it.
 class (ToGreskell (PParameter p)) => PLike p where
   type PParameter p
 
