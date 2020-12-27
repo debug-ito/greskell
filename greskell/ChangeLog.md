@@ -30,6 +30,9 @@
   * `gWhereP1'`
   * `gWhereP2`
   * `gWhereP2'`
+* Add the following types.
+  * `MatchPattern`
+  * `MatchResult`
 
 ### Gremlin module
 

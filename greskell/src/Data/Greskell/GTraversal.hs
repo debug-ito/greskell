@@ -99,6 +99,9 @@ module Data.Greskell.GTraversal
          gAnd,
          gOr,
          gNot,
+         -- ** Match step
+         MatchPattern(..),
+         MatchResult,
          -- ** Sorting steps
          gOrder,
          -- ** Paging steps
@@ -697,6 +700,18 @@ gWhereP2 s p b = liftWalk $ gWhereP2' s p b
 gWhereP2' :: AsLabel a -> Greskell (LabeledP a) -> Maybe (ByProjection a b) -> Walk Filter x x
 gWhereP2' start p mby = gWherePGeneric (Just start) p mby
 
+
+-- | Result of @.match@ step.
+--
+-- @since 1.2.0.0
+data MatchResult
+
+-- | A pattern for @.match@ step.
+--
+-- @since 1.2.0.0
+data MatchPattern where
+  -- | A pattern with the starting @.as@ label followed by a traversal.
+  MatchPattern :: AsLabel a -> GTraversal Transform a b -> MatchPattern
 
 -- Developer note: the @.where@ step with a traversal argument is not
 -- implemented yet, because @.match@ basically covers the same
