@@ -26,6 +26,26 @@ data Logic a =
   | Not (Logic a) -- ^ \"not\" logic operator
   deriving (Show,Eq,Ord,Generic)
 
+-- Developer note: There are already similar packages to this
+-- module. However, none of them satisfy our requirements, I think.
+--
+-- - Boolean/logic tree data structures
+--   - https://hackage.haskell.org/package/boolean-normal-forms
+--   - https://hackage.haskell.org/package/logic-classes-1.5.3
+--   - https://hackage.haskell.org/package/PropLogic
+--   - https://hackage.haskell.org/package/Logic
+--   - https://hackage.haskell.org/package/boolean-like
+--
+-- - Typeclasses about boolean/logic operations
+--   - https://hackage.haskell.org/package/Boolean
+--   - https://hackage.haskell.org/package/cond
+--
+-- - Trees that contain heterogeneous values
+--   - http://hackage.haskell.org/package/dual-tree
+--   - http://hackage.haskell.org/package/fingertree
+
+
+
 instance Functor Logic where
   fmap f l =
     case l of
