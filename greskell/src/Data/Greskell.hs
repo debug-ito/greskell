@@ -12,6 +12,7 @@
 -- - "Data.Greskell.Extra": extra utility functions.
 -- - "Data.Greskell.NonEmptyLike": NonEmptyLike class, which is a
 --   class of non-empty containers.
+-- - "Data.Greskell.Logic": Logic type, which is a general-purpose logic tree data structure.
 -- - "Data.Greskell.Graph.PropertyMap": deprecated PropertyMap class.
 module Data.Greskell
        (

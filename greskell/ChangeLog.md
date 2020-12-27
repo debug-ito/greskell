@@ -2,6 +2,8 @@
 
 ## 1.2.0.0  -- ?
 
+* Add `Logic` module.
+
 ### Gremlin module
 
 * Add `PLike` class.

@@ -36,7 +36,8 @@ library
                         Data.Greskell.AsLabel,
                         Data.Greskell.Extra,
                         Data.Greskell.PMap,
-                        Data.Greskell.NonEmptyLike
+                        Data.Greskell.NonEmptyLike,
+                        Data.Greskell.Logic
   -- other-modules:        
   build-depends:        base >=4.9.0.0 && <4.15,
                         greskell-core >=0.1.3.0 && <0.2,
@@ -63,7 +64,8 @@ test-suite spec
                         Data.Greskell.GraphSpec,
                         Data.Greskell.Graph.PropertyMapSpec,
                         Data.Greskell.ExtraSpec,
-                        Data.Greskell.PMapSpec
+                        Data.Greskell.PMapSpec,
+                        Data.Greskell.LogicSpec
   build-depends:        base, text, aeson,  unordered-containers,
                         greskell, greskell-core,
                         hspec >=2.2.3,
