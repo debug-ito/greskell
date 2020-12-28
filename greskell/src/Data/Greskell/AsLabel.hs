@@ -87,6 +87,6 @@ data LabeledP a
 -- do with the 'LabeledP' type above.
 
 
--- | You can construct a 'LabeledP' from 'AsLabel'.
+-- | You can construct @Greskell (LabeledP a)@ from @AsLabel a@.
 instance PLike (LabeledP a) where
   type PParameter (LabeledP a) = AsLabel a

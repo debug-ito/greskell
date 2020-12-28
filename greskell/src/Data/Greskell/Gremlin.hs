@@ -96,7 +96,7 @@ instance GraphSONTyped (P a) where
 class (ToGreskell (PParameter p)) => PLike p where
   type PParameter p
 
--- | You can just construct @Greskell (P a)@ from @Greskell a@.
+-- | You can construct @Greskell (P a)@ from @Greskell a@.
 instance PLike (P a) where
   type PParameter (P a) = Greskell a
 
