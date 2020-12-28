@@ -99,9 +99,6 @@ module Data.Greskell.GTraversal
          gAnd,
          gOr,
          gNot,
-         -- ** Match step
-         MatchPattern(..),
-         MatchResult,
          -- ** Sorting steps
          gOrder,
          -- ** Paging steps
@@ -170,6 +167,10 @@ module Data.Greskell.GTraversal
          gInE',
          gInV,
          gInV',
+         -- ** Match step
+         gMatch,
+         MatchPattern(..),
+         MatchResult,
          -- ** Side-effect steps
          gSideEffect,
          gSideEffect',
@@ -233,6 +234,8 @@ import Data.Greskell.Greskell
   )
 import Data.Greskell.AsIterator (AsIterator(IteratorItem))
 import Data.Greskell.AsLabel (AsLabel, SelectedMap, LabeledP)
+import Data.Greskell.Logic (Logic)
+import qualified Data.Greskell.Logic as Logic
 import Data.Greskell.PMap (PMap, Single)
 
 -- $setup
@@ -700,19 +703,6 @@ gWhereP2 s p b = liftWalk $ gWhereP2' s p b
 gWhereP2' :: AsLabel a -> Greskell (LabeledP a) -> Maybe (ByProjection a b) -> Walk Filter x x
 gWhereP2' start p mby = gWherePGeneric (Just start) p mby
 
-
--- | Result of @.match@ step.
---
--- @since 1.2.0.0
-data MatchResult
-
--- | A pattern for @.match@ step.
---
--- @since 1.2.0.0
-data MatchPattern where
-  -- | A pattern with the starting @.as@ label followed by a traversal.
-  MatchPattern :: AsLabel a -> GTraversal Transform a b -> MatchPattern
-
 -- Developer note: the @.where@ step with a traversal argument is not
 -- implemented yet, because @.match@ basically covers the same
 -- capability. If we are to implement it, consider the following.
@@ -739,6 +729,45 @@ data MatchPattern where
 -- - If a filtering traversal doesn't have @.as()@ step at the
 --   beginning or end, it works just like it's in @.filter@ step.
 
+
+-- | Result of @.match@ step.
+--
+-- @since 1.2.0.0
+data MatchResult
+
+-- | A pattern for @.match@ step.
+--
+-- @since 1.2.0.0
+data MatchPattern where
+  -- | A pattern with the starting @.as@ label followed by a traversal.
+  MatchPattern :: ToGTraversal g => AsLabel a -> g Transform a b -> MatchPattern
+
+-- | @.match@ step.
+--
+-- If the top-level 'Logic' of the argument is 'Logic.And', the
+-- patterns are directly passed to the @.match@ step arguments.
+--
+-- The result of @.match@ step, 'MatchResult', is an opaque
+-- type. Basically you should not use it. Instead, you should use
+-- 'gSelectN' etc to access the path history labels inside the
+-- 'MatchPattern'.
+--
+-- See also: https://groups.google.com/g/gremlin-users/c/HVtldzV0Xk8
+--
+-- >>> :{
+--  let label_a = ("a" :: AsLabel AVertex)
+--      label_b = ("b" :: AsLabel AVertex)
+--      key_age = ("age" :: Key AVertex Int)
+--      patterns = Logic.And
+--                 ( Logic.Leaf $ MatchPattern label_a (gOut' [] >>> gAs label_b) )
+--                 [ Logic.Leaf $ MatchPattern label_b (gHas2 key_age 25)
+--                 ]
+--  :}
+-- >>> toGremlin (source "g" & sV' [] &. gMatch patterns &. gSelectN label_a label_b [])
+-- "g.V().match(__.as(\"a\").out().as(\"b\"),__.as(\"b\").has(\"age\",25)).select(\"a\",\"b\")"
+-- @since 1.2.0.0
+gMatch :: Logic MatchPattern -> Walk Transform a MatchResult
+gMatch = undefined
 
 -- | @.is@ step of simple equality.
 --
