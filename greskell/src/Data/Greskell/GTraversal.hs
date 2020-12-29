@@ -751,6 +751,8 @@ unsafePatternT (MatchPattern l w) = unsafeCastEnd $ unsafeCastStart $ toGTravers
 
 -- | A convenient function to make a 'MatchPattern' wrapped by
 -- 'Logic.Leaf'.
+--
+-- @since 1.2.0.0
 mPattern :: (WalkType c, Lift c Transform) => AsLabel a -> Walk c a b -> Logic MatchPattern
 mPattern l w = Logic.Leaf $ MatchPattern l (liftWalk w)
 
