@@ -31,6 +31,7 @@
   * `gWhereP2`
   * `gWhereP2'`
   * `gMatch`
+  * `mPattern`
 * Add the following types.
   * `MatchPattern`
   * `MatchResult`

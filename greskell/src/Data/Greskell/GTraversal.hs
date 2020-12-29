@@ -170,6 +170,7 @@ module Data.Greskell.GTraversal
          -- ** Match step
          gMatch,
          MatchPattern(..),
+         mPattern,
          MatchResult,
          -- ** Side-effect steps
          gSideEffect,
@@ -740,7 +741,12 @@ data MatchResult
 -- @since 1.2.0.0
 data MatchPattern where
   -- | A pattern with the starting @.as@ label followed by a traversal.
-  MatchPattern :: ToGTraversal g => AsLabel a -> g Transform a b -> MatchPattern
+  MatchPattern :: AsLabel a -> GTraversal Transform a b -> MatchPattern
+
+-- | A convenient function to make a 'MatchPattern' wrapped by
+-- 'Logic.Leaf'.
+mPattern :: (ToGTraversal g, WalkType c, Lift c Transform) => AsLabel a -> g c a b -> Logic MatchPattern
+mPattern l t = Logic.Leaf $ MatchPattern l (liftWalk $ toGTraversal t)
 
 -- | @.match@ step.
 --
@@ -755,16 +761,18 @@ data MatchPattern where
 -- See also: https://groups.google.com/g/gremlin-users/c/HVtldzV0Xk8
 --
 -- >>> :{
---  let label_a = ("a" :: AsLabel AVertex)
---      label_b = ("b" :: AsLabel AVertex)
---      key_age = ("age" :: Key AVertex Int)
---      patterns = Logic.And
---                 ( Logic.Leaf $ MatchPattern label_a (gOut' [] >>> gAs label_b) )
---                 [ Logic.Leaf $ MatchPattern label_b (gHas2 key_age 25)
---                 ]
---  :}
--- >>> toGremlin (source "g" & sV' [] &. gMatch patterns &. gSelectN label_a label_b [])
+--  let
+--    label_a = ("a" :: AsLabel AVertex)
+--    label_b = "b"
+--    key_age = ("age" :: Key AVertex Int)
+--    patterns = Logic.And
+--               ( mPattern label_a (gOut' [] >>> gAs label_b) )
+--               [ mPattern label_b (gHas2' key_age 25)
+--               ]
+--  in toGremlin (source "g" & sV' [] &. gMatch patterns &. gSelectN label_a label_b [])
+-- :}
 -- "g.V().match(__.as(\"a\").out().as(\"b\"),__.as(\"b\").has(\"age\",25)).select(\"a\",\"b\")"
+--
 -- @since 1.2.0.0
 gMatch :: Logic MatchPattern -> Walk Transform a MatchResult
 gMatch = undefined
