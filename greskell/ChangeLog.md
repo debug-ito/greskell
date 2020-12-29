@@ -7,7 +7,7 @@
 ### Gremlin module
 
 * Add `PLike` class.
-* [BREAKING CHANGE] Generalize signatures of the following functions
+* **BREAKING CHANGE** Generalize signatures of the following functions
   using `PLike`. You may encounter compile errors if the compiler
   fails to infer the type.
   * `pEq`
@@ -56,7 +56,7 @@
 
 ### GTraversal module
 
-* [BREAKING CHANGE] `gFlatMap` is now polymorphic about the
+* **BREAKING CHANGE** `gFlatMap` is now polymorphic about the
   WalkTypes. Use `gFlatMap'`For monomorphic version.
 * Add the following functions.
   * `gFlatMap'`
@@ -136,12 +136,12 @@
 
 ### Graph module - Element class and ElementID
 
-* [BREAKING CHANGE] Now `ElementID` is a newtype for `GValue`. It was
+* **BREAKING CHANGE** Now `ElementID` is a newtype for `GValue`. It was
   an associated type family in `Element` class. However, I think there
   was no point to make it polymorphic.
-* [BREAKING CHANGE] Remove `EdgeVertexID` type family from `Edge` class.
-* [BREAKING CHANGE] Add `ElementData` class, and set it as a super class of `Element`.
-* [BREAKING CHANGE] Type of the ID field for `AVertex`, `AEdge` and
+* **BREAKING CHANGE** Remove `EdgeVertexID` type family from `Edge` class.
+* **BREAKING CHANGE** Add `ElementData` class, and set it as a super class of `Element`.
+* **BREAKING CHANGE** Type of the ID field for `AVertex`, `AEdge` and
   `AVertexProperty` is now `ElementID`, not `GValue`.
 * Add `unsafeCastElementID` function.
 * Add `ElementPropertyContainer` type family to `Element` class. It's
@@ -154,27 +154,27 @@ their ID and label (and the value if it's a VertexProperty). This is
 because some graph implementation of TinkerPop don't return properties
 when it returns graph elements. See #6.
 
-* [BREAKING CHANGE] Remove `avProperties` field from `AVertex`.
-* [BREAKING CHANGE] Remove `aeInVLabel`, `aeOutVLabel`, `aeInV`,
+* **BREAKING CHANGE** Remove `avProperties` field from `AVertex`.
+* **BREAKING CHANGE** Remove `aeInVLabel`, `aeOutVLabel`, `aeInV`,
   `aeOutV` and `aeProperties` fields from `AEdge`.
-* [BREAKING CHANGE] Remove `avpProperties` field from `AVertexProperty`.
-* [BREAKING CHANGE] Move `PropertyMap` class, `FromGraphSONWithKey`
+* **BREAKING CHANGE** Remove `avpProperties` field from `AVertexProperty`.
+* **BREAKING CHANGE** Move `PropertyMap` class, `FromGraphSONWithKey`
   class, `PropertyMapSingle` type, `PropertyMapList` types and related
   functions to `Graph.PropertyMap` module. They are now all
   deprecated. Use `PMap` module instead.
 
 ### Graph module - Key for element property
 
-* [BREAKING CHANGE] Internal of `Key` is modified from `Greskell Text`
+* **BREAKING CHANGE** Internal of `Key` is modified from `Greskell Text`
   to `Text`, so that it can be an instance of `PMapKey` class.
-* [BREAKING CHANGE] Add `KeyNoValue` data constructor for `KeyValue`
+* **BREAKING CHANGE** Add `KeyNoValue` data constructor for `KeyValue`
   type.
 * Add `unsafeCastKey` function.
 * Add `Keys` type and related functions.
 
 ### GTraversal module
 
-* [BREAKING CHANGE] Change the signature of the following functions
+* **BREAKING CHANGE** Change the signature of the following functions
   because now `ElementID` is a newtype, not a type alias.
     * `sV'`
     * `gV'`
@@ -185,7 +185,7 @@ when it returns graph elements. See #6.
 
 ### Extra module
 
-* [BREAKING CHANGE] Remove `writeAllProperties` because `PropertyMap`
+* **BREAKING CHANGE** Remove `writeAllProperties` because `PropertyMap`
   is deprecated.
 * Add `writeKeyValues` function.
 * Add `writePMapProperties` function.
@@ -195,11 +195,11 @@ when it returns graph elements. See #6.
 ### AsLabel module
 
 * Now `SelectedMap` is a specialized type alias for `PMap`.
-* [BREAKING CHANGE] `lookup`, `lookupM`, `lookupAs` and `lookupAsM`
+* **BREAKING CHANGE** `lookup`, `lookupM`, `lookupAs` and `lookupAsM`
   are now re-exports from `PMap` module, whose signature is more
   polymorphic than the original ones and have a different exception
   type.
-* [BREAKING CHANGE] `AsLookupException` is removed. Use
+* **BREAKING CHANGE** `AsLookupException` is removed. Use
   `PMapLookupException` instead.
 * Make `AsLabel` an instance of `PMapKey`.
 * Add `IsString` instance to `AsLabel`.
