@@ -63,10 +63,6 @@ module Data.Greskell.GTraversal
          gCyclicPath',
          gSimplePath,
          gSimplePath',
-         gWhereP1,
-         gWhereP1',
-         gWhereP2,
-         gWhereP2',
          -- ** Is step
          gIs,
          gIs',
@@ -99,6 +95,11 @@ module Data.Greskell.GTraversal
          gAnd,
          gOr,
          gNot,
+         -- ** Where step
+         gWhereP1,
+         gWhereP1',
+         gWhereP2,
+         gWhereP2',
          -- ** Sorting steps
          gOrder,
          -- ** Paging steps
