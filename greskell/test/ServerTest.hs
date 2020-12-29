@@ -25,7 +25,7 @@ import Data.Greskell.Extra (gWhenEmptyInput)
 import Data.Greskell.GMap (GMapEntry, unGMapEntry)
 import Data.Greskell.Gremlin
   ( oIncr, oDecr, cCompare, Order,
-    Predicate(..), pLt, pAnd, pGte, pNot, pEq, pTest
+    Predicate(..), pLt, pAnd, pGte, pNot, pEq, pTest, P
   )
 import Data.Greskell.Greskell
   ( toGremlin, Greskell, toGreskell, ToGreskell(..),
@@ -55,7 +55,8 @@ import Data.Greskell.GTraversal
     gProject, gByL,
     gRepeat, gTimes, gEmitHead, gUntilTail, gLoops, gIsP,
     gHasLabel, gHas2, gAddV, gIterate,
-    gPath, gPathBy
+    gPath, gPathBy,
+    gWhereP1
   )
 import Data.Greskell.PMap (lookupAsM, lookupListAs, pMapToThrow)
 
@@ -78,6 +79,7 @@ spec = withEnv $ do
   spec_repeat
   spec_upsert
   spec_path
+  spec_where
 
 spec_basics :: SpecWith (String,Int)
 spec_basics = do
@@ -379,6 +381,12 @@ spec_graph = do
 multiplyWalk :: Greskell Int -> Walk Transform Int Int
 multiplyWalk factor = unsafeWalk "map" ["{ it.get() * " <> toGremlin factor <> " }"]
 
+plusWalk :: Greskell Int -> Walk Transform Int Int
+plusWalk n = unsafeWalk "map" ["{ it.get() + " <> toGremlin n <> " }"]
+
+squareWalk :: Walk Transform Int Int
+squareWalk = unsafeWalk "map" ["{ it.get() * it.get() }"]
+
 spec_as :: SpecWith (String,Int)
 spec_as = do
   let start :: GTraversal Transform () Int
@@ -589,3 +597,13 @@ spec_path = do
                      ]
                    ]
     got `shouldBe` expected
+
+spec_where :: SpecWith (String,Int)
+spec_where = do
+  let start :: GTraversal Transform () Int
+      start = unsafeGTraversal "__(1,2,3)"
+  specify "gWhereP1" $ withClient $ \client -> do
+    let g = gWhereP1 (pEq label_s) Nothing $. squareWalk $. gAs label_s $. start
+        label_s = "s"
+    got <- fmap V.toList $ WS.slurpResults =<< WS.submit client g Nothing
+    got `shouldBe` [1]
