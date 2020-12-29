@@ -93,6 +93,8 @@ instance GraphSONTyped (P a) where
 -- Note that the type of constuctor arguments (i.e. @GreskellReturn (PParameter p)@)
 -- should implement Java's @Comparable@ interface. This is true for most types,
 -- so greskell doesn't have any explicit constraint about it.
+--
+-- @since 1.2.0.0
 class (ToGreskell (PParameter p)) => PLike p where
   type PParameter p
 
