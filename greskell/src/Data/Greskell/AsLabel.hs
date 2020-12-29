@@ -77,8 +77,7 @@ unsafeCastAsLabel = AsLabel . unAsLabel
 
 -- | 'LabeledP' is just like 'P', a Haskell representation of
 -- TinkerPop's @P@ class. Unlike 'P', however, 'LabeledP' keeps a
--- label ('AsLabel') inside. It is used in @.where@ and @.match@
--- steps, for example.
+-- label ('AsLabel') inside. It is used in @.where@ step.
 --
 -- @since 1.2.0.0
 data LabeledP a
