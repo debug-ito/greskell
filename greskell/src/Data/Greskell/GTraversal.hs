@@ -781,7 +781,18 @@ mPattern l w = Logic.Leaf $ MatchPattern l (liftWalk w)
 --
 -- @since 1.2.0.0
 gMatch :: Logic MatchPattern -> Walk Transform a MatchResult
-gMatch = undefined
+gMatch patterns = unsafeWalk "match" args
+  where
+    args =
+      case patterns of
+        Logic.And p rest -> map (toGremlin . toTraversal) (p : rest)
+        _ -> [toGremlin $ toTraversal patterns]
+    toTraversal l =
+      case l of
+        Logic.Leaf p -> unsafePatternT p
+        Logic.And p rest -> toGTraversal $ gAnd $ map toTraversal (p : rest)
+        Logic.Or p rest -> toGTraversal $ gOr $ map toTraversal (p : rest)
+        Logic.Not p -> toGTraversal $ gNot $ toTraversal p
 
 -- | @.is@ step of simple equality.
 --
