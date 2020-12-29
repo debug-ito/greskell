@@ -25,7 +25,7 @@ import Data.Greskell.Greskell
 import Data.Greskell.GTraversal
   ( Walk, Transform, Filter,
     source, (&.), ($.), sV', sE',
-    gHas1, gHas2, gHas2P, gHasLabelP, gHasIdP, gIs,
+    gHas1, gHas2, gHas2', gHas2P, gHasLabelP, gHasIdP, gIs, gIs',
     gOut', gRange, gValues, gNot, gIn',
     gOrder,
     gProperties, gHasKeyP, gHasValueP,
@@ -33,8 +33,10 @@ import Data.Greskell.GTraversal
     gRepeat, gTimes, gUntilHead, gUntilTail,
     gEmitHead, gEmitTail, gEmitHeadT, gEmitTailT,
     gLoops,
-    gWhereP1, gAs, gLabel, gWhereP2
+    gWhereP1, gAs, gLabel, gWhereP2,
+    gMatch, mPattern
   )
+import Data.Greskell.Logic (Logic(..))
 
 
 main :: IO ()
@@ -48,6 +50,7 @@ spec = do
   spec_has
   spec_repeat
   spec_where
+  spec_match
 
 
 spec_GraphTraversalSource :: Spec
@@ -196,3 +199,66 @@ spec_where = do
       toGremlin (source "g" & sV' [] &. gAs la &. gOut' [] &. gAs lb &. gValues [name] &. gWhereP2 la (pGte lb) (Just $ gBy age))
         `shouldBe` "g.V().as(\"a\").out().as(\"b\").values(\"name\").where(\"a\",P.gte(\"b\")).by(\"age\")"
 
+spec_match :: Spec
+spec_match = do
+  describe "gMatch" $ do
+    specify "top-level Leaf" $ do
+      let pat = mPattern label (gOut' [])
+          label = ("a" :: AsLabel AVertex)
+      toGremlin (source "g" & sV' [] &. gMatch pat)
+        `shouldBe` "g.V().match(__.as(\"a\").out())"
+    specify "top-level And" $ do
+      let pat = And
+                ( mPattern label_a (gOut' [] >>> gAs label_b) )
+                [ mPattern label_a (gHas2' the_key "foobar")
+                ]
+          label_a = ("a" :: AsLabel AVertex)
+          label_b = "b"
+          the_key = ("k" :: Key AVertex Text)
+      toGremlin (source "g" & sV' [] &. gMatch pat)
+        `shouldBe` "g.V().match(__.as(\"a\").out().as(\"b\"),__.as(\"a\").has(\"k\",\"foobar\"))"
+    specify "top-level Or" $ do
+      let pat = Or
+                ( mPattern label (gHas2' key1 "foobar") )
+                [ mPattern label (gHas2' key2 100)
+                ]
+          label = ("a" :: AsLabel AVertex)
+          key1 = ("k1" :: Key AVertex Text)
+          key2 = ("k2" :: Key AVertex Int)
+      toGremlin (source "g" & sV' [] &. gMatch pat)
+        `shouldBe` "g.V().match(__.or(__.as(\"a\").has(\"k1\",\"foobar\"),__.as(\"a\").has(\"k2\",100)))"
+    specify "top-level Not" $ do
+      let pat = Not ( mPattern label (gHas2' k "quux") )
+          label = ("a" :: AsLabel AVertex)
+          k = ("k" :: Key AVertex Text)
+      toGremlin (source "g" & sV' [] &. gMatch pat)
+        `shouldBe` "g.V().match(__.not(__.as(\"a\").has(\"k\",\"quux\")))"
+    specify "heterogeneous patterns, nested And" $ do
+      let pat = Or
+                ( And
+                  ( mPattern label_a (gOut' [] >>> gAs label_b) )
+                  [ mPattern label_b (gValues [key_age] >>> gAs label_c),
+                    mPattern label_c (gIs' 30)
+                  ]
+                )
+                [ And
+                  ( mPattern label_a (gValues [key_age] >>> gAs label_c) )
+                  [ mPattern label_a (gValues [key_name] >>> gAs label_d),
+                    Not ( mPattern label_d (gIs' "toshio") )
+                  ]
+                ]
+          label_a = ("a" :: AsLabel AVertex)
+          label_b = "b"
+          label_c = "c"
+          label_d = "d"
+          key_age = ("age" :: Key AVertex Int)
+          key_name = ("name" :: Key AVertex Text)
+      toGremlin (source "g" & sV' [] &. gMatch pat)
+        `shouldBe` "g.V().match(__.or(__.and(__.as(\"a\").out().as(\"b\"),__.as(\"b\").values(\"age\").as(\"c\"),__.as(\"c\").is(30)),__.and(__.as(\"a\").values(\"age\").as(\"c\"),__.as(\"a\").values(\"name\").as(\"d\"),__.not(__.as(\"d\").is(\"toshio\")))))"
+    specify "history labels in pattern" $ do
+      let pat = mPattern ext_label (gIn' [] >>> gHas2 the_key "foo")
+          ext_label = "e"
+          the_key = ("k" :: Key AVertex Text)
+      toGremlin (source "g" & sV' [] &. gAs ext_label &. gOut' [] &. gMatch pat)
+        `shouldBe` "g.V().as(\"e\").out().match(__.as(\"e\").in().has(\"k\",\"foo\"))"
+        
