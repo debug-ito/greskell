@@ -53,10 +53,10 @@ import Data.Greskell.GTraversal
     gFilter, gOut', gOutV, gOutV', gInV, gInV', gId, gLabel, gProject,
     gValueMap,
     gProject, gByL,
-    gRepeat, gTimes, gEmitHead, gUntilTail, gLoops, gIsP,
+    gRepeat, gTimes, gEmitHead, gUntilTail, gLoops, gIsP, gIsP',
     gHasLabel, gHas2, gAddV, gIterate,
     gPath, gPathBy,
-    gWhereP1
+    gWhereP1, gChoose3, gIdentity, gWhereP2
   )
 import Data.Greskell.PMap (lookupAsM, lookupListAs, pMapToThrow)
 
@@ -387,6 +387,18 @@ plusWalk n = unsafeWalk "map" ["{ it.get() + " <> toGremlin n <> " }"]
 squareWalk :: Walk Transform Int Int
 squareWalk = unsafeWalk "map" ["{ it.get() * it.get() }"]
 
+appendWalk :: Greskell Text -> Walk Transform Text Text
+appendWalk t = unsafeWalk "map" ["{ it.get() + " <> toGremlin t <> " }"]
+
+-- toLowerWalk :: Walk Transform Text Text
+-- toLowerWalk = unsafeWalk "map" ["{ it.get().toLowerCase() }"]
+
+lengthWalk :: Walk Transform Text Int
+lengthWalk = unsafeWalk "map" ["{ it.get().length() }"]
+
+substrWalk :: Greskell Int -> Greskell Int -> Walk Transform Text Text
+substrWalk s e = unsafeWalk "map" ["{ it.get().substring(" <> toGremlin s <> ", " <> toGremlin e <> ") }"]
+
 spec_as :: SpecWith (String,Int)
 spec_as = do
   let start :: GTraversal Transform () Int
@@ -602,8 +614,34 @@ spec_where :: SpecWith (String,Int)
 spec_where = do
   let start :: GTraversal Transform () Int
       start = unsafeGTraversal "__(1,2,3)"
-  specify "gWhereP1" $ withClient $ \client -> do
+  specify "gWhereP1 (without modulation)" $ withClient $ \client -> do
     let g = gWhereP1 (pEq label_s) Nothing $. squareWalk $. gAs label_s $. start
         label_s = "s"
     got <- fmap V.toList $ WS.slurpResults =<< WS.submit client g Nothing
     got `shouldBe` [1]
+  specify "gWhereP1 (with modulation)" $ withClient $ \client -> do
+    let g = gWhereP1 (pEq label_s) (Just $ gBy $ mapper) $. multiplyWalk 5 $. gAs label_s $. start
+        label_s = "s"
+        mapper = gChoose3 (gIsP' $ pGte 12)
+                 (plusWalk (-12))
+                 gIdentity
+    got <- fmap V.toList $ WS.slurpResults =<< WS.submit client g Nothing
+    got `shouldBe` [15]
+  specify "gWhereP2 (without modulation)" $ withClient $ \client -> do
+    let g = gWhereP2 label_s (pEq label_m) Nothing $. plusWalk 10 $. gAs label_m $. squareWalk $. gAs label_s $. start
+        label_s = "s"
+        label_m = "m"
+    got <- fmap V.toList $ WS.slurpResults =<< WS.submit client g Nothing
+    got `shouldBe` [11]
+  specify "gWhereP2 (with modulation)" $ withClient $ \client -> do
+    let start_str :: GTraversal Transform () Text
+        start_str = unsafeGTraversal "__(\"foo\", \"bar\", \"quux\", \"hoge\")"
+        g = gWhereP2 label_s (pEq label_a) (Just $ gBy $ mapper) $. gAs label_a $. appendWalk "FOO" $. gAs label_s $. start_str
+        label_s = "s"
+        label_a = "a"
+        mapper = gChoose3 (gIsP (pGte 6) <<< lengthWalk)
+                 (substrWalk 0 3)
+                 gIdentity
+    got <- fmap V.toList $ WS.slurpResults =<< WS.submit client g Nothing
+    got `shouldBe` ["fooFOO", "barFOO"]
+
