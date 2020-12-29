@@ -11,11 +11,12 @@ import Data.List (sort)
 import Data.Monoid (mempty, (<>))
 import Data.Scientific (Scientific)
 import Data.Text (unpack, Text)
+import Data.Traversable (traverse)
 import qualified Data.Vector as V
 import qualified Network.Greskell.WebSocket.Client as WS
 import Test.Hspec
 
-import Data.Greskell.AsLabel (AsLabel(..))
+import Data.Greskell.AsLabel (AsLabel(..), lookupAsM)
 import qualified Data.Greskell.AsLabel as As
 import Data.Greskell.AsIterator
   ( AsIterator(IteratorItem)
@@ -56,8 +57,10 @@ import Data.Greskell.GTraversal
     gRepeat, gTimes, gEmitHead, gUntilTail, gLoops, gIsP, gIsP',
     gHasLabel, gHas2, gAddV, gIterate,
     gPath, gPathBy,
-    gWhereP1, gChoose3, gIdentity, gWhereP2
+    gWhereP1, gChoose3, gIdentity, gWhereP2,
+    gMatch, mPattern
   )
+import Data.Greskell.Logic (Logic(..))
 import Data.Greskell.PMap (lookupAsM, lookupListAs, pMapToThrow)
 
 import ServerTest.Common (withEnv, withClient)
@@ -80,6 +83,7 @@ spec = withEnv $ do
   spec_upsert
   spec_path
   spec_where
+  spec_match
 
 spec_basics :: SpecWith (String,Int)
 spec_basics = do
@@ -645,3 +649,28 @@ spec_where = do
     got <- fmap V.toList $ WS.slurpResults =<< WS.submit client g Nothing
     got `shouldBe` ["fooFOO", "barFOO"]
 
+spec_match :: SpecWith (String,Int)
+spec_match = do
+  specify "gMatch" $ withClient $ \client -> do
+    let start_str :: GTraversal Transform () Text
+        start_str = unsafeGTraversal "__(\"foo\", \"hoge\", \"bar\", \"quux\")"
+        g = gSelectN label_s label_ss [label_len, label_dlen] $. gMatch pat $. start_str
+        pat = And
+              ( mPattern label_s (gAs label_len <<< lengthWalk) )
+              [ mPattern label_s (gAs label_ss <<< appendWalk "HOGE"),
+                mPattern label_len (gAs label_dlen <<< squareWalk),
+                mPattern label_ss (gWhereP1 (pLt label_dlen) Nothing <<< plusWalk 5 <<< lengthWalk)
+              ]
+        label_s = "s"
+        label_ss = "ss"
+        label_len = "len"
+        label_dlen = "dlen"
+        extract sm = (,,,)
+                     <$> lookupAsM label_s sm
+                     <*> lookupAsM label_ss sm
+                     <*> lookupAsM label_len sm
+                     <*> lookupAsM label_dlen sm
+    got <- traverse extract =<< (fmap V.toList $ WS.slurpResults =<< WS.submit client g Nothing)
+    got `shouldBe` [ ("hoge", "hogeHOGE", 4, 16),
+                     ("quux", "quuxHOGE", 4, 16)
+                   ]
