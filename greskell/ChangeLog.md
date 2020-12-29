@@ -25,7 +25,7 @@
 
 ### GTraversal module
 
-* Add the following functions.
+* Add the following functions. (Fix for #10)
   * `gWhereP1`
   * `gWhereP1'`
   * `gWhereP2`
