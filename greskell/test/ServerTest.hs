@@ -176,10 +176,13 @@ spec_comparator = do
 
 spec_predicate :: SpecWith (String,Int)
 spec_predicate = do
-  checkOne (pTest (pLt 20 `pAnd` pGte 10) (5 :: Greskell Int)) False
-  checkOne (pTest (pLt 20 `pAnd` pGte 10) (10 :: Greskell Int)) True
-  checkOne (pTest (pLt 20 `pAnd` pGte 10) (15 :: Greskell Int)) True
-  checkOne (pTest (pLt 20 `pAnd` pGte 10) (20 :: Greskell Int)) False
+  checkOne (pTest the_p 5)  False
+  checkOne (pTest the_p 10) True
+  checkOne (pTest the_p 15) True
+  checkOne (pTest the_p 20) False
+  where
+    the_p :: Greskell (P Int)
+    the_p = pLt 20 `pAnd` pGte 10
 
 iterateTraversal :: GTraversal c s e -> Greskell ()
 iterateTraversal gt = unsafeMethodCall (toGreskell gt) "iterate" []
@@ -216,7 +219,8 @@ spec_T = describe "T enum" $ do
 
 spec_P :: SpecWith (String,Int)
 spec_P = describe "P class" $ specify "pNot, pEq, pTest" $ withClient $ \client -> do
-  let p = pNot $ pEq $ number 10
+  let p :: Greskell (P Scientific)
+      p = pNot $ pEq $ number 10
       test v = WS.slurpResults =<< WS.submit client (pTest p $ v) Nothing
   test (number 10) `shouldReturn` V.fromList [False]
   test (number 15) `shouldReturn` V.fromList [True]
