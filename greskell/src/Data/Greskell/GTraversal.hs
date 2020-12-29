@@ -740,13 +740,19 @@ data MatchResult
 --
 -- @since 1.2.0.0
 data MatchPattern where
-  -- | A pattern with the starting @.as@ label followed by a traversal.
-  MatchPattern :: AsLabel a -> GTraversal Transform a b -> MatchPattern
+  -- | A pattern with the starting @.as@ label followed by traversal steps.
+  MatchPattern :: AsLabel a -> Walk Transform a b -> MatchPattern
+
+-- | Make a 'GTraversal' from the 'MatchPattern'. This function is
+-- unsafe because it discards the types of input and output
+-- traversers.
+unsafePatternT :: MatchPattern -> GTraversal Transform () ()
+unsafePatternT (MatchPattern l w) = unsafeCastEnd $ unsafeCastStart $ toGTraversal (gAs l >>> w)
 
 -- | A convenient function to make a 'MatchPattern' wrapped by
 -- 'Logic.Leaf'.
-mPattern :: (ToGTraversal g, WalkType c, Lift c Transform) => AsLabel a -> g c a b -> Logic MatchPattern
-mPattern l t = Logic.Leaf $ MatchPattern l (liftWalk $ toGTraversal t)
+mPattern :: (WalkType c, Lift c Transform) => AsLabel a -> Walk c a b -> Logic MatchPattern
+mPattern l w = Logic.Leaf $ MatchPattern l (liftWalk w)
 
 -- | @.match@ step.
 --
