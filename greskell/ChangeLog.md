@@ -1,6 +1,10 @@
 # Revision history for greskell
 
-## 1.2.0.0  -- 2020-12/29
+## 1.2.0.1  -- 2021-02-11
+
+* Confirm test with `doctest-0.18`.
+
+## 1.2.0.0  -- 2020-12-29
 
 * Add `Logic` module.
 
