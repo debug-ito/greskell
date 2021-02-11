@@ -66,6 +66,7 @@ test-suite spec
                         Data.Greskell.ExtraSpec,
                         Data.Greskell.PMapSpec,
                         Data.Greskell.LogicSpec
+  build-tool-depends:   hspec-discover:hspec-discover
   build-depends:        base, text, aeson,  unordered-containers,
                         greskell, greskell-core,
                         hspec >=2.2.3,
@@ -77,6 +78,7 @@ test-suite doctest
   hs-source-dirs:       test
   ghc-options:          -Wall -fno-warn-unused-imports "-with-rtsopts=-M512m"
   main-is:              DocTest.hs
+  build-tool-depends:   doctest-discover:doctest-discover, doctest:doctest
   build-depends:        base,
                         doctest >=0.11 && <0.19,
                         doctest-discover >=0.1.0.8 && <0.3
