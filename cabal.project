@@ -1,0 +1,5 @@
+write-ghc-environment-files: ghc8.4.4+
+packages: greskell-core,
+          greskell,
+          greskell-websocket,
+          test-readme
