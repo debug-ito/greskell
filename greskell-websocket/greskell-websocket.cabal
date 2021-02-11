@@ -78,6 +78,7 @@ test-suite spec
   other-extensions:     OverloadedStrings, DuplicateRecordFields,
                         NoMonomorphismRestriction
   other-modules:        Network.Greskell.WebSocket.Codec.JSONSpec
+  build-tool-depends:   hspec-discover:hspec-discover
   build-depends:        base, greskell-websocket, aeson, uuid, bytestring, unordered-containers, vector, greskell-core,
                         hspec >=2.4.4
 

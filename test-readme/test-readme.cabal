@@ -36,10 +36,10 @@ test-suite readme-Greskell
   ghc-options:          -Wall -fno-warn-unused-imports "-with-rtsopts=-M512m" -fno-warn-missing-signatures -pgmL markdown-unlit
                         "-optL=common Greskell"
   main-is:              README.lhs
+  build-tool-depends:   markdown-unlit:markdown-unlit
   build-depends:        base,
                         hspec,
                         greskell, greskell-core,
-                        markdown-unlit,
                         text, unordered-containers, aeson
 
 test-suite readme-Binder
@@ -48,10 +48,10 @@ test-suite readme-Binder
   ghc-options:          -Wall -fno-warn-unused-imports "-with-rtsopts=-M512m" -fno-warn-missing-signatures -pgmL markdown-unlit
                         "-optL=common Binder" -fno-warn-unused-top-binds
   main-is:              README.lhs
+  build-tool-depends:   markdown-unlit:markdown-unlit
   build-depends:        base,
                         hspec,
                         greskell, greskell-core,
-                        markdown-unlit,
                         text, unordered-containers, aeson
 
 test-suite readme-submit
@@ -60,10 +60,10 @@ test-suite readme-submit
   ghc-options:          -Wall -fno-warn-unused-imports "-with-rtsopts=-M512m" -fno-warn-missing-signatures -pgmL markdown-unlit
                         "-optL=common submit" -fno-warn-unused-top-binds
   main-is:              README.lhs
+  build-tool-depends:   markdown-unlit:markdown-unlit
   build-depends:        base,
                         hspec,
                         greskell, greskell-core,
-                        markdown-unlit,
                         text, unordered-containers, aeson,
                         greskell-websocket,
                         safe-exceptions
@@ -75,10 +75,10 @@ test-suite readme-GTraversal
   ghc-options:          -Wall -fno-warn-unused-imports "-with-rtsopts=-M512m" -fno-warn-missing-signatures -pgmL markdown-unlit
                         "-optL=common GTraversal" -fno-warn-type-defaults
   main-is:              README.lhs
+  build-tool-depends:   markdown-unlit:markdown-unlit
   build-depends:        base,
                         hspec,
                         greskell, greskell-core,
-                        markdown-unlit,
                         text, unordered-containers, aeson
 
 test-suite readme-WalkType
@@ -87,10 +87,10 @@ test-suite readme-WalkType
   ghc-options:          -Wall -fno-warn-unused-imports "-with-rtsopts=-M512m" -fno-warn-missing-signatures -pgmL markdown-unlit
                         "-optL=common WalkType" -fno-warn-unused-top-binds
   main-is:              README.lhs
+  build-tool-depends:   markdown-unlit:markdown-unlit
   build-depends:        base,
                         hspec,
                         greskell, greskell-core,
-                        markdown-unlit,
                         text, unordered-containers, aeson,
                         greskell-websocket
 
@@ -101,10 +101,10 @@ test-suite readme-monomorphic
   ghc-options:          -Wall -fno-warn-unused-imports "-with-rtsopts=-M512m" -fno-warn-missing-signatures -pgmL markdown-unlit
                         "-optL=common monomorphic" -fno-warn-unused-top-binds
   main-is:              README.lhs
+  build-tool-depends:   markdown-unlit:markdown-unlit
   build-depends:        base,
                         hspec,
                         greskell, greskell-core,
-                        markdown-unlit,
                         text, unordered-containers, aeson
 
 test-suite readme-own_types2
@@ -113,10 +113,10 @@ test-suite readme-own_types2
   ghc-options:          -Wall -fno-warn-unused-imports "-with-rtsopts=-M512m" -fno-warn-missing-signatures -pgmL markdown-unlit
                         "-optL=common own_types2" -fno-warn-unused-top-binds -fno-warn-type-defaults
   main-is:              README.lhs
+  build-tool-depends:   markdown-unlit:markdown-unlit
   build-depends:        base,
                         hspec,
                         greskell, greskell-core,
-                        markdown-unlit,
                         text, unordered-containers, aeson
 
 test-suite readme-graph_io
@@ -125,10 +125,10 @@ test-suite readme-graph_io
   ghc-options:          -Wall -fno-warn-unused-imports "-with-rtsopts=-M512m" -fno-warn-missing-signatures -pgmL markdown-unlit
                         "-optL=common graph_io" -fno-warn-unused-top-binds -fno-warn-type-defaults
   main-is:              README.lhs
+  build-tool-depends:   markdown-unlit:markdown-unlit
   build-depends:        base,
                         hspec,
                         greskell, greskell-core,
-                        markdown-unlit,
                         text, unordered-containers, aeson,
                         greskell-websocket,
                         safe-exceptions,
