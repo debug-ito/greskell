@@ -11,3 +11,4 @@ cabal.sandbox.config
 .stack-work/
 cabal.project.local
 dist-newstyle
+.ghc.environment*
