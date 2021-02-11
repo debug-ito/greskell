@@ -9,3 +9,5 @@ cabal-dev
 .cabal-sandbox/
 cabal.sandbox.config
 .stack-work/
+cabal.project.local
+dist-newstyle
