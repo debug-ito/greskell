@@ -3,38 +3,59 @@ name: Haskell CI
 on: [push, pull_request]
 
 jobs:
-  build:
-    runs-on: ${{ matrix.os }}
-    continue-on-error: ${{ matrix.plan.allow-fail == true }}
-
+  stack:
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macOS-latest]
         plan:
-          - build: cabal
-            ghc: latest
-            allow-fail: true
-          - build: cabal
-            ghc: '9.0.1'
-            allow-fail: true
-          - build: stack
-            ghc: '8.10.3'
+          - ghc: '8.10.3'
             resolver: 'lts-17.2'
-          - build: stack
-            ghc: '8.8.3'
+          - ghc: '8.8.3'
             resolver: 'lts-16.11'
-          - build: stack
-            ghc: '8.6.5'
+          - ghc: '8.6.5'
             resolver: 'lts-14.27'
-           
+
+    runs-on: ${{ matrix.os }}
+    continue-on-error: ${{ matrix.plan.allow-fail == true }}
+    env:
+      RESOLVER: ${{ matrix.plan.resolver }}
+
     steps:
     - uses: actions/checkout@v2
+      
+    ## TODO: cache dependency artifacts
+    
     - uses: haskell/actions/setup@v1
       with:
         ghc-version: ${{ matrix.plan.ghc }}
         enable-stack: true
 
+    - name: Install dependencies
+      run: stack --no-terminal --system-ghc --resolver $RESOLVER test --bench --only-dependencies
+    - name: Build
+      run: stack --no-terminal --system-ghc --resolver $RESOLVER build --bench --haddock --no-haddock-deps
+    - name: Test
+      run: stack --no-terminal --system-ghc -j 1 --resolver $RESOLVER test --bench --no-run-benchmarks --haddock --no-haddock-deps
+
+
+  cabal:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macOS-latest]
+        plan:
+          - ghc: latest
+            allow-fail: true
+          - ghc: '9.0'
+            allow-fail: true
+          - ghc: '8.10'
+
+    runs-on: ${{ matrix.os }}
+    continue-on-error: ${{ matrix.plan.allow-fail == true }}
+
+    steps:
+    - uses: actions/checkout@v2
+      
     #### Disable caching for now.
     
     ## - name: Cache
@@ -49,53 +70,21 @@ jobs:
     ##       ${{ runner.os }}-build-
     ##       ${{ runner.os }}-
 
-    - name: Install dependencies
-      env:
-        BUILD: ${{ matrix.plan.build }}
-        RESOLVER: ${{ matrix.plan.resolver }}
-      run: |
-        set -ex
-        case "$BUILD" in
-          stack)
-            stack --no-terminal --system-ghc --resolver $RESOLVER test --bench --only-dependencies
-            ;;
-          cabal)
-            rm -f cabal.project.freeze
-            cabal v2-update
-            cabal v2-configure --enable-tests --enable-benchmarks --test-show-details streaming
-            cabal v2-build --only-dependencies all
-            ;;
-        esac
-        set +ex
-    - name: Build
-      env:
-        BUILD: ${{ matrix.plan.build }}
-        RESOLVER: ${{ matrix.plan.resolver }}
-      run: |
-        set -ex
-        case "$BUILD" in
-          stack)
-            stack --no-terminal --system-ghc --resolver $RESOLVER build --bench --haddock --no-haddock-deps
-            ;;
-          cabal)
-            cabal v2-build all
-            cabal v2-haddock all
-            ;;
-        esac
-        set +ex
-    - name: Test
-      env:
-        BUILD: ${{ matrix.plan.build }}
-        RESOLVER: ${{ matrix.plan.resolver }}
-      run: |
-        set -ex
-        case "$BUILD" in
-          stack)
-            stack --no-terminal --system-ghc -j 1 --resolver $RESOLVER test --bench --no-run-benchmarks --haddock --no-haddock-deps
-            ;;
-          cabal)
-            cabal v2-test --jobs=1 all
-            ;;
-        esac
-        set +ex
+    - uses: haskell/actions/setup@v1
+      with:
+        ghc-version: ${{ matrix.plan.ghc }}
 
+    - name: Configure
+      run: |
+        set -ex
+        rm -f cabal.project.freeze
+        cabal v2-update
+        cabal v2-configure --enable-tests --enable-benchmarks --test-show-details streaming
+    - name: Install dependencies
+      run: cabal v2-build --only-dependencies all
+    - name: Build
+      run: cabal v2-build all
+    - name: Haddock
+      run: cabal v2-haddock all
+    - name: Test
+      run: cabal v2-test --jobs=1 all
