@@ -30,18 +30,18 @@ jobs:
         ghc-version: ${{ matrix.plan.ghc }}
         enable-stack: true
 
-    - name: Generate lock file
+    - name: Configure
       run: |
         set -ex
         rm -f stack.yaml.lock
         $STACK clean
-        test -f stack.yaml.lock
 
     - uses: actions/cache@v2
       with:
         path: ~/.stack
-        key: ${{ runner.os }}-stack-${{ hashFiles('stack.yaml.lock') }}
+        key: ${{ runner.os }}-stack-${{ hashFiles('stack.yaml') }}-${{ matrix.plan.resolver }}
         restore-keys: |
+          ${{ runner.os }}-stack-${{ hashFiles('stack.yaml') }}-
           ${{ runner.os }}-stack-
     
     - name: Install dependencies
