@@ -19,7 +19,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     continue-on-error: ${{ matrix.plan.allow-fail == true }}
     env:
-      RESOLVER: ${{ matrix.plan.resolver }}
+      STACK: stack --no-terminal --system-ghc --resolver ${{ matrix.plan.resolver }}
 
     steps:
     - uses: actions/checkout@v2
@@ -30,22 +30,24 @@ jobs:
         ghc-version: ${{ matrix.plan.ghc }}
         enable-stack: true
 
-    - name: Cache
-      uses: actions/cache@v2
+    - name: Generate lock file
+      run: |
+        rm -f stack.yaml.lock
+        $STACK clean
+
+    - uses: actions/cache@v2
       with:
         path: ~/.stack
-        ## TODO: should we use stack.yaml.lock ?
-        key: ${{ runner.os }}-stack-${{ hashFiles('stack.yaml') }}-${{ matrix.plan.resolver }}
+        key: ${{ runner.os }}-stack-${{ hashFiles('stack.yaml.lock') }}
         restore-keys: |
-          ${{ runner.os }}-stack-${{ hashFiles('stack.yaml') }}-
           ${{ runner.os }}-stack-
     
     - name: Install dependencies
-      run: stack --no-terminal --system-ghc --resolver $RESOLVER test --bench --only-dependencies
+      run: $STACK test --bench --only-dependencies
     - name: Build
-      run: stack --no-terminal --system-ghc --resolver $RESOLVER build --bench --haddock --no-haddock-deps
+      run: $STACK build --bench --haddock --no-haddock-deps
     - name: Test
-      run: stack --no-terminal --system-ghc -j 1 --resolver $RESOLVER test --bench --no-run-benchmarks --haddock --no-haddock-deps
+      run: $STACK -j 1 test --bench --no-run-benchmarks --haddock --no-haddock-deps
 
 
   cabal:
@@ -78,8 +80,7 @@ jobs:
         cabal v2-configure --enable-tests --enable-benchmarks --test-show-details streaming
         cabal v2-freeze
 
-    - name: Cache
-      uses: actions/cache@v2
+    - uses: actions/cache@v2
       with:
         path: ${{ steps.cabal-setup-haskell.outputs.cabal-store }}
         key: ${{ runner.os }}-cabal-${{ hashFiles('cabal.project.freeze') }}
