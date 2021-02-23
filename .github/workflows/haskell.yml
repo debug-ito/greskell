@@ -32,6 +32,7 @@ jobs:
 
     - name: Generate lock file
       run: |
+        set -ex
         rm -f stack.yaml.lock
         $STACK clean
         test -f stack.yaml.lock
