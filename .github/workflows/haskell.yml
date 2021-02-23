@@ -27,7 +27,7 @@ jobs:
           - plan: { build: cabal, ghc: latest }
             allow-fail: true
            
-    continue-on-error: ${{ matrix.plan.allow-fail }}
+    continue-on-error: ${{ matrix.allow-fail }}
     runs-on: ${{ matrix.os }}
 
     steps:
