@@ -24,6 +24,12 @@ jobs:
     steps:
     - uses: actions/checkout@v2
       
+    - uses: haskell/actions/setup@v1
+      id: cabal-setup-haskell
+      with:
+        ghc-version: ${{ matrix.plan.ghc }}
+        enable-stack: true
+
     - name: Cache
       uses: actions/cache@v2
       with:
@@ -34,12 +40,6 @@ jobs:
           ${{ runner.os }}-stack-${{ hashFiles('stack.yaml') }}-
           ${{ runner.os }}-stack-
     
-    - uses: haskell/actions/setup@v1
-      id: cabal-setup-haskell
-      with:
-        ghc-version: ${{ matrix.plan.ghc }}
-        enable-stack: true
-
     - name: Install dependencies
       run: stack --no-terminal --system-ghc --resolver $RESOLVER test --bench --only-dependencies
     - name: Build
@@ -65,6 +65,11 @@ jobs:
     steps:
     - uses: actions/checkout@v2
       
+    - uses: haskell/actions/setup@v1
+      id: cabal-setup-haskell
+      with:
+        ghc-version: ${{ matrix.plan.ghc }}
+
     - name: Cache
       uses: actions/cache@v2
       with:
@@ -72,11 +77,6 @@ jobs:
         key: ${{ runner.os }}-cabal-${{ hashFiles('cabal.project.freeze') }}
         restore-keys: |
           ${{ runner.os }}-cabal-
-
-    - uses: haskell/actions/setup@v1
-      id: cabal-setup-haskell
-      with:
-        ghc-version: ${{ matrix.plan.ghc }}
 
     - name: Configure
       run: |
