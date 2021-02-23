@@ -34,6 +34,7 @@ jobs:
       run: |
         rm -f stack.yaml.lock
         $STACK clean
+        test -f stack.yaml.lock
 
     - uses: actions/cache@v2
       with:
@@ -72,13 +73,14 @@ jobs:
       with:
         ghc-version: ${{ matrix.plan.ghc }}
 
-    - name: Configure
+    - name: Configure and freeze
       run: |
         set -ex
         rm -f cabal.project.freeze
         cabal v2-update
         cabal v2-configure --enable-tests --enable-benchmarks --test-show-details streaming
         cabal v2-freeze
+        test -f cabal.project.freeze
 
     - uses: actions/cache@v2
       with:
