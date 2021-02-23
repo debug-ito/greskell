@@ -8,10 +8,10 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macOS-latest]
+        allow-fail: [false]
         plan:
           - build: cabal
             ghc: latest
-            allow-fail: true
           - build: cabal
             ghc: '9.0.1'
           - build: stack
@@ -23,6 +23,9 @@ jobs:
           - build: stack
             ghc: '8.6.5'
             resolver: 'lts-14.27'
+        include:
+          - plan: { build: cabal, ghc: latest }
+            allow-fail: true
            
     continue-on-error: ${{ matrix.plan.allow-fail }}
     runs-on: ${{ matrix.os }}
