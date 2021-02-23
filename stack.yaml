@@ -18,6 +18,7 @@
 ## resolver: lts-10.9
 resolver: lts-12.26
 
+
 # User packages to be built.
 # Various formats can be used as shown in the example below.
 #
