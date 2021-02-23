@@ -1,5 +1,9 @@
 # Revision history for greskell-websocket
 
+## 0.1.2.6  -- ?
+
+* Confirm test with `base-4.15.0.0`
+
 ## 0.1.2.5  -- 2020-12-30
 
 * Confirm test with `base64-bytestring-1.2.0.0`
