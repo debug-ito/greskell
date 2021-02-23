@@ -26,9 +26,11 @@ jobs:
           - build: stack
             ghc: '8.6.5'
             resolver: 'lts-14.27'
-    ##     include:
-    ##       - plan: { build: cabal, ghc: latest }
-    ##         allow-fail: true
+        include:
+          - plan:
+              build: cabal
+              ghc: latest
+            allow-fail: true
            
     steps:
     - uses: actions/checkout@v2
