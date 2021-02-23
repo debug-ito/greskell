@@ -70,6 +70,14 @@ jobs:
       with:
         ghc-version: ${{ matrix.plan.ghc }}
 
+    - name: Configure
+      run: |
+        set -ex
+        rm -f cabal.project.freeze
+        cabal v2-update
+        cabal v2-configure --enable-tests --enable-benchmarks --test-show-details streaming
+        cabal v2-freeze
+
     - name: Cache
       uses: actions/cache@v2
       with:
@@ -78,13 +86,6 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-cabal-
 
-    - name: Configure
-      run: |
-        set -ex
-        rm -f cabal.project.freeze
-        cabal v2-update
-        cabal v2-configure --enable-tests --enable-benchmarks --test-show-details streaming
-        cabal v2-freeze
     - name: Install dependencies
       run: cabal v2-build --only-dependencies all
     - name: Build
