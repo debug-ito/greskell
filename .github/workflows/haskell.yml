@@ -17,6 +17,7 @@ jobs:
             allow-fail: true
           - build: cabal
             ghc: '9.0.1'
+            allow-fail: true
           - build: stack
             ghc: '8.10.3'
             resolver: 'lts-17.2'
