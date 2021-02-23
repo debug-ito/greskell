@@ -4,33 +4,94 @@ on: [push, pull_request]
 
 jobs:
   build:
-
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macOS-latest]
+        plan:
+          - build: cabal
+            ghc: latest
+          - build: cabal
+            ghc: '9.0.1'
+          - build: stack
+            ghc: '8.10.3'
+            resolver: 'lts-17.2'
+          - build: stack
+            ghc: '8.8.3'
+            resolver: 'lts-16.11'
+          - build: stack
+            ghc: '8.6.5'
+            resolver: 'lts-14.27'
+           
+    runs-on: ${{ matrix.os }}
 
     steps:
     - uses: actions/checkout@v2
     - uses: haskell/actions/setup@v1
       with:
-        ghc-version: '8.10.3'
-        cabal-version: '3.2'
+        ghc-version: ${{ matrix.plan.ghc }}
+        enable-stack: true
 
-    - name: Cache
-      uses: actions/cache@v1
-      env:
-        cache-name: cache-cabal
-      with:
-        path: ~/.cabal
-        key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/*.cabal') }}-${{ hashFiles('**/cabal.project') }}
-        restore-keys: |
-          ${{ runner.os }}-build-${{ env.cache-name }}-
-          ${{ runner.os }}-build-
-          ${{ runner.os }}-
+    #### Disable caching for now.
+    
+    ## - name: Cache
+    ##   uses: actions/cache@v1
+    ##   env:
+    ##     cache-name: cache-cabal
+    ##   with:
+    ##     path: ~/.cabal
+    ##     key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/*.cabal') }}-${{ hashFiles('**/cabal.project') }}
+    ##     restore-keys: |
+    ##       ${{ runner.os }}-build-${{ env.cache-name }}-
+    ##       ${{ runner.os }}-build-
+    ##       ${{ runner.os }}-
 
     - name: Install dependencies
+      env:
+        BUILD: ${{ matrix.plan.build }}
+        RESOLVER: ${{ matrix.plan.resolver }}
       run: |
-        cabal v2-update
-        cabal v2-build --only-dependencies --enable-tests --enable-benchmarks all
+        set -ex
+        case "$BUILD" in
+          stack)
+            stack --no-terminal --system-ghc --resolver $RESOLVER test --bench --only-dependencies
+            ;;
+          cabal)
+            rm -f cabal.project.freeze
+            cabal v2-update
+            cabal v2-configure --enable-tests --enable-benchmarks --test-show-details streaming
+            cabal v2-build --only-dependencies all
+            ;;
+        esac
+        set +ex
     - name: Build
-      run: cabal v2-build --enable-tests --enable-benchmarks all
-    - name: Run tests
-      run: cabal v2-test all
+      env:
+        BUILD: ${{ matrix.plan.build }}
+        RESOLVER: ${{ matrix.plan.resolver }}
+      run: |
+        set -ex
+        case "$BUILD" in
+          stack)
+            stack --no-terminal --system-ghc --resolver $RESOLVER build --bench --haddock --no-haddock-deps
+            ;;
+          cabal)
+            cabal v2-build all
+            cabal v2-haddock all
+            ;;
+        esac
+        set +ex
+    - name: Test
+      env:
+        BUILD: ${{ matrix.plan.build }}
+        RESOLVER: ${{ matrix.plan.resolver }}
+      run: |
+        set -ex
+        case "$BUILD" in
+          stack)
+            stack --no-terminal --system-ghc -j 1 --resolver $RESOLVER test --bench --no-run-benchmarks --haddock --no-haddock-deps
+            ;;
+          cabal)
+            cabal v2-test --jobs=1 all
+            ;;
+        esac
+        set +ex
+
