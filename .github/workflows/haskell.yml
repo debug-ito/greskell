@@ -5,11 +5,13 @@ on: [push, pull_request]
 jobs:
   build:
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, macOS-latest]
         plan:
           - build: cabal
             ghc: latest
+            allow-fail: true
           - build: cabal
             ghc: '9.0.1'
           - build: stack
@@ -22,6 +24,7 @@ jobs:
             ghc: '8.6.5'
             resolver: 'lts-14.27'
            
+    continue-on-error: ${{ matrix.plan.allow-fail }}
     runs-on: ${{ matrix.os }}
 
     steps:
