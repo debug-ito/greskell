@@ -30,12 +30,6 @@ jobs:
         ghc-version: ${{ matrix.plan.ghc }}
         enable-stack: true
 
-    - name: Configure
-      run: |
-        set -ex
-        rm -f stack.yaml.lock
-        $STACK clean
-
     - uses: actions/cache@v2
       with:
         path: ~/.stack
@@ -44,6 +38,12 @@ jobs:
           ${{ runner.os }}-stack-${{ hashFiles('stack.yaml') }}-
           ${{ runner.os }}-stack-
     
+    - name: Configure
+      run: |
+        set -ex
+        rm -f stack.yaml.lock
+        $STACK clean
+
     - name: Install dependencies
       run: $STACK test --bench --only-dependencies
     - name: Build
