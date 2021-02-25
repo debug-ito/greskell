@@ -72,7 +72,6 @@ test-suite doctest
                         doctest-discover >=0.1.0.7 && <0.3
 
 
-
 source-repository head
   type:                 git
   location:             https://github.com/debug-ito/greskell.git
