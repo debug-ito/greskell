@@ -17,12 +17,12 @@ jobs:
             resolver: 'lts-14.27'
           - ghc: '8.4.4'
             resolver: 'lts-12.26'
-      exclude:
-        - os: macOS-latest
-          plan:
-            ghc: '8.4.4'
-          ## Cannot build due to https://gitlab.haskell.org/ghc/ghc/-/issues/15105
-
+        exclude:
+          - os: macOS-latest
+            plan:
+              ghc: '8.4.4'
+            ## Cannot build due to https://gitlab.haskell.org/ghc/ghc/-/issues/15105
+          
     runs-on: ${{ matrix.os }}
     continue-on-error: ${{ matrix.plan.allow-fail == true }}
     env:
