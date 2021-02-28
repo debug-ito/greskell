@@ -17,16 +17,16 @@ jobs:
             resolver: 'lts-14.27'
           - ghc: '8.4.4'
             resolver: 'lts-12.26'
-        exclude:
+        include:
           - os: macOS-latest
-            plan:
-              ghc: '8.4.4'
-            ## Cannot build due to https://gitlab.haskell.org/ghc/ghc/-/issues/15105
-          
+            flags: '--flag greskell:-hint-test'
+            ## hint-test tends to fail with old GHCs on macOS
+            
     runs-on: ${{ matrix.os }}
     continue-on-error: ${{ matrix.plan.allow-fail == true }}
     env:
       STACK: stack --no-terminal --system-ghc --resolver ${{ matrix.plan.resolver }}
+      FLAGS: ${{ matrix.flags }}
 
     steps:
     - uses: actions/checkout@v2
@@ -51,11 +51,11 @@ jobs:
         $STACK clean
 
     - name: Install dependencies
-      run: $STACK test --bench --only-dependencies
+      run: $STACK test --bench --only-dependencies $FLAGS
     - name: Build
-      run: $STACK build --bench --haddock --no-haddock-deps
+      run: $STACK build --bench --haddock --no-haddock-deps $FLAGS
     - name: Test
-      run: $STACK -j 1 test --bench --no-run-benchmarks --haddock --no-haddock-deps
+      run: $STACK -j 1 test --bench --no-run-benchmarks --haddock --no-haddock-deps $FLAGS
 
 
   cabal:
