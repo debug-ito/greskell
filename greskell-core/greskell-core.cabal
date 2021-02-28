@@ -66,7 +66,7 @@ test-suite doctest
   hs-source-dirs:       test
   ghc-options:          -Wall -fno-warn-unused-imports "-with-rtsopts=-M512m"
   main-is:              DocTest.hs
-  build-tool-depends:   doctest-discover:doctest-discover, doctest:doctest
+  build-tool-depends:   doctest-discover:doctest-discover
   build-depends:        base,
                         doctest >=0.11 && <0.19,
                         doctest-discover >=0.1.0.7 && <0.3
