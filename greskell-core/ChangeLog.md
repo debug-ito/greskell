@@ -1,6 +1,6 @@
 # Revision history for greskell-core
 
-## 0.1.3.7  -- ?
+## 0.1.3.7  -- 2021-11-08
 
 * Confirm test with `base-4.15.0.0`
 
