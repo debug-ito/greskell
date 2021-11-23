@@ -28,6 +28,7 @@ import Control.Applicative ((<$>), (<*>))
 import Data.Aeson
   ( ToJSON(toJSON), FromJSON(parseJSON), Value(..)
   )
+import Data.Aeson.KeyMap (KeyMap)
 import Data.Aeson.Types (Parser)
 import Data.Foldable (foldl')
 import Data.Hashable (Hashable(..))
@@ -58,7 +59,7 @@ instance Hashable GValue
 --
 -- @since 0.1.2.0
 data GValueBody =
-    GObject !(HashMap Text GValue)
+    GObject !(KeyMap GValue)
   | GArray !(Vector GValue)
   | GString !Text
   | GNumber !Scientific
