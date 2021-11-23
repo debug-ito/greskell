@@ -57,7 +57,7 @@ instance Hashable GValue
 
 -- | 'GValue' without the top-level 'GraphSON' wrapper.
 --
--- @since 0.1.2.0
+-- @since 1.0.0.0
 data GValueBody =
     GObject !(KeyMap GValue)
   | GArray !(Vector GValue)
