@@ -4,6 +4,8 @@
 
 * **BREAKING CHANGE**:  `GObject` variant of `GValueBody` is now based on `KeyMap` from `aeson-2.0`.
   Before, it was based on `HashMap Text`.
+  As a result, signature of the following functions has been changed.
+  * `parseToGMap`
 * Confirm test with `aeson-2.0`, `semigroups-0.20` and `hashable-1.4`.
 
 

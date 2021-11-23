@@ -31,6 +31,7 @@ import Data.Aeson
     FromJSONKey, fromJSONKey, FromJSONKeyFunction(..), ToJSONKey
   )
 import Data.Aeson.Types (Parser)
+import Data.Aeson.KeyMap (KeyMap)
 import Data.Foldable (length, Foldable)
 import Data.Hashable (Hashable)
 import Data.HashMap.Strict (HashMap)
@@ -153,8 +154,8 @@ data GMap c k v =
 parseToGMap :: (IsList (c k v), Item (c k v) ~ (k,v))
             => (s -> Parser k) -- ^ key parser
             -> (s -> Parser v) -- ^ value parser
-            -> (HashMap Text s -> Parser (c k v)) -- ^ object parser
-            -> Either (HashMap Text s) (Vector s) -- ^ input object or flattened key-values.
+            -> (KeyMap s -> Parser (c k v)) -- ^ object parser
+            -> Either (KeyMap s) (Vector s) -- ^ input object or flattened key-values.
             -> Parser (GMap c k v)
 parseToGMap _ _ op (Left o) = fmap (GMap False) $ op o
 parseToGMap kp vp _ (Right v) = fmap (GMap True . unFlattenedMap) $ parseToFlattenedMap kp vp v
