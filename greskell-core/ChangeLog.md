@@ -6,6 +6,7 @@
   Before, it was based on `HashMap Text`.
   As a result, signature of the following functions has been changed.
   * `parseToGMap`
+  * `parseToGMapEntry`
 * Confirm test with `aeson-2.0`, `semigroups-0.20` and `hashable-1.4`.
 
 

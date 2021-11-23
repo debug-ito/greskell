@@ -266,7 +266,7 @@ orElseM act_a act_b = do
 parseToGMapEntry :: FromJSONKey k
                  => (s -> Parser k) -- ^ key parser
                  -> (s -> Parser v) -- ^ value parser
-                 -> Either (HashMap Text s) (Vector s) -- ^ input object or flattened key-values
+                 -> Either (KeyMap s) (Vector s) -- ^ input object or flattened key-values
                  -> Parser (GMapEntry k v)
 parseToGMapEntry kp vp (Right vec) = do
   avec <- parseToAVec kp vp vec
