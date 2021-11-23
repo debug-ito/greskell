@@ -32,6 +32,7 @@ import Data.Aeson
   )
 import Data.Aeson.Types (Parser)
 import Data.Aeson.KeyMap (KeyMap)
+import qualified Data.Aeson.KeyMap as KM
 import Data.Foldable (length, Foldable)
 import Data.Hashable (Hashable)
 import Data.HashMap.Strict (HashMap)
@@ -214,14 +215,14 @@ data GMapEntry k v =
 
 parseKeyValueToEntry :: (s -> Parser k)
                      -> (s -> Parser v)
-                     -> HashMap Text s
+                     -> KeyMap s
                      -> Parser (Maybe (GMapEntry k v))
 parseKeyValueToEntry kp vp o =
   if length o /= 2
   then return Nothing
   else do
-    mk <- parseIfPresent kp $ HM.lookup "key" o
-    mv <- parseIfPresent vp $ HM.lookup "value" o
+    mk <- parseIfPresent kp $ KM.lookup "key" o
+    mv <- parseIfPresent vp $ KM.lookup "value" o
     return $ GMapEntry False <$> mk <*> mv
   where
     parseIfPresent :: (a -> Parser v) -> Maybe a -> Parser (Maybe v)
@@ -229,10 +230,10 @@ parseKeyValueToEntry kp vp o =
 
 parseSingleEntryObjectToEntry :: FromJSONKey k
                               => (s -> Parser v)
-                              -> HashMap Text s
+                              -> KeyMap s
                               -> Parser (Maybe (GMapEntry k v))
 parseSingleEntryObjectToEntry vp o =
-  case HM.toList o of
+  case KM.toList o of
    [(raw_key, raw_val)] -> do
      key <- parseKey raw_key
      val <- vp raw_val
