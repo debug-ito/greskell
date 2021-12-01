@@ -42,10 +42,12 @@ import qualified Data.Aeson as Aeson
 import Data.Aeson.Types (Parser)
 import qualified Data.Aeson.Types as Aeson (parseEither)
 import Data.Aeson.KeyMap (KeyMap)
+import qualified Data.Aeson.KeyMap as KM
+import Data.Aeson.Key (Key)
+import qualified Data.Aeson.Key as Key
 import Data.Foldable (Foldable(foldr))
 import Data.Functor.Identity (Identity(..))
 import Data.HashMap.Strict (HashMap)
-import qualified Data.HashMap.Strict as HM
 import qualified Data.HashMap.Lazy as L (HashMap)
 import Data.HashSet (HashSet)
 import Data.Hashable (Hashable(..))
@@ -154,11 +156,11 @@ parseEither = Aeson.parseEither parseGraphSON
 
 -- | Like Aeson's 'Aeson..:', but for 'FromGraphSON'.
 --
--- @since 0.1.2.0
-(.:) :: FromGraphSON a => HashMap Text GValue -> Text -> Parser a
-go .: label = maybe failure parseGraphSON $ HM.lookup label go
+-- @since 1.0.0.0
+(.:) :: FromGraphSON a => KeyMap GValue -> Key -> Parser a
+go .: label = maybe failure parseGraphSON $ KM.lookup label go
   where
-    failure = fail ("Cannot find field " ++ unpack label)
+    failure = fail ("Cannot find field " ++ Key.toString label)
 
 -- | Implementation of 'parseJSON' based on 'parseGraphSON'. The input
 -- 'Value' is first converted to 'GValue', and it's parsed to the
