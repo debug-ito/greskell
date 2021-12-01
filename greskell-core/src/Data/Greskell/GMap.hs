@@ -249,11 +249,7 @@ parseSingleEntryObjectToEntry vp o =
                                    ++ " It expects that the entry key is parsed from the text key in JSON Object,"
                                    ++ " but the key type does not support it."
                                  )
-#if MIN_VERSION_aeson(1,5,0)
       FromJSONKeyCoerce -> return $ fmap return coerce
-#else
-      FromJSONKeyCoerce _ -> return $ fmap return unsafeCoerce
-#endif
 
 orElseM :: Monad m => m (Maybe a) -> m (Maybe a) -> m (Maybe a)
 orElseM act_a act_b = do
