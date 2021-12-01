@@ -3,6 +3,7 @@ module Data.Greskell.GraphSONSpec (main,spec) where
 
 import Data.Aeson (object, (.=), ToJSON(..), FromJSON(..), Value(..))
 import qualified Data.Aeson as Aeson
+import qualified Data.Aeson.KeyMap as KM
 import Data.Aeson.Types (parseEither, Value(..), Parser)
 import qualified Data.ByteString.Lazy as BSL
 import Data.Either (isLeft)
@@ -189,9 +190,9 @@ gvalue_spec = do
     fromToJSON "wrapped array" (gson "g:List" "[null, \"foo\", 100]")
       (wrapped "g:List" $ GArray $ fmap bare $ V.fromList [GNull, GString "foo", GNumber 100])
     fromToJSON "bare object" "{\"foo\": \"bar\", \"hoge\": 99, \"quux\": null}"
-      (bare $ GObject $ fmap bare $ HM.fromList [("foo", GString "bar"), ("hoge", GNumber 99), ("quux", GNull)])
+      (bare $ GObject $ fmap bare $ KM.fromList [("foo", GString "bar"), ("hoge", GNumber 99), ("quux", GNull)])
     fromToJSON "wrapped object" (gson "g:Map" "{\"foo\": \"bar\", \"hoge\": 99, \"quux\": null}")
-      (wrapped "g:Map" $ GObject $ fmap bare $ HM.fromList [("foo", GString "bar"), ("hoge", GNumber 99), ("quux", GNull)])
+      (wrapped "g:Map" $ GObject $ fmap bare $ KM.fromList [("foo", GString "bar"), ("hoge", GNumber 99), ("quux", GNull)])
     nested_spec
     double_wrap_spec
     decode_error_spec
@@ -208,7 +209,7 @@ nested_spec :: Spec
 nested_spec = fromToJSON "mixed nested" nestedSample expected
   where
     expected = wrapped "g:List" $ GArray $ V.fromList [ bare $ GNumber 100, exp_a, exp_b ]
-    exp_a = wrapped "g:Map" $ GObject $ HM.fromList
+    exp_a = wrapped "g:Map" $ GObject $ KM.fromList
             [ ("foo", bare $ GNumber 100),
               ("bar", wrapped "g:Int" $ GNumber 200)
             ]
@@ -218,7 +219,7 @@ nested_spec = fromToJSON "mixed nested" nestedSample expected
               exp_c,
               wrapped "g:Boolean" $ GBool False
             ]
-    exp_c = bare $ GObject $ HM.fromList
+    exp_c = bare $ GObject $ KM.fromList
             [ ("xxx", wrapped "g:Int" $ GNumber 200),
               ("yyy", bare $ GBool True)
             ]
@@ -230,7 +231,7 @@ double_wrap_spec :: Spec
 double_wrap_spec = fromToJSON "double wrapped" input expected
   where
     input = gson "g:Object" $ gson "g:Int" "100"
-    expected = wrapped "g:Object" $ GObject $ HM.fromList
+    expected = wrapped "g:Object" $ GObject $ KM.fromList
                [ ("@type", bare $ GString "g:Int"),
                  ("@value", bare $ GNumber 100)
                ]
