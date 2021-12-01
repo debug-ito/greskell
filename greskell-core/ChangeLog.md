@@ -9,6 +9,7 @@
   * `parseToGMapEntry`
   * `(.:)`
 * **BREAKING CHANGE**: Remove `FromGraphSON` instance for `Data.Semigroup.Option`, which is deprecated.
+* Add `FromGraphSON` instance to `KeyMap` and `Key` from `aeson-2.0`.
 * Confirm test with `aeson-2.0`, `semigroups-0.20` and `hashable-1.4`.
 
 

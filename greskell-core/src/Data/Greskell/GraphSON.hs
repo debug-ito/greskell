@@ -215,6 +215,12 @@ instance FromGraphSON Scientific where
 instance FromGraphSON IntSet where
   parseGraphSON = parseUnwrapAll
 
+-- | First convert to 'Text', and convert to 'Key'.
+--
+-- @since 1.0.0.0
+instance FromGraphSON Key where
+  parseGraphSON = fmap Key.fromText . parseGraphSON
+
 ---- List instances
 
 instance FromGraphSON a => FromGraphSON [a] where
@@ -324,6 +330,12 @@ instance FromGraphSON v => FromGraphSON (L.IntMap v) where
     where
       mapToIntMap :: L.Map Int v -> L.IntMap v
       mapToIntMap = LMap.foldrWithKey LIntMap.insert mempty
+
+-- | First convert to 'L.Map' with 'Text' key, and convert to 'KeyMap'.
+--
+-- @since 1.0.0.0
+instance FromGraphSON v => FromGraphSON (KeyMap v) where
+  parseGraphSON = fmap KM.fromMap . parseGraphSON
 
 ---- Maybe and Either
 
