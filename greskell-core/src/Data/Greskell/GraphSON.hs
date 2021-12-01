@@ -41,6 +41,7 @@ import Data.Aeson
 import qualified Data.Aeson as Aeson
 import Data.Aeson.Types (Parser)
 import qualified Data.Aeson.Types as Aeson (parseEither)
+import Data.Aeson.KeyMap (KeyMap)
 import Data.Foldable (Foldable(foldr))
 import Data.Functor.Identity (Identity(..))
 import Data.HashMap.Strict (HashMap)
@@ -283,7 +284,7 @@ instance (FromGraphSON k, FromGraphSON v, IsList (c k v), Item (c k v) ~ (k,v)) 
     b -> fail ("Expects GArray, but got " ++ show b)
 
 parseGObjectToTraversal :: (Traversable t, FromJSON (t GValue), FromGraphSON v)
-                        => HashMap Text GValue
+                        => KeyMap GValue
                         -> Parser (t v)
 parseGObjectToTraversal o = traverse parseGraphSON =<< (parseJSON $ Object $ fmap toJSON o)
 
