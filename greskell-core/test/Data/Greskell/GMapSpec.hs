@@ -2,6 +2,7 @@
 module Data.Greskell.GMapSpec (main,spec) where
 
 import Data.Aeson (eitherDecode, object, (.=), toJSON, Value(..))
+import qualified Data.Aeson.KeyMap as KM
 import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as HM
 import Data.List (isInfixOf)
@@ -51,8 +52,8 @@ spec_GMap = describe "GraphSON GMap" $ do
                                     String "a",   Number 1
                                   ]
           (Object got) = toJSON val
-      HM.lookup "@type" got `shouldBe` (Just $ String "g:Map")
-      let (Just (Array got_flat)) = HM.lookup "@value" got
+      KM.lookup "@type" got `shouldBe` (Just $ String "g:Map")
+      let (Just (Array got_flat)) = KM.lookup "@value" got
       pairList got_flat `shouldMatchList` pairList exp_flat
     specify "FromJSON empty" $ do
       let val_empty :: GraphSON (GMap HashMap String Int)
