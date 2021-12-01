@@ -35,9 +35,10 @@ module Data.Greskell.Greskell
 
 import Data.Aeson (Value)
 import qualified Data.Aeson as Aeson
+import qualified Data.Aeson.KeyMap as KM
+import qualified Data.Aeson.Key as Key
 import Data.Bifunctor (bimap)
 import Data.Foldable (toList)
-import qualified Data.HashMap.Lazy as HM
 import Data.Monoid (Monoid(..))
 import Data.Ratio (numerator, denominator, Rational)
 import Data.Scientific (Scientific, coefficient, base10Exponent)
@@ -222,11 +223,11 @@ value (Aeson.Number sci) = unsafeToValue $ number sci
 value (Aeson.String s) = unsafeToValue $ string s
 value (Aeson.Array v) = unsafeToValue $ list $ map value $ toList v
 value (Aeson.Object obj)
-  | HM.null obj = unsafeGreskellLazy "[:]"
-  | otherwise = unsafeGreskellLazy $ toGroovyMap $ HM.toList obj
+  | KM.null obj = unsafeGreskellLazy "[:]"
+  | otherwise = unsafeGreskellLazy $ toGroovyMap $ KM.toList obj
   where
     toGroovyMap pairs = "[" <> TL.intercalate "," (map toPairText pairs) <> "]"
-    toPairText (key, val) = (toGremlinLazy $ string key) <> ":" <> (toGremlinLazy $ value val)
+    toPairText (key, val) = (toGremlinLazy $ string $ Key.toText key) <> ":" <> (toGremlinLazy $ value val)
 
 -- | Integer literal as 'Value' type.
 --
