@@ -337,9 +337,6 @@ instance (FromGraphSON a, FromGraphSON b) => FromGraphSON (Either a b) where
 ---- Trivial wrapper for Maybe
 
 -- | @since 0.1.3.0
-instance FromGraphSON a => FromGraphSON (S.Option a) where
-  parseGraphSON = fmap S.Option . parseGraphSON
--- | @since 0.1.3.0
 instance FromGraphSON a => FromGraphSON (M.First a) where
   parseGraphSON = fmap M.First . parseGraphSON
 -- | @since 0.1.3.0
