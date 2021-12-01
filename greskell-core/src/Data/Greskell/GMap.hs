@@ -33,10 +33,9 @@ import Data.Aeson
 import Data.Aeson.Types (Parser)
 import Data.Aeson.KeyMap (KeyMap)
 import qualified Data.Aeson.KeyMap as KM
+import qualified Data.Aeson.Key as Key
 import Data.Foldable (length, Foldable)
 import Data.Hashable (Hashable)
-import Data.HashMap.Strict (HashMap)
-import qualified Data.HashMap.Strict as HM
 import qualified Data.Map as M
 import Data.Text (Text, intercalate, unpack)
 import Data.Traversable (Traversable, traverse)
@@ -235,7 +234,7 @@ parseSingleEntryObjectToEntry :: FromJSONKey k
 parseSingleEntryObjectToEntry vp o =
   case KM.toList o of
    [(raw_key, raw_val)] -> do
-     key <- parseKey raw_key
+     key <- parseKey $ Key.toText raw_key
      val <- vp raw_val
      return $ Just $ GMapEntry False key val
    _ -> return Nothing
@@ -278,7 +277,7 @@ parseToGMapEntry kp vp (Left o) = do
   m_ret <- parseKeyValueToEntry kp vp o `orElseM` parseSingleEntryObjectToEntry vp o
   case m_ret of
    Just ret -> return ret
-   Nothing -> fail ("Unexpected structure of Object: got keys: " ++ (unpack $ intercalate ", " $ HM.keys o))
+   Nothing -> fail ("Unexpected structure of Object: got keys: " ++ (unpack $ intercalate ", " $ map Key.toText $ KM.keys o))
 
 -- | Map to \"g:Map\".
 instance GraphSONTyped (GMapEntry k v) where
