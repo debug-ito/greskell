@@ -13,10 +13,10 @@ import Control.Monad (when, forever, forM_, mapM)
 import Data.Aeson (Value(Number), FromJSON(..), ToJSON(toJSON), Object)
 import qualified Data.Aeson as Aeson
 import qualified Data.Aeson.Types as Aeson (parseEither)
+import qualified Data.Aeson.KeyMap as KM
 import qualified Data.ByteString.Lazy as BSL
 import Data.Maybe (isNothing, isJust, fromJust)
 import Data.Monoid ((<>))
-import qualified Data.HashMap.Strict as HM
 import Data.Greskell.GraphSON (GraphSON, gsonValue)
 import Data.Text (Text, pack)
 import qualified Data.Vector as V
@@ -142,7 +142,7 @@ conn_basic_spec = do
   specify "continuous response with bindings" $ withConn $ \conn -> do
     rid <- nextRandom
     let op = (opEval "x") { batchSize = Just 2,
-                            bindings = Just $ HM.fromList [("x", toJSON ([1 .. 10] :: [Int]))]
+                            bindings = Just $ KM.fromList [("x", toJSON ([1 .. 10] :: [Int]))]
                           }
         exp_vals :: [Either String [Int]]
         exp_vals = map Right [[1,2], [3,4], [5,6], [7,8], [9,10]]

@@ -6,8 +6,8 @@ import Control.Concurrent.Async (withAsync, mapConcurrently)
 import Control.Exception.Safe (bracket)
 import Control.Monad (forM_)
 import Data.Aeson (Value(Number))
+import qualified Data.Aeson.KeyMap as KM
 import Data.HashMap.Strict (HashMap)
-import qualified Data.HashMap.Strict as HM
 import Data.Maybe (isNothing, isJust, fromJust)
 import Data.Text (Text)
 import qualified Data.Vector as V
@@ -89,7 +89,7 @@ client_basic_spec = do
   specify "eval (bound Double)" $ withClient $ \client -> do
     let gx = G.unsafeGreskell "x"
         g = 92.125 + gx :: Greskell Double
-        b = HM.fromList [("x", Number 22.25)]
+        b = KM.fromList [("x", Number 22.25)]
     rh <- submit client g (Just b)
     slurpResults rh `shouldReturn` V.fromList [114.375]
   specify "multiple response messages" $ \(host, port) -> do

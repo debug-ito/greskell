@@ -5,6 +5,7 @@ import Control.Applicative ((<$>))
 import Control.Monad (forM_)
 import Data.Aeson (Value(Null, Number), (.=))
 import qualified Data.Aeson as A
+import qualified Data.Aeson.KeyMap as KM
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy as BSL
 import Data.Greskell.GraphSON
@@ -88,13 +89,13 @@ decode_spec = describe "decodeWith" $ do
                                        meta = mempty
                                      }
         exp_v1 = nonTypedGValue $ GArray $ V.fromList
-                 [ nonTypedGValue $ GObject $ HM.fromList
+                 [ nonTypedGValue $ GObject $ KM.fromList
                    [ ("id", nonTypedGValue $ GNumber 1),
                      ("label", nonTypedGValue $ GString "person"),
                      ("type", nonTypedGValue $ GString "vertex")
                    ] 
                  ]
-        exp_typed_vertex = typedGValue' "g:Vertex" $ GObject $ HM.fromList
+        exp_typed_vertex = typedGValue' "g:Vertex" $ GObject $ KM.fromList
                            [ ("id", typedGValue' "g:Int32" $ GNumber 1),
                              ("label", nonTypedGValue $ GString "person")
                            ]
@@ -136,7 +137,7 @@ encode_spec = describe "encodeWith" $ do
     $ OpEval
       { batchSize = Nothing,
         gremlin = "g.V(x)",
-        bindings = Just $ HM.fromList [("x", Number 1)],
+        bindings = Just $ KM.fromList [("x", Number 1)],
         language = Just "gremlin-groovy",
         aliases = Nothing,
         scriptEvaluationTimeout = Nothing
@@ -145,7 +146,7 @@ encode_spec = describe "encodeWith" $ do
     $ OpEval
       { batchSize = Nothing,
         gremlin = "social.V(x)",
-        bindings = Just $ HM.fromList [("x", Number 1)],
+        bindings = Just $ KM.fromList [("x", Number 1)],
         language = Just "gremlin-groovy",
         aliases = Just $ HM.fromList [("g", "social")],
         scriptEvaluationTimeout = Nothing
@@ -154,7 +155,7 @@ encode_spec = describe "encodeWith" $ do
     $ S.OpEval
       { S.batchSize = Nothing,
         S.gremlin = "g.V(x)",
-        S.bindings = Just $ HM.fromList [("x", Number 1)],
+        S.bindings = Just $ KM.fromList [("x", Number 1)],
         S.language = Just "gremlin-groovy",
         S.aliases = Nothing,
         S.scriptEvaluationTimeout = Nothing,
@@ -165,7 +166,7 @@ encode_spec = describe "encodeWith" $ do
     $ S.OpEval
       { S.batchSize = Nothing,
         S.gremlin = "social.V(x)",
-        S.bindings = Just $ HM.fromList [("x", Number 1)],
+        S.bindings = Just $ KM.fromList [("x", Number 1)],
         S.language = Just "gremlin-groovy",
         S.aliases = Just $ HM.fromList [("g", "social")],
         S.scriptEvaluationTimeout = Nothing,
