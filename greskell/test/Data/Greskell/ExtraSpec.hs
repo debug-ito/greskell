@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Data.Greskell.ExtraSpec (main,spec) where
 
+import qualified Data.Aeson.KeyMap as KM
 import Data.Monoid (mempty, (<>))
 import Data.Text (Text)
 import Test.Hspec
@@ -11,7 +12,6 @@ import Data.Greskell.Extra (writePropertyKeyValues, writeKeyValues)
 import Data.Greskell.Graph (AVertex, (=:), Key, KeyValue)
 import Data.Greskell.Greskell (toGremlin)
 import Data.Greskell.GTraversal (Walk, WalkType)
-import qualified Data.HashMap.Strict as HM
 
 main :: IO ()
 main = hspec spec
@@ -33,7 +33,7 @@ spec = do
           input = [("age", 24)]
       (runBoundWalk $ writePropertyKeyValues input)
         `shouldBe` ( "__.property(\"age\",__v0).identity()",
-                     HM.fromList [("__v0", Number 24)]
+                     KM.fromList [("__v0", Number 24)]
                    )
     specify "multiple props" $ do
       let input :: [(Text, Value)]
@@ -41,7 +41,7 @@ spec = do
       (runBoundWalk $ writePropertyKeyValues input)
         `shouldBe` ( "__.property(\"age\",__v0).property(\"name\",__v1)"
                      <> ".property(\"foo\",__v2).identity()",
-                     HM.fromList [ ("__v0", Number 24),
+                     KM.fromList [ ("__v0", Number 24),
                                    ("__v1", String "Toshio"),
                                    ("__v2", String "bar")
                                  ]

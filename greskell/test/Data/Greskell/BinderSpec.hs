@@ -3,7 +3,8 @@ module Data.Greskell.BinderSpec (main,spec) where
 import Control.Applicative ((<$>), (<*>))
 import Control.Monad (forM_)
 import Data.Aeson (toJSON)
-import qualified Data.HashMap.Strict as HM
+import qualified Data.Aeson.KeyMap as KM
+import qualified Data.Aeson.Key as Key
 import Data.Text (unpack)
 import Test.Hspec
 
@@ -25,6 +26,9 @@ shouldBeVariable got_greskell =
     variableHeads = '_' : (['a' .. 'z'] ++ ['A' .. 'Z'])
     variableRests = variableHeads ++ ['0' .. '9']
 
+toKey :: Greskell a -> Key.Key
+toKey = Key.fromText . toGremlin
+
 spec :: Spec
 spec = describe "Binder" $ do
   it "should keep bound values" $ do
@@ -36,8 +40,8 @@ spec = describe "Binder" $ do
     toGremlin got_v1 `shouldNotBe` toGremlin got_v2
     shouldBeVariable got_v1
     shouldBeVariable got_v2
-    got_bind `shouldBe` HM.fromList [ (toGremlin got_v1, toJSON (100 :: Int)),
-                                      (toGremlin got_v2, toJSON "hogehoge")
+    got_bind `shouldBe` KM.fromList [ (toKey got_v1, toJSON (100 :: Int)),
+                                      (toKey got_v2, toJSON "hogehoge")
                                     ]
   it "should compose and produce new variables" $ do
     let b = newBind "foobar"
@@ -45,8 +49,8 @@ spec = describe "Binder" $ do
     toGremlin got_v1 `shouldNotBe` toGremlin got_v2
     shouldBeVariable got_v1
     shouldBeVariable got_v2
-    got_bind `shouldBe` HM.fromList [ (toGremlin got_v1, toJSON "foobar"),
-                                      (toGremlin got_v2, toJSON "foobar")
+    got_bind `shouldBe` KM.fromList [ (toKey got_v1, toJSON "foobar"),
+                                      (toKey got_v2, toJSON "foobar")
                                     ]
   it "should also be able to produce AsLabels" $ do
     let newIntLabel :: Binder (AsLabel Int)
