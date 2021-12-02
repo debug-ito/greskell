@@ -1,7 +1,11 @@
 # Revision history for greskell
 
-## 1.2.0.3 -- ?
+## 2.0.0.0  -- ?
 
+* **BREAKING CHANGE**: Now greskell uses `aeson-2.0`.
+  As a result, now implementation of `Data.Aeson.Object` has been changed from `HashMap` to `KeyMap`.
+  Some types in greskell (e.g. `Binding`) directly uses the `Object` type.
+* Confirm test with `aeson-2.0.2.0`, `semigroups-0.20`, `hashable-1.4.0.1`, `doctest-0.19`.
 
 ## 1.2.0.2  -- 2021-11-08
 
