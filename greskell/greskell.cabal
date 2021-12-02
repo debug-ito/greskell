@@ -122,7 +122,7 @@ test-suite server-test-suite
     build-depends:        base, aeson, hspec, text, unordered-containers, vector,
                           greskell, greskell-core,
                           scientific >=0.3.4.9 && <0.4,
-                          greskell-websocket >=0.1.0.0 && <0.2,
+                          greskell-websocket >=0.1.0.0 && <1.1,
                           safe-exceptions >=0.1.6 && <0.2
   else
     buildable: False
@@ -147,7 +147,7 @@ test-suite server-behavior-test-suite
     build-depends:        base, aeson, hspec, text, unordered-containers, vector,
                           greskell, greskell-core,
                           scientific >=0.3.4.9 && <0.4,
-                          greskell-websocket >=0.1.0.0 && <0.2,
+                          greskell-websocket >=0.1.0.0 && <1.1,
                           safe-exceptions >=0.1.6 && <0.2
   else
     buildable: False

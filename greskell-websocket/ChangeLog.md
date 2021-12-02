@@ -1,6 +1,10 @@
 # Revision history for greskell-websocket
 
-## 0.1.2.7  -- ?
+## 1.0.0.0  -- ?
+
+* **BREAKING CHANGE**: Now greskell-websocket uses `aeson-2`.
+  As a result, now implemenation of `Data.Aeson.Object` has been changed from `HashMap` to `KeyMap`.
+  Some types in greskell-websocket (e.g. `ResponseResult`) directly uses the `Object` type.
 
 * Confirm test with `aeson-2.0.2.0`, `hashtables-1.3`, `greskell-core-1.0`.
 
