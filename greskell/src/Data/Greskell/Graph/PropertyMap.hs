@@ -27,6 +27,8 @@ module Data.Greskell.Graph.PropertyMap {-# DEPRECATED "Use PMap instead" #-}
 import Control.Applicative (empty, (<|>))
 import Data.Aeson (FromJSON(..))
 import Data.Aeson.Types (Parser)
+import qualified Data.Aeson.KeyMap as KM
+import qualified Data.Aeson.Key as Key
 import Data.Foldable (Foldable(..), foldlM)
 import Data.Greskell.GraphSON
   ( FromGraphSON(..), GValue, GraphSONTyped(..), (.:),
@@ -145,11 +147,11 @@ parsePropertiesGeneric :: (Property p, PropertyMap m, Monoid (m p v), GraphSONTy
                        -> GValue
                        -> Parser (m p v)
 parsePropertiesGeneric normalizeCardinality gv = case gValueBody gv of
-  GObject obj -> foldlM folder mempty $ HM.toList obj
+  GObject obj -> foldlM folder mempty $ KM.toList obj
   _ -> empty
   where
     folder pm (k, value) = fmap (foldr putProperty pm) $ traverse (parseProperty k) =<< normalizeCardinality value
-    parseProperty k value = parseTypedGValue value <|> parseGraphSONWithKey k value
+    parseProperty k value = parseTypedGValue value <|> parseGraphSONWithKey (Key.toText k) value
 
 -- parhaps we might as well place it in GraphSON module and let it export.
 parseTypedGValue :: (GraphSONTyped v, FromGraphSON v) => GValue -> Parser v

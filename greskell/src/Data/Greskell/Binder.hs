@@ -19,6 +19,8 @@ module Data.Greskell.Binder
 import Control.Monad.Trans.State (State)
 import qualified Control.Monad.Trans.State as State
 import Data.Aeson (Value, ToJSON(toJSON), Object)
+import qualified Data.Aeson.KeyMap as KM
+import qualified Data.Aeson.Key as Key
 import Data.Monoid ((<>))
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Text as T
@@ -91,8 +93,8 @@ runBinder binder = (ret, binding)
   where
     (ret, state) = State.runState (unBinder binder) initBinderS
     values = varBindings state
-    binding = HM.fromList $ zip (map toPlaceHolderVariableStrict [0 ..]) $ values
-    toPlaceHolderVariableStrict = TL.toStrict . toPlaceHolderVariable
+    binding = KM.fromList $ zip (map toPlaceHolderVariableKey [0 ..]) $ values
+    toPlaceHolderVariableKey = Key.fromText . TL.toStrict . toPlaceHolderVariable
 
 -- | __This type is only for internal use.__
 type PlaceHolderIndex = Int
