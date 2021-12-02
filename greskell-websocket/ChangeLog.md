@@ -2,6 +2,7 @@
 
 ## 0.1.2.7  -- ?
 
+* Confirm test with `aeson-2.0.2.0`, `hashtables-1.3`, `greskell-core-1.0`.
 
 ## 0.1.2.6  -- 2021-11-08
 
