@@ -22,7 +22,6 @@ import Data.Aeson (Value, ToJSON(toJSON), Object)
 import qualified Data.Aeson.KeyMap as KM
 import qualified Data.Aeson.Key as Key
 import Data.Monoid ((<>))
-import qualified Data.HashMap.Strict as HM
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
 
@@ -52,7 +51,7 @@ initBinderS =
 -- >>> import Data.Greskell.Greskell (toGremlin)
 -- >>> import Data.List (sortBy)
 -- >>> import Data.Ord (comparing)
--- >>> import qualified Data.HashMap.Strict as HashMap
+-- >>> import qualified Data.Aeson.KeyMap as KeyMap
 
 -- | A Monad that manages binding variables and labels to values.
 --
@@ -62,7 +61,7 @@ initBinderS =
 -- "__v0"
 -- >>> toGremlin var_str
 -- "__v1"
--- >>> sortBy (comparing fst) $ HashMap.toList binding
+-- >>> sortBy (comparing fst) $ KeyMap.toList binding
 -- [("__v0",Number 10.0),("__v1",String "hoge")]
 newtype Binder a = Binder { unBinder :: State BinderS a }
                    deriving (Functor, Applicative, Monad)

@@ -60,7 +60,7 @@ import Data.Text (Text)
 -- >>> import Data.Greskell.GTraversal (GTraversal, source, sV', gHas2, (&.), gAddV)
 -- >>> import Data.List (sortBy)
 -- >>> import Data.Ord (comparing)
--- >>> import qualified Data.HashMap.Strict as HashMap
+-- >>> import qualified Data.Aeson.KeyMap as KeyMap
 
 -- $readers
 --
@@ -77,7 +77,7 @@ import Data.Text (Text)
 -- >>> let (walk, binding) = runBinder binder
 -- >>> toGremlin walk
 -- "__.property(\"age\",__v0).identity()"
--- >>> sortBy (comparing fst) $ HashMap.toList binding
+-- >>> sortBy (comparing fst) $ KeyMap.toList binding
 -- [("__v0",Number 21.0)]
 writePropertyKeyValues :: (ToJSON v, Element e) => [(Text, v)] -> Binder (Walk SideEffect e e)
 writePropertyKeyValues pairs = fmap writeKeyValues $ mapM toKeyValue pairs
@@ -93,7 +93,7 @@ writePropertyKeyValues pairs = fmap writeKeyValues $ mapM toKeyValue pairs
 -- >>> let (walk, binding) = runBinder $ writeKeyValues <$> sequence [keyAge <=:> 21, keyName <=:> "Josh"]
 -- >>> toGremlin walk
 -- "__.property(\"age\",__v0).property(\"name\",__v1).identity()"
--- >>> sortBy (comparing fst) $ HashMap.toList binding
+-- >>> sortBy (comparing fst) $ KeyMap.toList binding
 -- [("__v0",Number 21.0),("__v1",String "Josh")]
 --
 -- @since 1.0.0.0
@@ -127,7 +127,7 @@ writePMapProperties = writePropertyKeyValues . pMapToList
 -- >>> let (walk, binding) = runBinder $ writeKeyValues <$> sequence [keyNName <=?> Nothing, keyCompany <=?> Just "foobar.com"]
 -- >>> toGremlin walk
 -- "__.property(\"company\",__v0).identity()"
--- >>> sortBy (comparing fst) $ HashMap.toList binding
+-- >>> sortBy (comparing fst) $ KeyMap.toList binding
 -- [("__v0",String "foobar.com")]
 --
 -- @since 1.0.0.0
