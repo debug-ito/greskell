@@ -1,11 +1,11 @@
 {-# OPTIONS_GHC -fdefer-type-errors #-}
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings, FlexibleContexts #-}
 module Main (main,spec) where
 
 import Test.Hspec
 import Test.ShouldNotTypecheck (shouldNotTypecheck)
 
-import Data.Greskell.GTraversal (Walk, WalkType, Filter, Transform, SideEffect, gFilter, unsafeWalk)
+import Data.Greskell.GTraversal (Walk, WalkType, Filter, Transform, SideEffect, Split, gFilter, unsafeWalk)
 
 main :: IO ()
 main = hspec spec
@@ -14,8 +14,11 @@ spec :: Spec
 spec = do
   describe "Split typeclass" $ do
     specify "SideEffect -> Filter" $ do
-      putStrLn $ show ((gFilter :: Walk SideEffect Int Int -> Walk Filter Int Int) anyWalk)
+      -- putStrLn $ show (gFilter wSideEffect :: Walk Filter Int Int)
+      putStrLn $ splitToF wSideEffect
 
+wSideEffect :: Walk SideEffect Int Int
+wSideEffect = unsafeWalk "wSideEffect" []
 
-anyWalk :: WalkType c => Walk c Int Int
-anyWalk = unsafeWalk "foo" []
+splitToF :: Split c Filter => Walk c Int Int -> String
+splitToF w = show w
