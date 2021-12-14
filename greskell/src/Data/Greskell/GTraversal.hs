@@ -24,6 +24,7 @@ module Data.Greskell.GTraversal
          SideEffect,
          Lift,
          Split,
+         walkTypeDescription,
          -- * GraphTraversalSource
          source,
          sV,
@@ -377,7 +378,8 @@ instance WalkType c => ToGreskell (Walk c s e) where
 
 -- | Class of phantom type markers to describe the effect of the
 -- walk/traversals.
-class WalkType t
+class WalkType t where
+  walkTypeDescription :: Walk t s e -> String
 
 -- | WalkType for filtering steps.
 --
@@ -395,7 +397,8 @@ class WalkType t
 -- > gAnd [w1, w2] == w1 >>> w2 == w2 >>> w1
 data Filter
 
-instance WalkType Filter
+instance WalkType Filter where
+  walkTypeDescription _ = "Filter"
 
 -- | WalkType for steps without any side-effects. This includes
 -- transformations, reordring, injections and graph traversal actions.
@@ -407,7 +410,8 @@ instance WalkType Filter
 -- Obviously, every 'Filter' type 'Walk's are also 'Transform' type.
 data Transform
 
-instance WalkType Transform
+instance WalkType Transform where
+  walkTypeDescription _ = "Transform"
 
 -- | WalkType for steps that may have side-effects.
 --
@@ -425,7 +429,8 @@ instance WalkType Transform
 -- > .map { some_variable += 1 }
 data SideEffect
 
-instance WalkType SideEffect
+instance WalkType SideEffect where
+  walkTypeDescription _ = "SideEffect"
 
 -- | Relation of 'WalkType's where one includes the other. @from@ can
 -- be lifted to @to@, because @to@ is more powerful than @from@.
