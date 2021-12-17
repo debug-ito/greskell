@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings, FlexibleInstances, FlexibleContexts, MultiParamTypeClasses,
-    TypeFamilies, GADTs, GeneralizedNewtypeDeriving, StandaloneDeriving, DeriveGeneric #-}
+    TypeFamilies, GADTs, GeneralizedNewtypeDeriving, StandaloneDeriving #-}
 {-# OPTIONS_GHC -fno-warn-redundant-constraints #-}
 -- |
 -- Module: Data.Greskell.GTraversal
@@ -209,7 +209,6 @@ import Control.Applicative ((<$>), (<*>))
 import Control.Category (Category, (>>>))
 -- (below) to import Category methods without conflict with Prelude
 import qualified Control.Category as Category
-import Control.DeepSeq (NFData)
 import Data.Aeson (Value)
 import Data.Bifunctor (Bifunctor(bimap))
 import Data.Foldable (foldl')
@@ -222,7 +221,6 @@ import Data.String (IsString(..))
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
-import GHC.Generics (Generic)
 
 import Data.Greskell.Graph
   ( Element(..), Property(..), ElementID(..), Vertex, Edge,
@@ -339,9 +337,7 @@ instance ToGTraversal GTraversal where
 -- equality between Gremlin method calls. If we define it naively, it
 -- might have conflict with 'Category' law.
 newtype Walk c s e = Walk TL.Text
-                    deriving (Show, Generic)
-
-instance NFData (Walk c s e)
+                    deriving (Show)
 
 -- | 'id' is 'gIdentity'.
 instance WalkType c => Category (Walk c) where
@@ -447,7 +443,6 @@ genericShowLift f t = "Lift " <> showWalkType f <> " " <> showWalkType t
 
 instance (WalkType c) => Lift Filter c where
   showLift = genericShowLift
-
 instance Lift Transform Transform where
   showLift = genericShowLift
 instance Lift Transform SideEffect where
@@ -473,11 +468,11 @@ instance (WalkType p) => Split Filter p where
 -- | 'Transform' effect in the child walk is rolled back in the parent
 -- walk.
 instance (WalkType p) => Split Transform p where
-  showSplit = genericShowSplit  
+  showSplit = genericShowSplit
 
 -- | 'SideEffect' in the child walk remains in the parent walk.
 instance Split SideEffect SideEffect where
-  showSplit = genericShowSplit  
+  showSplit = genericShowSplit
 
 
 -- | @GraphTraversalSource@ class object of TinkerPop. It is a factory

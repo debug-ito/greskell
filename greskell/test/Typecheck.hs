@@ -1,5 +1,4 @@
 {-# OPTIONS_GHC -fdefer-type-errors #-}
-{-# LANGUAGE OverloadedStrings, FlexibleContexts #-}
 module Main (main,spec) where
 
 import Data.Proxy (Proxy(..))
