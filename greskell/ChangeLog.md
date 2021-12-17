@@ -6,6 +6,7 @@
   As a result, now implementation of `Data.Aeson.Object` has been changed from `HashMap` to `KeyMap`.
   Some types in greskell (e.g. `Binding`) directly uses the `Object` type.
 * Confirm test with `aeson-2.0.2.0`, `semigroups-0.20`, `hashable-1.4.0.1`, `doctest-0.19`.
+* Add `showWalkType`, `showLift` and `showSplit` functions, but those are only for testing purposes.
 
 ## 1.2.0.2  -- 2021-11-08
 

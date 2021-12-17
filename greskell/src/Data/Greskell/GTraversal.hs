@@ -201,6 +201,7 @@ module Data.Greskell.GTraversal
          gBy2,
          gByL,
          -- * Only for tests
+         showWalkType,
          showLift,
          showSplit
        ) where
