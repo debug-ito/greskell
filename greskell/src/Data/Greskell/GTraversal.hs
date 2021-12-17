@@ -24,7 +24,6 @@ module Data.Greskell.GTraversal
          SideEffect,
          Lift,
          Split,
-         walkTypeDescription,
          -- * GraphTraversalSource
          source,
          sV,
@@ -200,7 +199,10 @@ module Data.Greskell.GTraversal
          gBy,
          gBy1,
          gBy2,
-         gByL
+         gByL,
+         -- * Only for tests
+         showLift,
+         showSplit
        ) where
 
 import Control.Applicative ((<$>), (<*>))
@@ -213,6 +215,7 @@ import Data.Bifunctor (Bifunctor(bimap))
 import Data.Foldable (foldl')
 import Data.List.NonEmpty (NonEmpty(..))
 import Data.Monoid ((<>), mconcat, Monoid(..))
+import Data.Proxy (Proxy)
 import Data.Semigroup (Semigroup, sconcat)
 import qualified Data.Semigroup as Semigroup
 import Data.String (IsString(..))
@@ -379,7 +382,8 @@ instance WalkType c => ToGreskell (Walk c s e) where
 -- | Class of phantom type markers to describe the effect of the
 -- walk/traversals.
 class WalkType t where
-  walkTypeDescription :: Walk t s e -> String
+  -- | Only for tests.
+  showWalkType :: Proxy t -> String
 
 -- | WalkType for filtering steps.
 --
@@ -398,7 +402,7 @@ class WalkType t where
 data Filter
 
 instance WalkType Filter where
-  walkTypeDescription _ = "Filter"
+  showWalkType _ = "Filter"
 
 -- | WalkType for steps without any side-effects. This includes
 -- transformations, reordring, injections and graph traversal actions.
@@ -411,7 +415,7 @@ instance WalkType Filter where
 data Transform
 
 instance WalkType Transform where
-  walkTypeDescription _ = "Transform"
+  showWalkType _ = "Transform"
 
 -- | WalkType for steps that may have side-effects.
 --
@@ -430,30 +434,50 @@ instance WalkType Transform where
 data SideEffect
 
 instance WalkType SideEffect where
-  walkTypeDescription _ = "SideEffect"
+  showWalkType _ = "SideEffect"
 
 -- | Relation of 'WalkType's where one includes the other. @from@ can
 -- be lifted to @to@, because @to@ is more powerful than @from@.
-class Lift from to
+class Lift from to where
+  -- | Only for tests.
+  showLift :: Proxy from -> Proxy to -> String
 
-instance (WalkType c) => Lift Filter c
-instance Lift Transform Transform
-instance Lift Transform SideEffect
-instance Lift SideEffect SideEffect
+genericShowLift :: (WalkType from, WalkType to) => Proxy from -> Proxy to -> String
+genericShowLift f t = "Lift " <> showWalkType f <> " " <> showWalkType t
+
+instance (WalkType c) => Lift Filter c where
+  showLift = genericShowLift
+
+instance Lift Transform Transform where
+  showLift = genericShowLift
+instance Lift Transform SideEffect where
+  showLift = genericShowLift
+instance Lift SideEffect SideEffect where
+  showLift = genericShowLift
 
 -- | Relation of 'WalkType's where the child walk @c@ is split from
 -- the parent walk @p@.
 --
 -- When splitting, transformation effect done in the child walk is
 -- rolled back (canceled) in the parent walk.
-class Split c p
+class Split c p where
+  -- | Only for tests.
+  showSplit :: Proxy c -> Proxy p -> String
 
-instance (WalkType p) => Split Filter p
-instance (WalkType p) => Split Transform p
--- ^ 'Transform' effect in the child walk is rolled back in the parent
+genericShowSplit :: (WalkType c, WalkType p) => Proxy c -> Proxy p -> String
+genericShowSplit c p = "Split " <> showWalkType c <> " " <> showWalkType p
+
+instance (WalkType p) => Split Filter p where
+  showSplit = genericShowSplit
+
+-- | 'Transform' effect in the child walk is rolled back in the parent
 -- walk.
-instance Split SideEffect SideEffect
--- ^ 'SideEffect' in the child walk remains in the parent walk.
+instance (WalkType p) => Split Transform p where
+  showSplit = genericShowSplit  
+
+-- | 'SideEffect' in the child walk remains in the parent walk.
+instance Split SideEffect SideEffect where
+  showSplit = genericShowSplit  
 
 
 -- | @GraphTraversalSource@ class object of TinkerPop. It is a factory
