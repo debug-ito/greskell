@@ -1,4 +1,4 @@
-{-# OPTIONS_GHC -fdefer-type-errors #-}
+{-# OPTIONS_GHC -fdefer-type-errors -Wno-deferred-type-errors #-}
 module Main (main,spec) where
 
 import Data.Proxy (Proxy(..))
@@ -7,34 +7,47 @@ import Test.ShouldNotTypecheck (shouldNotTypecheck)
 
 import Data.Greskell.GTraversal
   ( Walk, WalkType, Filter, Transform, SideEffect, Split,
-    showSplit, showWalkType
+    showSplit, showWalkType, showLift
   )
 
 main :: IO ()
 main = hspec spec
 
-pFilter :: Proxy Filter
-pFilter =  Proxy
+pF :: Proxy Filter
+pF =  Proxy
 
-pTransform :: Proxy Transform
-pTransform = Proxy
+pT :: Proxy Transform
+pT = Proxy
 
-pSideEffect :: Proxy SideEffect
-pSideEffect = Proxy
+pS :: Proxy SideEffect
+pS = Proxy
 
 spec :: Spec
 spec = do
   describe "Split typeclass" $ do
-    let c = checkSplit
-    checkSplit pFilter pFilter True
-    checkSplit pSideEffect pFilter False
-    -- specify "SideEffect -> Filter" $ do
-    --   shouldNotTypecheck $ showSplit (Proxy :: Proxy SideEffect) (Proxy :: Proxy Filter)
+    specify (label pF pF) $ shouldTypecheck (showSplit pF pF)
+    specify (label pF pT) $ shouldTypecheck (showSplit pF pT)
+    specify (label pF pS) $ shouldTypecheck (showSplit pF pS)
+    specify (label pT pF) $ shouldTypecheck (showSplit pT pF)
+    specify (label pT pT) $ shouldTypecheck (showSplit pT pT)
+    specify (label pT pS) $ shouldTypecheck (showSplit pT pS)
+    specify (label pS pF) $ shouldNotTypecheck (showSplit pS pF)
+    specify (label pS pT) $ shouldNotTypecheck (showSplit pS pT)
+    specify (label pS pS) $ shouldTypecheck (showSplit pS pS)
+  describe "Lift typeclass" $ do
+    specify (label pF pF) $ shouldTypecheck (showLift pF pF)
+    specify (label pF pT) $ shouldTypecheck (showLift pF pT)
+    specify (label pF pS) $ shouldTypecheck (showLift pF pS)
+    specify (label pT pF) $ shouldNotTypecheck (showLift pT pF)
+    specify (label pT pT) $ shouldTypecheck (showLift pT pT)
+    specify (label pT pS) $ shouldTypecheck (showLift pT pS)
+    specify (label pS pF) $ shouldNotTypecheck (showLift pS pF)
+    specify (label pS pT) $ shouldNotTypecheck (showLift pS pT)
+    specify (label pS pS) $ shouldTypecheck (showLift pS pS)
+  
 
-checkSplit :: (WalkType c, WalkType p) => Proxy c -> Proxy p -> Bool -> Spec
-checkSplit c p expOk = specify label doCheck
-  where
-    label = showWalkType c ++ " -> " ++ showWalkType p
-    doCheck = if expOk
-              then length (showSplit c p) `shouldSatisfy` (> 0)
-              else shouldNotTypecheck (showSplit c p)
+label :: (WalkType a, WalkType b) => Proxy a -> Proxy b -> String
+label a b = showWalkType a ++ " -> " ++ showWalkType b
+
+shouldTypecheck :: String -> Expectation
+shouldTypecheck s = length s `shouldSatisfy` (> 0)
