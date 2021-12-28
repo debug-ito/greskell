@@ -67,7 +67,7 @@ jobs:
             allow-fail: true
           - ghc: '9.0'
           - ghc: '9.0.1'
-            freeze: '2021202-ghc-9.0.1.freeze'
+            freeze: '20211202-ghc-9.0.1.freeze'
           - ghc: '8.10'
           - ghc: '8.10.7'
             freeze: '20211228-ghc-8.10.7.freeze'
