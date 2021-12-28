@@ -66,9 +66,11 @@ jobs:
           - ghc: latest
             allow-fail: true
           - ghc: '9.0'
+          - ghc: '9.0.1'
+            freeze: '2021202-ghc-9.0.1.freeze'
           - ghc: '8.10'
           - ghc: '8.10.7'
-            freeze: '20211116-ghc-8.10.7.freeze'
+            freeze: '20211228-ghc-8.10.7.freeze'
 
     runs-on: ${{ matrix.os }}
     continue-on-error: ${{ matrix.plan.allow-fail == true }}
