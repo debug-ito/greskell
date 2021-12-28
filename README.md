@@ -31,8 +31,8 @@ import Control.Category ((>>>))
 import Control.Monad (guard)
 import Data.Monoid (mempty, (<>))
 import Data.Text (Text)
-import qualified Data.HashMap.Strict as HM
 import qualified Data.Aeson as A
+import qualified Data.Aeson.KeyMap as KM
 import qualified Data.Aeson.Types as A
 import Data.Function ((&))
 import Test.Hspec
@@ -90,7 +90,7 @@ plusTen x = do
 main = hspec $ specify "Binder" $ do
   let (script, binding) = runBinder $ plusTen 50
   toGremlin script `shouldBe` "(__v0)+(10)"
-  binding `shouldBe` HM.fromList [("__v0", A.Number 50)]
+  binding `shouldBe` KM.fromList [("__v0", A.Number 50)]
 ```
 
 `runBinder` function returns the `Binder`'s monadic result and the created binding.
@@ -491,7 +491,7 @@ specWrite =
     toGremlin script1 `shouldBe`
       "g.addV(\"person\").property(\"name\",__v0).property(\"age\",__v1).property(\"company\",__v2).identity()"
     binding1 `shouldBe`
-      HM.fromList [ ("__v0", A.String "josh"),
+      KM.fromList [ ("__v0", A.String "josh"),
                     ("__v1", A.Number 32),
                     ("__v2", A.String "marko")
                   ]
@@ -507,7 +507,7 @@ Note also that we should use `<=?>` (not `<=:>`) to write an optional field `per
     toGremlin script2 `shouldBe`
       "g.addV(\"person\").property(\"name\",__v0).property(\"age\",__v1).identity()"
     binding2 `shouldBe`
-      HM.fromList [ ("__v0", A.String "peter"),
+      KM.fromList [ ("__v0", A.String "peter"),
                     ("__v1", A.Number 35)
                   ]
 ```
