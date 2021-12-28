@@ -1,6 +1,6 @@
 # Revision history for greskell-core
 
-## 1.0.0.0  -- ?
+## 1.0.0.0  -- 2021-12-28
 
 * **BREAKING CHANGE**:  `GObject` variant of `GValueBody` is now based on `KeyMap` from `aeson-2.0`.
   Before, it was based on `HashMap Text`.
