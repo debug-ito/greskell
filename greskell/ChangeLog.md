@@ -7,6 +7,7 @@
   Some types in greskell (e.g. `Binding`) directly uses the `Object` type.
 * Confirm test with `aeson-2.0.2.0`, `semigroups-0.20`, `hashable-1.4.0.1`, `doctest-0.19`, `doctest-0.20`.
 * Add `showWalkType`, `showLift` and `showSplit` functions, but those are only for testing purposes.
+* `hint-test-suite` is removed. Instead, `typecheck-test-suite` is added, which is more robust and lightweight.
 
 ## 1.2.0.2  -- 2021-11-08
 
