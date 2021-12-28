@@ -1,6 +1,6 @@
 # Revision history for greskell-websocket
 
-## 1.0.0.0  -- ?
+## 1.0.0.0  -- 2021-12-28
 
 * **BREAKING CHANGE**: Now greskell-websocket uses `aeson-2`.
   As a result, now implementation of `Data.Aeson.Object` has been changed from `HashMap` to `KeyMap`.
