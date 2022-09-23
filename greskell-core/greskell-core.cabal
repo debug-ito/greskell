@@ -1,5 +1,5 @@
 name:                   greskell-core
-version:                1.0.0.0
+version:                1.0.0.1
 author:                 Toshio Ito <debug.ito@gmail.com>
 maintainer:             Toshio Ito <debug.ito@gmail.com>
 license:                BSD3
@@ -30,7 +30,7 @@ library
                         Data.Greskell.AsIterator
   other-modules:        Data.Greskell.GraphSON.GraphSONTyped,
                         Data.Greskell.GraphSON.Core
-  build-depends:        base >=4.9.0.0 && <4.16,
+  build-depends:        base >=4.9.0.0 && <4.17,
                         aeson >=2.0.2.0 && <2.1,
                         unordered-containers >=0.2.7.1 && <0.3,
                         hashable >=1.2.6.1 && <1.5,
@@ -58,7 +58,7 @@ test-suite spec
                         greskell-core,
                         hspec >=2.2.3,
                         QuickCheck >=2.8.2 && <2.15,
-                        bytestring >=0.10.8.1 && <0.11
+                        bytestring >=0.10.8.1 && <0.12
 
 test-suite doctest
   type:                 exitcode-stdio-1.0

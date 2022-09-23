@@ -1,5 +1,9 @@
 # Revision history for greskell
 
+## 2.0.0.1  -- ?
+
+* Confirm test with ghc-9.2.1.
+
 ## 2.0.0.0  -- 2021-12-28
 
 * **BREAKING CHANGE**: Now greskell uses `aeson-2.0`.
