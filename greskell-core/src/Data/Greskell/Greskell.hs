@@ -1,57 +1,57 @@
-{-# LANGUAGE OverloadedStrings, TypeFamilies #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeFamilies      #-}
 {-# OPTIONS_GHC -fno-warn-redundant-constraints #-}
 -- |
 -- Module: Data.Greskell.Greskell
 -- Description: Low-level Gremlin script data type
 -- Maintainer: Toshio Ito <debug.ito@gmail.com>
 --
--- 
+--
 module Data.Greskell.Greskell
-       ( -- * Type
-         Greskell,
-         ToGreskell(..),
-         -- * Conversions
-         toGremlin,
-         toGremlinLazy,
-         -- * Literals
-         --
-         -- $literals
-         string,
-         true,
-         false,
-         list,
-         single,
-         number,
-         value,
-         valueInt,
-         gvalue,
-         gvalueInt,
-         -- * Unsafe constructors
-         unsafeGreskell,
-         unsafeGreskellLazy,
-         unsafeFunCall,
-         unsafeMethodCall
-       ) where
+    ( -- * Type
+      Greskell
+    , ToGreskell (..)
+      -- * Conversions
+    , toGremlin
+    , toGremlinLazy
+      -- * Literals
+      --
+      -- $literals
+    , string
+    , true
+    , false
+    , list
+    , single
+    , number
+    , value
+    , valueInt
+    , gvalue
+    , gvalueInt
+      -- * Unsafe constructors
+    , unsafeGreskell
+    , unsafeGreskellLazy
+    , unsafeFunCall
+    , unsafeMethodCall
+      -- * Examples
+    , testExamples
+    ) where
 
-import Data.Aeson (Value)
-import qualified Data.Aeson as Aeson
-import qualified Data.Aeson.KeyMap as KM
-import qualified Data.Aeson.Key as Key
-import Data.Bifunctor (bimap)
-import Data.Foldable (toList)
-import Data.Monoid (Monoid(..))
-import Data.Ratio (numerator, denominator, Rational)
-import Data.Scientific (Scientific, coefficient, base10Exponent)
-import Data.Semigroup (Semigroup(..))
-import Data.String (IsString(..))
-import Data.List (intersperse)
-import Data.Text (Text, pack, unpack)
-import qualified Data.Text.Lazy as TL
+import           Data.Aeson             (Value)
+import qualified Data.Aeson             as Aeson
+import qualified Data.Aeson.Key         as Key
+import qualified Data.Aeson.KeyMap      as KM
+import           Data.Bifunctor         (bimap)
+import           Data.Foldable          (toList)
+import           Data.List              (intersperse)
+import           Data.Monoid            (Monoid (..))
+import           Data.Ratio             (Rational, denominator, numerator)
+import           Data.Scientific        (Scientific, base10Exponent, coefficient)
+import           Data.Semigroup         (Semigroup (..))
+import           Data.String            (IsString (..))
+import           Data.Text              (Text, pack, unpack)
+import qualified Data.Text.Lazy         as TL
 
-import Data.Greskell.GraphSON (GValue, GValueBody(..), nonTypedGValue)
-
--- $
--- >>> :set -XOverloadedStrings
+import           Data.Greskell.GraphSON (GValue, GValueBody (..), nonTypedGValue)
 
 -- | Gremlin expression of type @a@.
 --
@@ -61,8 +61,9 @@ import Data.Greskell.GraphSON (GValue, GValueBody(..), nonTypedGValue)
 --
 -- 'Eq' and 'Ord' instances compare Gremlin scripts, NOT the values
 -- they evaluate to.
-newtype Greskell a = Greskell { unGreskell :: TL.Text }
-                   deriving (Show,Eq,Ord)
+newtype Greskell a
+  = Greskell { unGreskell :: TL.Text }
+  deriving (Eq, Ord, Show)
 
 -- | Same as 'string' except for the input and output type.
 instance IsString a => IsString (Greskell a) where
@@ -81,7 +82,7 @@ instance Num a => Num (Greskell a) where
   abs (Greskell a) = Greskell ("java.lang.Math.abs" <> paren a)
   signum (Greskell a) = Greskell ("java.lang.Long.signum" <> paren a)
   fromInteger val = Greskell (TL.pack $ show val)
-  
+
 -- | Floating-point number literals and numeric operation in Gremlin
 instance Fractional a => Fractional (Greskell a) where
   (/) = biOp "/"
@@ -136,9 +137,6 @@ escapeDQuotes orig = ('"' : (esc =<< orig)) ++ "\""
 
 -- | Unsafely create a 'Greskell' of arbitrary type. The given Gremlin
 -- script is printed as-is.
---
--- >>> toGremlin $ unsafeGreskell "x + 100"
--- "x + 100"
 unsafeGreskell :: Text -- ^ Gremlin script
                -> Greskell a
 unsafeGreskell = Greskell . TL.fromStrict
@@ -157,32 +155,18 @@ unsafeGreskellLazy = Greskell
 
 -- | Create a String literal in Gremlin script. The content is
 -- automatically escaped.
---
--- >>> toGremlin $ string "foo bar"
--- "\"foo bar\""
--- >>> toGremlin $ string "escape newline\n escape dollar $"
--- "\"escape newline\\n escape dollar \\$\""
 string :: Text -> Greskell Text
 string = fromString . unpack
 
 -- | Boolean @true@ literal.
---
--- >>> toGremlin true
--- "true"
 true :: Greskell Bool
 true = unsafeGreskell "true"
 
 -- | Boolean @false@ literal.
---
--- >>> toGremlin false
--- "false"
 false :: Greskell Bool
 false = unsafeGreskell "false"
 
 -- | List literal.
---
--- >>> toGremlin $ list ([100, 200, 300] :: [Greskell Int])
--- "[100,200,300]"
 list :: [Greskell a] -> Greskell [a]
 list gs = unsafeGreskellLazy $ ("[" <> TL.intercalate "," gs_txt <> "]")
   where
@@ -190,27 +174,14 @@ list gs = unsafeGreskellLazy $ ("[" <> TL.intercalate "," gs_txt <> "]")
 
 -- | Make a list with a single object. Useful to prevent the Gremlin
 -- Server from automatically iterating the result object.
---
--- >>> toGremlin $ single ("hoge" :: Greskell Text)
--- "[\"hoge\"]"
 single :: Greskell a -> Greskell [a]
 single g = list [g]
 
 -- | Arbitrary precision number literal, like \"123e8\".
---
--- >>> toGremlin $ number 123e8
--- "1.23e10"
 number :: Scientific -> Greskell Scientific
 number = unsafeGreskell . pack . show
 
 -- | Aeson 'Value' literal.
---
--- >>> toGremlin $ value Aeson.Null
--- "null"
--- >>> toGremlin $ value $ Aeson.toJSON $ ([10, 20, 30] :: [Int])
--- "[10.0,20.0,30.0]"
--- >>> toGremlin $ value $ Aeson.Object mempty
--- "[:]"
 --
 -- Note that 'Aeson.Number' does not distinguish integers from
 -- floating-point numbers, so 'value' function may format an integer
@@ -231,9 +202,6 @@ value (Aeson.Object obj)
 
 -- | Integer literal as 'Value' type.
 --
--- >>> toGremlin $ valueInt (100 :: Int)
--- "100"
---
 -- @since 0.1.2.0
 valueInt :: Integral a => a -> Greskell Value
 valueInt n = fmap toValue $ fromIntegral n
@@ -250,9 +218,6 @@ gvalue = fmap phantomToGValue . value
     phantomToGValue _ = nonTypedGValue $ GNull
 
 -- | Integer literal as 'GValue' type.
---
--- >>> toGremlin $ gvalueInt (256 :: Int)
--- "256"
 --
 -- @since 0.1.2.0
 gvalueInt :: Integral a => a -> Greskell GValue
@@ -279,9 +244,6 @@ unsafeFunCallText fun_name args = fun_name <> "(" <> args_g <> ")"
 
 -- | Unsafely create a 'Greskell' that calls the given function with
 -- the given arguments.
---
--- >>> toGremlin $ unsafeFunCall "add" ["10", "20"]
--- "add(10,20)"
 unsafeFunCall :: Text -- ^ function name
               -> [Text] -- ^ arguments
               -> Greskell a -- ^ return value of the function call
@@ -289,11 +251,29 @@ unsafeFunCall fun_name args = unsafeGreskell $ unsafeFunCallText fun_name args
 
 -- | Unsafely create a 'Greskell' that calls the given object method
 -- call with the given target and arguments.
---
--- >>> toGremlin $ unsafeMethodCall ("foobar" :: Greskell Text) "length" []
--- "(\"foobar\").length()"
 unsafeMethodCall :: Greskell a -- ^ target object
                  -> Text -- ^ method name
                  -> [Text] -- ^ arguments
                  -> Greskell b -- ^ return value of the method call
 unsafeMethodCall target name args = unsafeGreskell ("(" <> toGremlin target <> ")." <> unsafeFunCallText name args)
+
+-- | Examples of using this module. See the source. The 'fst' of the output is the testee, while the
+-- 'snd' is the expectation.
+testExamples :: [(Text, Text)]
+testExamples =
+  [ (toGremlin $ unsafeGreskell "x + 100", "x + 100")
+  , (toGremlin $ string "foo bar", "\"foo bar\"")
+  , (toGremlin $ string "escape newline\n escape dollar $", "\"escape newline\\n escape dollar \\$\"")
+  , (toGremlin true, "true")
+  , (toGremlin false, "false")
+  , (toGremlin $ list ([100, 200, 300] :: [Greskell Int]), "[100,200,300]")
+  , (toGremlin $ single ("hoge" :: Greskell Text), "[\"hoge\"]")
+  , (toGremlin $ number 123e8, "1.23e10")
+  , (toGremlin $ value Aeson.Null, "null")
+  , (toGremlin $ value $ Aeson.toJSON $ ([10, 20, 30] :: [Int]), "[10.0,20.0,30.0]")
+  , (toGremlin $ value $ Aeson.Object mempty, "[:]")
+  , (toGremlin $ valueInt (100 :: Int), "100")
+  , (toGremlin $ gvalueInt (256 :: Int), "256")
+  , (toGremlin $ unsafeFunCall "add" ["10", "20"], "add(10,20)")
+  , (toGremlin $ unsafeMethodCall ("foobar" :: Greskell Text) "length" [], "(\"foobar\").length()")
+  ]

@@ -1,20 +1,21 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Data.Greskell.GreskellSpec (main,spec) where
+module Data.Greskell.GreskellSpec
+    ( main
+    , spec
+    ) where
 
-import qualified Data.Aeson as Aeson
-import Data.String (fromString)
-import Data.Text (Text, pack)
-import Test.Hspec
-import Test.QuickCheck (property)
+import           Control.Monad                 (forM_)
+import qualified Data.Aeson                    as Aeson
+import           Data.String                   (fromString)
+import           Data.Text                     (Text, pack, unpack)
+import           Test.Hspec
+import           Test.QuickCheck               (property)
 
-import Data.Greskell.Greskell
-  ( unsafeGreskell, toGremlin,
-    unsafeFunCall,
-    string, list, true, false, number, value,
-    Greskell
-  )
+import           Data.Greskell.Greskell        (Greskell, false, list, number, string, testExamples,
+                                                toGremlin, true, unsafeFunCall, unsafeGreskell,
+                                                value)
 
-import Data.Greskell.Test.QuickCheck ()
+import           Data.Greskell.Test.QuickCheck ()
 
 main :: IO ()
 main = hspec spec
@@ -23,6 +24,7 @@ spec :: Spec
 spec = do
   spec_literals
   spec_other
+  spec_doctest
 
 spec_other :: Spec
 spec_other = do
@@ -108,10 +110,18 @@ spec_literals = do
       toGremlin (value $ Aeson.toJSON [(5 :: Int), 6, 7]) `shouldBe` "[5.0,6.0,7.0]"
     specify "empty Object" $ do
       toGremlin (value $ Aeson.object []) `shouldBe` "[:]"
-  
+
 
 checkStringLiteral :: String -> Text -> Expectation
 checkStringLiteral input expected = do
   let input' = fromString input :: Greskell Text
   (toGremlin $ input') `shouldBe` expected
   (toGremlin $ string $ pack input) `shouldBe` expected
+
+spec_doctest :: Spec
+spec_doctest = do
+  describe "testExamples" $ do
+    forM_ testExamples $ \(got, expected) -> do
+      specify (unpack expected) $ do
+        got `shouldBe` expected
+
