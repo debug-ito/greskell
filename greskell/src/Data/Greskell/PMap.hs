@@ -51,6 +51,7 @@ import Data.Greskell.AsIterator (AsIterator(..))
 import Data.Greskell.GMap (GMapEntry)
 import Data.Greskell.GraphSON (GValue, GraphSONTyped(..), FromGraphSON(..), parseEither)
 import qualified Data.HashMap.Strict as HM
+import Data.Kind (Type)
 import Data.List.NonEmpty (NonEmpty((:|)))
 import Data.Maybe (listToMaybe)
 import Data.Monoid (Monoid(..))
@@ -204,7 +205,7 @@ newtype Multi a = Multi (NonEmpty a)
 -- @since 1.0.0.0
 class PMapKey k where
   -- | Type of the value associated with the key.
-  type PMapValue k :: *
+  type PMapValue k :: Type
 
   -- | 'Text' representation of the key.
   keyText :: k -> Text

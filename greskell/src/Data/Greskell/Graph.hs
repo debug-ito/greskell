@@ -69,6 +69,7 @@ import Data.Hashable (Hashable)
 import Data.HashSet (HashSet)
 import qualified Data.HashSet as HS
 import qualified Data.HashMap.Strict as HM
+import Data.Kind (Type)
 import Data.List.NonEmpty (NonEmpty(..))
 import qualified Data.List.NonEmpty as NL
 import Data.Maybe (listToMaybe)
@@ -139,13 +140,13 @@ class ElementData e where
 class ElementData e => Element e where
   -- | Property type of the 'Element'. It should be of 'Property'
   -- class.
-  type ElementProperty e :: * -> *
+  type ElementProperty e :: Type -> Type
 
   -- | Container type of the properties of the 'Element'. It should be
   -- of 'NonEmptyLike' class.
   --
   -- @since 1.0.0.0
-  type ElementPropertyContainer e :: * -> *
+  type ElementPropertyContainer e :: Type -> Type
 
 -- | @org.apache.tinkerpop.gremlin.structure.Vertex@ interface in a
 -- TinkerPop graph.
