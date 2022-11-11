@@ -57,7 +57,8 @@ module Data.Greskell.Graph
          -- ** VertexProperty
          AVertexProperty(..),
          -- ** Property
-         AProperty(..)
+         AProperty(..),
+         testExamples_Graph
        ) where
 
 import Control.Applicative (empty, (<$>), (<*>), (<|>))
@@ -91,15 +92,11 @@ import Data.Greskell.GraphSON
   )
 import Data.Greskell.GraphSON.GValue (gValueBody, gValueType)
 import Data.Greskell.Greskell
-  ( Greskell, unsafeGreskellLazy, string,
+  ( Greskell, unsafeGreskellLazy, string, toGremlin,
     ToGreskell(..)
   )
 import Data.Greskell.NonEmptyLike (NonEmptyLike)
 import Data.Greskell.PMap (PMapKey(..), Single, Multi, PMap, pMapInsert)
-
--- $setup
---
--- >>> import Data.Greskell.Greskell (toGremlin)
 
 -- | ID of a graph element @e@ (vertex, edge and vertex property).
 --
@@ -207,9 +204,6 @@ data Cardinality
 
 -- | @list@ Cardinality.
 --
--- >>> toGremlin cList
--- "list"
---
 -- @since 0.2.0.0
 cList :: Greskell Cardinality
 cList = unsafeGreskellLazy "list"
@@ -228,13 +222,6 @@ cSingle = unsafeGreskellLazy "single"
 
 -- | A property key accessing value @b@ in an Element @a@. In Gremlin,
 -- it's just a String type.
---
--- >>> toGremlin ("age" :: Key AVertex Int)
--- "\"age\""
--- >>> toGremlin (key "created_at" :: Key AEdge Text)
--- "\"created_at\""
--- >>> keyText ("name" :: Key AVertex Text)
--- "name"
 --
 -- Since greskell-1.0.0.0, 'Key' is newtype of 'Text'. Before that, it
 -- was newtype of 'Greskell' 'Text'.
@@ -588,3 +575,13 @@ makePathEntry :: [AsLabel a] -- ^ labels
               -> a -- ^ object
               -> PathEntry a
 makePathEntry ls obj = PathEntry (HS.fromList ls) obj
+
+-- | Examples of using this module. See the source. The 'fst' of the output is the testee, while the
+-- 'snd' is the expectation.
+testExamples_Graph :: [(String, String)]
+testExamples_Graph =
+  [ (unpack $ toGremlin cList, "list")
+  , (unpack $ toGremlin ("age" :: Key AVertex Int), "\"age\"")
+  , (unpack $ toGremlin (key "created_at" :: Key AEdge Text), "\"created_at\"")
+  , (unpack $ keyText ("name" :: Key AVertex Text), "name")
+  ]
