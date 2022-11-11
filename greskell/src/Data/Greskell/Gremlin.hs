@@ -33,22 +33,18 @@ module Data.Greskell.Gremlin
          oDecr,
          oIncr,
          oShuffle,
+         testExamples_Gremlin
        ) where
 
 import Data.Aeson (Value)
-import Data.Monoid ((<>))
 import Data.Greskell.GraphSON (GraphSONTyped(..))
 import Data.Greskell.Greskell
-  ( Greskell, unsafeGreskellLazy,
+  ( Greskell, unsafeGreskellLazy, string,
     toGremlin, toGremlinLazy, unsafeMethodCall, unsafeFunCall,
     ToGreskell
   )
-
--- $setup
---
--- >>> :set -XOverloadedStrings
--- >>> import Data.Text (Text)
--- >>> import Data.Greskell.Greskell (number, string)
+import Data.Monoid ((<>))
+import Data.Text (Text, unpack)
 
 -- | @java.util.function.Predicate@ interface.
 --
@@ -103,16 +99,10 @@ instance PLike (P a) where
   type PParameter (P a) = Greskell a
 
 -- | @P.not@ static method.
---
--- >>> toGremlin (pNot $ pEq $ 10 :: Greskell (P Int))
--- "P.not(P.eq(10))"
 pNot :: PLike p => Greskell p -> Greskell p
 pNot a = unsafeFunCall "P.not" [toGremlin a]
 
 -- | @P.eq@ static method.
---
--- >>> toGremlin (pEq $ string "hoge" :: Greskell (P Text))
--- "P.eq(\"hoge\")"
 pEq :: PLike p => PParameter p -> Greskell p
 pEq arg = unsafeFunCall "P.eq" [toGremlin arg]
 
@@ -137,9 +127,6 @@ pGte :: PLike p => PParameter p -> Greskell p
 pGte arg = unsafeFunCall "P.gte" [toGremlin arg]
 
 -- | @P.inside@ static method.
---
--- >>> toGremlin (pInside 10 20 :: Greskell (P Int))
--- "P.inside(10,20)"
 pInside :: PLike p => PParameter p -> PParameter p -> Greskell p
 pInside a b = unsafeFunCall "P.inside" $ map toGremlin [a, b]
 
@@ -152,9 +139,6 @@ pBetween :: PLike p => PParameter p -> PParameter p -> Greskell p
 pBetween a b = unsafeFunCall "P.between" $ map toGremlin [a, b]
 
 -- | @P.within@ static method.
---
--- >>> toGremlin (pWithin ["foo", "bar", "hoge"] :: Greskell (P Text))
--- "P.within(\"foo\",\"bar\",\"hoge\")"
 pWithin :: PLike p => [PParameter p] -> Greskell p
 pWithin = unsafeFunCall "P.within" . map toGremlin
 
@@ -194,9 +178,6 @@ instance GraphSONTyped (Order a) where
   gsonTypeFor _ = "g:Order"
 
 -- | @decr@ order.
---
--- >>> toGremlin oDecr
--- "Order.decr"
 oDecr :: Greskell (Order a)
 oDecr = unsafeGreskellLazy "Order.decr"
 
@@ -207,3 +188,14 @@ oIncr = unsafeGreskellLazy "Order.incr"
 -- | @shuffle@ order.
 oShuffle :: Greskell (Order a)
 oShuffle = unsafeGreskellLazy "Order.shuffle"
+
+-- | Examples of using this module. See the source. The 'fst' of the output is the testee, while the
+-- 'snd' is the expectation.
+testExamples_Gremlin :: [(String, String)]
+testExamples_Gremlin =
+  [ (unpack $ toGremlin (pNot $ pEq $ 10 :: Greskell (P Int)), "P.not(P.eq(10))")
+  , (unpack $ toGremlin (pEq $ string "hoge" :: Greskell (P Text)), "P.eq(\"hoge\")")
+  , (unpack $ toGremlin (pInside 10 20 :: Greskell (P Int)), "P.inside(10,20)")
+  , (unpack $ toGremlin (pWithin ["foo", "bar", "hoge"] :: Greskell (P Text)), "P.within(\"foo\",\"bar\",\"hoge\")")
+  , (unpack $ toGremlin oDecr, "Order.decr")
+  ]
