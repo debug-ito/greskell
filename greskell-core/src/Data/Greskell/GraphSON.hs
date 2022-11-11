@@ -1,96 +1,94 @@
-{-# LANGUAGE OverloadedStrings, DeriveGeneric, TypeFamilies #-}
+{-# LANGUAGE DeriveGeneric     #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeFamilies      #-}
 -- |
 -- Module: Data.Greskell.GraphSON
 -- Description: Encoding and decoding GraphSON
 -- Maintainer: Toshio Ito <debug.ito@gmail.com>
 --
--- 
+--
 module Data.Greskell.GraphSON
-       ( -- * GraphSON
-         GraphSON(..),
-         GraphSONTyped(..),
-         -- ** constructors
-         nonTypedGraphSON,
-         typedGraphSON,
-         typedGraphSON',
-         -- ** parser support
-         parseTypedGraphSON,
-         -- * GValue
-         GValue,
-         GValueBody(..),
-         -- ** constructors
-         nonTypedGValue,
-         typedGValue',
-         -- * FromGraphSON
-         FromGraphSON(..),
-         -- ** parser support
-         Parser,
-         parseEither,
-         parseUnwrapAll,
-         parseUnwrapList,
-         (.:),
-         parseJSONViaGValue
-       ) where
+    ( -- * GraphSON
+      GraphSON (..)
+    , GraphSONTyped (..)
+      -- ** constructors
+    , nonTypedGraphSON
+    , typedGraphSON
+    , typedGraphSON'
+      -- ** parser support
+    , parseTypedGraphSON
+      -- * GValue
+    , GValue
+    , GValueBody (..)
+      -- ** constructors
+    , nonTypedGValue
+    , typedGValue'
+      -- * FromGraphSON
+    , FromGraphSON (..)
+      -- ** parser support
+    , Parser
+    , parseEither
+    , parseUnwrapAll
+    , parseUnwrapList
+    , (.:)
+    , parseJSONViaGValue
+      -- * Examples
+    , testExamples_GraphSON
+    ) where
 
-import Control.Applicative ((<$>), (<*>), (<|>))
-import Control.Monad (when)
-import Data.Aeson
-  ( ToJSON(toJSON), FromJSON(parseJSON), FromJSONKey,
-    object, (.=), Value(..)
-  )
-import qualified Data.Aeson as Aeson
-import Data.Aeson.Types (Parser)
-import qualified Data.Aeson.Types as Aeson (parseEither)
-import Data.Aeson.KeyMap (KeyMap)
-import qualified Data.Aeson.KeyMap as KM
-import Data.Aeson.Key (Key)
-import qualified Data.Aeson.Key as Key
-import Data.Foldable (Foldable(foldr))
-import Data.Functor.Identity (Identity(..))
-import Data.HashMap.Strict (HashMap)
-import qualified Data.HashMap.Lazy as L (HashMap)
-import Data.HashSet (HashSet)
-import Data.Hashable (Hashable(..))
-import Data.List.NonEmpty (NonEmpty(..))
-import Data.Int (Int8, Int16, Int32, Int64)
-import qualified Data.IntMap.Lazy as L (IntMap)
-import qualified Data.IntMap.Lazy as LIntMap
-import Data.IntSet (IntSet)
-import qualified Data.Map.Lazy as L (Map)
-import qualified Data.Map.Lazy as LMap
-import Data.Monoid (mempty)
-import qualified Data.Monoid as M
-import Data.Ratio (Ratio)
-import Data.Scientific (Scientific)
-import qualified Data.Semigroup as S
-import Data.Sequence (Seq)
-import Data.Set (Set)
-import Data.Text (Text, unpack)
-import qualified Data.Text.Lazy as TL
-import Data.Traversable (Traversable(traverse))
-import Data.UUID (UUID)
-import qualified Data.UUID as UUID
-import Data.Vector (Vector)
-import Data.Word (Word8, Word16, Word32, Word64)
-import Numeric.Natural (Natural)
-import GHC.Exts (IsList(Item))
-import qualified GHC.Exts as List (fromList, toList)
-import GHC.Generics (Generic)
+import           Control.Applicative                  ((<$>), (<*>), (<|>))
+import           Control.Monad                        (when)
+import           Data.Aeson                           (FromJSON (parseJSON), FromJSONKey,
+                                                       ToJSON (toJSON), Value (..), object, (.=))
+import qualified Data.Aeson                           as Aeson
+import           Data.Aeson.Key                       (Key)
+import qualified Data.Aeson.Key                       as Key
+import           Data.Aeson.KeyMap                    (KeyMap)
+import qualified Data.Aeson.KeyMap                    as KM
+import           Data.Aeson.Types                     (Parser)
+import qualified Data.Aeson.Types                     as Aeson (parseEither)
+import           Data.Foldable                        (Foldable (foldr))
+import           Data.Functor.Identity                (Identity (..))
+import           Data.Hashable                        (Hashable (..))
+import qualified Data.HashMap.Lazy                    as L (HashMap)
+import           Data.HashMap.Strict                  (HashMap)
+import           Data.HashSet                         (HashSet)
+import           Data.Int                             (Int16, Int32, Int64, Int8)
+import qualified Data.IntMap.Lazy                     as L (IntMap)
+import qualified Data.IntMap.Lazy                     as LIntMap
+import           Data.IntSet                          (IntSet)
+import           Data.List.NonEmpty                   (NonEmpty (..))
+import qualified Data.Map.Lazy                        as L (Map)
+import qualified Data.Map.Lazy                        as LMap
+import           Data.Monoid                          (mempty)
+import qualified Data.Monoid                          as M
+import           Data.Ratio                           (Ratio)
+import           Data.Scientific                      (Scientific)
+import qualified Data.Semigroup                       as S
+import           Data.Sequence                        (Seq)
+import           Data.Set                             (Set)
+import           Data.Text                            (Text, unpack)
+import qualified Data.Text.Lazy                       as TL
+import           Data.Traversable                     (Traversable (traverse))
+import           Data.UUID                            (UUID)
+import qualified Data.UUID                            as UUID
+import           Data.Vector                          (Vector)
+import           Data.Word                            (Word16, Word32, Word64, Word8)
+import           GHC.Exts                             (IsList (Item))
+import qualified GHC.Exts                             as List (fromList, toList)
+import           GHC.Generics                         (Generic)
+import           Numeric.Natural                      (Natural)
 
-import Data.Greskell.GMap
-  ( GMap, GMapEntry, unGMap,
-    FlattenedMap, parseToFlattenedMap, parseToGMap, parseToGMapEntry
-  )
+import           Data.Greskell.GMap                   (FlattenedMap, GMap, GMapEntry,
+                                                       parseToFlattenedMap, parseToGMap,
+                                                       parseToGMapEntry, unGMap)
 
 
 -- re-exports
-import Data.Greskell.GraphSON.Core
-import Data.Greskell.GraphSON.GraphSONTyped (GraphSONTyped(..))
-import Data.Greskell.GraphSON.GValue
+import           Data.Greskell.GraphSON.Core
+import           Data.Greskell.GraphSON.GraphSONTyped (GraphSONTyped (..))
+import           Data.Greskell.GraphSON.GValue
 
-
--- $
--- >>> :set -XOverloadedStrings
 
 -- | Types that can be constructed from 'GValue'. This is analogous to
 -- 'FromJSON' class.
@@ -121,7 +119,7 @@ class FromGraphSON a where
 -- result with 'parseJSON'.
 --
 -- Useful to implement 'FromGraphSON' instances for scalar types.
--- 
+--
 -- @since 0.1.2.0
 parseUnwrapAll :: FromJSON a => GValue -> Parser a
 parseUnwrapAll gv = parseJSON $ unwrapAll gv
@@ -234,7 +232,7 @@ instance FromGraphSON a => FromGraphSON (NonEmpty a) where
   parseGraphSON gv = do
     list <- parseGraphSON gv
     case list of
-      [] -> fail ("Empty list.")
+      []         -> fail ("Empty list.")
       (a : rest) -> return (a :| rest)
 
 ---- Set instances
@@ -289,7 +287,7 @@ instance FromGraphSON M.Any where
 instance (FromGraphSON k, FromGraphSON v, IsList (c k v), Item (c k v) ~ (k,v)) => FromGraphSON (FlattenedMap c k v) where
   parseGraphSON gv = case gValueBody gv of
     GArray a -> parseToFlattenedMap parseGraphSON parseGraphSON a
-    b -> fail ("Expects GArray, but got " ++ show b)
+    b        -> fail ("Expects GArray, but got " ++ show b)
 
 parseGObjectToTraversal :: (Traversable t, FromJSON (t GValue), FromGraphSON v)
                         => KeyMap GValue
@@ -301,8 +299,8 @@ instance (FromGraphSON k, FromGraphSON v, IsList (c k v), Item (c k v) ~ (k,v), 
          => FromGraphSON (GMap c k v) where
   parseGraphSON gv = case gValueBody gv of
     GObject o -> parse $ Left o
-    GArray a -> parse $ Right a
-    other -> fail ("Expects GObject or GArray, but got " ++ show other)
+    GArray a  -> parse $ Right a
+    other     -> fail ("Expects GObject or GArray, but got " ++ show other)
     where
       parse = parseToGMap parseGraphSON parseGraphSON parseObject
       -- parseObject = parseUnwrapTraversable . GValue . nonTypedGraphSON . GObject  --- Too many wrapping and unwrappings!!!
@@ -312,8 +310,8 @@ instance (FromGraphSON k, FromGraphSON v, IsList (c k v), Item (c k v) ~ (k,v), 
 instance (FromGraphSON k, FromGraphSON v, FromJSONKey k) => FromGraphSON (GMapEntry k v) where
   parseGraphSON val = case gValueBody val of
     GObject o -> parse $ Left o
-    GArray a -> parse $ Right a
-    other -> fail ("Expects GObject or GArray, but got " ++ show other)
+    GArray a  -> parse $ Right a
+    other     -> fail ("Expects GObject or GArray, but got " ++ show other)
     where
       parse = parseToGMapEntry parseGraphSON parseGraphSON
 
@@ -342,7 +340,7 @@ instance FromGraphSON v => FromGraphSON (KeyMap v) where
 -- | Parse 'GNull' into 'Nothing'.
 instance FromGraphSON a => FromGraphSON (Maybe a) where
   parseGraphSON (GValue (GraphSON _ GNull)) = return Nothing
-  parseGraphSON gv = fmap Just $ parseGraphSON gv
+  parseGraphSON gv                          = fmap Just $ parseGraphSON gv
 
 -- | Try 'Left', then 'Right'.
 instance (FromGraphSON a, FromGraphSON b) => FromGraphSON (Either a b) where
@@ -376,3 +374,15 @@ instance FromGraphSON UUID where
 -- server.
 instance FromGraphSON () where
   parseGraphSON _ = return ()
+
+
+-- | Examples of using this module. See the source. The 'fst' of the output is the testee, while the
+-- 'snd' is the expectation.
+testExamples_GraphSON :: [(String, String)]
+testExamples_GraphSON =
+  [ (show (Aeson.decode "1000" :: Maybe (GraphSON Int32)), "Just (GraphSON {gsonType = Nothing, gsonValue = 1000})")
+  , (show (Aeson.decode "{\"@type\": \"g:Int32\", \"@value\": 1000}" :: Maybe (GraphSON Int32)), "Just (GraphSON {gsonType = Just \"g:Int32\", gsonValue = 1000})")
+  , (show (nonTypedGraphSON (10 :: Int)), "GraphSON {gsonType = Nothing, gsonValue = 10}")
+  , (show (typedGraphSON (10 :: Int32)), "GraphSON {gsonType = Just \"g:Int32\", gsonValue = 10}")
+  , (show (typedGraphSON' "g:Int32" (10 :: Int)), "GraphSON {gsonType = Just \"g:Int32\", gsonValue = 10}")
+  ]

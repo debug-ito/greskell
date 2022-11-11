@@ -1,31 +1,34 @@
-{-# LANGUAGE OverloadedStrings, NoMonomorphismRestriction, CPP #-}
-module Data.Greskell.GraphSONSpec (main,spec) where
+{-# LANGUAGE CPP                       #-}
+{-# LANGUAGE NoMonomorphismRestriction #-}
+{-# LANGUAGE OverloadedStrings         #-}
+module Data.Greskell.GraphSONSpec
+    ( main
+    , spec
+    ) where
 
-import Data.Aeson (object, (.=), ToJSON(..), FromJSON(..), Value(..))
-import qualified Data.Aeson as Aeson
-import qualified Data.Aeson.KeyMap as KM
-import Data.Aeson.Types (parseEither, Value(..), Parser)
-import qualified Data.ByteString.Lazy as BSL
-import Data.Either (isLeft)
-import Data.HashMap.Strict (HashMap)
-import qualified Data.HashMap.Strict as HM
-import Data.List (isInfixOf)
-import Data.Int (Int32)
-import Data.Monoid ((<>))
-import Data.Text (Text)
-import qualified Data.Vector as V
-import Test.Hspec
+import           Control.Monad                 (forM_)
+import           Data.Aeson                    (FromJSON (..), ToJSON (..), Value (..), object,
+                                                (.=))
+import qualified Data.Aeson                    as Aeson
+import qualified Data.Aeson.KeyMap             as KM
+import           Data.Aeson.Types              (Parser, Value (..), parseEither)
+import qualified Data.ByteString.Lazy          as BSL
+import           Data.Either                   (isLeft)
+import           Data.HashMap.Strict           (HashMap)
+import qualified Data.HashMap.Strict           as HM
+import           Data.Int                      (Int32)
+import           Data.List                     (isInfixOf)
+import           Data.Monoid                   ((<>))
+import           Data.Text                     (Text)
+import qualified Data.Vector                   as V
+import           Test.Hspec
 
-import Data.Greskell.GMap (GMapEntry(..), unGMapEntry)
-import Data.Greskell.GraphSON
-  ( GraphSON, parseTypedGraphSON,
-    -- parseTypedGraphSON',
-    typedGraphSON', nonTypedGraphSON,
-    nonTypedGValue, typedGValue',
-    GValue, GValueBody(..),
-    FromGraphSON(..)
-  )
-import Data.Greskell.GraphSON.GValue (unwrapAll, unwrapOne)
+import           Data.Greskell.GMap            (GMapEntry (..), unGMapEntry)
+import           Data.Greskell.GraphSON        (FromGraphSON (..), GValue, GValueBody (..),
+                                                GraphSON, nonTypedGValue, nonTypedGraphSON,
+                                                parseTypedGraphSON, testExamples_GraphSON,
+                                                typedGValue', typedGraphSON')
+import           Data.Greskell.GraphSON.GValue (unwrapAll, unwrapOne)
 
 main :: IO ()
 main = hspec spec
@@ -39,6 +42,7 @@ spec = do
   describe "GValue" $ do
     gvalue_spec
     fromGraphSON_spec
+  testExamples_spec
 
 fromJSON_spec :: Spec
 fromJSON_spec = describe "FromJSON (recursive)" $ do
@@ -252,7 +256,7 @@ decode_error_spec = do
 forceDecode :: FromJSON a => BSL.ByteString -> a
 forceDecode json = case Aeson.eitherDecode json of
   Left err -> error ("Unexpected decode failure: " <> err)
-  Right a -> a
+  Right a  -> a
 
 fromToJSON :: String -> BSL.ByteString -> GValue -> Spec
 fromToJSON label input_json expected = specify label $ do
@@ -263,7 +267,7 @@ fromToJSON label input_json expected = specify label $ do
     decoded = forceDecode input_json
     encoded = Aeson.toJSON decoded
     exp_enc = forceDecode input_json
-    
+
 bare :: GValueBody -> GValue
 bare = nonTypedGValue
 
@@ -275,7 +279,7 @@ gson ftype fvalue = "{\"@type\":\"" <> ftype <> "\",\"@value\":" <> fvalue <> "}
 
 fromLeft' :: (Show a, Show b) => Either a b -> a
 fromLeft' (Left a) = a
-fromLeft' e = error ("Expecting Left, but got " ++ show e)
+fromLeft' e        = error ("Expecting Left, but got " ++ show e)
 
 unwrap_spec :: Spec
 unwrap_spec = do
@@ -375,3 +379,10 @@ fromGraphSON_spec = describe "FromGraphSON" $ do
         key_b = gson "g:List" $ "[" <> gint "3" <> "," <> gint "4" <> ", " <> gint "5" <> "]"
         val_b = gson "g:List" $ "[" <> gint "6" <> "]"
     got `shouldBe` Right (HM.fromList [ ([1,2], []), ([3,4,5], [6])])
+
+testExamples_spec :: Spec
+testExamples_spec = do
+  describe "testExamples" $ do
+    forM_ testExamples_GraphSON $ \(got, expected) -> do
+      specify expected $ do
+        got `shouldBe` expected

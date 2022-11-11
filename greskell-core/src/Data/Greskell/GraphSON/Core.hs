@@ -1,60 +1,50 @@
-{-# LANGUAGE OverloadedStrings, DeriveGeneric #-}
+{-# LANGUAGE DeriveGeneric     #-}
+{-# LANGUAGE OverloadedStrings #-}
 -- |
 -- Module: Data.Greskell.GraphSON.Core
--- Description: 
+-- Description:
 -- Maintainer: Toshio Ito <debug.ito@gmail.com>
 --
 -- __Internal module.__ Definition of 'GraphSON' type.
 module Data.Greskell.GraphSON.Core
-       ( GraphSON(..),
-         nonTypedGraphSON,
-         typedGraphSON,
-         typedGraphSON',
-         parseTypedGraphSON,
-         parseTypedGraphSON'
-       ) where
+    ( GraphSON (..)
+    , nonTypedGraphSON
+    , typedGraphSON
+    , typedGraphSON'
+    , parseTypedGraphSON
+    , parseTypedGraphSON'
+    ) where
 
-import Control.Applicative ((<$>), (<*>))
-import Control.Monad (when)
-import Data.Aeson
-  ( ToJSON(toJSON), FromJSON(parseJSON),
-    object, (.=), Value(..)
-  )
-import qualified Data.Aeson as Aeson
-import Data.Aeson.Types (Parser)
-import Data.Foldable (Foldable(foldr))
-import Data.Hashable (Hashable(..))
-import Data.Text (Text)
-import Data.Traversable (Traversable(traverse))
-import GHC.Generics (Generic)
+import           Control.Applicative                  ((<$>), (<*>))
+import           Control.Monad                        (when)
+import           Data.Aeson                           (FromJSON (parseJSON), ToJSON (toJSON),
+                                                       Value (..), object, (.=))
+import qualified Data.Aeson                           as Aeson
+import           Data.Aeson.Types                     (Parser)
+import           Data.Foldable                        (Foldable (foldr))
+import           Data.Hashable                        (Hashable (..))
+import           Data.Text                            (Text)
+import           Data.Traversable                     (Traversable (traverse))
+import           GHC.Generics                         (Generic)
 
-import Data.Greskell.GraphSON.GraphSONTyped (GraphSONTyped(..))
-
--- $setup
--- >>> :set -XOverloadedStrings
--- >>> import Data.Int (Int32)
+import           Data.Greskell.GraphSON.GraphSONTyped (GraphSONTyped (..))
 
 -- | Wrapper for \"typed JSON object\" introduced in GraphSON version
 -- 2. See http://tinkerpop.apache.org/docs/current/dev/io/#graphson
 --
 -- This data type is useful for encoding/decoding GraphSON text.
--- 
--- >>> Aeson.decode "1000" :: Maybe (GraphSON Int32)
--- Just (GraphSON {gsonType = Nothing, gsonValue = 1000})
--- >>> Aeson.decode "{\"@type\": \"g:Int32\", \"@value\": 1000}" :: Maybe (GraphSON Int32)
--- Just (GraphSON {gsonType = Just "g:Int32", gsonValue = 1000})
 --
 -- Note that encoding of the \"g:Map\" type is inconsistent between
 -- GraphSON v1 and v2, v3. To handle the encoding, use
 -- "Data.Greskell.GMap".
-data GraphSON v =
-  GraphSON
-  { gsonType :: Maybe Text,
-    -- ^ Type ID, corresponding to @\@type@ field.
-    gsonValue :: v
-    -- ^ Value, correspoding to @\@value@ field.
-  }
-  deriving (Show,Eq,Ord,Generic)
+data GraphSON v
+  = GraphSON
+      { gsonType  :: Maybe Text
+        -- ^ Type ID, corresponding to @\@type@ field.
+      , gsonValue :: v
+        -- ^ Value, correspoding to @\@value@ field.
+      }
+  deriving (Eq, Generic, Ord, Show)
 
 instance Functor GraphSON where
   fmap f gs = gs { gsonValue = f $ gsonValue gs }
@@ -96,23 +86,14 @@ parseDirect v = GraphSON Nothing <$> parseJSON v
 
 
 -- | Create a 'GraphSON' without 'gsonType'.
---
--- >>> nonTypedGraphSON (10 :: Int)
--- GraphSON {gsonType = Nothing, gsonValue = 10}
 nonTypedGraphSON :: v -> GraphSON v
 nonTypedGraphSON = GraphSON Nothing
 
 -- | Create a 'GraphSON' with its type ID.
---
--- >>> typedGraphSON (10 :: Int32)
--- GraphSON {gsonType = Just "g:Int32", gsonValue = 10}
 typedGraphSON :: GraphSONTyped v => v -> GraphSON v
 typedGraphSON v = GraphSON (Just $ gsonTypeFor v) v
 
 -- | Create a 'GraphSON' with the given type ID.
---
--- >>> typedGraphSON' "g:Int32" (10 :: Int)
--- GraphSON {gsonType = Just "g:Int32", gsonValue = 10}
 typedGraphSON' :: Text -> v -> GraphSON v
 typedGraphSON' t = GraphSON (Just t)
 
@@ -144,7 +125,7 @@ parseTypedGraphSON' v = do
    Nothing -> return $ Left ("Not a valid typed JSON object.")
    Just got_type -> do
      goal <- parseJSON $ gsonValue graphsonv
-     let exp_type = gsonTypeFor goal 
+     let exp_type = gsonTypeFor goal
      when (got_type /= exp_type) $ do
        fail ("Expected @type of " ++ show exp_type ++ ", but got " ++ show got_type)
      return $ Right $ graphsonv { gsonValue = goal }

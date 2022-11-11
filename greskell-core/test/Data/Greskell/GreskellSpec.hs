@@ -11,9 +11,9 @@ import           Data.Text                     (Text, pack, unpack)
 import           Test.Hspec
 import           Test.QuickCheck               (property)
 
-import           Data.Greskell.Greskell        (Greskell, false, list, number, string, testExamples,
-                                                toGremlin, true, unsafeFunCall, unsafeGreskell,
-                                                value)
+import           Data.Greskell.Greskell        (Greskell, false, list, number, string,
+                                                testExamples_Greskell, toGremlin, true,
+                                                unsafeFunCall, unsafeGreskell, value)
 
 import           Data.Greskell.Test.QuickCheck ()
 
@@ -121,7 +121,7 @@ checkStringLiteral input expected = do
 spec_doctest :: Spec
 spec_doctest = do
   describe "testExamples" $ do
-    forM_ testExamples $ \(got, expected) -> do
+    forM_ testExamples_Greskell $ \(got, expected) -> do
       specify (unpack expected) $ do
         got `shouldBe` expected
 
