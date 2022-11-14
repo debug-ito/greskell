@@ -3,6 +3,8 @@
 ## 2.0.0.1  -- ?
 
 * Confirm test with ghc-9.2.1.
+* Remove doctests. This was because it's become more and more difficult to run doctests in a cabal package.
+  * @ners helped a lot in https://github.com/debug-ito/greskell/pull/12
 
 ## 2.0.0.0  -- 2021-12-28
 
