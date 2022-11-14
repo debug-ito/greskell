@@ -44,7 +44,7 @@ import Data.Greskell.Greskell
     ToGreskell
   )
 import Data.Monoid ((<>))
-import Data.Text (Text, unpack)
+import Data.Text (Text)
 
 -- | @java.util.function.Predicate@ interface.
 --
@@ -191,11 +191,11 @@ oShuffle = unsafeGreskellLazy "Order.shuffle"
 
 -- | Examples of using this module. See the source. The 'fst' of the output is the testee, while the
 -- 'snd' is the expectation.
-testExamples_Gremlin :: [(String, String)]
+testExamples_Gremlin :: [(Text, Text)]
 testExamples_Gremlin =
-  [ (unpack $ toGremlin (pNot $ pEq $ 10 :: Greskell (P Int)), "P.not(P.eq(10))")
-  , (unpack $ toGremlin (pEq $ string "hoge" :: Greskell (P Text)), "P.eq(\"hoge\")")
-  , (unpack $ toGremlin (pInside 10 20 :: Greskell (P Int)), "P.inside(10,20)")
-  , (unpack $ toGremlin (pWithin ["foo", "bar", "hoge"] :: Greskell (P Text)), "P.within(\"foo\",\"bar\",\"hoge\")")
-  , (unpack $ toGremlin oDecr, "Order.decr")
+  [ (toGremlin (pNot $ pEq $ 10 :: Greskell (P Int)), "P.not(P.eq(10))")
+  , (toGremlin (pEq $ string "hoge" :: Greskell (P Text)), "P.eq(\"hoge\")")
+  , (toGremlin (pInside 10 20 :: Greskell (P Int)), "P.inside(10,20)")
+  , (toGremlin (pWithin ["foo", "bar", "hoge"] :: Greskell (P Text)), "P.within(\"foo\",\"bar\",\"hoge\")")
+  , (toGremlin oDecr, "Order.decr")
   ]

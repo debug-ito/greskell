@@ -8,7 +8,7 @@ import qualified Data.ByteString.Lazy as BSL
 import Data.HashSet (HashSet)
 import qualified Data.HashSet as HS
 import Data.Monoid (Monoid(..), (<>))
-import Data.Text (Text)
+import Data.Text (Text, unpack)
 import Test.Hspec
 
 import Data.Greskell.AsLabel (AsLabel(..))
@@ -213,5 +213,5 @@ testExamples_spec :: Spec
 testExamples_spec = do
   describe "testExamples" $ do
     forM_ testExamples_Graph $ \(got, expected) -> do
-      specify expected $ do
+      specify (unpack expected) $ do
         got `shouldBe` expected

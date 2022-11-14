@@ -2,9 +2,10 @@
 module Data.Greskell.GTraversalSpec (main,spec) where
 
 import Control.Category ((>>>), (<<<))
+import Control.Monad (forM_)
 import Data.Aeson (ToJSON(..), Value(Number))
 import Data.Function ((&))
-import Data.Text (Text)
+import Data.Text (Text, unpack)
 import System.IO (stderr, hPutStrLn)
 
 import Test.Hspec
@@ -34,7 +35,7 @@ import Data.Greskell.GTraversal
     gEmitHead, gEmitTail, gEmitHeadT, gEmitTailT,
     gLoops,
     gWhereP1, gAs, gLabel, gWhereP2,
-    gMatch, mPattern
+    gMatch, mPattern, testExamples_GTraversal
   )
 import Data.Greskell.Logic (Logic(..))
 
@@ -51,7 +52,7 @@ spec = do
   spec_repeat
   spec_where
   spec_match
-
+  testExamples_spec
 
 spec_GraphTraversalSource :: Spec
 spec_GraphTraversalSource = describe "GraphTraversalSource" $ do
@@ -261,4 +262,10 @@ spec_match = do
           the_key = ("k" :: Key AVertex Text)
       toGremlin (source "g" & sV' [] &. gAs ext_label &. gOut' [] &. gMatch pat)
         `shouldBe` "g.V().as(\"e\").out().match(__.as(\"e\").in().has(\"k\",\"foo\"))"
-        
+
+testExamples_spec :: Spec
+testExamples_spec = do
+  describe "testExamples" $ do
+    forM_ testExamples_GTraversal $ \(got, expected) -> do
+      specify (unpack expected) $ do
+        got `shouldBe` expected

@@ -203,7 +203,8 @@ module Data.Greskell.GTraversal
          -- * Only for tests
          showWalkType,
          showLift,
-         showSplit
+         showSplit,
+         testExamples_GTraversal
        ) where
 
 import Control.Applicative ((<$>), (<*>))
@@ -213,6 +214,7 @@ import qualified Control.Category as Category
 import Data.Aeson (Value)
 import Data.Bifunctor (Bifunctor(bimap))
 import Data.Foldable (foldl')
+import Data.Function ((&))
 import Data.List.NonEmpty (NonEmpty(..))
 import Data.Monoid ((<>), mconcat, Monoid(..))
 import Data.Proxy (Proxy)
@@ -228,31 +230,24 @@ import Data.Greskell.Graph
     AVertex, AEdge, AVertexProperty,
     T, Key, Cardinality,
     KeyValue(..), Keys(..), Path,
+    (=:), (-:), tId, cList
   )
 import qualified Data.Greskell.Greskell as Greskell
 import Data.Greskell.GraphSON (GValue, FromGraphSON)
 import Data.Greskell.Gremlin
   ( Comparator(..),
-    P
+    P,
+    oIncr, oDecr, pBetween, pEq, pLte
   )
 import Data.Greskell.Greskell
   ( Greskell, ToGreskell(..), unsafeGreskellLazy, unsafeGreskell, unsafeFunCall,
-    toGremlinLazy, toGremlin
+    toGremlinLazy, toGremlin, gvalueInt
   )
 import Data.Greskell.AsIterator (AsIterator(IteratorItem))
 import Data.Greskell.AsLabel (AsLabel, SelectedMap, LabeledP)
 import Data.Greskell.Logic (Logic)
 import qualified Data.Greskell.Logic as Logic
 import Data.Greskell.PMap (PMap, Single)
-
--- $setup
---
--- >>> :set -XOverloadedStrings
--- >>> import Data.Function ((&))
--- >>> import Data.Greskell.Greskell (gvalueInt)
--- >>> import Data.Greskell.Gremlin (pBetween, pEq, pLte, oDecr, oIncr)
--- >>> import Data.Greskell.Graph (tId, cList, (=:), AVertex, AVertexProperty, (-:))
--- >>> import Data.Greskell.GraphSON (GValueBody(..))
 
 -- | @GraphTraversal@ class object of TinkerPop. It takes data @s@
 -- from upstream and emits data @e@ to downstream. Type @c@ is called
@@ -483,9 +478,6 @@ data GraphTraversalSource = GraphTraversalSource
 
 
 -- | Create 'GraphTraversalSource' from a varible name in Gremlin
---
--- >>> toGremlin $ source "g"
--- "g"
 source :: Text -- ^ variable name of 'GraphTraversalSource'
        -> Greskell GraphTraversalSource
 source = unsafeGreskell
@@ -502,9 +494,6 @@ sV :: Vertex v
 sV ids src = GTraversal $ sourceMethod "V" ids src
 
 -- | Monomorphic version of 'sV'.
---
--- >>> toGremlin (source "g" & sV' (map (fmap ElementID . gvalueInt) ([1,2,3] :: [Int])))
--- "g.V(1,2,3)"
 sV' :: [Greskell (ElementID AVertex)] -- ^ vertex IDs
     -> Greskell GraphTraversalSource
     -> GTraversal Transform () AVertex
@@ -518,9 +507,6 @@ sE :: Edge e
 sE ids src = GTraversal $ sourceMethod "E" ids src
 
 -- | Monomorphic version of 'sE'.
---
--- >>> toGremlin (source "g" & sE' (map (fmap ElementID . gvalueInt) ([1] :: [Int])))
--- "g.E(1)"
 sE' :: [Greskell (ElementID AEdge)] -- ^ edge IDs
     -> Greskell GraphTraversalSource
     -> GTraversal Transform () AEdge
@@ -537,17 +523,11 @@ sAddV label src = GTraversal $ sourceMethod "addV" [label] src
 
 -- | Monomorphic version of 'sAddV'.
 --
--- >>> toGremlin (source "g" & sAddV' "person")
--- "g.addV(\"person\")"
---
 -- @since 0.2.0.0
 sAddV' :: Greskell Text -> Greskell GraphTraversalSource -> GTraversal SideEffect () AVertex
 sAddV' = sAddV
 
 -- | Unsafely create 'GTraversal' from the given raw Gremlin script.
---
--- >>> toGremlin $ unsafeGTraversal "g.V().count()"
--- "g.V().count()"
 unsafeGTraversal :: Text -> GTraversal c s e
 unsafeGTraversal = GTraversal . unsafeGreskell
 
@@ -555,18 +535,12 @@ infixl 1 &.
 
 -- | Apply the 'Walk' to the 'GTraversal'. In Gremlin, this means
 -- calling a chain of methods on the Traversal object.
---
--- >>> toGremlin (source "g" & sV' [] &. gValues ["age"])
--- "g.V().values(\"age\")"
 (&.) :: GTraversal c a b -> Walk c b d -> GTraversal c a d
 (GTraversal gt) &. (Walk twalk) = GTraversal $ unsafeGreskellLazy (toGremlinLazy gt <> twalk)
 
 infixr 0 $.
 
 -- | Same as '&.' with arguments flipped.
---
--- >>> toGremlin (gValues ["age"] $. sV' [] $ source "g")
--- "g.V().values(\"age\")"
 ($.) :: Walk c b d -> GTraversal c a b -> GTraversal c a d
 gs $. gt = gt &. gs
 
@@ -592,9 +566,6 @@ gs <*.> gt = ($.) <$> gs <*> gt
 -- the method chain of Gremlin steps. The returned 'GTraversal'
 -- outputs nothing, thus its end type is '()'.
 --
--- >>> toGremlin (source "g" & sAddV' "person" &. gProperty "name" "marko" & gIterate)
--- "g.addV(\"person\").property(\"name\",\"marko\").iterate()"
---
 -- @since 1.1.0.0
 gIterate :: WalkType c => GTraversal c s e -> GTraversal c s ()
 gIterate gt = unsafeWalk "iterate" [] $. gt
@@ -609,9 +580,6 @@ methodCallText name args = ("." <>) $ toGremlinLazy $ unsafeFunCall name args
 
 -- | Unsafely create a 'Walk' that represents a single method call on
 -- a @GraphTraversal@.
---
--- >>> toGremlin (source "g" & sV' [] &. unsafeWalk "valueMap" ["'foo'", "'bar'"])
--- "g.V().valueMap('foo','bar')"
 unsafeWalk :: WalkType c
            => Text -- ^ step method name (e.g. "outE")
            -> [Text] -- ^ step method arguments
@@ -619,9 +587,6 @@ unsafeWalk :: WalkType c
 unsafeWalk name args = Walk $ methodCallText name args
 
 -- | Optionally modulate the main 'Walk' with some modulating 'Walk's.
---
--- >>> toGremlin (source "g" & sV' [] &. modulateWith (unsafeWalk "path" []) [unsafeWalk "by" ["'name'"], unsafeWalk "by" ["'age'"]])
--- "g.V().path().by('name').by('age')"
 modulateWith :: (WalkType c)
              => Walk c s e -- ^ the main 'Walk'
              -> [Walk c e e] -- ^ the modulating 'Walk's
@@ -641,9 +606,6 @@ travToG :: (ToGTraversal g, WalkType c) => g c s e -> Text
 travToG = toGremlin . unGTraversal . toGTraversal
 
 -- | @.filter@ step that takes a traversal.
---
--- >>> toGremlin (source "g" & sV' [] &. gFilter (gOut' ["knows"]))
--- "g.V().filter(__.out(\"knows\"))"
 gFilter :: (ToGTraversal g, WalkType c, WalkType p, Split c p) => g c s e -> Walk p s s
 gFilter walk = unsafeWalk "filter" [travToG walk]
 
@@ -683,11 +645,6 @@ gWherePGeneric mstart p mby = modulateWith wh mods
 
 -- | @.where@ step with @P@ argument only.
 --
--- >>> let la = ("a" :: AsLabel AVertex)
--- >>> let age = ("age" :: Key AVertex Int)
--- >>> toGremlin (source "g" & sV' [] &. gAs la &. gOut' [] &. gWhereP1 (pEq la) (Just $ gBy age))
--- "g.V().as(\"a\").out().where(P.eq(\"a\")).by(\"age\")"
---
 -- If the 'ByProjection' argument is 'Nothing', comparison is
 -- performed on the type @a@. You have to ensure that the comparator
 -- included in the 'LabeledP' argument can handle the type
@@ -713,12 +670,6 @@ gWhereP1' p mby = gWherePGeneric Nothing p mby
 
 -- | @.where@ step with the starting label and @P@ arguments. See also
 -- 'gWhereP1'.
---
--- >>> let la = ("a" :: AsLabel AVertex)
--- >>> let lb = ("b" :: AsLabel AVertex)
--- >>> let age = ("age" :: Key AVertex Int)
--- >>> toGremlin (source "g" & sV' [] &. gAs la &. gOut' [] &. gAs lb &. gValues [age] &. gWhereP2 la (pEq lb) Nothing)
--- "g.V().as(\"a\").out().as(\"b\").values(\"age\").where(\"a\",P.eq(\"b\"))"
 --
 -- @since 1.2.0.0
 gWhereP2 :: WalkType c
@@ -798,19 +749,6 @@ mPattern l w = Logic.Leaf $ MatchPattern l (liftWalk w)
 --
 -- See also: https://groups.google.com/g/gremlin-users/c/HVtldzV0Xk8
 --
--- >>> :{
---  let
---    label_a = ("a" :: AsLabel AVertex)
---    label_b = "b"
---    key_age = ("age" :: Key AVertex Int)
---    patterns = Logic.And
---               ( mPattern label_a (gOut' [] >>> gAs label_b) )
---               [ mPattern label_b (gHas2' key_age 25)
---               ]
---  in toGremlin (source "g" & sV' [] &. gMatch patterns &. gSelectN label_a label_b [])
--- :}
--- "g.V().match(__.as(\"a\").out().as(\"b\"),__.as(\"b\").has(\"age\",25)).select(\"a\",\"b\")"
---
 -- @since 1.2.0.0
 gMatch :: Logic MatchPattern -> Walk Transform a MatchResult
 gMatch patterns = unsafeWalk "match" args
@@ -828,9 +766,6 @@ gMatch patterns = unsafeWalk "match" args
 
 -- | @.is@ step of simple equality.
 --
--- >>> toGremlin (source "g" & sV' [] &. gValues ["age" :: Key AVertex Int] &. gIs 30)
--- "g.V().values(\"age\").is(30)"
---
 -- @since 1.0.1.0
 gIs :: (WalkType c) => Greskell v -> Walk c v v
 gIs = liftWalk . gIs'
@@ -843,9 +778,6 @@ gIs' v = unsafeWalk "is" [toGremlin v]
 
 -- | @.is@ step with predicate 'P'.
 --
--- >>> toGremlin (source "g" & sV' [] &. gValues ["age" :: Key AVertex Int] &. gIsP (pLte 30))
--- "g.V().values(\"age\").is(P.lte(30))"
---
 -- @since 1.0.1.0
 gIsP :: (WalkType c) => Greskell (P v) -> Walk c v v
 gIsP = liftWalk . gIsP'
@@ -857,9 +789,6 @@ gIsP' :: Greskell (P v) -> Walk Filter v v
 gIsP' p = unsafeWalk "is" [toGremlin p]
 
 -- | @.has@ step with one argument.
---
--- >>> toGremlin (source "g" & sV' [] &. gHas1 "age")
--- "g.V().has(\"age\")"
 gHas1 :: (WalkType c, Element s)
       => Key s v -- ^ property key
       -> Walk c s s
@@ -870,9 +799,6 @@ gHas1' :: (Element s) => Key s v -> Walk Filter s s
 gHas1' key = unsafeWalk "has" [toGremlin key]
 
 -- | @.has@ step with two arguments.
---
--- >>> toGremlin (source "g" & sV' [] &. gHas2 "age" (31 :: Greskell Int))
--- "g.V().has(\"age\",31)"
 gHas2 :: (WalkType c, Element s) => Key s v -> Greskell v -> Walk c s s
 gHas2 k v = liftWalk $ gHas2' k v
 
@@ -881,9 +807,6 @@ gHas2' :: (Element s) => Key s v -> Greskell v -> Walk Filter s s
 gHas2' k v = unsafeWalk "has" [toGremlin k, toGremlin v]
 
 -- | @.has@ step with two arguments and 'P' type.
---
--- >>> toGremlin (source "g" & sV' [] &. gHas2P "age" (pBetween (30 :: Greskell Int) 40))
--- "g.V().has(\"age\",P.between(30,40))"
 gHas2P :: (WalkType c, Element s)
        => Key s v -- ^ property key
        -> Greskell (P v) -- ^ predicate on the property value
@@ -897,9 +820,6 @@ gHas2P' key p = unsafeWalk "has" [toGremlin key, toGremlin p]
 -- TODO: has(Key,Traversal), has(Label,Key,P)
 
 -- | @.hasLabel@ step.
---
--- >>> toGremlin (source "g" & sV' [] &. gHasLabel "person")
--- "g.V().hasLabel(\"person\")"
 gHasLabel :: (Element s, WalkType c) => Greskell Text -> Walk c s s
 gHasLabel = liftWalk . gHasLabel'
 
@@ -908,9 +828,6 @@ gHasLabel' :: (Element s) => Greskell Text -> Walk Filter s s
 gHasLabel' l = unsafeWalk "hasLabel" [toGremlin l]
 
 -- | @.hasLabel@ step with 'P' type. Supported since TinkerPop 3.2.7.
---
--- >>> toGremlin (source "g" & sV' [] &. gHasLabelP (pEq "person"))
--- "g.V().hasLabel(P.eq(\"person\"))"
 gHasLabelP :: (Element s, WalkType c)
            => Greskell (P Text) -- ^ predicate on Element label.
            -> Walk c s s
@@ -923,9 +840,6 @@ gHasLabelP' :: Element s
 gHasLabelP' p = unsafeWalk "hasLabel" [toGremlin p]
 
 -- | @.hasId@ step.
---
--- >>> toGremlin (source "g" & sV' [] &. gHasId (fmap ElementID $ gvalueInt $ (7 :: Int)))
--- "g.V().hasId(7)"
 gHasId :: (Element s, WalkType c) => Greskell (ElementID s) -> Walk c s s
 gHasId = liftWalk . gHasId'
 
@@ -934,9 +848,6 @@ gHasId' :: Element s => Greskell (ElementID s) -> Walk Filter s s
 gHasId' i = unsafeWalk "hasId" [toGremlin i]
 
 -- | @.hasId@ step with 'P' type. Supported since TinkerPop 3.2.7.
---
--- >>> toGremlin (source "g" & sV' [] &. gHasIdP (pLte $ fmap ElementID $ gvalueInt (100 :: Int)))
--- "g.V().hasId(P.lte(100))"
 gHasIdP :: (Element s, WalkType c)
         => Greskell (P (ElementID s))
         -> Walk c s s
@@ -949,9 +860,6 @@ gHasIdP' :: Element s
 gHasIdP' p = unsafeWalk "hasId" [toGremlin p]
 
 -- | @.hasKey@ step. The input type should be a VertexProperty.
---
--- >>> toGremlin (source "g" & sV' [] &. gProperties [] &. gHasKey "age")
--- "g.V().properties().hasKey(\"age\")"
 gHasKey :: (Element (p v), Property p, WalkType c) => Greskell Text -> Walk c (p v) (p v)
 gHasKey = liftWalk . gHasKey'
 
@@ -970,9 +878,6 @@ gHasKeyP' :: (Element (p v), Property p) => Greskell (P Text) -> Walk Filter (p 
 gHasKeyP' p = unsafeWalk "hasKey" [toGremlin p]
 
 -- | @.hasValue@ step. The input type should be a VertexProperty.
---
--- >>> toGremlin (source "g" & sV' [] &. gProperties ["age"] &. gHasValue (32 :: Greskell Int))
--- "g.V().properties(\"age\").hasValue(32)"
 gHasValue :: (Element (p v), Property p, WalkType c) => Greskell v -> Walk c (p v) (p v)
 gHasValue = liftWalk . gHasValue'
 
@@ -981,9 +886,6 @@ gHasValue' :: (Element (p v), Property p) => Greskell v -> Walk Filter (p v) (p 
 gHasValue' v = unsafeWalk "hasValue" [toGremlin v]
 
 -- | @.hasValue@ step with 'P' type. Supported since TinkerPop 3.2.7.
---
--- >>> toGremlin (source "g" & sV' [] &. gProperties ["age"] &. gHasValueP (pBetween (30 :: Greskell Int) 40))
--- "g.V().properties(\"age\").hasValue(P.between(30,40))"
 gHasValueP :: (Element (p v), Property p, WalkType c)
            => Greskell (P v) -- ^ predicate on the VertexProperty's value
            -> Walk c (p v) (p v)
@@ -1000,32 +902,20 @@ multiLogic :: (ToGTraversal g, WalkType c, WalkType p, Split c p)
 multiLogic method_name = unsafeWalk method_name . map travToG
 
 -- | @.and@ step.
---
--- >>> toGremlin (source "g" & sV' [] &. gAnd [gOut' ["knows"], gHas1 "age"])
--- "g.V().and(__.out(\"knows\"),__.has(\"age\"))"
 gAnd :: (ToGTraversal g, WalkType c, WalkType p, Split c p) => [g c s e] -> Walk p s s
 gAnd = multiLogic "and"
 
 -- | @.or@ step.
---
--- >>> toGremlin (source "g" & sV' [] &. gOr [gOut' ["knows"], gHas1 "age"])
--- "g.V().or(__.out(\"knows\"),__.has(\"age\"))"
 gOr :: (ToGTraversal g, WalkType c, WalkType p, Split c p) => [g c s e] -> Walk p s s
 gOr = multiLogic "or"
 
 -- | @.not@ step.
---
--- >>> toGremlin (source "g" & sV' [] &. gNot (gOut' ["knows"]))
--- "g.V().not(__.out(\"knows\"))"
 gNot :: (ToGTraversal g, WalkType c, WalkType p, Split c p) => g c s e -> Walk p s s
 gNot cond = unsafeWalk "not" [travToG cond]
 
 -- | @.range@ step. This step is not a 'Filter', because the filtering
 -- decision by this step is based on position of each element, not the
 -- element itself. This violates 'Filter' law.
---
--- >>> toGremlin (source "g" & sV' [] &. gRange 0 100)
--- "g.V().range(0,100)"
 gRange :: Greskell Int
        -- ^ min
        -> Greskell Int
@@ -1168,9 +1058,6 @@ gRepeat mlabel muntil memit repeated_trav = fromMWalk (head_walk <> toMWalk repe
 -- | @.times@ modulator before the @.repeat@ step. It always returns
 -- 'Just'.
 --
--- >>> toGremlin (source "g" & sV' [] &. gRepeat Nothing (gTimes 3) Nothing (gOut' []))
--- "g.V().times(3).repeat(__.out())"
---
 -- @since 1.0.1.0
 gTimes :: Greskell Int
        -- ^ Repeat count. If it's less than or equal to 0, the
@@ -1181,18 +1068,12 @@ gTimes c = Just (RepeatHead, RepeatTimes c)
 -- | @.until@ modulator before the @.repeat@ step. It always returns
 -- 'Just'.
 --
--- >>> toGremlin (source "g" & sV' [] &. gRepeat Nothing (gUntilHead $ gHasLabel' "person") Nothing (gOut' []))
--- "g.V().until(__.hasLabel(\"person\")).repeat(__.out())"
---
 -- @since 1.0.1.0
 gUntilHead :: (ToGTraversal g, WalkType c, WalkType cc, Split cc c) => g cc s e -> Maybe (RepeatPos, RepeatUntil c s)
 gUntilHead trav = Just (RepeatHead, RepeatUntilT $ toGTraversal trav)
 
 -- | @.until@ modulator after the @.repeat@ step. It always returns
 -- 'Just'.
---
--- >>> toGremlin (source "g" & sV' [] &. gRepeat Nothing (gUntilTail $ gHasLabel' "person") Nothing (gOut' []))
--- "g.V().repeat(__.out()).until(__.hasLabel(\"person\"))"
 --
 -- @since 1.0.1.0
 gUntilTail :: (ToGTraversal g, WalkType c, WalkType cc, Split cc c) => g cc s e -> Maybe (RepeatPos, RepeatUntil c s)
@@ -1201,18 +1082,12 @@ gUntilTail trav = Just (RepeatTail, RepeatUntilT $ toGTraversal trav)
 -- | @.emit@ modulator without argument before the @.repeat@ step. It
 -- always returns 'Just'.
 --
--- >>> toGremlin (source "g" & sV' [] &. gRepeat Nothing Nothing gEmitHead (gOut' []))
--- "g.V().emit().repeat(__.out())"
---
 -- @since 1.0.1.0
 gEmitHead :: Maybe (RepeatPos, RepeatEmit c s)
 gEmitHead = Just (RepeatHead, RepeatEmit)
 
 -- | @.emit@ modulator without argument after the @.repeat@ step. It
 -- always returns 'Just'.
---
--- >>> toGremlin (source "g" & sV' [] &. gRepeat Nothing Nothing gEmitTail (gOut' []))
--- "g.V().repeat(__.out()).emit()"
 --
 -- @since 1.0.1.0
 gEmitTail :: Maybe (RepeatPos, RepeatEmit c s)
@@ -1221,9 +1096,6 @@ gEmitTail = Just (RepeatTail, RepeatEmit)
 -- | @.emit@ modulator with a sub-traversal argument before the
 -- @.repeat@ step. It always returns 'Just'.
 --
--- >>> toGremlin (source "g" & sV' [] &. gRepeat Nothing Nothing (gEmitHeadT $ gHasLabel' "person") (gOut' []))
--- "g.V().emit(__.hasLabel(\"person\")).repeat(__.out())"
---
 -- @since 1.0.1.0
 gEmitHeadT :: (ToGTraversal g, WalkType c, WalkType cc, Split cc c) => g cc s e -> Maybe (RepeatPos, RepeatEmit c s)
 gEmitHeadT trav = Just (RepeatHead, RepeatEmitT $ toGTraversal trav)
@@ -1231,18 +1103,11 @@ gEmitHeadT trav = Just (RepeatHead, RepeatEmitT $ toGTraversal trav)
 -- | @.emit@ modulator with a sub-traversal argument after the
 -- @.repeat@ step. It always returns 'Just'.
 --
--- >>> toGremlin (source "g" & sV' [] &. gRepeat Nothing Nothing (gEmitTailT $ gHasLabel' "person") (gOut' []))
--- "g.V().repeat(__.out()).emit(__.hasLabel(\"person\"))"
---
 -- @since 1.0.1.0
 gEmitTailT :: (ToGTraversal g, WalkType c, WalkType cc, Split cc c) => g cc s e -> Maybe (RepeatPos, RepeatEmit c s)
 gEmitTailT trav = Just (RepeatTail, RepeatEmitT $ toGTraversal trav)
 
 -- | @.loops@ step.
---
--- >>> let loop_label = Just "the_loop"
--- >>> toGremlin (source "g" & sV' [] &. gRepeat loop_label (gUntilTail $ gLoops loop_label >>> gIs 3) Nothing (gOut' []))
--- "g.V().repeat(\"the_loop\",__.out()).until(__.loops(\"the_loop\").is(3))"
 --
 -- @since 1.0.1.0
 gLoops :: Maybe RepeatLabel -> Walk Transform s Int
@@ -1250,19 +1115,11 @@ gLoops mlabel = unsafeWalk "loops" $ maybe [] (\l -> [toGremlin l]) mlabel
 
 -- | @.local@ step.
 --
--- >>> toGremlin (source "g" & sV' [] &. gLocal ( gOut' [] >>> gLimit 3 ))
--- "g.V().local(__.out().limit(3))"
---
 -- @since 1.0.1.0
 gLocal :: (ToGTraversal g, WalkType c) => g c s e -> Walk c s e
 gLocal t = unsafeWalk "local" [travToG t]
 
 -- | @.union@ step.
---
--- >>> let key_age = ("age" :: Key AVertex Int)
--- >>> let key_birth_year = ("birth_year" :: Key AVertex Int)
--- >>> toGremlin (source "g" & sV' [] &. gUnion [gValues [key_age], gValues [key_birth_year]])
--- "g.V().union(__.values(\"age\"),__.values(\"birth_year\"))"
 --
 -- @since 1.0.1.0
 gUnion :: (ToGTraversal g, WalkType c) => [g c s e] -> Walk c s e
@@ -1272,19 +1129,12 @@ gUnion ts = unsafeWalk "union" $ map travToG ts
 --
 -- Like 'gFlatMap', 'gCoalesce' always modifies path history.
 --
--- >>> toGremlin (source "g" & sV' [] &. gCoalesce [gOut' [], gIn' []])
--- "g.V().coalesce(__.out(),__.in())"
---
 -- @since 1.1.0.0
 gCoalesce :: (ToGTraversal g, Split cc c, Lift Transform c, WalkType c, WalkType cc)
           => [g cc s e] -> Walk c s e
 gCoalesce ts = unsafeWalk "coalesce" $ map travToG ts
 
 -- | @.choose@ step with if-then-else style.
---
--- >>> let key_age = ("age" :: Key AVertex Int)
--- >>> toGremlin (source "g" & sV' [] &. gChoose3 (gHas2' key_age 30) (gIn' []) (gOut' []))
--- "g.V().choose(__.has(\"age\",30),__.in(),__.out())"
 --
 -- @since 1.0.1.0
 gChoose3 :: (ToGTraversal g, Split cc c, WalkType cc, WalkType c)
@@ -1312,12 +1162,6 @@ gBarrier mmax = unsafeWalk "barrier" $ maybe [] (\m -> [toGremlin m]) mmax
 -- @.dedup@ step is 'Transform' because the filtering decision depends
 -- on the sequence (order) of input elements.
 --
--- >>> toGremlin (source "g" & sV' [] &. gDedup Nothing)
--- "g.V().dedup()"
--- >>> let key_age = ("age" :: Key AVertex Int)
--- >>> toGremlin (source "g" & sV' [] &. gDedup (Just $ gBy key_age))
--- "g.V().dedup().by(\"age\")"
---
 -- @since 1.0.1.0
 gDedup :: Maybe (ByProjection s e)
        -- ^ @.by@ modulator. If specified, the result of type @e@ is
@@ -1327,11 +1171,6 @@ gDedup mp = gDedupGeneric [] mp
 
 -- | @.dedup@ step with at least one argument. The tuple specified by
 -- the 'AsLabel's is used as the criterion of deduplication.
---
--- >>> let label_a = ("a" :: AsLabel AVertex)
--- >>> let label_b = ("b" :: AsLabel AVertex)
--- >>> toGremlin (source "g" & sV' [] &. gAs label_a &. gOut' [] &. gAs label_b &. gDedupN label_a [label_b] Nothing)
--- "g.V().as(\"a\").out().as(\"b\").dedup(\"a\",\"b\")"
 --
 -- @since 1.0.1.0
 gDedupN :: AsLabel a -> [AsLabel a] -> Maybe (ByProjection a e) -> Walk Transform s s
@@ -1440,19 +1279,8 @@ gBy2 p c = ByComparatorProjComp (gBy p) c
 
 -- | @.order@ step.
 --
--- >>> let key_age = ("age" :: Key AVertex Int)
--- >>> toGremlin (source "g" & sV' [] &. gOrder [gBy1 key_age])
--- "g.V().order().by(\"age\")"
--- >>> toGremlin (source "g" & sV' [] &. gOrder [gBy2 key_age oDecr, gBy1 tId])
--- "g.V().order().by(\"age\",Order.decr).by(T.id)"
--- >>> toGremlin (source "g" & sV' [] &. gOrder [gBy2 (gOut' ["knows"] >>> gCount) oIncr, gBy2 tId oIncr])
--- "g.V().order().by(__.out(\"knows\").count(),Order.incr).by(T.id,Order.incr)"
---
 -- 'ByComparator' is an 'IsString', meaning projection by the given
 -- key.
---
--- >>> toGremlin (source "g" & sV' [] &. gOrder ["age"])
--- "g.V().order().by(\"age\")"
 gOrder :: [ByComparator s] -- ^ following @.by@ steps.
        -> Walk Transform s s
 gOrder bys = modulateWith order_step by_steps
@@ -1484,9 +1312,6 @@ gByL l p = LabeledByProjection l $ gBy p
 -- child walk is 'Filter' type. This is because @.flatMap@ step always
 -- modifies the path of the Traverser.
 --
--- >>> toGremlin (source "g" & sV' [] &. gFlatMap (gOut' ["knows"] >>> gOut' ["created"]))
--- "g.V().flatMap(__.out(\"knows\").out(\"created\"))"
---
 -- @since 1.1.0.0
 gFlatMap :: (Lift Transform c, Split cc c, ToGTraversal g, WalkType c, WalkType cc) => g cc s e -> Walk c s e
 gFlatMap gt = unsafeWalk "flatMap" [travToG gt]
@@ -1514,9 +1339,6 @@ gV' = gV
 
 -- | @.constant@ step.
 --
--- >>> toGremlin (source "g" & sV' [] &. gConstant (10 :: Greskell Int))
--- "g.V().constant(10)"
---
 -- @since 1.0.1.0
 gConstant :: Greskell a -> Walk Transform s a
 gConstant v = unsafeWalk "constant" [toGremlin v]
@@ -1528,9 +1350,6 @@ gConstant v = unsafeWalk "constant" [toGremlin v]
 -- Tinkerpop. However, Tinkerpop's implementation of @.unfold@ step
 -- doesn't necessarily use @asIterator@, so there may be some corner
 -- cases where @asIterator@ and @.unfold@ step behave differently.
---
--- >>> toGremlin (source "g" & sV' [] &. gFold &. gUnfold)
--- "g.V().fold().unfold()"
 --
 -- @since 1.0.1.0
 gUnfold :: AsIterator a => Walk Transform a (IteratorItem a)
@@ -1547,8 +1366,6 @@ gAs l = unsafeWalk "as" [toGremlin l]
 
 -- | @.values@ step.
 --
--- >>> toGremlin (source "g" & sV' [] &. gValues ["name", "age"])
--- "g.V().values(\"name\",\"age\")"
 gValues :: Element s
         => [Key s e]
         -- ^ property keys
@@ -1556,9 +1373,6 @@ gValues :: Element s
 gValues = unsafeWalk "values" . map toGremlin
 
 -- | @.properties@ step.
---
--- >>> toGremlin (source "g" & sV' [] &. gProperties ["age"])
--- "g.V().properties(\"age\")"
 gProperties :: (Element s, Property p, ElementProperty s ~ p)
             => [Key s v]
             -> Walk Transform s (p v)
@@ -1577,11 +1391,6 @@ gLabel :: Element s => Walk Transform s Text
 gLabel = unsafeWalk "label" []
 
 -- | @.valueMap@ step.
---
--- >>> toGremlin (source "g" & sV' [] &. gValueMap KeysNil)
--- "g.V().valueMap()"
--- >>> toGremlin (source "g" & sV' [] &. gValueMap ("name" -: "age" -: KeysNil))
--- "g.V().valueMap(\"name\",\"age\")"
 --
 -- @since 1.0.0.0
 gValueMap :: Element s
@@ -1625,12 +1434,6 @@ gSelectByN l1 l2 ls bp = modulateWith (unsafeChangeEnd $ gSelectN l1 l2 ls) [byS
 
 -- | @.project@ step.
 --
--- >>> let name_label = ("a" :: AsLabel Text)
--- >>> let name_key = ("name" :: Key AVertex Text)
--- >>> let count_label = ("b" :: AsLabel Int)
--- >>> toGremlin (source "g" & sV' [] &. gProject (gByL name_label name_key) [gByL count_label (gOut' [] >>> gCount), gByL "c" tId])
--- "g.V().project(\"a\",\"b\",\"c\").by(\"name\").by(__.out().count()).by(T.id)"
---
 -- @since 1.0.0.0
 gProject :: LabeledByProjection s -> [LabeledByProjection s] -> Walk Transform s (PMap Single GValue)
 gProject lp_head lps = foldl' f (unsafeWalk "project" labels) (lp_head : lps)
@@ -1648,10 +1451,6 @@ gPath :: Walk Transform s (Path GValue)
 gPath = unsafeWalk "path" []
 
 -- | @.path@ step with one or more @.by@ modulations.
---
--- >>> let inE = (gInE' [] :: Walk Transform AVertex AEdge)
--- >>> toGremlin (source "g" & sV' [] &. gOut' [] &. gPathBy "name" [gBy $ inE >>> gValues ["relation"]])
--- "g.V().out().path().by(\"name\").by(__.inE().values(\"relation\"))"
 --
 -- @since 1.1.0.0
 gPathBy :: ByProjection a b -> [ByProjection a b] -> Walk Transform s (Path b)
@@ -1675,9 +1474,6 @@ gOut :: (Vertex v1, Vertex v2)
 gOut = genericTraversalWalk "out"
 
 -- | Monomorphic version of 'gOut'.
---
--- >>> toGremlin (source "g" & sV' [fmap ElementID $ gvalueInt (8 :: Int)] &. gOut' ["knows"])
--- "g.V(8).out(\"knows\")"
 gOut' :: (Vertex v)
       => [Greskell Text] -- ^ edge labels
       -> Walk Transform v AVertex
@@ -1749,9 +1545,6 @@ gSideEffect walk = unsafeWalk "sideEffect" [travToG walk]
 
 -- | Monomorphic version of 'gSideEffect'. The result walk is always
 -- 'SideEffect' type.
---
--- >>> toGremlin (source "g" & sV' [] & liftWalk &. gHas2 "name" "marko" &. gSideEffect' (gAddV' "toshio"))
--- "g.V().has(\"name\",\"marko\").sideEffect(__.addV(\"toshio\"))"
 gSideEffect' :: (ToGTraversal g, WalkType c, Split c SideEffect) => g c s e -> Walk SideEffect s s
 gSideEffect' w = gSideEffect w
 
@@ -1764,23 +1557,14 @@ gAddV' :: Greskell Text -> Walk SideEffect a AVertex
 gAddV' = gAddV
 
 -- | @.drop@ step on 'Element'.
--- 
--- >>> toGremlin (source "g" & sV' [] &. gHas2 "name" "marko" & liftWalk &. gDrop)
--- "g.V().has(\"name\",\"marko\").drop()"
 gDrop :: Element e => Walk SideEffect e e
 gDrop = unsafeWalk "drop" []
 
 -- | @.drop@ step on 'Property'.
---
--- >>> toGremlin (source "g" & sE' [] &. gProperties ["weight"] & liftWalk &. gDropP)
--- "g.E().properties(\"weight\").drop()"
 gDropP :: Property p => Walk SideEffect (p a) (p a)
 gDropP = unsafeWalk "drop" []
 
 -- | Simple @.property@ step. It adds a value to the property.
---
--- >>> toGremlin (source "g" & sV' [] & liftWalk &. gProperty "age" (20 :: Greskell Int))
--- "g.V().property(\"age\",20)"
 --
 -- @since 0.2.0.0
 gProperty :: Element e
@@ -1790,12 +1574,6 @@ gProperty :: Element e
 gProperty key val = unsafeWalk "property" [toGremlin key, toGremlin val]
 
 -- | @.property@ step for 'Vertex'.
---
--- >>> let key_location = "location" :: Key AVertex Text
--- >>> let key_since = "since" :: Key (AVertexProperty Text) Text
--- >>> let key_score = "score" :: Key (AVertexProperty Text) Int
--- >>> toGremlin (source "g" & sV' [] & liftWalk &. gPropertyV (Just cList) key_location "New York" [key_since =: "2012-09-23", key_score =: 8])
--- "g.V().property(list,\"location\",\"New York\",\"since\",\"2012-09-23\",\"score\",8)"
 --
 -- @since 0.2.0.0
 gPropertyV :: (Vertex e, vp ~ ElementProperty e, Property vp, Element (vp v))
@@ -1840,12 +1618,6 @@ gTo = AddAnchor "to" . toGTraversal
 
 -- | @.addE@ step. Supported since TinkerPop 3.1.0.
 --
--- >>> let key_name = "name" :: Key AVertex Text
--- >>> toGremlin (source "g" & sV' [] & liftWalk &. gAddE' "knows" (gFrom $ gV' [] >>> gHas2 key_name "marko"))
--- "g.V().addE(\"knows\").from(__.V().has(\"name\",\"marko\"))"
--- >>> toGremlin (source "g" & sV' [] &. gHas2 key_name "marko" & liftWalk &. gAddE' "knows" (gTo $ gV' []))
--- "g.V().has(\"name\",\"marko\").addE(\"knows\").to(__.V())"
--- 
 -- @since 0.2.0.0
 gAddE :: (Vertex vs, Vertex ve, Edge e)
       => Greskell Text
@@ -1859,3 +1631,234 @@ gAddE label anch = (unsafeWalk "addE" [toGremlin label]) >>> anchorStep anch
 gAddE' :: Greskell Text -> AddAnchor AVertex AVertex -> Walk SideEffect AVertex AEdge
 gAddE' = gAddE
 
+testExamples_GTraversal :: [(Text, Text)]
+testExamples_GTraversal =
+  [ ( toGremlin $ source "g"
+    , "g"
+    )
+  , ( toGremlin (source "g" & sV' (map (fmap ElementID . gvalueInt) ([1,2,3] :: [Int])))
+    , "g.V(1,2,3)"
+    )
+  , ( toGremlin (source "g" & sE' (map (fmap ElementID . gvalueInt) ([1] :: [Int])))
+    , "g.E(1)"
+    )
+  , ( toGremlin (source "g" & sAddV' "person")
+    , "g.addV(\"person\")"
+    )
+  , ( toGremlin $ unsafeGTraversal "g.V().count()"
+    , "g.V().count()"
+    )
+  , ( toGremlin (source "g" & sV' [] &. gValues ["age"])
+    , "g.V().values(\"age\")"
+    )
+  , ( toGremlin (gValues ["age"] $. sV' [] $ source "g")
+    , "g.V().values(\"age\")"
+    )
+  , ( toGremlin (source "g" & sAddV' "person" &. gProperty "name" "marko" & gIterate)
+    , "g.addV(\"person\").property(\"name\",\"marko\").iterate()"
+    )
+  , ( toGremlin (source "g" & sV' [] &. unsafeWalk "valueMap" ["'foo'", "'bar'"])
+    , "g.V().valueMap('foo','bar')"
+    )
+  , ( toGremlin (source "g" & sV' [] &. modulateWith (unsafeWalk "path" []) [unsafeWalk "by" ["'name'"], unsafeWalk "by" ["'age'"]])
+    , "g.V().path().by('name').by('age')"
+    )
+  , ( toGremlin (source "g" & sV' [] &. gFilter (gOut' ["knows"]))
+    , "g.V().filter(__.out(\"knows\"))"
+    )
+  , ( let la = "a" :: AsLabel AVertex
+          age = "age" :: Key AVertex Int
+       in toGremlin (source "g" & sV' [] &. gAs la &. gOut' [] &. gWhereP1 (pEq la) (Just $ gBy age))
+    , "g.V().as(\"a\").out().where(P.eq(\"a\")).by(\"age\")"
+    )
+  , ( let la = "a" :: AsLabel AVertex
+          lb = "b" :: AsLabel AVertex
+          age = "age" :: Key AVertex Int
+       in toGremlin (source "g" & sV' [] &. gAs la &. gOut' [] &. gAs lb &. gValues [age] &. gWhereP2 la (pEq lb) Nothing)
+    , "g.V().as(\"a\").out().as(\"b\").values(\"age\").where(\"a\",P.eq(\"b\"))"
+    )
+  , ( let label_a = "a" :: AsLabel AVertex
+          label_b = "b"
+          key_age = "age" :: Key AVertex Int
+          patterns =
+            Logic.And
+              ( mPattern label_a (gOut' [] >>> gAs label_b) )
+              [ mPattern label_b (gHas2' key_age 25) ]
+       in toGremlin (source "g" & sV' [] &. gMatch patterns &. gSelectN label_a label_b [])
+    , "g.V().match(__.as(\"a\").out().as(\"b\"),__.as(\"b\").has(\"age\",25)).select(\"a\",\"b\")"
+    )
+  , ( toGremlin (source "g" & sV' [] &. gValues ["age" :: Key AVertex Int] &. gIs 30)
+    , "g.V().values(\"age\").is(30)"
+    )
+  , ( toGremlin (source "g" & sV' [] &. gValues ["age" :: Key AVertex Int] &. gIsP (pLte 30))
+    , "g.V().values(\"age\").is(P.lte(30))"
+    )
+  , ( toGremlin (source "g" & sV' [] &. gHas1 "age")
+    , "g.V().has(\"age\")"
+    )
+  , ( toGremlin (source "g" & sV' [] &. gHas2 "age" (31 :: Greskell Int))
+    , "g.V().has(\"age\",31)"
+    )
+  , ( toGremlin (source "g" & sV' [] &. gHas2P "age" (pBetween (30 :: Greskell Int) 40))
+    , "g.V().has(\"age\",P.between(30,40))"
+    )
+  , ( toGremlin (source "g" & sV' [] &. gHasLabel "person")
+    , "g.V().hasLabel(\"person\")"
+    )
+  , ( toGremlin (source "g" & sV' [] &. gHasLabelP (pEq "person"))
+    , "g.V().hasLabel(P.eq(\"person\"))"
+    )
+  , ( toGremlin (source "g" & sV' [] &. gHasId (fmap ElementID $ gvalueInt $ (7 :: Int)))
+    , "g.V().hasId(7)"
+    )
+  , ( toGremlin (source "g" & sV' [] &. gHasIdP (pLte $ fmap ElementID $ gvalueInt (100 :: Int)))
+    , "g.V().hasId(P.lte(100))"
+    )
+  , ( toGremlin (source "g" & sV' [] &. gProperties [] &. gHasKey "age")
+    , "g.V().properties().hasKey(\"age\")"
+    )
+  , ( toGremlin (source "g" & sV' [] &. gProperties ["age"] &. gHasValue (32 :: Greskell Int))
+    , "g.V().properties(\"age\").hasValue(32)"
+    )
+  , ( toGremlin (source "g" & sV' [] &. gProperties ["age"] &. gHasValueP (pBetween (30 :: Greskell Int) 40))
+    , "g.V().properties(\"age\").hasValue(P.between(30,40))"
+    )
+  , ( toGremlin (source "g" & sV' [] &. gAnd [gOut' ["knows"], gHas1 "age"])
+    , "g.V().and(__.out(\"knows\"),__.has(\"age\"))"
+    )
+  , ( toGremlin (source "g" & sV' [] &. gOr [gOut' ["knows"], gHas1 "age"])
+    , "g.V().or(__.out(\"knows\"),__.has(\"age\"))"
+    )
+  , ( toGremlin (source "g" & sV' [] &. gNot (gOut' ["knows"]))
+    , "g.V().not(__.out(\"knows\"))"
+    )
+  , ( toGremlin (source "g" & sV' [] &. gRange 0 100)
+    , "g.V().range(0,100)"
+    )
+  , ( toGremlin (source "g" & sV' [] &. gRepeat Nothing (gTimes 3) Nothing (gOut' []))
+    , "g.V().times(3).repeat(__.out())"
+    )
+  , ( toGremlin (source "g" & sV' [] &. gRepeat Nothing (gUntilHead $ gHasLabel' "person") Nothing (gOut' []))
+    , "g.V().until(__.hasLabel(\"person\")).repeat(__.out())"
+    )
+  , ( toGremlin (source "g" & sV' [] &. gRepeat Nothing (gUntilTail $ gHasLabel' "person") Nothing (gOut' []))
+    , "g.V().repeat(__.out()).until(__.hasLabel(\"person\"))"
+    )
+  , ( toGremlin (source "g" & sV' [] &. gRepeat Nothing Nothing gEmitHead (gOut' []))
+    , "g.V().emit().repeat(__.out())"
+    )
+  , ( toGremlin (source "g" & sV' [] &. gRepeat Nothing Nothing gEmitTail (gOut' []))
+    , "g.V().repeat(__.out()).emit()"
+    )
+  , ( toGremlin (source "g" & sV' [] &. gRepeat Nothing Nothing (gEmitHeadT $ gHasLabel' "person") (gOut' []))
+    , "g.V().emit(__.hasLabel(\"person\")).repeat(__.out())"
+    )
+  , ( toGremlin (source "g" & sV' [] &. gRepeat Nothing Nothing (gEmitTailT $ gHasLabel' "person") (gOut' []))
+    , "g.V().repeat(__.out()).emit(__.hasLabel(\"person\"))"
+    )
+  , ( let loop_label = Just "the_loop"
+       in toGremlin (source "g" & sV' [] &. gRepeat loop_label (gUntilTail $ gLoops loop_label >>> gIs 3) Nothing (gOut' []))
+    , "g.V().repeat(\"the_loop\",__.out()).until(__.loops(\"the_loop\").is(3))"
+    )
+  , ( toGremlin (source "g" & sV' [] &. gLocal ( gOut' [] >>> gLimit 3 ))
+    , "g.V().local(__.out().limit(3))"
+    )
+  , ( let key_age = "age" :: Key AVertex Int
+          key_birth_year = ("birth_year" :: Key AVertex Int)
+       in toGremlin (source "g" & sV' [] &. gUnion [gValues [key_age], gValues [key_birth_year]])
+    , "g.V().union(__.values(\"age\"),__.values(\"birth_year\"))"
+    )
+  , ( toGremlin (source "g" & sV' [] &. gCoalesce [gOut' [], gIn' []])
+    , "g.V().coalesce(__.out(),__.in())"
+    )
+  , ( let key_age = "age" :: Key AVertex Int
+       in toGremlin (source "g" & sV' [] &. gChoose3 (gHas2' key_age 30) (gIn' []) (gOut' []))
+    , "g.V().choose(__.has(\"age\",30),__.in(),__.out())"
+    )
+  , ( toGremlin (source "g" & sV' [] &. gDedup Nothing)
+    , "g.V().dedup()"
+    )
+  , ( let key_age = "age" :: Key AVertex Int
+       in toGremlin (source "g" & sV' [] &. gDedup (Just $ gBy key_age))
+    , "g.V().dedup().by(\"age\")"
+    )
+  , ( let label_a = "a" :: AsLabel AVertex
+          label_b = "b" :: AsLabel AVertex
+       in toGremlin (source "g" & sV' [] &. gAs label_a &. gOut' [] &. gAs label_b &. gDedupN label_a [label_b] Nothing)
+    , "g.V().as(\"a\").out().as(\"b\").dedup(\"a\",\"b\")"
+    )
+  , ( let key_age = "age" :: Key AVertex Int
+       in toGremlin (source "g" & sV' [] &. gOrder [gBy1 key_age])
+    , "g.V().order().by(\"age\")"
+    )
+  , ( let key_age = "age" :: Key AVertex Int
+       in toGremlin (source "g" & sV' [] &. gOrder [gBy2 key_age oDecr, gBy1 tId])
+    , "g.V().order().by(\"age\",Order.decr).by(T.id)"
+    )
+  , ( toGremlin (source "g" & sV' [] &. gOrder [gBy2 (gOut' ["knows"] >>> gCount) oIncr, gBy2 tId oIncr])
+    , "g.V().order().by(__.out(\"knows\").count(),Order.incr).by(T.id,Order.incr)"
+    )
+  , ( toGremlin (source "g" & sV' [] &. gOrder ["age"])
+    , "g.V().order().by(\"age\")"
+    )
+  , ( toGremlin (source "g" & sV' [] &. gFlatMap (gOut' ["knows"] >>> gOut' ["created"]))
+    , "g.V().flatMap(__.out(\"knows\").out(\"created\"))"
+    )
+  , ( toGremlin (source "g" & sV' [] &. gConstant (10 :: Greskell Int))
+    , "g.V().constant(10)"
+    )
+  , ( toGremlin (source "g" & sV' [] &. gFold &. gUnfold)
+    , "g.V().fold().unfold()"
+    )
+  , ( toGremlin (source "g" & sV' [] &. gValues ["name", "age"])
+    , "g.V().values(\"name\",\"age\")"
+    )
+  , ( toGremlin (source "g" & sV' [] &. gProperties ["age"])
+    , "g.V().properties(\"age\")"
+    )
+  , ( toGremlin (source "g" & sV' [] &. gValueMap KeysNil)
+    , "g.V().valueMap()"
+    )
+  , ( toGremlin (source "g" & sV' [] &. gValueMap ("name" -: "age" -: KeysNil))
+    , "g.V().valueMap(\"name\",\"age\")"
+    )
+  , ( let name_label = "a" :: AsLabel Text
+          name_key = "name" :: Key AVertex Text
+          count_label = "b" :: AsLabel Int
+       in toGremlin (source "g" & sV' [] &. gProject (gByL name_label name_key) [gByL count_label (gOut' [] >>> gCount), gByL "c" tId])
+    , "g.V().project(\"a\",\"b\",\"c\").by(\"name\").by(__.out().count()).by(T.id)"
+    )
+  , ( let inE = gInE' [] :: Walk Transform AVertex AEdge
+       in toGremlin (source "g" & sV' [] &. gOut' [] &. gPathBy "name" [gBy $ inE >>> gValues ["relation"]])
+    , "g.V().out().path().by(\"name\").by(__.inE().values(\"relation\"))"
+    )
+  , ( toGremlin (source "g" & sV' [fmap ElementID $ gvalueInt (8 :: Int)] &. gOut' ["knows"])
+    , "g.V(8).out(\"knows\")"
+    )
+  , ( toGremlin (source "g" & sV' [] & liftWalk &. gHas2 "name" "marko" &. gSideEffect' (gAddV' "toshio"))
+    , "g.V().has(\"name\",\"marko\").sideEffect(__.addV(\"toshio\"))"
+    )
+  , ( toGremlin (source "g" & sV' [] &. gHas2 "name" "marko" & liftWalk &. gDrop)
+    , "g.V().has(\"name\",\"marko\").drop()"
+    )
+  , ( toGremlin (source "g" & sE' [] &. gProperties ["weight"] & liftWalk &. gDropP)
+    , "g.E().properties(\"weight\").drop()"
+    )
+  , ( toGremlin (source "g" & sV' [] & liftWalk &. gProperty "age" (20 :: Greskell Int))
+    , "g.V().property(\"age\",20)"
+    )
+  , ( let key_location = "location" :: Key AVertex Text
+          key_since = "since" :: Key (AVertexProperty Text) Text
+          key_score = "score" :: Key (AVertexProperty Text) Int
+       in toGremlin (source "g" & sV' [] & liftWalk &. gPropertyV (Just cList) key_location "New York" [key_since =: "2012-09-23", key_score =: 8])
+    , "g.V().property(list,\"location\",\"New York\",\"since\",\"2012-09-23\",\"score\",8)"
+    )
+  , ( let key_name = "name" :: Key AVertex Text
+       in toGremlin (source "g" & sV' [] & liftWalk &. gAddE' "knows" (gFrom $ gV' [] >>> gHas2 key_name "marko"))
+    , "g.V().addE(\"knows\").from(__.V().has(\"name\",\"marko\"))"
+    )
+  , ( let key_name = "name" :: Key AVertex Text
+       in toGremlin (source "g" & sV' [] &. gHas2 key_name "marko" & liftWalk &. gAddE' "knows" (gTo $ gV' []))
+    , "g.V().has(\"name\",\"marko\").addE(\"knows\").to(__.V())"
+    )
+  ]

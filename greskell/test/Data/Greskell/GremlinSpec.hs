@@ -8,6 +8,7 @@ import Data.Greskell.Gremlin
   ( pBetween, pAnd, pOr, pNegate, pWithin, pGte, pTest, testExamples_Gremlin, P
   )
 import Data.Greskell.Greskell (toGremlin, Greskell)
+import Data.Text (unpack)
 
 main :: IO ()
 main = hspec spec
@@ -27,5 +28,5 @@ testExamples_spec :: Spec
 testExamples_spec = do
   describe "testExamples" $
     forM_ testExamples_Gremlin $ \(got, expected) -> do
-      specify expected $ do
+      specify (unpack expected) $ do
         got `shouldBe` expected

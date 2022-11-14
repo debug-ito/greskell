@@ -78,7 +78,7 @@ import Data.Monoid (Monoid(..))
 import Data.Semigroup ((<>), Semigroup)
 import qualified Data.Semigroup as Semigroup
 import Data.String (IsString(..))
-import Data.Text (Text, unpack)
+import Data.Text (Text)
 import Data.Traversable (Traversable(traverse))
 import Data.Vector (Vector)
 import GHC.Generics (Generic)
@@ -578,10 +578,10 @@ makePathEntry ls obj = PathEntry (HS.fromList ls) obj
 
 -- | Examples of using this module. See the source. The 'fst' of the output is the testee, while the
 -- 'snd' is the expectation.
-testExamples_Graph :: [(String, String)]
+testExamples_Graph :: [(Text, Text)]
 testExamples_Graph =
-  [ (unpack $ toGremlin cList, "list")
-  , (unpack $ toGremlin ("age" :: Key AVertex Int), "\"age\"")
-  , (unpack $ toGremlin (key "created_at" :: Key AEdge Text), "\"created_at\"")
-  , (unpack $ keyText ("name" :: Key AVertex Text), "name")
+  [ (toGremlin cList, "list")
+  , (toGremlin ("age" :: Key AVertex Int), "\"age\"")
+  , (toGremlin (key "created_at" :: Key AEdge Text), "\"created_at\"")
+  , (keyText ("name" :: Key AVertex Text), "name")
   ]
