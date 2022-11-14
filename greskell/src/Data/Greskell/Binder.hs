@@ -45,24 +45,7 @@ initBinderS =
     asLabelIndex = 0
   }
 
--- $setup
---
--- >>> import Control.Applicative ((<$>), (<*>))
--- >>> import Data.Greskell.Greskell (toGremlin)
--- >>> import Data.List (sortBy)
--- >>> import Data.Ord (comparing)
--- >>> import qualified Data.Aeson.KeyMap as KeyMap
-
 -- | A Monad that manages binding variables and labels to values.
---
--- >>> let binder = (,) <$> newBind (10 :: Int) <*> newBind "hoge"
--- >>> let ((var_int, var_str), binding) = runBinder binder
--- >>> toGremlin var_int
--- "__v0"
--- >>> toGremlin var_str
--- "__v1"
--- >>> sortBy (comparing fst) $ KeyMap.toList binding
--- [("__v0",Number 10.0),("__v1",String "hoge")]
 newtype Binder a = Binder { unBinder :: State BinderS a }
                    deriving (Functor, Applicative, Monad)
 
