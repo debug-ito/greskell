@@ -1,43 +1,32 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Data.Greskell.GTraversalSpec (main,spec) where
+module Data.Greskell.GTraversalSpec
+    ( main
+    , spec
+    ) where
 
-import Control.Category ((>>>), (<<<))
-import Control.Monad (forM_)
-import Data.Aeson (ToJSON(..), Value(Number))
-import Data.Function ((&))
-import Data.Text (Text, unpack)
-import System.IO (stderr, hPutStrLn)
+import           Control.Category         ((<<<), (>>>))
+import           Control.Monad            (forM_)
+import           Data.Aeson               (ToJSON (..), Value (Number))
+import           Data.Function            ((&))
+import           Data.Text                (Text, unpack)
+import           System.IO                (hPutStrLn, stderr)
 
-import Test.Hspec
+import           Test.Hspec
 
-import Data.Greskell.AsLabel (AsLabel)
-import Data.Greskell.Gremlin
-  ( oIncr, oDecr, oShuffle,
-    pEq, pNeq, pInside, pGte
-  )
-import Data.Greskell.Graph
-  ( Element, ElementID(..), AVertex,
-    Key, key,
-    tLabel, tId
-  )
-import Data.Greskell.GraphSON (nonTypedGValue, GValueBody(..))
-import Data.Greskell.Greskell
-  ( toGremlin, Greskell, gvalueInt)
-import Data.Greskell.GTraversal
-  ( Walk, Transform, Filter,
-    source, (&.), ($.), sV', sE',
-    gHas1, gHas2, gHas2', gHas2P, gHasLabelP, gHasIdP, gIs, gIs',
-    gOut', gRange, gValues, gNot, gIn',
-    gOrder,
-    gProperties, gHasKeyP, gHasValueP,
-    ByComparator(..), gBy2, gBy1, gBy,
-    gRepeat, gTimes, gUntilHead, gUntilTail,
-    gEmitHead, gEmitTail, gEmitHeadT, gEmitTailT,
-    gLoops,
-    gWhereP1, gAs, gLabel, gWhereP2,
-    gMatch, mPattern, testExamples_GTraversal
-  )
-import Data.Greskell.Logic (Logic(..))
+import           Data.Greskell.AsLabel    (AsLabel)
+import           Data.Greskell.Graph      (AVertex, Element, ElementID (..), Key, key, tId, tLabel)
+import           Data.Greskell.GraphSON   (GValueBody (..), nonTypedGValue)
+import           Data.Greskell.Gremlin    (oDecr, oIncr, oShuffle, pEq, pGte, pInside, pNeq)
+import           Data.Greskell.Greskell   (Greskell, gvalueInt, toGremlin)
+import           Data.Greskell.GTraversal (ByComparator (..), Filter, Transform, Walk, gAs, gBy,
+                                           gBy1, gBy2, gEmitHead, gEmitHeadT, gEmitTail, gEmitTailT,
+                                           gHas1, gHas2, gHas2', gHas2P, gHasIdP, gHasKeyP,
+                                           gHasLabelP, gHasValueP, gIn', gIs, gIs', gLabel, gLoops,
+                                           gMatch, gNot, gOrder, gOut', gProperties, gRange,
+                                           gRepeat, gTimes, gUntilHead, gUntilTail, gValues,
+                                           gWhereP1, gWhereP2, mPattern, sE', sV', source, ($.),
+                                           (&.))
+import           Data.Greskell.Logic      (Logic (..))
 
 
 main :: IO ()
@@ -52,7 +41,6 @@ spec = do
   spec_repeat
   spec_where
   spec_match
-  testExamples_spec
 
 spec_GraphTraversalSource :: Spec
 spec_GraphTraversalSource = describe "GraphTraversalSource" $ do
@@ -262,10 +250,3 @@ spec_match = do
           the_key = ("k" :: Key AVertex Text)
       toGremlin (source "g" & sV' [] &. gAs ext_label &. gOut' [] &. gMatch pat)
         `shouldBe` "g.V().as(\"e\").out().match(__.as(\"e\").in().has(\"k\",\"foo\"))"
-
-testExamples_spec :: Spec
-testExamples_spec = do
-  describe "testExamples" $ do
-    forM_ testExamples_GTraversal $ \(got, expected) -> do
-      specify (unpack expected) $ do
-        got `shouldBe` expected

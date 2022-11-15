@@ -1,5 +1,11 @@
-{-# LANGUAGE OverloadedStrings, FlexibleInstances, FlexibleContexts, MultiParamTypeClasses,
-    TypeFamilies, GADTs, GeneralizedNewtypeDeriving, StandaloneDeriving #-}
+{-# LANGUAGE FlexibleContexts           #-}
+{-# LANGUAGE FlexibleInstances          #-}
+{-# LANGUAGE GADTs                      #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE MultiParamTypeClasses      #-}
+{-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE StandaloneDeriving         #-}
+{-# LANGUAGE TypeFamilies               #-}
 {-# OPTIONS_GHC -fno-warn-redundant-constraints #-}
 -- |
 -- Module: Data.Greskell.GTraversal
@@ -10,244 +16,232 @@
 -- @GraphTraversal@ class object, and a DSL of composing graph
 -- traversal steps.
 module Data.Greskell.GTraversal
-       ( -- * Types
-         -- ** GraphTraversal and others
-         GTraversal(..),
-         GraphTraversal,
-         ToGTraversal(..),
-         Walk,
-         GraphTraversalSource,
-         -- ** Walk types
-         WalkType,
-         Filter,
-         Transform,
-         SideEffect,
-         Lift,
-         Split,
-         -- * GraphTraversalSource
-         source,
-         sV,
-         sV',
-         sE,
-         sE',
-         sAddV,
-         sAddV',
-         -- * GTraversal
-         (&.),
-         ($.),
-         (<$.>),
-         (<*.>),
-         gIterate,
-         unsafeGTraversal,
-         -- * Walk/Steps
+    ( -- * Types
+      -- ** GraphTraversal and others
+      GTraversal (..)
+    , GraphTraversal
+    , ToGTraversal (..)
+    , Walk
+    , GraphTraversalSource
+      -- ** Walk types
+    , WalkType
+    , Filter
+    , Transform
+    , SideEffect
+    , Lift
+    , Split
+      -- * GraphTraversalSource
+    , source
+    , sV
+    , sV'
+    , sE
+    , sE'
+    , sAddV
+    , sAddV'
+      -- * GTraversal
+    , (&.)
+    , ($.)
+    , (<$.>)
+    , (<*.>)
+    , gIterate
+    , unsafeGTraversal
+      -- |
+      -- Functions for TinkerPop graph traversal steps.
+      -- __For now greskell does not cover all graph traversal steps.__
+      -- If you want some steps added, just open an issue.
+      --
+      -- There may be multiple versions of Haskell functions for a
+      -- single step. This is because Gremlin steps are too
+      -- polymorphic for Haskell. greskell should be type-safe so
+      -- that incorrect combination of steps is detected in compile
+      -- time.
+      -- ** Low-level functions
+    , unsafeWalk
+    , modulateWith
+      -- ** Filter steps
+    , gIdentity
+    , gIdentity'
+    , gFilter
+    , gCyclicPath
+    , gCyclicPath'
+    , gSimplePath
+    , gSimplePath'
+      -- ** Is step
+    , gIs
+    , gIs'
+    , gIsP
+    , gIsP'
+      -- ** Has steps
+    , gHas1
+    , gHas1'
+    , gHas2
+    , gHas2'
+    , gHas2P
+    , gHas2P'
+    , gHasLabel
+    , gHasLabel'
+    , gHasLabelP
+    , gHasLabelP'
+    , gHasId
+    , gHasId'
+    , gHasIdP
+    , gHasIdP'
+    , gHasKey
+    , gHasKey'
+    , gHasKeyP
+    , gHasKeyP'
+    , gHasValue
+    , gHasValue'
+    , gHasValueP
+    , gHasValueP'
+      -- ** Logic steps
+    , gAnd
+    , gOr
+    , gNot
+      -- ** Where step
+    , gWhereP1
+    , gWhereP1'
+    , gWhereP2
+    , gWhereP2'
+      -- ** Sorting steps
+    , gOrder
+      -- ** Paging steps
+    , gRange
+    , gLimit
+    , gTail
+    , gSkip
+      -- ** Repeat step
+    , gRepeat
+    , gTimes
+    , gUntilHead
+    , gUntilTail
+    , gEmitHead
+    , gEmitTail
+    , gEmitHeadT
+    , gEmitTailT
+    , gLoops
+    , RepeatUntil (..)
+    , RepeatEmit (..)
+    , RepeatPos (..)
+    , RepeatLabel (..)
+      -- ** Branching steps
+    , gLocal
+    , gUnion
+    , gCoalesce
+    , gChoose3
+      -- ** Barrier steps
+    , gBarrier
+    , gDedup
+    , gDedupN
+      -- ** Transformation steps
+    , gFlatMap
+    , gFlatMap'
+    , gV
+    , gV'
+    , gConstant
+    , gProject
+      -- ** As step
+    , gAs
+      -- ** Accessor steps
+    , gValues
+    , gProperties
+    , gId
+    , gLabel
+    , gValueMap
+    , gSelect1
+    , gSelectN
+    , gSelectBy1
+    , gSelectByN
+    , gUnfold
+    , gPath
+    , gPathBy
+      -- ** Summarizing steps
+    , gFold
+    , gCount
+      -- ** Graph traversal steps
+    , gOut
+    , gOut'
+    , gOutE
+    , gOutE'
+    , gOutV
+    , gOutV'
+    , gIn
+    , gIn'
+    , gInE
+    , gInE'
+    , gInV
+    , gInV'
+      -- ** Match step
+    , gMatch
+    , MatchPattern (..)
+    , mPattern
+    , MatchResult
+      -- ** Side-effect steps
+    , gSideEffect
+    , gSideEffect'
+      -- ** Graph manipulation steps
+    , gAddV
+    , gAddV'
+    , gAddE
+    , gAddE'
+    , AddAnchor
+    , gFrom
+    , gTo
+    , gDrop
+    , gDropP
+    , gProperty
+    , gPropertyV
+      -- | @.by@ steps are not 'Walk' on their own because they are
+      -- always used in conjunction with other steps like 'gOrder'.
+    , ByProjection (..)
+    , ProjectionLike (..)
+    , ByComparator (..)
+    , LabeledByProjection (..)
+    , gBy
+    , gBy1
+    , gBy2
+    , gByL
+      -- *
+    , examples
+      -- * Only for tests
+    , showWalkType
+    , showLift
+    , showSplit
+    ) where
 
-         -- |
-         -- Functions for TinkerPop graph traversal steps.
-         -- __For now greskell does not cover all graph traversal steps.__
-         -- If you want some steps added, just open an issue.
-         --
-         -- There may be multiple versions of Haskell functions for a
-         -- single step. This is because Gremlin steps are too
-         -- polymorphic for Haskell. greskell should be type-safe so
-         -- that incorrect combination of steps is detected in compile
-         -- time.
-
-         -- ** Low-level functions
-         unsafeWalk,
-         modulateWith,
-         -- ** Filter steps
-         gIdentity,
-         gIdentity',
-         gFilter,
-         gCyclicPath,
-         gCyclicPath',
-         gSimplePath,
-         gSimplePath',
-         -- ** Is step
-         gIs,
-         gIs',
-         gIsP,
-         gIsP',
-         -- ** Has steps
-         gHas1,
-         gHas1',
-         gHas2,
-         gHas2',
-         gHas2P,
-         gHas2P',
-         gHasLabel,
-         gHasLabel',
-         gHasLabelP,
-         gHasLabelP',
-         gHasId,
-         gHasId',
-         gHasIdP,
-         gHasIdP',
-         gHasKey,
-         gHasKey',
-         gHasKeyP,
-         gHasKeyP',
-         gHasValue,
-         gHasValue',
-         gHasValueP,
-         gHasValueP',
-         -- ** Logic steps
-         gAnd,
-         gOr,
-         gNot,
-         -- ** Where step
-         gWhereP1,
-         gWhereP1',
-         gWhereP2,
-         gWhereP2',
-         -- ** Sorting steps
-         gOrder,
-         -- ** Paging steps
-         gRange,
-         gLimit,
-         gTail,
-         gSkip,
-         -- ** Repeat step
-         gRepeat,
-         gTimes,
-         gUntilHead,
-         gUntilTail,
-         gEmitHead,
-         gEmitTail,
-         gEmitHeadT,
-         gEmitTailT,
-         gLoops,
-         RepeatUntil(..),
-         RepeatEmit(..),
-         RepeatPos(..),
-         RepeatLabel(..),
-         -- ** Branching steps
-         gLocal,
-         gUnion,
-         gCoalesce,
-         gChoose3,
-         -- ** Barrier steps
-         gBarrier,
-         gDedup,
-         gDedupN,
-         -- ** Transformation steps
-         gFlatMap,
-         gFlatMap',
-         gV,
-         gV',
-         gConstant,
-         gProject,
-         -- ** As step
-         gAs,
-         -- ** Accessor steps
-         gValues,
-         gProperties,
-         gId,
-         gLabel,
-         gValueMap,
-         gSelect1,
-         gSelectN,
-         gSelectBy1,
-         gSelectByN,
-         gUnfold,
-         gPath,
-         gPathBy,
-         -- ** Summarizing steps
-         gFold,
-         gCount,
-         -- ** Graph traversal steps
-         gOut,
-         gOut',
-         gOutE,
-         gOutE',
-         gOutV,
-         gOutV',
-         gIn,
-         gIn',
-         gInE,
-         gInE',
-         gInV,
-         gInV',
-         -- ** Match step
-         gMatch,
-         MatchPattern(..),
-         mPattern,
-         MatchResult,
-         -- ** Side-effect steps
-         gSideEffect,
-         gSideEffect',
-         -- ** Graph manipulation steps
-         gAddV,
-         gAddV',
-         gAddE,
-         gAddE',
-         AddAnchor,
-         gFrom,
-         gTo,
-         gDrop,
-         gDropP,
-         gProperty,
-         gPropertyV,
-         -- ** @.by@ steps
-         
-         -- | @.by@ steps are not 'Walk' on their own because they are
-         -- always used in conjunction with other steps like 'gOrder'.
-         ByProjection(..),
-         ProjectionLike(..),
-         ByComparator(..),
-         LabeledByProjection(..),
-         gBy,
-         gBy1,
-         gBy2,
-         gByL,
-         -- * Only for tests
-         showWalkType,
-         showLift,
-         showSplit,
-         testExamples_GTraversal
-       ) where
-
-import Control.Applicative ((<$>), (<*>))
-import Control.Category (Category, (>>>))
+import           Control.Applicative      ((<$>), (<*>))
+import           Control.Category         (Category, (>>>))
 -- (below) to import Category methods without conflict with Prelude
-import qualified Control.Category as Category
-import Data.Aeson (Value)
-import Data.Bifunctor (Bifunctor(bimap))
-import Data.Foldable (foldl')
-import Data.Function ((&))
-import Data.List.NonEmpty (NonEmpty(..))
-import Data.Monoid ((<>), mconcat, Monoid(..))
-import Data.Proxy (Proxy)
-import Data.Semigroup (Semigroup, sconcat)
-import qualified Data.Semigroup as Semigroup
-import Data.String (IsString(..))
-import Data.Text (Text)
-import qualified Data.Text as T
-import qualified Data.Text.Lazy as TL
+import qualified Control.Category         as Category
+import           Data.Aeson               (Value)
+import           Data.Bifunctor           (Bifunctor (bimap))
+import           Data.Foldable            (foldl')
+import           Data.Function            ((&))
+import           Data.List.NonEmpty       (NonEmpty (..))
+import           Data.Monoid              (Monoid (..), mconcat, (<>))
+import           Data.Proxy               (Proxy)
+import           Data.Semigroup           (Semigroup, sconcat)
+import qualified Data.Semigroup           as Semigroup
+import           Data.String              (IsString (..))
+import           Data.Text                (Text)
+import qualified Data.Text                as T
+import qualified Data.Text.Lazy           as TL
 
-import Data.Greskell.Graph
-  ( Element(..), Property(..), ElementID(..), Vertex, Edge,
-    AVertex, AEdge, AVertexProperty,
-    T, Key, Cardinality,
-    KeyValue(..), Keys(..), Path,
-    (=:), (-:), tId, cList
-  )
-import qualified Data.Greskell.Greskell as Greskell
-import Data.Greskell.GraphSON (GValue, FromGraphSON)
-import Data.Greskell.Gremlin
-  ( Comparator(..),
-    P,
-    oIncr, oDecr, pBetween, pEq, pLte
-  )
-import Data.Greskell.Greskell
-  ( Greskell, ToGreskell(..), unsafeGreskellLazy, unsafeGreskell, unsafeFunCall,
-    toGremlinLazy, toGremlin, gvalueInt
-  )
-import Data.Greskell.AsIterator (AsIterator(IteratorItem))
-import Data.Greskell.AsLabel (AsLabel, SelectedMap, LabeledP)
-import Data.Greskell.Logic (Logic)
-import qualified Data.Greskell.Logic as Logic
-import Data.Greskell.PMap (PMap, Single)
+import           Data.Greskell.AsIterator (AsIterator (IteratorItem))
+import           Data.Greskell.AsLabel    (AsLabel, LabeledP, SelectedMap)
+import           Data.Greskell.Graph      (AEdge, AVertex, AVertexProperty, Cardinality, Edge,
+                                           Element (..), ElementID (..), Key, KeyValue (..),
+                                           Keys (..), Path, Property (..), T, Vertex, cList, tId,
+                                           (-:), (=:))
+import           Data.Greskell.GraphSON   (FromGraphSON, GValue)
+import           Data.Greskell.Gremlin    (Comparator (..), P, oDecr, oIncr, pBetween, pEq, pLte)
+import           Data.Greskell.Greskell   (Greskell, ToGreskell (..), gvalueInt, toGremlin,
+                                           toGremlinLazy, unsafeFunCall, unsafeGreskell,
+                                           unsafeGreskellLazy)
+import qualified Data.Greskell.Greskell   as Greskell
+import           Data.Greskell.Logic      (Logic)
+import qualified Data.Greskell.Logic      as Logic
+import           Data.Greskell.PMap       (PMap, Single)
 
 -- | @GraphTraversal@ class object of TinkerPop. It takes data @s@
 -- from upstream and emits data @e@ to downstream. Type @c@ is called
@@ -257,8 +251,9 @@ import Data.Greskell.PMap (PMap, Single)
 -- keeps some context data, the starting (left-most) @GraphTraversal@
 -- object controls most of the behavior of entire composition of
 -- traversals and steps. This violates 'Category' law.
-newtype GTraversal c s e = GTraversal { unGTraversal :: Greskell (GraphTraversal c s e) }
-                         deriving (Show)
+newtype GTraversal c s e
+  = GTraversal { unGTraversal :: Greskell (GraphTraversal c s e) }
+  deriving (Show)
 
 -- | Unsafely convert output type.
 instance Functor (GTraversal c s) where
@@ -275,8 +270,7 @@ instance ToGreskell (GTraversal c s e) where
 
 -- | Phantom type for @GraphTraversal@ class. In greskell, we usually
 -- use 'GTraversal' instead of 'Greskell' 'GraphTraversal'.
-data GraphTraversal c s e = GraphTraversal
-                          deriving (Show)
+data GraphTraversal c s e = GraphTraversal deriving (Show)
 
 -- | 'GraphTraversal' is an Iterator.
 instance AsIterator (GraphTraversal c s e) where
@@ -295,7 +289,7 @@ class ToGTraversal g where
   toGTraversal :: WalkType c => g c s e -> GTraversal c s e
   liftWalk :: (WalkType from, WalkType to, Lift from to) => g from s e -> g to s e
   -- ^ Lift 'WalkType' @from@ to @to@. Use this for type matching.
-  
+
   unsafeCastStart :: WalkType c => g c s1 e -> g c s2 e
   -- ^ Unsafely cast the start type @s1@ into @s2@.
   --
@@ -332,8 +326,9 @@ instance ToGTraversal GTraversal where
 -- 'Walk' is not an 'Eq', because it's difficult to define true
 -- equality between Gremlin method calls. If we define it naively, it
 -- might have conflict with 'Category' law.
-newtype Walk c s e = Walk TL.Text
-                    deriving (Show)
+newtype Walk c s e
+  = Walk TL.Text
+  deriving (Show)
 
 -- | 'id' is 'gIdentity'.
 instance WalkType c => Category (Walk c) where
@@ -389,7 +384,7 @@ class WalkType t where
 -- > (gSideEffect w == gIdentity) AND (gFilter w == w)
 --
 -- If 'Walk's @w1@ and @w2@ are 'Filter' type, then
--- 
+--
 -- > gAnd [w1, w2] == w1 >>> w2 == w2 >>> w1
 data Filter
 
@@ -473,8 +468,7 @@ instance Split SideEffect SideEffect where
 
 -- | @GraphTraversalSource@ class object of TinkerPop. It is a factory
 -- object of 'GraphTraversal's.
-data GraphTraversalSource = GraphTraversalSource
-                          deriving (Show)
+data GraphTraversalSource = GraphTraversalSource deriving (Show)
 
 
 -- | Create 'GraphTraversalSource' from a varible name in Gremlin
@@ -591,7 +585,7 @@ modulateWith :: (WalkType c)
              => Walk c s e -- ^ the main 'Walk'
              -> [Walk c e e] -- ^ the modulating 'Walk's
              -> Walk c s e
-modulateWith w [] = w
+modulateWith w []       = w
 modulateWith w (m:rest) = w >>> sconcat (m :| rest)
 
 -- | @.identity@ step.
@@ -756,13 +750,13 @@ gMatch patterns = unsafeWalk "match" args
     args =
       case patterns of
         Logic.And p rest -> map (toGremlin . toTraversal) (p : rest)
-        _ -> [toGremlin $ toTraversal patterns]
+        _                -> [toGremlin $ toTraversal patterns]
     toTraversal l =
       case l of
-        Logic.Leaf p -> unsafePatternT p
+        Logic.Leaf p     -> unsafePatternT p
         Logic.And p rest -> toGTraversal $ gAnd $ map toTraversal (p : rest)
-        Logic.Or p rest -> toGTraversal $ gOr $ map toTraversal (p : rest)
-        Logic.Not p -> toGTraversal $ gNot $ toTraversal p
+        Logic.Or p rest  -> toGTraversal $ gOr $ map toTraversal (p : rest)
+        Logic.Not p      -> toGTraversal $ gNot $ toTraversal p
 
 -- | @.is@ step of simple equality.
 --
@@ -945,9 +939,9 @@ gSkip num = unsafeWalk "skip" [toGremlin num]
 -- be used by @.loops@ step to specify the loop.
 --
 -- @since 1.0.1.0
-newtype RepeatLabel =
-  RepeatLabel { unRepeatLabel :: Text }
-  deriving (Show,Eq,Ord,IsString)
+newtype RepeatLabel
+  = RepeatLabel { unRepeatLabel :: Text }
+  deriving (Eq, IsString, Ord, Show)
 
 -- | Return Gremlin String literal.
 instance ToGreskell RepeatLabel where
@@ -957,9 +951,10 @@ instance ToGreskell RepeatLabel where
 -- | Position of a step modulator relative to @.repeat@ step.
 --
 -- @since 1.0.1.0
-data RepeatPos = RepeatHead -- ^ Modulator before the @.repeat@ step.
-               | RepeatTail -- ^ Modulator after the @.repeat@ step.
-               deriving (Show,Eq,Ord,Enum,Bounded)
+data RepeatPos
+  = RepeatHead -- ^ Modulator before the @.repeat@ step.
+  | RepeatTail -- ^ Modulator after the @.repeat@ step.
+  deriving (Bounded, Enum, Eq, Ord, Show)
 
 -- | @.until@ or @.times@ modulator step.
 --
@@ -997,7 +992,7 @@ data RepeatEmit c s where
 deriving instance Show (RepeatEmit c s)
 
 makeEmitWalk :: WalkType c => RepeatEmit c s -> Walk c s s
-makeEmitWalk (RepeatEmit) = unsafeWalk "emit" []
+makeEmitWalk (RepeatEmit)       = unsafeWalk "emit" []
 makeEmitWalk (RepeatEmitT trav) = unsafeWalk "emit" [toGremlin trav]
 
 
@@ -1005,8 +1000,9 @@ makeEmitWalk (RepeatEmitT trav) = unsafeWalk "emit" [toGremlin trav]
 -- | Zero or more Gremlin steps.
 --
 -- @since 1.0.1.0
-newtype MWalk c s e = MWalk (Maybe (Walk c s e))
-                    deriving (Show)
+newtype MWalk c s e
+  = MWalk (Maybe (Walk c s e))
+  deriving (Show)
 
 deriving instance WalkType c => Semigroup (MWalk c s s)
 deriving instance WalkType c => Monoid (MWalk c s s)
@@ -1016,7 +1012,7 @@ toMWalk = MWalk . Just
 
 -- | @MWalk Nothing@ is coverted to identity step.
 fromMWalk :: WalkType c => MWalk c s s -> Walk c s s
-fromMWalk (MWalk Nothing) = mempty
+fromMWalk (MWalk Nothing)  = mempty
 fromMWalk (MWalk (Just w)) = w
 
 
@@ -1177,9 +1173,9 @@ gDedupN :: AsLabel a -> [AsLabel a] -> Maybe (ByProjection a e) -> Walk Transfor
 gDedupN l ls mp = gDedupGeneric (map toGremlin (l : ls)) mp
 
 gDedupGeneric :: [Text] -> Maybe (ByProjection a b) -> Walk Transform s s
-gDedupGeneric args mp = 
+gDedupGeneric args mp =
   case mp of
-    Nothing -> main_walk
+    Nothing               -> main_walk
     Just (ByProjection g) -> modulateWith main_walk [unsafeWalk "by" [toGremlin g]]
   where
     main_walk = unsafeWalk "dedup" args
@@ -1246,7 +1242,7 @@ instance IsString (ByProjection s e) where
 
 -- | @.by@ step with 1 argument, used for projection.
 gBy :: (ProjectionLike p, ToGreskell p) => p -> ByProjection (ProjectionLikeStart p) (ProjectionLikeEnd p)
-gBy = ByProjection 
+gBy = ByProjection
 
 -- | Comparison of type @s@ used in @.by@ step. You can also use
 -- 'gBy1' and 'gBy2' to construct 'ByComparator'.
@@ -1254,10 +1250,8 @@ data ByComparator s where
   -- | Type @s@ is projected to type @e@, and compared by the natural
   -- comparator of type @e@.
   ByComparatorProj :: ByProjection s e -> ByComparator s
-  
   -- | Type @s@ is compared by the 'Comparator' @comp@.
   ByComparatorComp :: Comparator comp => Greskell comp -> ByComparator (CompareArg comp)
-  
   -- | Type @s@ is projected to type @CompareArg comp@, and compared
   -- by the 'Comparator' @comp@.
   ByComparatorProjComp :: Comparator comp => ByProjection s (CompareArg comp) -> Greskell comp -> ByComparator s
@@ -1289,8 +1283,8 @@ gOrder bys = modulateWith order_step by_steps
     by_steps = map (unsafeWalk "by" . toByArgs) bys
     toByArgs :: ByComparator s -> [Text]
     toByArgs bc = case bc of
-      ByComparatorProj (ByProjection p) -> [toGremlin p]
-      ByComparatorComp comp -> [toGremlin comp]
+      ByComparatorProj (ByProjection p)          -> [toGremlin p]
+      ByComparatorComp comp                      -> [toGremlin comp]
       ByComparatorProjComp (ByProjection p) comp -> [toGremlin p, toGremlin comp]
 
 -- | A 'ByProjection' associated with an 'AsLabel'. You can construct
@@ -1398,7 +1392,7 @@ gValueMap :: Element s
           -> Walk Transform s (PMap (ElementPropertyContainer s) GValue)
 gValueMap keys = unsafeWalk "valueMap" $ toGremlinKeys keys
   where
-    toGremlinKeys KeysNil = []
+    toGremlinKeys KeysNil           = []
     toGremlinKeys (KeysCons k rest) = toGremlin k : toGremlinKeys rest
 
 -- | @.select@ step with one argument.
@@ -1589,7 +1583,7 @@ gPropertyV mcard key val metaprops = unsafeWalk "property" (arg_card ++ arg_keyv
     arg_metaprops = expand =<< metaprops
       where
         expand (KeyValue meta_key meta_val) = [toGremlin meta_key, toGremlin meta_val]
-        expand (KeyNoValue _) = []
+        expand (KeyNoValue _)               = []
 
 -- | Vertex anchor for 'gAddE'. It corresponds to @.from@ or @.to@
 -- step following an @.addE@ step.
@@ -1599,13 +1593,14 @@ gPropertyV mcard key val metaprops = unsafeWalk "property" (arg_card ++ arg_keyv
 -- step creates an edge between @s@ and @e@.
 --
 -- @since 0.2.0.0
-data AddAnchor s e = AddAnchor Text (GTraversal Transform s e)
+data AddAnchor s e
+  = AddAnchor Text (GTraversal Transform s e)
 
 anchorStep :: WalkType c => AddAnchor s e -> Walk c edge edge
 anchorStep (AddAnchor step_name subtraversal) = unsafeWalk step_name [toGremlin subtraversal]
 
 -- | @.from@ step with a traversal.
--- 
+--
 -- @since 0.2.0.0
 gFrom :: (ToGTraversal g) => g Transform s e -> AddAnchor s e
 gFrom = AddAnchor "from" . toGTraversal
@@ -1626,13 +1621,15 @@ gAddE :: (Vertex vs, Vertex ve, Edge e)
 gAddE label anch = (unsafeWalk "addE" [toGremlin label]) >>> anchorStep anch
 
 -- | Monomorphic version of 'gAddE'.
--- 
+--
 -- @since 0.2.0.0
 gAddE' :: Greskell Text -> AddAnchor AVertex AVertex -> Walk SideEffect AVertex AEdge
 gAddE' = gAddE
 
-testExamples_GTraversal :: [(Text, Text)]
-testExamples_GTraversal =
+-- | Examples of using this module. See the source. The 'fst' of the output is the testee, while the
+-- 'snd' is the expectation.
+examples :: [(Text, Text)]
+examples =
   [ ( toGremlin $ source "g"
     , "g"
     )

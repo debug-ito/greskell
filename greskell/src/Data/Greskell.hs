@@ -31,9 +31,9 @@ import           Data.Greskell.AsIterator
 import           Data.Greskell.AsLabel
 import           Data.Greskell.Binder
 import           Data.Greskell.GMap
-import           Data.Greskell.Graph
+import           Data.Greskell.Graph      hiding (examples)
 import           Data.Greskell.GraphSON   hiding (examples)
-import           Data.Greskell.Gremlin
+import           Data.Greskell.Gremlin    hiding (examples)
 import           Data.Greskell.Greskell   hiding (examples)
-import           Data.Greskell.GTraversal
+import           Data.Greskell.GTraversal hiding (examples)
 import           Data.Greskell.PMap

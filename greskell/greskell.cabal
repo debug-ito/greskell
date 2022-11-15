@@ -65,7 +65,8 @@ test-suite spec
                         Data.Greskell.Graph.PropertyMapSpec,
                         Data.Greskell.ExtraSpec,
                         Data.Greskell.PMapSpec,
-                        Data.Greskell.LogicSpec
+                        Data.Greskell.LogicSpec,
+                        ExamplesSpec
   build-tool-depends:   hspec-discover:hspec-discover
   build-depends:        base, text, aeson, unordered-containers,
                         greskell, greskell-core,

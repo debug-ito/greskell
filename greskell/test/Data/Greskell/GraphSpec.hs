@@ -1,29 +1,26 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Data.Greskell.GraphSpec (main,spec) where
+module Data.Greskell.GraphSpec
+    ( main
+    , spec
+    ) where
 
-import Data.Aeson (toJSON, FromJSON)
-import Control.Monad (forM_)
-import qualified Data.Aeson as Aeson
-import qualified Data.ByteString.Lazy as BSL
-import Data.HashSet (HashSet)
-import qualified Data.HashSet as HS
-import Data.Monoid (Monoid(..), (<>))
-import Data.Text (Text, unpack)
-import Test.Hspec
+import           Control.Monad          (forM_)
+import           Data.Aeson             (FromJSON, toJSON)
+import qualified Data.Aeson             as Aeson
+import qualified Data.ByteString.Lazy   as BSL
+import           Data.HashSet           (HashSet)
+import qualified Data.HashSet           as HS
+import           Data.Monoid            (Monoid (..), (<>))
+import           Data.Text              (Text, unpack)
+import           Test.Hspec
 
-import Data.Greskell.AsLabel (AsLabel(..))
-import Data.Greskell.Graph
-  ( AProperty(..),
-    -- PropertyMapSingle, PropertyMapList,
-    AEdge(..), AVertexProperty(..), AVertex(..),
-    ElementID(..),
-    Path(..), PathEntry(..), pathToPMap, testExamples_Graph
-  )
-import Data.Greskell.GraphSON
-  ( nonTypedGraphSON, typedGraphSON, typedGraphSON',
-    nonTypedGValue, typedGValue', GValueBody(..)
-  )
-import Data.Greskell.PMap (pMapFromList, lookupList)
+import           Data.Greskell.AsLabel  (AsLabel (..))
+import           Data.Greskell.Graph    (AEdge (..), AProperty (..), AVertex (..),
+                                         AVertexProperty (..), ElementID (..), Path (..),
+                                         PathEntry (..), pathToPMap)
+import           Data.Greskell.GraphSON (GValueBody (..), nonTypedGValue, nonTypedGraphSON,
+                                         typedGValue', typedGraphSON, typedGraphSON')
+import           Data.Greskell.PMap     (lookupList, pMapFromList)
 
 main :: IO ()
 main = hspec spec
@@ -35,7 +32,6 @@ spec = do
   spec_AVertexProperty
   spec_AVertex
   spec_Path
-  testExamples_spec
 
 loadGraphSON :: FromJSON a => FilePath -> IO (Either String a)
 loadGraphSON filename = fmap Aeson.eitherDecode $ BSL.readFile ("test/graphson/" ++ filename)
@@ -122,7 +118,7 @@ mkEID :: Maybe Text -> GValueBody -> ElementID a
 mkEID mtype vb =
   case mtype of
     Nothing -> ElementID $ nonTypedGValue vb
-    Just t -> ElementID $ typedGValue' t vb
+    Just t  -> ElementID $ typedGValue' t vb
 
 mkLabels :: [Text] -> HashSet (AsLabel a)
 mkLabels = HS.fromList . map AsLabel
@@ -208,10 +204,3 @@ spec_Path = describe "Path" $ do
       (lookupList ("c" :: AsLabel Int) got) `shouldBe` [10, 20]
       (lookupList ("d" :: AsLabel Int) got) `shouldBe` [20, 30]
       (lookupList ("e" :: AsLabel Int) got) `shouldBe` []
-
-testExamples_spec :: Spec
-testExamples_spec = do
-  describe "testExamples" $ do
-    forM_ testExamples_Graph $ \(got, expected) -> do
-      specify (unpack expected) $ do
-        got `shouldBe` expected

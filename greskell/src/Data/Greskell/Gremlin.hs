@@ -1,4 +1,6 @@
-{-# LANGUAGE OverloadedStrings, TypeFamilies, FlexibleContexts #-}
+{-# LANGUAGE FlexibleContexts  #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeFamilies      #-}
 -- |
 -- Module: Data.Greskell.Gremlin
 -- Description: Gremlin (Groovy/Java) utility classes
@@ -7,44 +9,42 @@
 -- This modules defines types and functions for utility classes in
 -- Gremlin.
 module Data.Greskell.Gremlin
-       ( -- * Predicate
-         Predicate(..),
-         PredicateA(..),
-         -- ** P class
-         P,
-         PLike(..),
-         pNot,
-         pEq,
-         pNeq,
-         pLt,
-         pLte,
-         pGt,
-         pGte,
-         pInside,
-         pOutside,
-         pBetween,
-         pWithin,
-         pWithout,
-         -- * Comparator
-         Comparator(..),
-         ComparatorA(..),
-         -- ** Order enum
-         Order,
-         oDecr,
-         oIncr,
-         oShuffle,
-         testExamples_Gremlin
-       ) where
+    ( -- * Predicate
+      Predicate (..)
+    , PredicateA (..)
+      -- ** P class
+    , P
+    , PLike (..)
+    , pNot
+    , pEq
+    , pNeq
+    , pLt
+    , pLte
+    , pGt
+    , pGte
+    , pInside
+    , pOutside
+    , pBetween
+    , pWithin
+    , pWithout
+      -- * Comparator
+    , Comparator (..)
+    , ComparatorA (..)
+      -- ** Order enum
+    , Order
+    , oDecr
+    , oIncr
+    , oShuffle
+      -- * Examples
+    , examples
+    ) where
 
-import Data.Aeson (Value)
-import Data.Greskell.GraphSON (GraphSONTyped(..))
-import Data.Greskell.Greskell
-  ( Greskell, unsafeGreskellLazy, string,
-    toGremlin, toGremlinLazy, unsafeMethodCall, unsafeFunCall,
-    ToGreskell
-  )
-import Data.Monoid ((<>))
-import Data.Text (Text)
+import           Data.Aeson             (Value)
+import           Data.Greskell.GraphSON (GraphSONTyped (..))
+import           Data.Greskell.Greskell (Greskell, ToGreskell, string, toGremlin, toGremlinLazy,
+                                         unsafeFunCall, unsafeGreskellLazy, unsafeMethodCall)
+import           Data.Monoid            ((<>))
+import           Data.Text              (Text)
 
 -- | @java.util.function.Predicate@ interface.
 --
@@ -66,7 +66,8 @@ class Predicate p where
   pNegate p = unsafeMethodCall p "negate" []
 
 -- | Type for anonymous class of @Predicate@ interface.
-newtype PredicateA a = PredicateA { unPredicateA :: a -> Bool }
+newtype PredicateA a
+  = PredicateA { unPredicateA :: a -> Bool }
 
 instance Predicate (PredicateA a) where
   type PredicateArg (PredicateA a) = a
@@ -162,7 +163,8 @@ class Comparator c where
   cThenComparing cmp1 cmp2 = unsafeMethodCall cmp1 "thenComparing" [toGremlin cmp2]
 
 -- | Type for anonymous class of @Comparator@ interface.
-newtype ComparatorA a = ComparatorA { unComparatorA :: a -> a -> Int }
+newtype ComparatorA a
+  = ComparatorA { unComparatorA :: a -> a -> Int }
 
 instance Comparator (ComparatorA a) where
   type CompareArg (ComparatorA a) = a
@@ -191,8 +193,8 @@ oShuffle = unsafeGreskellLazy "Order.shuffle"
 
 -- | Examples of using this module. See the source. The 'fst' of the output is the testee, while the
 -- 'snd' is the expectation.
-testExamples_Gremlin :: [(Text, Text)]
-testExamples_Gremlin =
+examples :: [(Text, Text)]
+examples =
   [ (toGremlin (pNot $ pEq $ 10 :: Greskell (P Int)), "P.not(P.eq(10))")
   , (toGremlin (pEq $ string "hoge" :: Greskell (P Text)), "P.eq(\"hoge\")")
   , (toGremlin (pInside 10 20 :: Greskell (P Int)), "P.inside(10,20)")

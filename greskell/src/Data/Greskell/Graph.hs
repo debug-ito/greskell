@@ -1,4 +1,10 @@
-{-# LANGUAGE TypeFamilies, OverloadedStrings, FlexibleInstances, GeneralizedNewtypeDeriving, DeriveTraversable, GADTs, DeriveGeneric #-}
+{-# LANGUAGE DeriveGeneric              #-}
+{-# LANGUAGE DeriveTraversable          #-}
+{-# LANGUAGE FlexibleInstances          #-}
+{-# LANGUAGE GADTs                      #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE TypeFamilies               #-}
 {-# OPTIONS_GHC -fno-warn-redundant-constraints #-}
 -- |
 -- Module: Data.Greskell.Graph
@@ -8,107 +14,95 @@
 -- This module defines types and functions about TinkerPop graph
 -- structure API.
 module Data.Greskell.Graph
-       ( -- * Element
-         Element(..),
-         ElementData(..),
-         ElementID(..),
-         unsafeCastElementID,
-         Vertex,
-         Edge,
-         -- * Property
-         Property(..),
-         -- * T Enum
-         T,
-         tId,
-         tKey,
-         tLabel,
-         tValue,
-         -- * Cardinality Enum
-         Cardinality,
-         cList,
-         cSet,
-         cSingle,
+    ( -- * Element
+      Element (..)
+    , ElementData (..)
+    , ElementID (..)
+    , unsafeCastElementID
+    , Vertex
+    , Edge
+      -- * Property
+    , Property (..)
+      -- * T Enum
+    , T
+    , tId
+    , tKey
+    , tLabel
+    , tValue
+      -- * Cardinality Enum
+    , Cardinality
+    , cList
+    , cSet
+    , cSingle
+      -- * Typed Key (accessor of a Property)
+    , Key (..)
+    , key
+    , unsafeCastKey
+      -- ** Key-value pair
+    , KeyValue (..)
+    , (=:)
+      -- ** Heterogeneous list of keys
+    , Keys (..)
+    , singletonKeys
+    , (-:)
+      -- * Path
+    , Path (..)
+    , PathEntry (..)
+    , pathToPMap
+    , makePathEntry
+      -- * Concrete data types
+      -- $concrete_types
+      -- ** Vertex
+    , AVertex (..)
+      -- ** Edge
+    , AEdge (..)
+      -- ** VertexProperty
+    , AVertexProperty (..)
+      -- ** Property
+    , AProperty (..)
+      -- * Examples
+    , examples
+    ) where
 
-         -- * Typed Key (accessor of a Property)
-         Key(..),
-         key,
-         unsafeCastKey,
-         -- ** Key-value pair
-         KeyValue(..),
-         (=:),
-         -- ** Heterogeneous list of keys
-         Keys(..),
-         singletonKeys,
-         (-:),
+import           Control.Applicative           (empty, (<$>), (<*>), (<|>))
+import           Control.Monad                 (when)
+import           Data.Aeson                    (FromJSON (..), ToJSON (..), Value (..))
+import           Data.Aeson.Types              (Parser)
+import           Data.Foldable                 (Foldable (foldr), foldlM, toList)
+import           Data.Hashable                 (Hashable)
+import qualified Data.HashMap.Strict           as HM
+import           Data.HashSet                  (HashSet)
+import qualified Data.HashSet                  as HS
+import           Data.Kind                     (Type)
+import           Data.List.NonEmpty            (NonEmpty (..))
+import qualified Data.List.NonEmpty            as NL
+import           Data.Maybe                    (listToMaybe)
+import           Data.Monoid                   (Monoid (..))
+import           Data.Semigroup                (Semigroup, (<>))
+import qualified Data.Semigroup                as Semigroup
+import           Data.String                   (IsString (..))
+import           Data.Text                     (Text)
+import           Data.Traversable              (Traversable (traverse))
+import           Data.Vector                   (Vector)
+import           GHC.Generics                  (Generic)
 
-         -- * Path
-         Path(..),
-         PathEntry(..),
-         pathToPMap,
-         makePathEntry,
-
-         -- * Concrete data types
-         -- $concrete_types
-         
-         -- ** Vertex
-         AVertex(..),
-         -- ** Edge
-         AEdge(..),
-         -- ** VertexProperty
-         AVertexProperty(..),
-         -- ** Property
-         AProperty(..),
-         testExamples_Graph
-       ) where
-
-import Control.Applicative (empty, (<$>), (<*>), (<|>))
-import Control.Monad (when)
-import Data.Aeson (Value(..), FromJSON(..), ToJSON(..))
-import Data.Aeson.Types (Parser)
-import Data.Foldable (toList, Foldable(foldr), foldlM)
-import Data.Hashable (Hashable)
-import Data.HashSet (HashSet)
-import qualified Data.HashSet as HS
-import qualified Data.HashMap.Strict as HM
-import Data.Kind (Type)
-import Data.List.NonEmpty (NonEmpty(..))
-import qualified Data.List.NonEmpty as NL
-import Data.Maybe (listToMaybe)
-import Data.Monoid (Monoid(..))
-import Data.Semigroup ((<>), Semigroup)
-import qualified Data.Semigroup as Semigroup
-import Data.String (IsString(..))
-import Data.Text (Text)
-import Data.Traversable (Traversable(traverse))
-import Data.Vector (Vector)
-import GHC.Generics (Generic)
-
-import Data.Greskell.AsIterator (AsIterator(..))
-import Data.Greskell.AsLabel (AsLabel(..), unsafeCastAsLabel)
-import Data.Greskell.GraphSON
-  ( GraphSON(..), GraphSONTyped(..), FromGraphSON(..),
-    (.:), GValue, GValueBody(..),
-    parseJSONViaGValue
-  )
-import Data.Greskell.GraphSON.GValue (gValueBody, gValueType)
-import Data.Greskell.Greskell
-  ( Greskell, unsafeGreskellLazy, string, toGremlin,
-    ToGreskell(..)
-  )
-import Data.Greskell.NonEmptyLike (NonEmptyLike)
-import Data.Greskell.PMap (PMapKey(..), Single, Multi, PMap, pMapInsert)
+import           Data.Greskell.AsIterator      (AsIterator (..))
+import           Data.Greskell.AsLabel         (AsLabel (..), unsafeCastAsLabel)
+import           Data.Greskell.GraphSON        (FromGraphSON (..), GValue, GValueBody (..),
+                                                GraphSON (..), GraphSONTyped (..),
+                                                parseJSONViaGValue, (.:))
+import           Data.Greskell.GraphSON.GValue (gValueBody, gValueType)
+import           Data.Greskell.Greskell        (Greskell, ToGreskell (..), string, toGremlin,
+                                                unsafeGreskellLazy)
+import           Data.Greskell.NonEmptyLike    (NonEmptyLike)
+import           Data.Greskell.PMap            (Multi, PMap, PMapKey (..), Single, pMapInsert)
 
 -- | ID of a graph element @e@ (vertex, edge and vertex property).
 --
 -- @since 1.0.0.0
-newtype ElementID e =
-  ElementID
-  { unElementID :: GValue
-    -- ^ Although it's exposed, it is recommended NOT to rely on the
-    -- internal of 'ElementID'. That's because it depends on graph
-    -- implementation.
-  }
-                    deriving (Show,Eq,Generic, ToJSON, FromJSON, FromGraphSON, Hashable)
+newtype ElementID e
+  = ElementID { unElementID :: GValue }
+  deriving (Eq, FromGraphSON, FromJSON, Generic, Hashable, Show, ToJSON)
 
 -- | Unsafely convert the element type.
 instance Functor ElementID where
@@ -225,8 +219,9 @@ cSingle = unsafeGreskellLazy "single"
 --
 -- Since greskell-1.0.0.0, 'Key' is newtype of 'Text'. Before that, it
 -- was newtype of 'Greskell' 'Text'.
-newtype Key a b = Key { unKey :: Text }
-                deriving (Show,Eq)
+newtype Key a b
+  = Key { unKey :: Text }
+  deriving (Eq, Show)
 
 -- | Unsafely convert the value type @b@.
 instance Functor (Key a) where
@@ -290,7 +285,7 @@ data Keys a where
 instance Semigroup (Keys a) where
   a <> b =
     case a of
-      KeysNil -> b
+      KeysNil         -> b
       KeysCons x rest -> KeysCons x (rest <> b)
 
 instance Monoid (Keys a) where
@@ -329,14 +324,14 @@ infixr 5 -:
 --   GraphSON.
 
 -- | General vertex type you can use for 'Vertex' class.
-data AVertex =
-  AVertex
-  { avId :: ElementID AVertex,
-    -- ^ ID of this vertex
-    avLabel :: Text
-    -- ^ Label of this vertex
-  }
-  deriving (Show,Eq)
+data AVertex
+  = AVertex
+      { avId    :: ElementID AVertex
+        -- ^ ID of this vertex
+      , avLabel :: Text
+        -- ^ Label of this vertex
+      }
+  deriving (Eq, Show)
 
 -- | @since 1.0.0.0
 instance ElementData AVertex where
@@ -363,14 +358,14 @@ instance FromGraphSON AVertex where
     _ -> empty
 
 -- | General edge type you can use for 'Edge' class.
-data AEdge =
-  AEdge
-  { aeId :: ElementID AEdge,
-    -- ^ ID of this edge.
-    aeLabel :: Text
-    -- ^ Label of this edge.
-  }
-  deriving (Show,Eq)
+data AEdge
+  = AEdge
+      { aeId    :: ElementID AEdge
+        -- ^ ID of this edge.
+      , aeLabel :: Text
+        -- ^ Label of this edge.
+      }
+  deriving (Eq, Show)
 
 -- | @since 1.0.0.0
 instance ElementData AEdge where
@@ -399,12 +394,12 @@ instance FromGraphSON AEdge where
 -- | General simple property type you can use for 'Property' class.
 --
 -- If you are not sure about the type @v@, just use 'GValue'.
-data AProperty v =
-  AProperty
-  { apKey :: Text,
-    apValue :: v
-  }
-  deriving (Show,Eq,Ord)
+data AProperty v
+  = AProperty
+      { apKey   :: Text
+      , apValue :: v
+      }
+  deriving (Eq, Ord, Show)
 
 -- | Parse Property of GraphSON 1.0.
 --
@@ -417,7 +412,7 @@ instance FromGraphSON v => FromJSON (AProperty v) where
 instance FromGraphSON v => FromGraphSON (AProperty v) where
   parseGraphSON gv = case gValueBody gv of
     GObject o -> AProperty <$> (o .: "key") <*> (o .: "value")
-    _ -> empty
+    _         -> empty
 
 instance Property AProperty where
   propertyKey = apKey
@@ -438,16 +433,16 @@ instance Traversable AProperty where
 -- | General vertex property type you can use for VertexProperty.
 --
 -- If you are not sure about the type @v@, just use 'GValue'.
-data AVertexProperty v =
-  AVertexProperty
-  { avpId :: ElementID (AVertexProperty v),
-    -- ^ ID of this vertex property.
-    avpLabel :: Text,
-    -- ^ Label and key of this vertex property.
-    avpValue :: v
-    -- ^ Value of this vertex property.
-  }
-  deriving (Show,Eq)
+data AVertexProperty v
+  = AVertexProperty
+      { avpId    :: ElementID (AVertexProperty v)
+        -- ^ ID of this vertex property.
+      , avpLabel :: Text
+        -- ^ Label and key of this vertex property.
+      , avpValue :: v
+        -- ^ Value of this vertex property.
+      }
+  deriving (Eq, Show)
 
 -- | In version 0.1.1.0 and before, the constraint was @FromJSON v@.
 -- This has changed.
@@ -497,8 +492,9 @@ instance Traversable AVertexProperty where
 -- | @org.apache.tinkerpop.gremlin.process.traversal.Path@ interface.
 --
 -- @since 1.1.0.0
-newtype Path a = Path { unPath :: [PathEntry a] }
-            deriving (Show,Eq,Ord,Functor,Foldable,Traversable,Semigroup,Monoid)
+newtype Path a
+  = Path { unPath :: [PathEntry a] }
+  deriving (Eq, Foldable, Functor, Monoid, Ord, Semigroup, Show, Traversable)
 
 instance GraphSONTyped (Path a) where
   gsonTypeFor _ = "g:Path"
@@ -514,7 +510,7 @@ instance FromGraphSON a => FromGraphSON (Path a) where
   parseGraphSON gv =
     case gValueBody gv of
       GObject o -> parseObj o
-      _ -> empty
+      _         -> empty
     where
       parseObj o = do
         labels <- o .: "labels"
@@ -531,12 +527,12 @@ instance FromGraphSON a => FromGraphSON (Path a) where
 -- | An entry in a 'Path'.
 --
 -- @since 1.1.0.0
-data PathEntry a =
-  PathEntry
-  { peLabels :: HashSet (AsLabel a),
-    peObject :: a
-  }
-  deriving (Show,Eq,Ord)
+data PathEntry a
+  = PathEntry
+      { peLabels :: HashSet (AsLabel a)
+      , peObject :: a
+      }
+  deriving (Eq, Ord, Show)
 
 instance Functor PathEntry where
   fmap f pe = PathEntry { peLabels = HS.map (fmap f) $ peLabels pe,
@@ -578,8 +574,8 @@ makePathEntry ls obj = PathEntry (HS.fromList ls) obj
 
 -- | Examples of using this module. See the source. The 'fst' of the output is the testee, while the
 -- 'snd' is the expectation.
-testExamples_Graph :: [(Text, Text)]
-testExamples_Graph =
+examples :: [(Text, Text)]
+examples =
   [ (toGremlin cList, "list")
   , (toGremlin ("age" :: Key AVertex Int), "\"age\"")
   , (toGremlin (key "created_at" :: Key AEdge Text), "\"created_at\"")
