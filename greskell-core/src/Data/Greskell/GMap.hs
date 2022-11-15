@@ -40,6 +40,7 @@ import qualified Data.Aeson.Key                       as Key
 import           Data.Aeson.KeyMap                    (KeyMap)
 import qualified Data.Aeson.KeyMap                    as KM
 import           Data.Aeson.Types                     (Parser)
+import qualified Data.ByteString.Lazy.Char8           as BSLC8
 import           Data.Either                          (isLeft)
 import           Data.Foldable                        (Foldable, length)
 import           Data.Hashable                        (Hashable)
@@ -310,7 +311,7 @@ examples = forFlattenedMap
     forFlattenedMap =
       [ (show $ fmap toSortedList $ decode "[10, \"ten\", 11, \"eleven\"]", "Right [(10,\"ten\"),(11,\"eleven\")]")
       , (show $ fmap toSortedList $ decode "[]", "Right []")
-      , (show $ Aeson.encode $ FlattenedMap $ (HashMap.fromList [(10, "ten")] :: HashMap Int String), "[10,\"ten\"]")
+      , (BSLC8.unpack $ Aeson.encode $ FlattenedMap $ (HashMap.fromList [(10, "ten")] :: HashMap Int String), "[10,\"ten\"]")
 
 -- >>> let (Left err_msg) = decode "[10, \"ten\", 11]"
 -- >>> err_msg
