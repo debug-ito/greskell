@@ -33,7 +33,7 @@ module Data.Greskell.GraphSON
     , (.:)
     , parseJSONViaGValue
       -- * Examples
-    , testExamples_GraphSON
+    , examples
     ) where
 
 import           Control.Applicative                  ((<$>), (<*>), (<|>))
@@ -378,8 +378,8 @@ instance FromGraphSON () where
 
 -- | Examples of using this module. See the source. The 'fst' of the output is the testee, while the
 -- 'snd' is the expectation.
-testExamples_GraphSON :: [(String, String)]
-testExamples_GraphSON =
+examples :: [(String, String)]
+examples =
   [ (show (Aeson.decode "1000" :: Maybe (GraphSON Int32)), "Just (GraphSON {gsonType = Nothing, gsonValue = 1000})")
   , (show (Aeson.decode "{\"@type\": \"g:Int32\", \"@value\": 1000}" :: Maybe (GraphSON Int32)), "Just (GraphSON {gsonType = Just \"g:Int32\", gsonValue = 1000})")
   , (show (nonTypedGraphSON (10 :: Int)), "GraphSON {gsonType = Nothing, gsonValue = 10}")

@@ -52,7 +52,8 @@ test-suite spec
   other-modules:        Data.Greskell.GreskellSpec,
                         Data.Greskell.GraphSONSpec,
                         Data.Greskell.GMapSpec,
-                        Data.Greskell.Test.QuickCheck
+                        Data.Greskell.Test.QuickCheck,
+                        ExamplesSpec
   build-tool-depends:   hspec-discover:hspec-discover
   build-depends:        base, text, aeson, unordered-containers, vector,
                         greskell-core,

@@ -6,7 +6,6 @@ module Data.Greskell.GraphSONSpec
     , spec
     ) where
 
-import           Control.Monad                 (forM_)
 import           Data.Aeson                    (FromJSON (..), ToJSON (..), Value (..), object,
                                                 (.=))
 import qualified Data.Aeson                    as Aeson
@@ -26,8 +25,7 @@ import           Test.Hspec
 import           Data.Greskell.GMap            (GMapEntry (..), unGMapEntry)
 import           Data.Greskell.GraphSON        (FromGraphSON (..), GValue, GValueBody (..),
                                                 GraphSON, nonTypedGValue, nonTypedGraphSON,
-                                                parseTypedGraphSON, testExamples_GraphSON,
-                                                typedGValue', typedGraphSON')
+                                                parseTypedGraphSON, typedGValue', typedGraphSON')
 import           Data.Greskell.GraphSON.GValue (unwrapAll, unwrapOne)
 
 main :: IO ()
@@ -42,7 +40,6 @@ spec = do
   describe "GValue" $ do
     gvalue_spec
     fromGraphSON_spec
-  testExamples_spec
 
 fromJSON_spec :: Spec
 fromJSON_spec = describe "FromJSON (recursive)" $ do
@@ -379,10 +376,3 @@ fromGraphSON_spec = describe "FromGraphSON" $ do
         key_b = gson "g:List" $ "[" <> gint "3" <> "," <> gint "4" <> ", " <> gint "5" <> "]"
         val_b = gson "g:List" $ "[" <> gint "6" <> "]"
     got `shouldBe` Right (HM.fromList [ ([1,2], []), ([3,4,5], [6])])
-
-testExamples_spec :: Spec
-testExamples_spec = do
-  describe "testExamples" $ do
-    forM_ testExamples_GraphSON $ \(got, expected) -> do
-      specify expected $ do
-        got `shouldBe` expected

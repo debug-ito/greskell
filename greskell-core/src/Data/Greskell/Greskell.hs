@@ -33,7 +33,7 @@ module Data.Greskell.Greskell
     , unsafeFunCall
     , unsafeMethodCall
       -- * Examples
-    , testExamples_Greskell
+    , examples
     ) where
 
 import           Data.Aeson             (Value)
@@ -259,8 +259,8 @@ unsafeMethodCall target name args = unsafeGreskell ("(" <> toGremlin target <> "
 
 -- | Examples of using this module. See the source. The 'fst' of the output is the testee, while the
 -- 'snd' is the expectation.
-testExamples_Greskell :: [(Text, Text)]
-testExamples_Greskell =
+examples :: [(Text, Text)]
+examples =
   [ (toGremlin $ unsafeGreskell "x + 100", "x + 100")
   , (toGremlin $ string "foo bar", "\"foo bar\"")
   , (toGremlin $ string "escape newline\n escape dollar $", "\"escape newline\\n escape dollar \\$\"")

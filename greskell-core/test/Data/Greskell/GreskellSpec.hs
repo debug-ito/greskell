@@ -4,16 +4,14 @@ module Data.Greskell.GreskellSpec
     , spec
     ) where
 
-import           Control.Monad                 (forM_)
 import qualified Data.Aeson                    as Aeson
 import           Data.String                   (fromString)
-import           Data.Text                     (Text, pack, unpack)
+import           Data.Text                     (Text, pack)
 import           Test.Hspec
 import           Test.QuickCheck               (property)
 
-import           Data.Greskell.Greskell        (Greskell, false, list, number, string,
-                                                testExamples_Greskell, toGremlin, true,
-                                                unsafeFunCall, unsafeGreskell, value)
+import           Data.Greskell.Greskell        (Greskell, false, list, number, string, toGremlin,
+                                                true, unsafeFunCall, unsafeGreskell, value)
 
 import           Data.Greskell.Test.QuickCheck ()
 
@@ -24,7 +22,6 @@ spec :: Spec
 spec = do
   spec_literals
   spec_other
-  spec_doctest
 
 spec_other :: Spec
 spec_other = do
@@ -117,11 +114,3 @@ checkStringLiteral input expected = do
   let input' = fromString input :: Greskell Text
   (toGremlin $ input') `shouldBe` expected
   (toGremlin $ string $ pack input) `shouldBe` expected
-
-spec_doctest :: Spec
-spec_doctest = do
-  describe "testExamples" $ do
-    forM_ testExamples_Greskell $ \(got, expected) -> do
-      specify (unpack expected) $ do
-        got `shouldBe` expected
-
