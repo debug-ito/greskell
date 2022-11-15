@@ -1,4 +1,8 @@
-{-# LANGUAGE TypeFamilies, OverloadedStrings, GeneralizedNewtypeDeriving, DeriveTraversable, CPP #-}
+{-# LANGUAGE CPP                        #-}
+{-# LANGUAGE DeriveTraversable          #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE TypeFamilies               #-}
 -- |
 -- Module: Data.Greskell.GMap
 -- Description: data type for g:Map
@@ -10,58 +14,57 @@
 -- object. Usually users only have to use 'GMapEntry', because other
 -- types are just used internally to implement GraphSON parsers.
 module Data.Greskell.GMap
-       ( -- * FlattenedMap
-         FlattenedMap(..),
-         parseToFlattenedMap,
-         -- * GMap
-         GMap(..),
-         unGMap,
-         singleton,
-         toList,
-         parseToGMap,
-         -- * GMapEntry
-         GMapEntry(..),
-         unGMapEntry,
-         parseToGMapEntry
-       ) where
+    ( -- * FlattenedMap
+      FlattenedMap (..)
+    , parseToFlattenedMap
+      -- * GMap
+    , GMap (..)
+    , unGMap
+    , singleton
+    , toList
+    , parseToGMap
+      -- * GMapEntry
+    , GMapEntry (..)
+    , unGMapEntry
+    , parseToGMapEntry
+      -- * Examples
+    , examples
+    ) where
 
-import Control.Applicative ((<$>), (<*>), (<|>), empty)
-import Data.Aeson
-  ( FromJSON(..), ToJSON(..), Value(..),
-    FromJSONKey, fromJSONKey, FromJSONKeyFunction(..), ToJSONKey
-  )
-import Data.Aeson.Types (Parser)
-import Data.Aeson.KeyMap (KeyMap)
-import qualified Data.Aeson.KeyMap as KM
-import qualified Data.Aeson.Key as Key
-import Data.Foldable (length, Foldable)
-import Data.Hashable (Hashable)
-import qualified Data.Map as M
-import Data.Text (Text, intercalate, unpack)
-import Data.Traversable (Traversable, traverse)
-import Data.Vector ((!), Vector)
-import qualified Data.Vector as V
-import GHC.Exts (IsList(Item))
-import qualified GHC.Exts as List (IsList(fromList, toList))
+import           Control.Applicative                  (empty, (<$>), (<*>), (<|>))
+import           Data.Aeson                           (FromJSON (..), FromJSONKey,
+                                                       FromJSONKeyFunction (..), ToJSON (..),
+                                                       ToJSONKey, Value (..), fromJSONKey)
+import qualified Data.Aeson                           as Aeson
+import qualified Data.Aeson.Key                       as Key
+import           Data.Aeson.KeyMap                    (KeyMap)
+import qualified Data.Aeson.KeyMap                    as KM
+import           Data.Aeson.Types                     (Parser)
+import           Data.Either                          (isLeft)
+import           Data.Foldable                        (Foldable, length)
+import           Data.Hashable                        (Hashable)
+import           Data.HashMap.Strict                  (HashMap)
+import qualified Data.HashMap.Strict                  as HashMap
+import           Data.List                            (sort)
+import qualified Data.Map                             as M
+import           Data.Text                            (Text, intercalate, unpack)
+import           Data.Traversable                     (Traversable, traverse)
+import           Data.Vector                          (Vector, (!))
+import qualified Data.Vector                          as V
+import           GHC.Exts                             (IsList (Item))
+import qualified GHC.Exts                             as List (IsList (fromList, toList))
+
 
 #if MIN_VERSION_aeson(1,5,0)
-import Data.Coerce (coerce)
+import           Data.Coerce                          (coerce)
 #else
-import Unsafe.Coerce (unsafeCoerce)
+import           Unsafe.Coerce                        (unsafeCoerce)
 #endif
 
-import Data.Greskell.GraphSON.GraphSONTyped (GraphSONTyped(..))
-
--- $setup
--- >>> :set -XOverloadedStrings
--- >>> import qualified Data.Aeson as Aeson
--- >>> import Data.HashMap.Strict (HashMap)
--- >>> import qualified Data.HashMap.Strict as HashMap
--- >>> import Data.List (sort)
--- >>> import Data.Either (isLeft)
+import           Data.Greskell.GraphSON.GraphSONTyped (GraphSONTyped (..))
 
 -- | JSON encoding of a map as an array of flattened key-value pairs.
--- 
+--
 -- 'ToJSON' instance of this type encodes the internal map as an array
 -- of keys and values. 'FromJSON' instance of this type parses that
 -- flattened map.
@@ -70,29 +73,18 @@ import Data.Greskell.GraphSON.GraphSONTyped (GraphSONTyped(..))
 --   'Data.HashMap.Strict.HashMap').
 -- - type @k@: key of the map.
 -- - type @v@: value of the map.
---
--- >>> let decode s = Aeson.eitherDecode s :: Either String (FlattenedMap HashMap Int String)
--- >>> let toSortedList = sort . HashMap.toList . unFlattenedMap
--- >>> fmap toSortedList $ decode "[10, \"ten\", 11, \"eleven\"]"
--- Right [(10,"ten"),(11,"eleven")]
--- >>> fmap toSortedList $ decode "[]"
--- Right []
--- >>> let (Left err_msg) = decode "[10, \"ten\", 11]"
--- >>> err_msg
--- ...odd number of elements...
--- >>> Aeson.encode $ FlattenedMap $ (HashMap.fromList [(10, "ten")] :: HashMap Int String)
--- "[10,\"ten\"]"
-newtype FlattenedMap c k v = FlattenedMap { unFlattenedMap :: c k v }
-                   deriving (Show,Eq,Ord,Foldable,Traversable,Functor)
+newtype FlattenedMap c k v
+  = FlattenedMap { unFlattenedMap :: c k v }
+  deriving (Eq, Foldable, Functor, Ord, Show, Traversable)
 
 -- | Use 'parseToFlattenedMap'.
 instance (FromJSON k, FromJSON v, IsList (c k v), Item (c k v) ~ (k,v)) => FromJSON (FlattenedMap c k v) where
   parseJSON (Array v) = parseToFlattenedMap parseJSON parseJSON v
-  parseJSON v = fail ("Expects Array, but got " ++ show v)
+  parseJSON v         = fail ("Expects Array, but got " ++ show v)
 
 -- | Parse a flattened key-values to an associative Vector.
 parseToAVec :: (s -> Parser k) -> (s -> Parser v) -> Vector s -> Parser (Vector (k,v))
-parseToAVec parseKey parseValue v = 
+parseToAVec parseKey parseValue v =
   if odd vlen
   then fail "Fail to parse a list into an associative list because there are odd number of elements."
   else traverse parsePair pairVec
@@ -140,15 +132,15 @@ instance GraphSONTyped (FlattenedMap c k v) where
 -- "{\"9\":\"nine\"}"
 -- >>> Aeson.encode $ GMap True (HashMap.fromList [(9, "nine")] :: HashMap Int Text)
 -- "[9,\"nine\"]"
-data GMap c k v =
-  GMap
-  { gmapFlat :: !Bool,
-    -- ^ If 'True', the map is encoded as an array. If 'False', it's
-    -- encoded as a JSON Object.
-    gmapValue :: !(c k v)
-    -- ^ Map implementation.
-  }
-  deriving (Show,Eq,Foldable,Traversable,Functor)
+data GMap c k v
+  = GMap
+      { gmapFlat  :: !Bool
+        -- ^ If 'True', the map is encoded as an array. If 'False', it's
+        -- encoded as a JSON Object.
+      , gmapValue :: !(c k v)
+        -- ^ Map implementation.
+      }
+  deriving (Eq, Foldable, Functor, Show, Traversable)
 
 -- | General parser for 'GMap'.
 parseToGMap :: (IsList (c k v), Item (c k v) ~ (k,v))
@@ -157,15 +149,15 @@ parseToGMap :: (IsList (c k v), Item (c k v) ~ (k,v))
             -> (KeyMap s -> Parser (c k v)) -- ^ object parser
             -> Either (KeyMap s) (Vector s) -- ^ input object or flattened key-values.
             -> Parser (GMap c k v)
-parseToGMap _ _ op (Left o) = fmap (GMap False) $ op o
+parseToGMap _ _ op (Left o)   = fmap (GMap False) $ op o
 parseToGMap kp vp _ (Right v) = fmap (GMap True . unFlattenedMap) $ parseToFlattenedMap kp vp v
 
 -- | Use 'parseToGMap'.
 instance (FromJSON k, FromJSON v, IsList (c k v), Item (c k v) ~ (k,v), FromJSON (c k v)) => FromJSON (GMap c k v) where
   parseJSON v = case v of
     Object o -> parse $ Left o
-    Array a -> parse $ Right a
-    other -> fail ("Expects Object or Array, but got " ++ show other)
+    Array a  -> parse $ Right a
+    other    -> fail ("Expects Object or Array, but got " ++ show other)
     where
       parse = parseToGMap parseJSON parseJSON (parseJSON . Object)
 
@@ -204,13 +196,13 @@ unGMap = gmapValue
 --
 -- >>> Aeson.eitherDecode "{\"key\":1, \"value\": \"one\"}" :: Either String (GMapEntry Int Text)
 -- Right (GMapEntry {gmapEntryFlat = False, gmapEntryKey = 1, gmapEntryValue = "one"})
-data GMapEntry k v =
-  GMapEntry
-  { gmapEntryFlat :: !Bool,
-    gmapEntryKey :: !k,
-    gmapEntryValue :: !v
-  }
-  deriving (Show,Eq,Ord,Foldable,Traversable,Functor)
+data GMapEntry k v
+  = GMapEntry
+      { gmapEntryFlat  :: !Bool
+      , gmapEntryKey   :: !k
+      , gmapEntryValue :: !v
+      }
+  deriving (Eq, Foldable, Functor, Ord, Show, Traversable)
 
 parseKeyValueToEntry :: (s -> Parser k)
                      -> (s -> Parser v)
@@ -255,7 +247,7 @@ orElseM :: Monad m => m (Maybe a) -> m (Maybe a) -> m (Maybe a)
 orElseM act_a act_b = do
   ma <- act_a
   case ma of
-   Just a -> return $ Just a
+   Just a  -> return $ Just a
    Nothing -> act_b
 
 -- | General parser for 'GMapEntry'.
@@ -283,8 +275,8 @@ instance GraphSONTyped (GMapEntry k v) where
 instance (FromJSON k, FromJSONKey k, FromJSON v) => FromJSON (GMapEntry k v) where
   parseJSON val = case val of
     Object o -> parse $ Left o
-    Array a -> parse $ Right a
-    other -> fail ("Expects Object or Array, but got " ++ show other)
+    Array a  -> parse $ Right a
+    other    -> fail ("Expects Object or Array, but got " ++ show other)
     where
       parse = parseToGMapEntry parseJSON parseJSON
 
@@ -293,7 +285,7 @@ instance (ToJSON k, ToJSONKey k, Ord k, ToJSON v) => ToJSON (GMapEntry k v) wher
     where
       singleton' :: (Ord k) => GMapEntry k v -> GMap M.Map k v
       singleton' = singleton
-  
+
 -- | Get the key-value pair from 'GMapEntry'.
 unGMapEntry :: GMapEntry k v -> (k, v)
 unGMapEntry e = (gmapEntryKey e, gmapEntryValue e)
@@ -309,3 +301,24 @@ toList :: (IsList (c k v), Item (c k v) ~ (k,v)) => GMap c k v -> [GMapEntry k v
 toList gm = map toEntry $ List.toList $ gmapValue gm
   where
     toEntry (k, v) = GMapEntry (gmapFlat gm) k v
+
+-- | Examples of using this module. See the source. The 'fst' of the output is the testee, while the
+-- 'snd' is the expectation.
+examples :: [(String, String)]
+examples = forFlattenedMap
+  where
+    forFlattenedMap =
+      [ (show $ fmap toSortedList $ decode "[10, \"ten\", 11, \"eleven\"]", "Right [(10,\"ten\"),(11,\"eleven\")]")
+      , (show $ fmap toSortedList $ decode "[]", "Right []")
+      , (show $ Aeson.encode $ FlattenedMap $ (HashMap.fromList [(10, "ten")] :: HashMap Int String), "[10,\"ten\"]")
+
+-- >>> let (Left err_msg) = decode "[10, \"ten\", 11]"
+-- >>> err_msg
+-- ...odd number of elements...
+
+      -- TODO: we should move the above test case into a normal spec file.
+
+      ]
+      where
+        decode s = Aeson.eitherDecode s :: Either String (FlattenedMap HashMap Int String)
+        toSortedList = sort . HashMap.toList . unFlattenedMap

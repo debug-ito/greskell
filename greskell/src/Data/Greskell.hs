@@ -30,7 +30,7 @@ module Data.Greskell
 import           Data.Greskell.AsIterator
 import           Data.Greskell.AsLabel
 import           Data.Greskell.Binder
-import           Data.Greskell.GMap
+import           Data.Greskell.GMap       hiding (examples)
 import           Data.Greskell.Graph      hiding (examples)
 import           Data.Greskell.GraphSON   hiding (examples)
 import           Data.Greskell.Gremlin    hiding (examples)
