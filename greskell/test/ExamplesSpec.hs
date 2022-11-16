@@ -3,6 +3,7 @@ module ExamplesSpec
     , spec
     ) where
 
+import qualified Data.Greskell.Extra      as Extra
 import qualified Data.Greskell.Graph      as Graph
 import qualified Data.Greskell.Gremlin    as Gremlin
 import qualified Data.Greskell.GTraversal as GTraversal
@@ -18,6 +19,7 @@ spec = describe "examples" $ do
   makeSpec "Graph" Graph.examples
   makeSpec "Gremlin" Gremlin.examples
   makeSpec "GTraversal" GTraversal.examples
+  makeSpec "Extra" Extra.examples
 
 makeSpec :: (Show a) => String -> [(a, a)] -> Spec
 makeSpec label exs = describe label $ forM_ exs $ \(got, expected) -> specify (show expected) $ show got `shouldBe` show expected

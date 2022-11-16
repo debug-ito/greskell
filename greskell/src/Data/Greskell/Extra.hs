@@ -1,4 +1,5 @@
-{-# LANGUAGE OverloadedStrings, FlexibleContexts #-}
+{-# LANGUAGE FlexibleContexts  #-}
+{-# LANGUAGE OverloadedStrings #-}
 -- |
 -- Module: Data.Greskell.Extra
 -- Description: Extra utility functions implemented by Greskell
@@ -8,59 +9,45 @@
 --
 -- @since 0.2.3.0
 module Data.Greskell.Extra
-  ( -- * Property readers
-    -- $readers
-    lookupAs,
-    lookupAs',
-    lookupListAs,
-    lookupListAs',
-    pMapToFail,
-    -- * Property writers
-    writeKeyValues,
-    (<=:>),
-    (<=?>),
-    writePropertyKeyValues,
-    writePMapProperties,
-    -- * Control idioms
-    gWhenEmptyInput
-  ) where
+    ( -- * Property readers
+      -- $readers
+      lookupAs
+    , lookupAs'
+    , lookupListAs
+    , lookupListAs'
+    , pMapToFail
+      -- * Property writers
+    , writeKeyValues
+    , (<=:>)
+    , (<=?>)
+    , writePropertyKeyValues
+    , writePMapProperties
+      -- * Control idioms
+    , gWhenEmptyInput
+      -- * Examples
+    , examples
+    ) where
 
-import Data.Aeson (ToJSON)
-import Control.Category ((<<<))
-import Data.Foldable (Foldable)
-import Data.Greskell.Binder (Binder, newBind)
-import Data.Greskell.Graph
-  ( Property(..), Element, KeyValue(..), (=:), Key
-  )
-import qualified Data.Greskell.Graph as Graph
-import Data.Greskell.GTraversal
-  ( Walk, WalkType, SideEffect, Transform,
-    ToGTraversal(..), Split, Lift, liftWalk,
-    gProperty, gCoalesce, gUnfold, gFold
-  )
-import Data.Greskell.PMap
-  ( PMap, pMapToList,
-    lookupAs,
-    lookupAs',
-    lookupListAs,
-    lookupListAs',
-    pMapToFail
-  )
-import Data.Monoid (mconcat)
-import Data.Text (Text)
+import           Control.Category         ((<<<), (>>>))
+import           Data.Aeson               (ToJSON)
+import qualified Data.Aeson.KeyMap        as KeyMap
+import           Data.Foldable            (Foldable)
+import           Data.Function            ((&))
+import           Data.Greskell.Binder     (Binder, newBind, runBinder)
+import           Data.Greskell.Graph      (AVertex, Element, Key, KeyValue (..), Property (..),
+                                           (=:))
+import qualified Data.Greskell.Graph      as Graph
+import           Data.Greskell.Greskell   (toGremlin)
+import           Data.Greskell.GTraversal (GTraversal, Lift, SideEffect, Split, ToGTraversal (..),
+                                           Transform, Walk, WalkType, gAddV, gCoalesce, gFold,
+                                           gHas2, gProperty, gUnfold, liftWalk, sV', source, (&.))
+import           Data.Greskell.PMap       (PMap, lookupAs, lookupAs', lookupListAs, lookupListAs',
+                                           pMapToFail, pMapToList)
+import           Data.List                (sortBy)
+import           Data.Monoid              (mconcat)
+import           Data.Ord                 (comparing)
+import           Data.Text                (Text, unpack)
 
--- $setup
---
--- >>> :set -XOverloadedStrings
--- >>> import Control.Category ((>>>))
--- >>> import Data.Function ((&))
--- >>> import Data.Greskell.Binder (runBinder)
--- >>> import Data.Greskell.Greskell (toGremlin)
--- >>> import Data.Greskell.Graph (AVertex)
--- >>> import Data.Greskell.GTraversal (GTraversal, source, sV', gHas2, (&.), gAddV)
--- >>> import Data.List (sortBy)
--- >>> import Data.Ord (comparing)
--- >>> import qualified Data.Aeson.KeyMap as KeyMap
 
 -- $readers
 --
@@ -72,13 +59,6 @@ import Data.Text (Text)
 -- pairs as properties.
 --
 -- @since 0.2.3.0
---
--- >>> let binder = (writePropertyKeyValues [("age", (21 :: Int))] :: Binder (Walk SideEffect AVertex AVertex))
--- >>> let (walk, binding) = runBinder binder
--- >>> toGremlin walk
--- "__.property(\"age\",__v0).identity()"
--- >>> sortBy (comparing fst) $ KeyMap.toList binding
--- [("__v0",Number 21.0)]
 writePropertyKeyValues :: (ToJSON v, Element e) => [(Text, v)] -> Binder (Walk SideEffect e e)
 writePropertyKeyValues pairs = fmap writeKeyValues $ mapM toKeyValue pairs
   where
@@ -87,14 +67,6 @@ writePropertyKeyValues pairs = fmap writeKeyValues $ mapM toKeyValue pairs
 -- | Make a series of @.property@ steps to write the given key-value
 -- pairs as properties. Use '<=:>' and '<=?>' to make a 'KeyValue'
 -- within 'Binder'.
---
--- >>> let keyAge = ("age" :: Key AVertex Int)
--- >>> let keyName = ("name" :: Key AVertex Text)
--- >>> let (walk, binding) = runBinder $ writeKeyValues <$> sequence [keyAge <=:> 21, keyName <=:> "Josh"]
--- >>> toGremlin walk
--- "__.property(\"age\",__v0).property(\"name\",__v1).identity()"
--- >>> sortBy (comparing fst) $ KeyMap.toList binding
--- [("__v0",Number 21.0),("__v1",String "Josh")]
 --
 -- @since 1.0.0.0
 writeKeyValues :: Element e => [KeyValue e] -> Walk SideEffect e e
@@ -122,18 +94,10 @@ writePMapProperties = writePropertyKeyValues . pMapToList
 -- value is 'Just', it's equivalent to '<=:>'. If the value is
 -- 'Nothing', it returns 'KeyNoValue'.
 --
--- >>> let keyNName = ("nickname" :: Key AVertex (Maybe Text))
--- >>> let keyCompany = ("company" :: Key AVertex (Maybe Text))
--- >>> let (walk, binding) = runBinder $ writeKeyValues <$> sequence [keyNName <=?> Nothing, keyCompany <=?> Just "foobar.com"]
--- >>> toGremlin walk
--- "__.property(\"company\",__v0).identity()"
--- >>> sortBy (comparing fst) $ KeyMap.toList binding
--- [("__v0",String "foobar.com")]
---
 -- @since 1.0.0.0
 (<=?>) :: ToJSON b => Key a (Maybe b) -> Maybe b -> Binder (KeyValue a)
 (<=?>) k v@(Just _) = k <=:> v
-(<=?>) k Nothing = return $ KeyNoValue k
+(<=?>) k Nothing    = return $ KeyNoValue k
 
 -- | The result 'Walk' emits the input elements as-is when there is at
 -- least one input element. If there is no input element, it runs the
@@ -141,9 +105,6 @@ writePMapProperties = writePropertyKeyValues . pMapToList
 --
 -- You can use this function to implement \"upsert\" a vertex
 -- (i.e. add a vertex if not exist).
---
--- >>> let getMarko = (source "g" & sV' [] &. gHas2 "name" "marko" :: GTraversal Transform () AVertex)
--- >>> let upsertMarko = (liftWalk getMarko &. gWhenEmptyInput (gAddV "person" >>> gProperty "name" "marko") :: GTraversal SideEffect () AVertex)
 --
 -- See also: https://stackoverflow.com/questions/46027444/
 --
@@ -155,3 +116,35 @@ gWhenEmptyInput body = gCoalesce
                        [ liftWalk $ toGTraversal gUnfold,
                          toGTraversal body
                        ] <<< liftWalk gFold
+
+-- | Examples of using this module. See the source. The 'fst' of the output is the testee, while the
+-- 'snd' is the expectation.
+examples :: [(String, String)]
+examples = for_writePropertyKeyValues ++ for_writeKeyValues ++ for_operators ++ for_gWhenEmptyInput
+  where
+    for_writePropertyKeyValues =
+      let binder = (writePropertyKeyValues [("age", (21 :: Int))] :: Binder (Walk SideEffect AVertex AVertex))
+          (walk, binding) = runBinder binder
+      in [ (unpack $ toGremlin walk, "__.property(\"age\",__v0).identity()")
+         , (show $ sortBy (comparing fst) $ KeyMap.toList binding, "[(\"__v0\",Number 21.0)]")
+         ]
+    for_writeKeyValues =
+      let keyAge = ("age" :: Key AVertex Int)
+          keyName = ("name" :: Key AVertex Text)
+          (walk, binding) = runBinder $ writeKeyValues <$> sequence [keyAge <=:> 21, keyName <=:> "Josh"]
+      in [ (unpack $ toGremlin walk, "__.property(\"age\",__v0).property(\"name\",__v1).identity()")
+         , (show $ sortBy (comparing fst) $ KeyMap.toList binding, "[(\"__v0\",Number 21.0),(\"__v1\",String \"Josh\")]")
+         ]
+    for_operators =
+      let keyNName = ("nickname" :: Key AVertex (Maybe Text))
+          keyCompany = ("company" :: Key AVertex (Maybe Text))
+          (walk, binding) = runBinder $ writeKeyValues <$> sequence [keyNName <=?> Nothing, keyCompany <=?> Just "foobar.com"]
+      in [ (unpack $ toGremlin walk, "__.property(\"company\",__v0).identity()")
+         , (show $ sortBy (comparing fst) $ KeyMap.toList binding, "[(\"__v0\",String \"foobar.com\")]")
+         ]
+    for_gWhenEmptyInput =
+      let getMarko = (source "g" & sV' [] &. gHas2 "name" "marko" :: GTraversal Transform () AVertex)
+          upsertMarko = (liftWalk getMarko &. gWhenEmptyInput (gAddV "person" >>> gProperty "name" "marko") :: GTraversal SideEffect () AVertex)
+      in [ (unpack $ toGremlin upsertMarko, "g.V().has(\"name\",\"marko\").fold().coalesce(__.unfold(),__.addV(\"person\").property(\"name\",\"marko\"))")
+         ]
+

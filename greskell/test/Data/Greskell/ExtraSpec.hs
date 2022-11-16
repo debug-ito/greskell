@@ -1,17 +1,20 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Data.Greskell.ExtraSpec (main,spec) where
+module Data.Greskell.ExtraSpec
+    ( main
+    , spec
+    ) where
 
-import qualified Data.Aeson.KeyMap as KM
-import Data.Monoid (mempty, (<>))
-import Data.Text (Text)
-import Test.Hspec
+import qualified Data.Aeson.KeyMap        as KM
+import           Data.Monoid              (mempty, (<>))
+import           Data.Text                (Text)
+import           Test.Hspec
 
-import Data.Aeson (Value(..))
-import Data.Greskell.Binder (Binder, Binding, runBinder)
-import Data.Greskell.Extra (writePropertyKeyValues, writeKeyValues)
-import Data.Greskell.Graph (AVertex, (=:), Key, KeyValue)
-import Data.Greskell.Greskell (toGremlin)
-import Data.Greskell.GTraversal (Walk, WalkType)
+import           Data.Aeson               (Value (..))
+import           Data.Greskell.Binder     (Binder, Binding, runBinder)
+import           Data.Greskell.Extra      (writeKeyValues, writePropertyKeyValues)
+import           Data.Greskell.Graph      (AVertex, Key, KeyValue, (=:))
+import           Data.Greskell.Greskell   (toGremlin)
+import           Data.Greskell.GTraversal (Walk, WalkType)
 
 main :: IO ()
 main = hspec spec
