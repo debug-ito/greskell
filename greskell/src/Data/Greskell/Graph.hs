@@ -44,6 +44,7 @@ module Data.Greskell.Graph
       -- ** Heterogeneous list of keys
     , Keys (..)
     , singletonKeys
+    , toGremlinKeys
     , (-:)
       -- * Path
     , Path (..)
@@ -297,6 +298,13 @@ instance Monoid (Keys a) where
 -- @since 1.0.0.0
 singletonKeys :: Key a b -> Keys a
 singletonKeys k = KeysCons k KeysNil
+
+-- | Convert 'Keys' to a list of Gremlin scripts.
+--
+-- @since 2.0.1.0
+toGremlinKeys :: Keys a -> [Text]
+toGremlinKeys KeysNil = []
+toGremlinKeys (KeysCons k rest) = toGremlin k : toGremlinKeys rest
 
 -- | Prepend a 'Key' to 'Keys'.
 --

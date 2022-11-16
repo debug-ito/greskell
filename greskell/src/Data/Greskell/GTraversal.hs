@@ -148,6 +148,7 @@ module Data.Greskell.GTraversal
     , gId
     , gLabel
     , gValueMap
+    , gElementMap
     , gSelect1
     , gSelectN
     , gSelectBy1
@@ -232,7 +233,7 @@ import           Data.Greskell.AsLabel    (AsLabel, LabeledP, SelectedMap)
 import           Data.Greskell.Graph      (AEdge, AVertex, AVertexProperty, Cardinality, Edge,
                                            Element (..), ElementID (..), Key, KeyValue (..),
                                            Keys (..), Path, Property (..), T, Vertex, cList, tId,
-                                           (-:), (=:))
+                                           toGremlinKeys, (-:), (=:))
 import           Data.Greskell.GraphSON   (FromGraphSON, GValue)
 import           Data.Greskell.Gremlin    (Comparator (..), P, oDecr, oIncr, pBetween, pEq, pLte)
 import           Data.Greskell.Greskell   (Greskell, ToGreskell (..), gvalueInt, toGremlin,
@@ -1391,9 +1392,14 @@ gValueMap :: Element s
           => Keys s
           -> Walk Transform s (PMap (ElementPropertyContainer s) GValue)
 gValueMap keys = unsafeWalk "valueMap" $ toGremlinKeys keys
-  where
-    toGremlinKeys KeysNil           = []
-    toGremlinKeys (KeysCons k rest) = toGremlin k : toGremlinKeys rest
+
+-- | @.elementMap@ step.
+--
+-- @since 2.0.1.0
+gElementMap :: Element s
+          => Keys s
+          -> Walk Transform s (PMap Single GValue)
+gElementMap keys = unsafeWalk "elementMap" $ toGremlinKeys keys
 
 -- | @.select@ step with one argument.
 --
@@ -1818,6 +1824,12 @@ examples =
     )
   , ( toGremlin (source "g" & sV' [] &. gValueMap ("name" -: "age" -: KeysNil))
     , "g.V().valueMap(\"name\",\"age\")"
+    )
+  , ( toGremlin (source "g" & sV' [] &. gElementMap KeysNil)
+    , "g.V().elementMap()"
+    )
+  , ( toGremlin (source "g" & sV' [] &. gElementMap ("name" -: "age" -: KeysNil))
+    , "g.V().elementMap(\"name\",\"age\")"
     )
   , ( let name_label = "a" :: AsLabel Text
           name_key = "name" :: Key AVertex Text
