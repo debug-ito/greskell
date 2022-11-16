@@ -1,10 +1,13 @@
 # Revision history for greskell
 
-## 2.0.0.1  -- ?
+## 2.0.1.0
 
 * Confirm test with ghc-9.2.1.
 * Remove doctests. This was because it's become more and more difficult to run doctests in a cabal package.
   * @ners helped a lot in https://github.com/debug-ito/greskell/pull/12
+* Add the following functions:
+  * `gElementMap`
+  * `toGremlinKeys`
 
 ## 2.0.0.0  -- 2021-12-28
 
