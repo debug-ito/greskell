@@ -40,7 +40,7 @@ import qualified Data.Aeson.Key                       as Key
 import           Data.Aeson.KeyMap                    (KeyMap)
 import qualified Data.Aeson.KeyMap                    as KM
 import           Data.Aeson.Types                     (Parser)
-import qualified Data.ByteString.Lazy.Char8           as BSLC8
+import qualified Data.ByteString.Lazy.Char8           as BSLC
 import           Data.Either                          (isLeft)
 import           Data.Foldable                        (Foldable, length)
 import           Data.Hashable                        (Hashable)
@@ -124,15 +124,6 @@ instance GraphSONTyped (FlattenedMap c k v) where
 --   'Data.HashMap.Strict.HashMap').
 -- - type @k@: key of the map.
 -- - type @v@: value of the map.
---
--- >>> Aeson.eitherDecode "{\"ten\": 10}" :: Either String (GMap HashMap Text Int)
--- Right (GMap {gmapFlat = False, gmapValue = fromList [("ten",10)]})
--- >>> Aeson.eitherDecode "[\"ten\", 10]" :: Either String (GMap HashMap Text Int)
--- Right (GMap {gmapFlat = True, gmapValue = fromList [("ten",10)]})
--- >>> Aeson.encode $ GMap False (HashMap.fromList [(9, "nine")] :: HashMap Int Text)
--- "{\"9\":\"nine\"}"
--- >>> Aeson.encode $ GMap True (HashMap.fromList [(9, "nine")] :: HashMap Int Text)
--- "[9,\"nine\"]"
 data GMap c k v
   = GMap
       { gmapFlat  :: !Bool
@@ -181,22 +172,10 @@ unGMap = gmapValue
 -- @Map@ with a single entry. Thus its encoded form is either a JSON
 -- object or a flattened key-values, as explained in 'GMap'.
 --
--- >>> Aeson.eitherDecode "{\"1\": \"one\"}" :: Either String (GMapEntry Int Text)
--- Right (GMapEntry {gmapEntryFlat = False, gmapEntryKey = 1, gmapEntryValue = "one"})
--- >>> Aeson.eitherDecode "[1, \"one\"]" :: Either String (GMapEntry Int Text)
--- Right (GMapEntry {gmapEntryFlat = True, gmapEntryKey = 1, gmapEntryValue = "one"})
--- >>> Aeson.encode (GMapEntry False "one" 1 :: GMapEntry Text Int)
--- "{\"one\":1}"
--- >>> Aeson.encode (GMapEntry True "one" 1 :: GMapEntry Text Int)
--- "[\"one\",1]"
---
 -- In old versions of TinkerPop, @Map.Entry@ is encoded as a JSON
 -- object with \"key\" and \"value\" fields. 'FromJSON' instance of
 -- 'GMapEntry' supports this format as well, but 'ToJSON' instance
 -- doesn't support it.
---
--- >>> Aeson.eitherDecode "{\"key\":1, \"value\": \"one\"}" :: Either String (GMapEntry Int Text)
--- Right (GMapEntry {gmapEntryFlat = False, gmapEntryKey = 1, gmapEntryValue = "one"})
 data GMapEntry k v
   = GMapEntry
       { gmapEntryFlat  :: !Bool
@@ -306,13 +285,30 @@ toList gm = map toEntry $ List.toList $ gmapValue gm
 -- | Examples of using this module. See the source. The 'fst' of the output is the testee, while the
 -- 'snd' is the expectation.
 examples :: [(String, String)]
-examples = forFlattenedMap
+examples = forFlattenedMap ++ forGMap ++ forGMapEntry
   where
     forFlattenedMap =
       [ (show $ fmap toSortedList $ decode "[10, \"ten\", 11, \"eleven\"]", "Right [(10,\"ten\"),(11,\"eleven\")]")
       , (show $ fmap toSortedList $ decode "[]", "Right []")
-      , (BSLC8.unpack $ Aeson.encode $ FlattenedMap $ (HashMap.fromList [(10, "ten")] :: HashMap Int String), "[10,\"ten\"]")
+      , (BSLC.unpack $ Aeson.encode $ FlattenedMap $ (HashMap.fromList [(10, "ten")] :: HashMap Int String), "[10,\"ten\"]")
       ]
       where
         decode s = Aeson.eitherDecode s :: Either String (FlattenedMap HashMap Int String)
         toSortedList = sort . HashMap.toList . unFlattenedMap
+    forGMap =
+      [ (show $ decode "{\"ten\": 10}", "Right (GMap {gmapFlat = False, gmapValue = fromList [(\"ten\",10)]})")
+      , (show $ decode "[\"ten\", 10]", "Right (GMap {gmapFlat = True, gmapValue = fromList [(\"ten\",10)]})")
+      , (BSLC.unpack $ Aeson.encode $ GMap False (HashMap.fromList [(9, "nine")] :: HashMap Int Text), "{\"9\":\"nine\"}")
+      , (BSLC.unpack $ Aeson.encode $ GMap True (HashMap.fromList [(9, "nine")] :: HashMap Int Text), "[9,\"nine\"]")
+      ]
+      where
+        decode s = Aeson.eitherDecode s :: Either String (GMap HashMap Text Int)
+    forGMapEntry =
+      [ (show $ decode "{\"1\": \"one\"}", "Right (GMapEntry {gmapEntryFlat = False, gmapEntryKey = 1, gmapEntryValue = \"one\"})")
+      , (show $ decode "[1, \"one\"]", "Right (GMapEntry {gmapEntryFlat = True, gmapEntryKey = 1, gmapEntryValue = \"one\"})")
+      , (BSLC.unpack $ Aeson.encode (GMapEntry False "one" 1 :: GMapEntry Text Int), "{\"one\":1}")
+      , (BSLC.unpack $ Aeson.encode (GMapEntry True "one" 1 :: GMapEntry Text Int), "[\"one\",1]")
+      , (show $ decode "{\"key\":1, \"value\": \"one\"}", "Right (GMapEntry {gmapEntryFlat = False, gmapEntryKey = 1, gmapEntryValue = \"one\"})")
+      ]
+      where
+        decode s = Aeson.eitherDecode s :: Either String (GMapEntry Int Text)
