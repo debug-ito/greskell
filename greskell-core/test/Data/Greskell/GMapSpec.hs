@@ -1,26 +1,39 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Data.Greskell.GMapSpec (main,spec) where
+module Data.Greskell.GMapSpec
+    ( main
+    , spec
+    ) where
 
-import Data.Aeson (eitherDecode, object, (.=), toJSON, Value(..))
-import qualified Data.Aeson.KeyMap as KM
-import Data.HashMap.Strict (HashMap)
-import qualified Data.HashMap.Strict as HM
-import Data.List (isInfixOf)
-import Data.Monoid (mempty)
-import Data.Vector ((!), Vector)
-import qualified Data.Vector as Vec
-import Test.Hspec
+import           Data.Aeson             (Value (..), eitherDecode, object, toJSON, (.=))
+import qualified Data.Aeson.KeyMap      as KM
+import           Data.HashMap.Strict    (HashMap)
+import qualified Data.HashMap.Strict    as HM
+import           Data.List              (isInfixOf)
+import           Data.Monoid            (mempty)
+import           Data.Vector            (Vector, (!))
+import qualified Data.Vector            as Vec
+import           Test.Hspec
 
-import Data.Greskell.GraphSON (GraphSON(..), typedGraphSON, nonTypedGraphSON)
-import Data.Greskell.GMap (GMap(..), GMapEntry(..))
+import           Data.Greskell.GMap     (FlattenedMap, GMap (..), GMapEntry (..))
+import           Data.Greskell.GraphSON (GraphSON (..), nonTypedGraphSON, typedGraphSON)
 
 main :: IO ()
 main = hspec spec
 
 spec :: Spec
 spec = do
+  spec_FlattenedMap
   spec_GMap
   spec_GMapEntry
+
+spec_FlattenedMap :: Spec
+spec_FlattenedMap = describe "FlattenedMap" $ do
+  specify "decode an array with odd number of elements" $ do
+    let got :: Either String (FlattenedMap HashMap Int String)
+        got = eitherDecode "[10, \"ten\", 11]"
+    case got of
+      Right _  -> expectationFailure ("should be Left, but got " ++ show got)
+      Left err -> err `shouldContain` "odd number of elements"
 
 spec_GMap :: Spec
 spec_GMap = describe "GraphSON GMap" $ do

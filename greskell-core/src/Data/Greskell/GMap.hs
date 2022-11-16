@@ -312,13 +312,6 @@ examples = forFlattenedMap
       [ (show $ fmap toSortedList $ decode "[10, \"ten\", 11, \"eleven\"]", "Right [(10,\"ten\"),(11,\"eleven\")]")
       , (show $ fmap toSortedList $ decode "[]", "Right []")
       , (BSLC8.unpack $ Aeson.encode $ FlattenedMap $ (HashMap.fromList [(10, "ten")] :: HashMap Int String), "[10,\"ten\"]")
-
--- >>> let (Left err_msg) = decode "[10, \"ten\", 11]"
--- >>> err_msg
--- ...odd number of elements...
-
-      -- TODO: we should move the above test case into a normal spec file.
-
       ]
       where
         decode s = Aeson.eitherDecode s :: Either String (FlattenedMap HashMap Int String)
