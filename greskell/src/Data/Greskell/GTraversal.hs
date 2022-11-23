@@ -1397,8 +1397,8 @@ gValueMap keys = unsafeWalk "valueMap" $ toGremlinKeys keys
 --
 -- @since 2.0.1.0
 gElementMap :: Element s
-          => Keys s
-          -> Walk Transform s (PMap Single GValue)
+            => Keys s
+            -> Walk Transform s (PMap Single GValue)
 gElementMap keys = unsafeWalk "elementMap" $ toGremlinKeys keys
 
 -- | @.select@ step with one argument.
