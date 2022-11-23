@@ -37,7 +37,7 @@ import           Data.Greskell.Binder     (Binder, newBind, runBinder)
 import           Data.Greskell.Graph      (AVertex, Element, Key, KeyValue (..), Property (..),
                                            (=:))
 import qualified Data.Greskell.Graph      as Graph
-import           Data.Greskell.Greskell   (toGremlin)
+import           Data.Greskell.Greskell   (Greskell, toGremlin)
 import           Data.Greskell.GTraversal (GTraversal, Lift, SideEffect, Split, ToGTraversal (..),
                                            Transform, Walk, WalkType, gAddV, gCoalesce, gFold,
                                            gHas2, gProperty, gUnfold, liftWalk, sV', source, (&.))
@@ -143,8 +143,9 @@ examples = for_writePropertyKeyValues ++ for_writeKeyValues ++ for_operators ++ 
          , (show $ sortBy (comparing fst) $ KeyMap.toList binding, "[(\"__v0\",String \"foobar.com\")]")
          ]
     for_gWhenEmptyInput =
-      let getMarko = (source "g" & sV' [] &. gHas2 "name" "marko" :: GTraversal Transform () AVertex)
-          upsertMarko = (liftWalk getMarko &. gWhenEmptyInput (gAddV "person" >>> gProperty "name" "marko") :: GTraversal SideEffect () AVertex)
+      let nameMarko = "marko" :: Greskell Text
+          getMarko = (source "g" & sV' [] &. gHas2 "name" nameMarko :: GTraversal Transform () AVertex)
+          upsertMarko = (liftWalk getMarko &. gWhenEmptyInput (gAddV "person" >>> gProperty "name" nameMarko) :: GTraversal SideEffect () AVertex)
       in [ (unpack $ toGremlin upsertMarko, "g.V().has(\"name\",\"marko\").fold().coalesce(__.unfold(),__.addV(\"person\").property(\"name\",\"marko\"))")
          ]
 

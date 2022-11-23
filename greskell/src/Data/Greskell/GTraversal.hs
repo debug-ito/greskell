@@ -1657,7 +1657,7 @@ examples =
   , ( toGremlin (gValues ["age"] $. sV' [] $ source "g")
     , "g.V().values(\"age\")"
     )
-  , ( toGremlin (source "g" & sAddV' "person" &. gProperty "name" "marko" & gIterate)
+  , ( toGremlin (source "g" & sAddV' "person" &. gProperty "name" ("marko" :: Greskell Text) & gIterate)
     , "g.addV(\"person\").property(\"name\",\"marko\").iterate()"
     )
   , ( toGremlin (source "g" & sV' [] &. unsafeWalk "valueMap" ["'foo'", "'bar'"])
@@ -1844,10 +1844,10 @@ examples =
   , ( toGremlin (source "g" & sV' [fmap ElementID $ gvalueInt (8 :: Int)] &. gOut' ["knows"])
     , "g.V(8).out(\"knows\")"
     )
-  , ( toGremlin (source "g" & sV' [] & liftWalk &. gHas2 "name" "marko" &. gSideEffect' (gAddV' "toshio"))
+  , ( toGremlin (source "g" & sV' [] & liftWalk &. gHas2 "name" ("marko" :: Greskell Text) &. gSideEffect' (gAddV' "toshio"))
     , "g.V().has(\"name\",\"marko\").sideEffect(__.addV(\"toshio\"))"
     )
-  , ( toGremlin (source "g" & sV' [] &. gHas2 "name" "marko" & liftWalk &. gDrop)
+  , ( toGremlin (source "g" & sV' [] &. gHas2 "name" ("marko" :: Greskell Text) & liftWalk &. gDrop)
     , "g.V().has(\"name\",\"marko\").drop()"
     )
   , ( toGremlin (source "g" & sE' [] &. gProperties ["weight"] & liftWalk &. gDropP)
