@@ -202,7 +202,7 @@ module Data.Greskell.GTraversal
     , gBy1
     , gBy2
     , gByL
-      -- *
+      -- * Examples
     , examples
       -- * Only for tests
     , showWalkType
