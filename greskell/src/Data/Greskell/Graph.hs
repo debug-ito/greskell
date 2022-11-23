@@ -303,7 +303,7 @@ singletonKeys k = KeysCons k KeysNil
 --
 -- @since 2.0.1.0
 toGremlinKeys :: Keys a -> [Text]
-toGremlinKeys KeysNil = []
+toGremlinKeys KeysNil           = []
 toGremlinKeys (KeysCons k rest) = toGremlin k : toGremlinKeys rest
 
 -- | Prepend a 'Key' to 'Keys'.
