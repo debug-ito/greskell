@@ -1,53 +1,61 @@
-{-# LANGUAGE OverloadedStrings, DuplicateRecordFields #-}
-module ServerTest.Connection (main,spec) where
+{-# LANGUAGE DataKinds             #-}
+{-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE OverloadedStrings     #-}
+{-# LANGUAGE TypeApplications      #-}
+module ServerTest.Connection
+    ( main
+    , spec
+    ) where
 
-import Control.Exception.Safe (bracket, Exception, withException, SomeException, throwString)
-import Control.Concurrent (threadDelay)
-import Control.Concurrent.Async (mapConcurrently, Async, withAsync, async, wait)
-import Control.Concurrent.STM
-  ( newEmptyTMVarIO, putTMVar, takeTMVar, atomically,
-    TVar, newTVarIO, modifyTVar, readTVar,
-    TQueue, newTQueueIO, writeTQueue, flushTQueue
-  )
-import Control.Monad (when, forever, forM_, mapM)
-import Data.Aeson (Value(Number), FromJSON(..), ToJSON(toJSON), Object)
-import qualified Data.Aeson as Aeson
-import qualified Data.Aeson.Types as Aeson (parseEither)
-import qualified Data.Aeson.KeyMap as KM
-import qualified Data.ByteString.Lazy as BSL
-import Data.Maybe (isNothing, isJust, fromJust)
-import Data.Monoid ((<>))
-import Data.Greskell.GraphSON (GraphSON, gsonValue)
-import Data.Text (Text, pack)
-import qualified Data.Vector as V
-import Data.UUID (UUID)
-import qualified Data.UUID as UUID
-import Data.UUID.V4 (nextRandom)
-import qualified Network.WebSockets as WS
-import System.IO (stderr, hPutStrLn)
-import Test.Hspec
+import           Control.Concurrent                          (threadDelay)
+import           Control.Concurrent.Async                    (Async, async, mapConcurrently, wait,
+                                                              withAsync)
+import           Control.Concurrent.STM                      (TQueue, TVar, atomically, flushTQueue,
+                                                              modifyTVar, newEmptyTMVarIO,
+                                                              newTQueueIO, newTVarIO, putTMVar,
+                                                              readTVar, takeTMVar, writeTQueue)
+import           Control.Exception.Safe                      (Exception, SomeException, bracket,
+                                                              throwString, withException)
+import           Control.Monad                               (forM_, forever, mapM, when)
+import           Data.Aeson                                  (FromJSON (..), Object,
+                                                              ToJSON (toJSON), Value (Number))
+import qualified Data.Aeson                                  as Aeson
+import qualified Data.Aeson.KeyMap                           as KM
+import qualified Data.Aeson.Types                            as Aeson (parseEither)
+import qualified Data.ByteString.Lazy                        as BSL
+import           Data.Greskell.GraphSON                      (GraphSON, gsonValue)
+import           Data.Maybe                                  (fromJust, isJust, isNothing)
+import           Data.Monoid                                 ((<>))
+import           Data.Text                                   (Text, pack)
+import           Data.UUID                                   (UUID)
+import qualified Data.UUID                                   as UUID
+import           Data.UUID.V4                                (nextRandom)
+import qualified Data.Vector                                 as V
+import           GHC.Records                                 (HasField (..))
+import qualified Network.WebSockets                          as WS
+import           System.IO                                   (hPutStrLn, stderr)
+import           Test.Hspec
 
-import Network.Greskell.WebSocket.Connection
-  ( Host, Port, Connection, ResponseHandle,
-    close, connect, sendRequest', sendRequest, slurpResponses,
-    nextResponse,
-    RequestException(..), GeneralException(..),
-    Settings(onGeneralException, responseTimeout, concurrency, requestQueueSize),
-    defJSONSettings
-  )
-import Network.Greskell.WebSocket.Request
-  ( RequestMessage(requestId), toRequestMessage, makeRequestMessage
-  )
-import Network.Greskell.WebSocket.Request.Standard (OpEval(..))
-import Network.Greskell.WebSocket.Response
-  ( ResponseMessage(requestId, status, result), ResponseStatus(code), ResponseCode(..),
-    ResponseResult(resultData)
-  )
-import qualified Network.Greskell.WebSocket.Response as Response
+import           Network.Greskell.WebSocket.Connection       (Connection, GeneralException (..),
+                                                              Host, Port, RequestException (..),
+                                                              ResponseHandle,
+                                                              Settings (concurrency, onGeneralException, requestQueueSize, responseTimeout),
+                                                              close, connect, defJSONSettings,
+                                                              nextResponse, sendRequest,
+                                                              sendRequest', slurpResponses)
+import           Network.Greskell.WebSocket.Request          (RequestMessage (requestId),
+                                                              makeRequestMessage, toRequestMessage)
+import           Network.Greskell.WebSocket.Request.Standard (OpEval (..))
+import           Network.Greskell.WebSocket.Response         (ResponseCode (..),
+                                                              ResponseMessage (requestId, result, status),
+                                                              ResponseResult (resultData),
+                                                              ResponseStatus (code))
 
-import qualified TestUtil.TCounter as TCounter
-import TestUtil.Env (withEnvForExtServer, withEnvForIntServer)
-import TestUtil.MockServer (wsServer, receiveRequest, simpleRawResponse, waitForServer)
+import           TestUtil.Env                                (withEnvForExtServer,
+                                                              withEnvForIntServer)
+import           TestUtil.MockServer                         (receiveRequest, simpleRawResponse,
+                                                              waitForServer, wsServer)
+import qualified TestUtil.TCounter                           as TCounter
 
 
 main :: IO ()
@@ -124,8 +132,8 @@ no_external_server_spec = describe "connect" $ do
         expectSomeEx :: SomeException -> Bool
         expectSomeEx _ = True
     inspectException act `shouldThrow` expectSomeEx
-    
-  
+
+
 
 conn_basic_spec :: SpecWith (Host, Port)
 conn_basic_spec = do
@@ -136,7 +144,7 @@ conn_basic_spec = do
         exp_val = [123]
     res <- sendRequest' conn $ toRequestMessage rid op
     got <- slurpParseEval res
-    map (Response.requestId) got `shouldBe` [rid]
+    map (getField @"requestId") got `shouldBe` [rid]
     map (code . status) got `shouldBe` [Success]
     map responseValues got `shouldBe` [Right exp_val]
   specify "continuous response with bindings" $ withConn $ \conn -> do
@@ -147,7 +155,7 @@ conn_basic_spec = do
         exp_vals :: [Either String [Int]]
         exp_vals = map Right [[1,2], [3,4], [5,6], [7,8], [9,10]]
     got <- slurpParseEval =<< (sendRequest' conn $ toRequestMessage rid op)
-    map (Response.requestId) got `shouldBe` replicate 5 rid
+    map (getField @"requestId") got `shouldBe` replicate 5 rid
     map (code . status) got `shouldBe` ((replicate 4 PartialContent) ++ [Success])
     map responseValues got `shouldBe` exp_vals
   specify "concurrent requests" $ withConn $ \conn -> do
@@ -207,8 +215,8 @@ conn_error_spec :: SpecWith (Host, Port)
 conn_error_spec = do
   specify "duplicate requests" $ withConn $ \conn -> do
     req <- makeRequestMessage $ opSleep 300
-    let expEx (DuplicateRequestId got_rid) = got_rid == requestId (req :: RequestMessage)
-        expEx _ = False
+    let expEx (DuplicateRequestId got_rid) = got_rid == getField @"requestId" req
+        expEx _                            = False
     ok_rh <- sendRequest' conn req
     ng_rh <- sendRequest' conn req
     ok_res <- slurpEvalValues ok_rh :: IO [Either String [Int]]
@@ -217,7 +225,7 @@ conn_error_spec = do
   specify "request timeout" $ \(host, port) -> do
     let settings = ourSettings { responseTimeout = 1 }
         expEx ResponseTimeout = True
-        expEx _ = False
+        expEx _               = False
     forConn' settings host port $ \conn -> do
       rh <- sendRequest conn $ opSleep 2000
       (nextResponse rh) `shouldThrow` expEx
@@ -246,13 +254,13 @@ conn_close_spec = describe "close" $ do
     got `shouldBe` map (\v -> [Right [v]]) [200, 400, 600]
   it "should make nextResponse throw AlreadyClosed exception. nextResponse should throw it every time it's called" $ withConn $ \conn -> do
     let expEx AlreadyClosed = True
-        expEx _ = False
+        expEx _             = False
     close conn
     rh <- sendRequest conn $ opEval "999"
     nextResponse rh `shouldThrow` expEx
-    nextResponse rh `shouldThrow` expEx 
     nextResponse rh `shouldThrow` expEx
-  
+    nextResponse rh `shouldThrow` expEx
+
 
 succUUID :: UUID -> UUID
 succUUID orig = UUID.fromWords a b c d'
@@ -270,7 +278,7 @@ conn_bad_server_spec = do
                           ++ " It's because of WS.runServer internals."
                         )
           exp_ex ServerClosed = True
-          exp_ex _ = False
+          exp_ex _            = False
       withAsync server $ \_ -> do
         waitForServer
         forConn "localhost" port $ \conn -> do
@@ -286,7 +294,7 @@ conn_bad_server_spec = do
                             ++ show wscode
                           )
           exp_ex ServerClosed = True
-          exp_ex _ = False
+          exp_ex _            = False
       withAsync server $ \_ -> do
         waitForServer
         forConn "localhost" port $ \conn -> do
@@ -295,7 +303,7 @@ conn_bad_server_spec = do
     it "should be ok if the server actively closes the connection" $ \port -> do
       let server = wsServer port $ \wsconn -> do
             req <- receiveRequest wsconn
-            WS.sendBinaryData wsconn $ simpleRawResponse (requestId (req :: RequestMessage)) 200 "[99]"
+            WS.sendBinaryData wsconn $ simpleRawResponse (getField @"requestId" req) 200 "[99]"
       withAsync server $ \_ -> do
         waitForServer
         forConn "localhost" port $ \conn -> do
@@ -307,7 +315,7 @@ conn_bad_server_spec = do
             threadDelay 10000
             WS.sendClose wsconn ("" :: Text)
           expEx AlreadyClosed = True
-          expEx _ = False
+          expEx _             = False
       withAsync server $ \_ -> do
         waitForServer
         forConn "localhost" port $ \conn -> do
@@ -319,7 +327,7 @@ conn_bad_server_spec = do
       report_gex <- newEmptyTMVarIO
       let server = wsServer port $ \wsconn -> do
             req <- receiveRequest wsconn
-            let res_id = succUUID $ requestId (req :: RequestMessage)  -- deliberately send wrong requestId.
+            let res_id = succUUID $ getField @"requestId" req -- deliberately send wrong requestId.
                 res = simpleRawResponse res_id 200 "[333]"
             WS.sendBinaryData wsconn res
           reportEx ex = atomically $ putTMVar report_gex ex
@@ -328,7 +336,7 @@ conn_bad_server_spec = do
         waitForServer
         forConn' settings "localhost" port $ \conn -> do
           req <- makeRequestMessage $ opEval "333"
-          let exp_res_id = succUUID $ requestId (req :: RequestMessage)
+          let exp_res_id = succUUID $ getField @"requestId" req
           _ <- sendRequest' conn req
           got <- atomically $ takeTMVar report_gex
           got `shouldBe` UnexpectedRequestId exp_res_id
@@ -342,14 +350,14 @@ conn_bad_server_spec = do
         waitForServer
         forConn' settings "localhost" port $ \conn -> do
           let expEx (ResponseParseFailure _) = True
-              expEx _ = False
+              expEx _                        = False
           _ <- sendRequest conn $ opEval "100"
           got <- atomically $ takeTMVar report_gex
           got `shouldSatisfy` expEx
     it "should throw ResponseTimeout exception when the server endlessly sends responses" $ \port -> do
       let server = wsServer port $ \wsconn -> do
             req <- receiveRequest wsconn
-            let res_id = requestId (req :: RequestMessage)
+            let res_id = getField @"requestId" req
             sendContinuousRes wsconn res_id 20
           sendContinuousRes :: WS.Connection -> UUID -> Int -> IO ()
           sendContinuousRes wsconn res_id n = do
@@ -361,7 +369,7 @@ conn_bad_server_spec = do
               else sendContinuousRes wsconn res_id (n - 1)
           settings = ourSettings { responseTimeout = 1 }
           expEx ResponseTimeout = True
-          expEx _ = False
+          expEx _               = False
       withAsync server $ \_ -> do
         waitForServer
         forConn' settings "localhost" port $ \conn -> do
@@ -370,4 +378,4 @@ conn_bad_server_spec = do
             mgot <- (fmap . fmap) (responseValues . fmap parseValue) $ nextResponse rh :: IO (Maybe (Either String [Int]))
             mgot `shouldBe` (Just $ Right [1])
           slurpResponses rh `shouldThrow` expEx
-          
+

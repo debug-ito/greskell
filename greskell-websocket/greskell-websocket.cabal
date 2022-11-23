@@ -23,7 +23,7 @@ library
   hs-source-dirs:       src
   ghc-options:          -Wall -fno-warn-unused-imports
   -- default-extensions:   
-  other-extensions:     OverloadedStrings, DuplicateRecordFields,
+  other-extensions:     OverloadedStrings, DuplicateRecordFields, DataKinds, TypeApplications,
                         DeriveGeneric, PartialTypeSignatures, FlexibleContexts,
                         CPP
   exposed-modules:      Network.Greskell.WebSocket,

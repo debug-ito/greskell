@@ -1,4 +1,7 @@
-{-# LANGUAGE DuplicateRecordFields, CPP #-}
+{-# LANGUAGE CPP                   #-}
+{-# LANGUAGE DataKinds             #-}
+{-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE TypeApplications      #-}
 -- |
 -- Module: Network.Greskell.WebSocket.Connection.Impl
 -- Description: internal implementation of Connection
@@ -8,50 +11,50 @@
 -- upper module is responsible to make a proper export list.
 module Network.Greskell.WebSocket.Connection.Impl where
 
-import Control.Applicative ((<$>), (<|>), empty)
-import Control.Concurrent (threadDelay)
-import Control.Concurrent.Async (withAsync, Async, async, waitCatchSTM, waitAnySTM)
-import qualified Control.Concurrent.Async as Async
-import Control.Concurrent.STM
-  ( TBQueue, readTBQueue, newTBQueueIO, writeTBQueue,
-    TQueue, writeTQueue, newTQueueIO, readTQueue,
-    TVar, newTVarIO, readTVar, writeTVar,
-    TMVar, tryPutTMVar, tryReadTMVar, putTMVar, newEmptyTMVarIO, readTMVar,
-    STM, atomically, retry
-  )
-import qualified Control.Concurrent.STM as STM
-import Control.Exception.Safe
-  ( Exception(toException), SomeException, withException, throw, try, finally
-  )
-import Control.Monad (when, void, forM_)
-import Data.Aeson (Value)
-import qualified Data.ByteString.Lazy as BSL
-import Data.Foldable (toList)
-import qualified Data.HashTable.IO as HT
-import Data.Monoid (mempty)
-import Data.Typeable (Typeable)
-import Data.UUID (UUID)
-import Data.Vector (Vector)
-import qualified Network.WebSockets as WS
+import           Control.Applicative                            (empty, (<$>), (<|>))
+import           Control.Concurrent                             (threadDelay)
+import           Control.Concurrent.Async                       (Async, async, waitAnySTM,
+                                                                 waitCatchSTM, withAsync)
+import qualified Control.Concurrent.Async                       as Async
+import           Control.Concurrent.STM                         (STM, TBQueue, TMVar, TQueue, TVar,
+                                                                 atomically, newEmptyTMVarIO,
+                                                                 newTBQueueIO, newTQueueIO,
+                                                                 newTVarIO, putTMVar, readTBQueue,
+                                                                 readTMVar, readTQueue, readTVar,
+                                                                 retry, tryPutTMVar, tryReadTMVar,
+                                                                 writeTBQueue, writeTQueue,
+                                                                 writeTVar)
+import qualified Control.Concurrent.STM                         as STM
+import           Control.Exception.Safe                         (Exception (toException),
+                                                                 SomeException, finally, throw, try,
+                                                                 withException)
+import           Control.Monad                                  (forM_, void, when)
+import           Data.Aeson                                     (Value)
+import qualified Data.ByteString.Lazy                           as BSL
+import           Data.Foldable                                  (toList)
+import qualified Data.HashTable.IO                              as HT
+import           Data.Monoid                                    (mempty)
+import           Data.Typeable                                  (Typeable)
+import           Data.UUID                                      (UUID)
+import           Data.Vector                                    (Vector)
+import           GHC.Records                                    (HasField (..))
+import qualified Network.WebSockets                             as WS
 
-import Network.Greskell.WebSocket.Codec (Codec(decodeWith, encodeWith), encodeBinaryWith)
-import Network.Greskell.WebSocket.Connection.Settings (Settings)
+import           Network.Greskell.WebSocket.Codec               (Codec (decodeWith, encodeWith),
+                                                                 encodeBinaryWith)
+import           Network.Greskell.WebSocket.Connection.Settings (Settings)
 import qualified Network.Greskell.WebSocket.Connection.Settings as Settings
-import Network.Greskell.WebSocket.Connection.Type
-  ( Connection(..), ConnectionState(..),
-    ResPack, ReqID, ReqPack(..), RawRes,
-    GeneralException(..)
-  )
-import Network.Greskell.WebSocket.Request
-  ( RequestMessage(RequestMessage, requestId),
-    Operation, makeRequestMessage
-  )
-import Network.Greskell.WebSocket.Response
-  ( ResponseMessage(ResponseMessage, requestId, status),
-    ResponseStatus(ResponseStatus, code),
-    isTerminating
-  )
-import Network.Greskell.WebSocket.Util (slurp, drain)
+import           Network.Greskell.WebSocket.Connection.Type     (Connection (..),
+                                                                 ConnectionState (..),
+                                                                 GeneralException (..), RawRes,
+                                                                 ReqID, ReqPack (..), ResPack)
+import           Network.Greskell.WebSocket.Request             (Operation,
+                                                                 RequestMessage (RequestMessage, requestId),
+                                                                 makeRequestMessage)
+import           Network.Greskell.WebSocket.Response            (ResponseMessage (ResponseMessage, requestId, status),
+                                                                 ResponseStatus (ResponseStatus, code),
+                                                                 isTerminating)
+import           Network.Greskell.WebSocket.Util                (drain, slurp)
 
 
 flushTBQueue :: TBQueue a -> STM [a]
@@ -96,7 +99,7 @@ connect settings host port = do
 --
 -- If there are pending requests in the 'Connection', 'close' function
 -- blocks for them to complete or time out.
--- 
+--
 -- Calling 'close' on a 'Connection' already closed (or waiting to
 -- close) does nothing.
 close :: Connection s -> IO ()
@@ -116,7 +119,7 @@ close conn = do
       if cur_state == ConnClosed
         then return ()
         else retry
-  
+
 type Path = String
 
 -- | A thread taking care of a WS connection.
@@ -135,7 +138,7 @@ runWSConn settings host port path req_pool qreq var_connect_result var_conn_stat
         else setupMux wsconn
     setupMux wsconn = do
       qres <- newTQueueIO
-      withAsync (runRxLoop wsconn qres) $ \rx_thread -> 
+      withAsync (runRxLoop wsconn qres) $ \rx_thread ->
         runMuxLoop wsconn req_pool settings qreq qres (readTVar var_conn_state) rx_thread
     checkAndReportConnectSuccess = atomically $ do
       mret <- tryReadTMVar var_connect_result
@@ -169,40 +172,41 @@ reportToQReq qreq cause = atomically $ do
     reportToReqPack reqp = writeTQueue (reqOutput reqp) $ Left cause
 
 -- | An exception related to a specific request.
-data RequestException =
-    AlreadyClosed
-    -- ^ The connection is already closed before it sends the request.
+data RequestException
+  = AlreadyClosed
+  -- ^ The connection is already closed before it sends the request.
   | ServerClosed
-    -- ^ The server closed the connection before it sends response for
-    -- this request.
+  -- ^ The server closed the connection before it sends response for
+  -- this request.
   | DuplicateRequestId UUID
-    -- ^ The requestId (kept in this object) is already pending in the
-    -- connection.
+  -- ^ The requestId (kept in this object) is already pending in the
+  -- connection.
   | ResponseTimeout
-    -- ^ The server fails to send ResponseMessages within
-    -- 'Settings.responseTimeout'.
-  deriving (Show,Eq,Typeable)
+  -- ^ The server fails to send ResponseMessages within
+  -- 'Settings.responseTimeout'.
+  deriving (Eq, Show, Typeable)
 
 instance Exception RequestException
 
-data ReqPoolEntry s =
-  ReqPoolEntry
-  { rpeReqId :: !ReqID,
-    rpeOutput :: !(TQueue (ResPack s)),
-    rpeTimer :: !(Async ReqID)
-    -- ^ timer thread to time out response.
-  }
+data ReqPoolEntry s
+  = ReqPoolEntry
+      { rpeReqId  :: !ReqID
+      , rpeOutput :: !(TQueue (ResPack s))
+      , rpeTimer  :: !(Async ReqID)
+        -- ^ timer thread to time out response.
+      }
 
 -- | (requestId of pending request) --> (objects related to that pending request)
 type ReqPool s = HT.BasicHashTable ReqID (ReqPoolEntry s)
 
 -- | Multiplexed event object
-data MuxEvent s = EvReq (ReqPack s)
-                | EvRes RawRes
-                | EvActiveClose
-                | EvRxFinish
-                | EvRxError SomeException
-                | EvResponseTimeout ReqID
+data MuxEvent s
+  = EvReq (ReqPack s)
+  | EvRes RawRes
+  | EvActiveClose
+  | EvRxFinish
+  | EvRxError SomeException
+  | EvResponseTimeout ReqID
 
 -- | HashTable's mutateIO is available since 1.2.3.0
 tryInsertToReqPool :: ReqPool s
@@ -248,11 +252,11 @@ runMuxLoop wsconn req_pool settings qreq qres readConnState rx_thread = loop
       res_timers <- getAllResponseTimers req_pool
       event <- atomically $ getEventSTM res_timers
       case event of
-       EvReq req -> handleReq req >> loop
-       EvRes res -> handleRes res >> loop
-       EvActiveClose -> return ()
-       EvRxFinish -> handleRxFinish
-       EvRxError e -> throw e
+       EvReq req             -> handleReq req >> loop
+       EvRes res             -> handleRes res >> loop
+       EvActiveClose         -> return ()
+       EvRxFinish            -> handleRxFinish
+       EvRxError e           -> throw e
        EvResponseTimeout rid -> handleResponseTimeout rid >> loop
     getEventSTM res_timers = getRequest
                              <|> (EvRes <$> readTQueue qres)
@@ -266,7 +270,7 @@ runMuxLoop wsconn req_pool settings qreq qres readConnState rx_thread = loop
                        then EvReq <$> readTBQueue qreq
                        else empty
           rxResultToEvent (Right ()) = EvRxFinish
-          rxResultToEvent (Left e) = EvRxError e
+          rxResultToEvent (Left e)   = EvRxError e
           timeoutToEvent (_, rid) = EvResponseTimeout rid
           makeEvActiveClose = do
             if cur_concurrency > 0
@@ -291,7 +295,7 @@ runMuxLoop wsconn req_pool settings qreq qres readConnState rx_thread = loop
           reportError =
             atomically $ writeTQueue qout $ Left $ toException $ DuplicateRequestId rid
     handleRes res = case decodeWith codec res of
-      Left err -> Settings.onGeneralException settings $ ResponseParseFailure err
+      Left err      -> Settings.onGeneralException settings $ ResponseParseFailure err
       Right res_msg -> handleResMsg res_msg
     handleResMsg res_msg@(ResponseMessage { requestId = rid }) = do
       m_entry <- HT.lookup req_pool rid
@@ -344,17 +348,17 @@ runTimer :: Int -> ReqID -> IO (Async ReqID)
 runTimer wait_sec rid = async $ do
   threadDelay $ wait_sec * 1000000
   return rid
-  
+
 
 -- | A handle associated in a 'Connection' for a pair of request and
 -- response. You can retrieve 'ResponseMessage's from this object.
 --
 -- Type @s@ is the body of the response.
-data ResponseHandle s =
-  ResponseHandle
-  { rhGetResponse :: STM (ResPack s),
-    rhTerminated :: TVar Bool
-  }
+data ResponseHandle s
+  = ResponseHandle
+      { rhGetResponse :: STM (ResPack s)
+      , rhTerminated  :: TVar Bool
+      }
 
 instance Functor ResponseHandle where
   fmap f rh = rh { rhGetResponse = (fmap . fmap . fmap) f $ rhGetResponse rh }
@@ -382,7 +386,7 @@ sendRequest' conn req_msg = do
     codec = connCodec conn
     qreq = connQReq conn
     var_conn_state = connState conn
-    rid = requestId (req_msg :: RequestMessage)
+    rid = getField @"requestId" req_msg
     getConnectionOpen = fmap (== ConnOpen) $ atomically $ readTVar var_conn_state
     sendReqPack qout = do
       atomically $ writeTBQueue qreq reqpack
@@ -400,7 +404,7 @@ sendRequest' conn req_msg = do
                }
     reportAlreadyClosed qout = do
       atomically $ writeTQueue qout $ Left $ toException $ AlreadyClosed
-    
+
 
 -- | Get a 'ResponseMessage' from 'ResponseHandle'. If you have
 -- already got all responses, it returns 'Nothing'. This function may
