@@ -100,6 +100,9 @@ import           Data.Greskell.PMap            (Multi, PMap, PMapKey (..), Singl
 
 -- | ID of a graph element @e@ (vertex, edge and vertex property).
 --
+-- Although the internal of 'ElementID' is exposed, you should treat it as an opaque value. That's
+-- because it depends on graph implementation.
+--
 -- @since 1.0.0.0
 newtype ElementID e
   = ElementID { unElementID :: GValue }

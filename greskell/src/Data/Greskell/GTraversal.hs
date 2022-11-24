@@ -45,17 +45,16 @@ module Data.Greskell.GTraversal
     , (<*.>)
     , gIterate
     , unsafeGTraversal
-      -- |
-      -- Functions for TinkerPop graph traversal steps.
+      -- * Walk/Steps
+      --
+      -- | Functions for TinkerPop graph traversal steps.
       -- __For now greskell does not cover all graph traversal steps.__
       -- If you want some steps added, just open an issue.
       --
-      -- There may be multiple versions of Haskell functions for a
-      -- single step. This is because Gremlin steps are too
-      -- polymorphic for Haskell. greskell should be type-safe so
-      -- that incorrect combination of steps is detected in compile
-      -- time.
-      -- ** Low-level functions
+      -- There may be multiple versions of Haskell functions for a single step. This is because Gremlin
+      -- steps are too polymorphic for Haskell. greskell should be type-safe so that incorrect combination
+      -- of steps is detected in compile time.
+      -- Functions for TinkerPop graph traversal steps.
     , unsafeWalk
     , modulateWith
       -- ** Filter steps
@@ -192,8 +191,10 @@ module Data.Greskell.GTraversal
     , gDropP
     , gProperty
     , gPropertyV
-      -- | @.by@ steps are not 'Walk' on their own because they are
-      -- always used in conjunction with other steps like 'gOrder'.
+      -- ** @.by@ steps
+      --
+      -- | @.by@ steps are not 'Walk' on their own because they are always used in conjunction with
+      -- other steps like 'gOrder'.
     , ByProjection (..)
     , ProjectionLike (..)
     , ByComparator (..)
@@ -1228,6 +1229,7 @@ instance ProjectionLike (Greskell (s -> e)) where
 instance ProjectionLike (ByProjection s e) where
   type ProjectionLikeStart (ByProjection s e) = s
   type ProjectionLikeEnd (ByProjection s e) = e
+
 
 -- | Projection from type @s@ to type @e@ used in @.by@ step. You can
 -- also use 'gBy' to construct 'ByProjection'.
