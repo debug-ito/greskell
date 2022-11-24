@@ -1,16 +1,16 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Data.Greskell.PMapSpec (main,spec) where
+module Data.Greskell.PMapSpec
+    ( main
+    , spec
+    ) where
 
-import Prelude hiding (lookup)
+import           Prelude            hiding (lookup)
 
-import Data.Text (Text)
-import Test.Hspec
+import           Data.Text          (Text)
+import           Test.Hspec
 
-import Data.Greskell.PMap
-  ( PMap, Single, Multi,
-    pMapFromList, pMapToList, pMapInsert, pMapDelete,
-    lookup, lookupList
-  )
+import           Data.Greskell.PMap (Multi, PMap, Single, lookup, lookupList, pMapDelete,
+                                     pMapFromList, pMapInsert, pMapToList)
 
 main :: IO ()
 main = hspec spec
@@ -124,4 +124,4 @@ spec = do
           ("buzz", 600),
           ("foo", 700)
         ]
-    
+

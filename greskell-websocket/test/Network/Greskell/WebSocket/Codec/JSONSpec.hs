@@ -1,37 +1,39 @@
-{-# LANGUAGE OverloadedStrings, DuplicateRecordFields, NoMonomorphismRestriction #-}
-module Network.Greskell.WebSocket.Codec.JSONSpec (main,spec) where
+{-# LANGUAGE DuplicateRecordFields     #-}
+{-# LANGUAGE NoMonomorphismRestriction #-}
+{-# LANGUAGE OverloadedStrings         #-}
+module Network.Greskell.WebSocket.Codec.JSONSpec
+    ( main
+    , spec
+    ) where
 
-import Control.Applicative ((<$>))
-import Control.Monad (forM_)
-import Data.Aeson (Value(Null, Number), (.=))
-import qualified Data.Aeson as A
-import qualified Data.Aeson.KeyMap as KM
-import qualified Data.ByteString as BS
-import qualified Data.ByteString.Lazy as BSL
-import Data.Greskell.GraphSON
-  ( GValue, GValueBody(..),
-    nonTypedGValue, typedGValue'
-  )
-import Data.Greskell.Greskell (unsafeGreskell, Greskell)
-import qualified Data.HashMap.Strict as HM
-import Data.Maybe (fromJust)
-import Data.Monoid (mempty, (<>))
-import qualified Data.UUID as UUID
-import qualified Data.Vector as V
-import Test.Hspec
+import           Control.Applicative                         ((<$>))
+import           Control.Monad                               (forM_)
+import           Data.Aeson                                  (Value (Null, Number), (.=))
+import qualified Data.Aeson                                  as A
+import qualified Data.Aeson.KeyMap                           as KM
+import qualified Data.ByteString                             as BS
+import qualified Data.ByteString.Lazy                        as BSL
+import           Data.Greskell.GraphSON                      (GValue, GValueBody (..),
+                                                              nonTypedGValue, typedGValue')
+import           Data.Greskell.Greskell                      (Greskell, unsafeGreskell)
+import qualified Data.HashMap.Strict                         as HM
+import           Data.Maybe                                  (fromJust)
+import           Data.Monoid                                 (mempty, (<>))
+import qualified Data.UUID                                   as UUID
+import qualified Data.Vector                                 as V
+import           Test.Hspec
 
-import Network.Greskell.WebSocket.Request
-  ( RequestMessage(..), toRequestMessage
-  )
-import Network.Greskell.WebSocket.Request.Common (SASLMechanism(..), Operation, Base64(..))
-import Network.Greskell.WebSocket.Request.Standard
-  ( OpAuthentication(..), OpEval(..)
-  )
-import qualified Network.Greskell.WebSocket.Request.Session as S
-import Network.Greskell.WebSocket.Response
-  (ResponseMessage(..), ResponseStatus(..), ResponseResult(..), ResponseCode(..))
-import Network.Greskell.WebSocket.Codec (Codec(..))
-import Network.Greskell.WebSocket.Codec.JSON (jsonCodec)
+import           Network.Greskell.WebSocket.Codec            (Codec (..))
+import           Network.Greskell.WebSocket.Codec.JSON       (jsonCodec)
+import           Network.Greskell.WebSocket.Request          (RequestMessage (..), toRequestMessage)
+import           Network.Greskell.WebSocket.Request.Common   (Base64 (..), Operation,
+                                                              SASLMechanism (..))
+import qualified Network.Greskell.WebSocket.Request.Session  as S
+import           Network.Greskell.WebSocket.Request.Standard (OpAuthentication (..), OpEval (..))
+import           Network.Greskell.WebSocket.Response         (ResponseCode (..),
+                                                              ResponseMessage (..),
+                                                              ResponseResult (..),
+                                                              ResponseStatus (..))
 
 main :: IO ()
 main = hspec spec
@@ -48,7 +50,7 @@ loadSampleValue :: FilePath -> IO Value
 loadSampleValue filename = do
   json_text <- loadSample filename
   case A.eitherDecode' json_text of
-   Left e -> error e
+   Left e  -> error e
    Right v -> return v
 
 uuidFromString :: String -> UUID.UUID
@@ -93,7 +95,7 @@ decode_spec = describe "decodeWith" $ do
                    [ ("id", nonTypedGValue $ GNumber 1),
                      ("label", nonTypedGValue $ GString "person"),
                      ("type", nonTypedGValue $ GString "vertex")
-                   ] 
+                   ]
                  ]
         exp_typed_vertex = typedGValue' "g:Vertex" $ GObject $ KM.fromList
                            [ ("id", typedGValue' "g:Int32" $ GNumber 1),
@@ -114,7 +116,7 @@ decode_spec = describe "decodeWith" $ do
 
 encodedValue :: Codec s -> RequestMessage -> Value
 encodedValue c req = case A.eitherDecode $ encodeWith c req of
-  Left e -> error e
+  Left e  -> error e
   Right v -> v
 
 encodeCase :: String -> RequestMessage -> Spec

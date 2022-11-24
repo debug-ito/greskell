@@ -1,30 +1,30 @@
 -- |
 -- Module: TestUtil.TCounter
--- Description: 
+-- Description:
 -- Maintainer: Toshio Ito <debug.ito@gmail.com>
 --
--- 
+--
 module TestUtil.TCounter
-       ( TCounter,
-         new,
-         modify,
-         now,
-         waitFor,
-         history,
-         count
-       ) where
+    ( TCounter
+    , new
+    , modify
+    , now
+    , waitFor
+    , history
+    , count
+    ) where
 
-import Control.Applicative ((<$>), (<*>))
-import Control.Concurrent.STM
-  ( TVar, newTVarIO, modifyTVar, readTVar,
-    STM, atomically, retry
-  )
+import           Control.Applicative    ((<$>), (<*>))
+import           Control.Concurrent.STM (STM, TVar, atomically, modifyTVar, newTVarIO, readTVar,
+                                         retry)
 
 -- | Transaction counter.
-data TCounter = TCounter { tcCurrent :: TVar Int,
-                           tcHistory :: TVar [Int]
-                         }
-  
+data TCounter
+  = TCounter
+      { tcCurrent :: TVar Int
+      , tcHistory :: TVar [Int]
+      }
+
 new :: IO TCounter
 new = TCounter <$> newTVarIO 0 <*> newTVarIO []
 

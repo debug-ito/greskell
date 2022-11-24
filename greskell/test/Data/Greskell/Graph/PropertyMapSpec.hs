@@ -1,13 +1,14 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Data.Greskell.Graph.PropertyMapSpec (main,spec) where
+module Data.Greskell.Graph.PropertyMapSpec
+    ( main
+    , spec
+    ) where
 
-import Data.Monoid (mempty, (<>))
-import Test.Hspec
+import           Data.Monoid                     (mempty, (<>))
+import           Test.Hspec
 
-import Data.Greskell.Graph.PropertyMap
-  ( PropertyMapSingle, PropertyMapList, AProperty(..),
-    PropertyMap(..)
-  )
+import           Data.Greskell.Graph.PropertyMap (AProperty (..), PropertyMap (..), PropertyMapList,
+                                                  PropertyMapSingle)
 
 main :: IO ()
 main = hspec spec

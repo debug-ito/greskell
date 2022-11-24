@@ -6,27 +6,27 @@
 --
 -- @since 0.1.2.0
 module Data.Greskell.AsIterator
-       ( AsIterator(..)
-       ) where
+    ( AsIterator (..)
+    ) where
 
-import qualified Data.HashMap.Lazy as L (HashMap)
-import Data.HashSet (HashSet)
-import Data.List.NonEmpty (NonEmpty)
-import Data.Int (Int8, Int16, Int32, Int64)
-import qualified Data.IntMap.Lazy as L (IntMap)
-import Data.IntSet (IntSet)
-import qualified Data.Map.Lazy as L (Map)
-import Data.Ratio (Ratio)
-import Data.Scientific (Scientific)
-import Data.Sequence (Seq)
-import Data.Set (Set)
-import Data.Text (Text)
-import qualified Data.Text.Lazy as TL
-import Data.Vector (Vector)
-import Data.Word (Word8, Word16, Word32, Word64)
-import Numeric.Natural (Natural)
+import qualified Data.HashMap.Lazy  as L (HashMap)
+import           Data.HashSet       (HashSet)
+import           Data.Int           (Int16, Int32, Int64, Int8)
+import qualified Data.IntMap.Lazy   as L (IntMap)
+import           Data.IntSet        (IntSet)
+import           Data.List.NonEmpty (NonEmpty)
+import qualified Data.Map.Lazy      as L (Map)
+import           Data.Ratio         (Ratio)
+import           Data.Scientific    (Scientific)
+import           Data.Sequence      (Seq)
+import           Data.Set           (Set)
+import           Data.Text          (Text)
+import qualified Data.Text.Lazy     as TL
+import           Data.Vector        (Vector)
+import           Data.Word          (Word16, Word32, Word64, Word8)
+import           Numeric.Natural    (Natural)
 
-import Data.Greskell.GMap (GMap, GMapEntry)
+import           Data.Greskell.GMap (GMap, GMapEntry)
 
 -- | Types that are converted to an iterator by
 -- @org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils.asIterator@

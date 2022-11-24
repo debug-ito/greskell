@@ -10,37 +10,33 @@
 --
 -- @since 0.1.2.0
 module Data.Greskell.GraphSON.GValue
-       ( -- * GValue type
-         GValue(..),
-         GValueBody(..),
-         -- ** constructors
-         nonTypedGValue,
-         typedGValue',
-         -- ** deconstructors
-         -- $caveat_decon
-         unwrapAll,
-         unwrapOne,
-         gValueBody,
-         gValueType
-       ) where
+    ( -- * GValue type
+      GValue (..)
+    , GValueBody (..)
+      -- ** constructors
+    , nonTypedGValue
+    , typedGValue'
+      -- ** deconstructors
+      -- $caveat_decon
+    , unwrapAll
+    , unwrapOne
+    , gValueBody
+    , gValueType
+    ) where
 
-import Control.Applicative ((<$>), (<*>))
-import Data.Aeson
-  ( ToJSON(toJSON), FromJSON(parseJSON), Value(..)
-  )
-import Data.Aeson.KeyMap (KeyMap)
-import Data.Aeson.Types (Parser)
-import Data.Foldable (foldl')
-import Data.Hashable (Hashable(..))
-import Data.HashMap.Strict (HashMap)
-import Data.Scientific (Scientific)
-import Data.Text (Text)
-import Data.Vector (Vector)
-import GHC.Generics (Generic)
+import           Control.Applicative         ((<$>), (<*>))
+import           Data.Aeson                  (FromJSON (parseJSON), ToJSON (toJSON), Value (..))
+import           Data.Aeson.KeyMap           (KeyMap)
+import           Data.Aeson.Types            (Parser)
+import           Data.Foldable               (foldl')
+import           Data.Hashable               (Hashable (..))
+import           Data.HashMap.Strict         (HashMap)
+import           Data.Scientific             (Scientific)
+import           Data.Text                   (Text)
+import           Data.Vector                 (Vector)
+import           GHC.Generics                (Generic)
 
-import Data.Greskell.GraphSON.Core
-  ( nonTypedGraphSON, typedGraphSON', GraphSON(..)
-  )
+import           Data.Greskell.GraphSON.Core (GraphSON (..), nonTypedGraphSON, typedGraphSON')
 
 -- | An Aeson 'Value' wrapped in 'GraphSON' wrapper type. Basically
 -- this type is the Haskell representaiton of a GraphSON-encoded
@@ -48,33 +44,34 @@ import Data.Greskell.GraphSON.Core
 --
 -- This type is used to parse GraphSON documents. See also
 -- 'Data.Greskell.GraphSON.FromGraphSON' class.
--- 
+--
 -- @since 0.1.2.0
-newtype GValue = GValue { unGValue :: GraphSON GValueBody }
-                 deriving (Show,Eq,Generic)
+newtype GValue
+  = GValue { unGValue :: GraphSON GValueBody }
+  deriving (Eq, Generic, Show)
 
 instance Hashable GValue
 
 -- | 'GValue' without the top-level 'GraphSON' wrapper.
 --
 -- @since 1.0.0.0
-data GValueBody =
-    GObject !(KeyMap GValue)
+data GValueBody
+  = GObject !(KeyMap GValue)
   | GArray !(Vector GValue)
   | GString !Text
   | GNumber !Scientific
   | GBool !Bool
   | GNull
-  deriving (Show,Eq,Generic)
+  deriving (Eq, Generic, Show)
 
 instance Hashable GValueBody where
 -- See Data.Aeson.Types.Internal
-  hashWithSalt s (GObject o) = s `hashWithSalt` (0::Int) `hashWithSalt` o
-  hashWithSalt s (GArray a) = foldl' hashWithSalt (s `hashWithSalt` (1::Int)) a
+  hashWithSalt s (GObject o)   = s `hashWithSalt` (0::Int) `hashWithSalt` o
+  hashWithSalt s (GArray a)    = foldl' hashWithSalt (s `hashWithSalt` (1::Int)) a
   hashWithSalt s (GString str) = s `hashWithSalt` (2::Int) `hashWithSalt` str
-  hashWithSalt s (GNumber n) = s `hashWithSalt` (3::Int) `hashWithSalt` n
-  hashWithSalt s (GBool b) = s `hashWithSalt` (4::Int) `hashWithSalt` b
-  hashWithSalt s GNull = s `hashWithSalt` (5::Int)
+  hashWithSalt s (GNumber n)   = s `hashWithSalt` (3::Int) `hashWithSalt` n
+  hashWithSalt s (GBool b)     = s `hashWithSalt` (4::Int) `hashWithSalt` b
+  hashWithSalt s GNull         = s `hashWithSalt` (5::Int)
 
 -- | Parse 'GraphSON' wrappers recursively in 'Value', making it into
 -- 'GValue'.
@@ -86,11 +83,11 @@ instance FromJSON GValue where
     where
       recurse :: Value -> Parser GValueBody
       recurse (Object o) = GObject <$> traverse parseJSON o
-      recurse (Array a) = GArray <$> traverse parseJSON a
+      recurse (Array a)  = GArray <$> traverse parseJSON a
       recurse (String s) = return $ GString s
       recurse (Number n) = return $ GNumber n
-      recurse (Bool b) = return $ GBool b
-      recurse Null = return GNull
+      recurse (Bool b)   = return $ GBool b
+      recurse Null       = return GNull
 
 -- | Reconstruct 'Value' from 'GValue'. It preserves all GraphSON
 -- wrappers.
@@ -99,14 +96,14 @@ instance ToJSON GValue where
 
 instance ToJSON GValueBody where
   toJSON (GObject o) = toJSON o
-  toJSON (GArray a) = toJSON a
+  toJSON (GArray a)  = toJSON a
   toJSON (GString s) = String s
   toJSON (GNumber n) = Number n
-  toJSON (GBool b) = Bool b
-  toJSON GNull = Null
+  toJSON (GBool b)   = Bool b
+  toJSON GNull       = Null
 
 -- | Create a 'GValue' without \"@type\" field.
--- 
+--
 -- @since 0.1.2.0
 nonTypedGValue :: GValueBody -> GValue
 nonTypedGValue = GValue . nonTypedGraphSON
@@ -150,11 +147,11 @@ unwrapOne = unwrapBase toJSON
 unwrapBase :: (GValue -> Value) -> GValue -> Value
 unwrapBase mapChild (GValue gson_body) = unwrapBody $ gsonValue gson_body
   where
-    unwrapBody GNull = Null
-    unwrapBody (GBool b) = Bool b
+    unwrapBody GNull       = Null
+    unwrapBody (GBool b)   = Bool b
     unwrapBody (GNumber n) = Number n
     unwrapBody (GString s) = String s
-    unwrapBody (GArray a) = Array $ fmap mapChild a
+    unwrapBody (GArray a)  = Array $ fmap mapChild a
     unwrapBody (GObject o) = Object $ fmap mapChild o
 
 -- | Get the 'GValueBody' from 'GValue'.

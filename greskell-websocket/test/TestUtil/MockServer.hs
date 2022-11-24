@@ -1,24 +1,24 @@
 {-# LANGUAGE OverloadedStrings #-}
 module TestUtil.MockServer
-       ( wsServer,
-         parseRequest,
-         receiveRequest,
-         simpleRawResponse,
-         waitForServer
-       ) where
+    ( wsServer
+    , parseRequest
+    , receiveRequest
+    , simpleRawResponse
+    , waitForServer
+    ) where
 
-import Control.Concurrent (threadDelay)
-import Control.Exception.Safe (throwString)
-import qualified Data.Aeson as Aeson
-import qualified Data.ByteString.Lazy as BSL
-import Data.Monoid ((<>))
-import Data.Text (Text, pack)
-import Data.UUID (UUID)
-import qualified Data.UUID as UUID
-import qualified Network.WebSockets as WS
+import           Control.Concurrent                 (threadDelay)
+import           Control.Exception.Safe             (throwString)
+import qualified Data.Aeson                         as Aeson
+import qualified Data.ByteString.Lazy               as BSL
+import           Data.Monoid                        ((<>))
+import           Data.Text                          (Text, pack)
+import           Data.UUID                          (UUID)
+import qualified Data.UUID                          as UUID
+import qualified Network.WebSockets                 as WS
 
-import Network.Greskell.WebSocket.Codec (decodeBinary)
-import Network.Greskell.WebSocket.Request (RequestMessage)
+import           Network.Greskell.WebSocket.Codec   (decodeBinary)
+import           Network.Greskell.WebSocket.Request (RequestMessage)
 
 
 wsServer :: Int -- ^ port number
@@ -36,7 +36,7 @@ receiveRequest :: WS.Connection -> IO RequestMessage
 receiveRequest wsconn = do
   raw_msg <- WS.receiveData wsconn
   case parseRequest raw_msg of
-   Left e -> throwString e
+   Left e  -> throwString e
    Right r -> return r
 
 simpleRawResponse :: UUID -> Int -> Text -> Text

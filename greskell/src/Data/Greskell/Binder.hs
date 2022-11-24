@@ -1,41 +1,42 @@
-{-# LANGUAGE OverloadedStrings, GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE OverloadedStrings          #-}
 -- |
 -- Module: Data.Greskell.Binder
 -- Description: Binder monad to make binding between Gremlin variables and JSON values
 -- Maintainer: Toshio Ito <debug.ito@gmail.com>
 --
--- 
+--
 module Data.Greskell.Binder
-       ( -- * Types
-         Binder,
-         Binding,
-         -- * Actions
-         newBind,
-         newAsLabel,
-         -- * Runners
-         runBinder
-       ) where
+    ( -- * Types
+      Binder
+    , Binding
+      -- * Actions
+    , newBind
+    , newAsLabel
+      -- * Runners
+    , runBinder
+    ) where
 
-import Control.Monad.Trans.State (State)
+import           Control.Monad.Trans.State (State)
 import qualified Control.Monad.Trans.State as State
-import Data.Aeson (Value, ToJSON(toJSON), Object)
-import qualified Data.Aeson.KeyMap as KM
-import qualified Data.Aeson.Key as Key
-import Data.Monoid ((<>))
-import qualified Data.Text as T
-import qualified Data.Text.Lazy as TL
+import           Data.Aeson                (Object, ToJSON (toJSON), Value)
+import qualified Data.Aeson.Key            as Key
+import qualified Data.Aeson.KeyMap         as KM
+import           Data.Monoid               ((<>))
+import qualified Data.Text                 as T
+import qualified Data.Text.Lazy            as TL
 
-import Data.Greskell.AsLabel (AsLabel(..))
-import Data.Greskell.Greskell (unsafeGreskellLazy, Greskell)
+import           Data.Greskell.AsLabel     (AsLabel (..))
+import           Data.Greskell.Greskell    (Greskell, unsafeGreskellLazy)
 
 -- | State in the 'Binder'.
-data BinderS =
-  BinderS
-  { varIndex :: PlaceHolderIndex,
-    varBindings :: [Value],
-    asLabelIndex :: PlaceHolderIndex
-  }
-  deriving (Show,Eq)
+data BinderS
+  = BinderS
+      { varIndex     :: PlaceHolderIndex
+      , varBindings  :: [Value]
+      , asLabelIndex :: PlaceHolderIndex
+      }
+  deriving (Eq, Show)
 
 initBinderS :: BinderS
 initBinderS =
@@ -46,8 +47,9 @@ initBinderS =
   }
 
 -- | A Monad that manages binding variables and labels to values.
-newtype Binder a = Binder { unBinder :: State BinderS a }
-                   deriving (Functor, Applicative, Monad)
+newtype Binder a
+  = Binder { unBinder :: State BinderS a }
+  deriving (Applicative, Functor, Monad)
 
 -- | Binding between Gremlin variable names and JSON values.
 type Binding = Object

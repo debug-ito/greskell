@@ -1,4 +1,5 @@
-{-# LANGUAGE TypeFamilies, GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE TypeFamilies               #-}
 -- |
 -- Module: Data.Greskell.AsLabel
 -- Description: Label string used in .as step
@@ -6,45 +7,44 @@
 --
 -- @since 0.2.2.0
 module Data.Greskell.AsLabel
-       ( -- * AsLabel
-         AsLabel(..),
-         SelectedMap,
-         unsafeCastAsLabel,
-         -- * Re-exports
-         lookup,
-         lookupM,
-         lookupAs,
-         lookupAsM,
-         PMapLookupException(..),
-         -- * LabeledP
-         LabeledP
-       ) where
+    ( -- * AsLabel
+      AsLabel (..)
+    , SelectedMap
+    , unsafeCastAsLabel
+      -- * Re-exports
+    , lookup
+    , lookupM
+    , lookupAs
+    , lookupAsM
+    , PMapLookupException (..)
+      -- * LabeledP
+    , LabeledP
+    ) where
 
-import Prelude hiding (lookup)
+import           Prelude                hiding (lookup)
 
-import Control.Exception (Exception)
-import Control.Monad.Catch (MonadThrow(..))
-import Data.Foldable (Foldable)
-import Data.Hashable (Hashable)
-import Data.HashMap.Strict (HashMap)
-import qualified Data.HashMap.Strict as HM
-import Data.Greskell.GraphSON (GValue, GraphSONTyped(..), FromGraphSON(..), parseEither)
-import Data.Greskell.Greskell (ToGreskell(..))
+import           Control.Exception      (Exception)
+import           Control.Monad.Catch    (MonadThrow (..))
+import           Data.Foldable          (Foldable)
+import           Data.Greskell.GraphSON (FromGraphSON (..), GValue, GraphSONTyped (..), parseEither)
+import           Data.Greskell.Greskell (ToGreskell (..))
 import qualified Data.Greskell.Greskell as Greskell
-import Data.String (IsString(..))
-import Data.Text (Text)
-import Data.Traversable (Traversable)
+import           Data.Hashable          (Hashable)
+import           Data.HashMap.Strict    (HashMap)
+import qualified Data.HashMap.Strict    as HM
+import           Data.String            (IsString (..))
+import           Data.Text              (Text)
+import           Data.Traversable       (Traversable)
 
-import Data.Greskell.Gremlin (PLike(..), P)
-import Data.Greskell.PMap
-  ( PMap, PMapKey(..), Single,
-    lookup, lookupM, lookupAs, lookupAsM, PMapLookupException(..)
-  )
+import           Data.Greskell.Gremlin  (P, PLike (..))
+import           Data.Greskell.PMap     (PMap, PMapKey (..), PMapLookupException (..), Single,
+                                         lookup, lookupAs, lookupAsM, lookupM)
 
 -- | 'AsLabel' @a@ represents a label string used in @.as@ step
 -- pointing to the data of type @a@.
-newtype AsLabel a = AsLabel { unAsLabel :: Text }
-               deriving (Show,Eq,Ord,Hashable)
+newtype AsLabel a
+  = AsLabel { unAsLabel :: Text }
+  deriving (Eq, Hashable, Ord, Show)
 
 -- | @since 1.0.0.0
 instance IsString (AsLabel a) where

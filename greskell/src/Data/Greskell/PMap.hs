@@ -1,66 +1,70 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving, DeriveTraversable, TypeFamilies, OverloadedStrings #-}
+{-# LANGUAGE DeriveTraversable          #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE TypeFamilies               #-}
 -- |
 -- Module: Data.Greskell.PMap
 -- Description: Property map, a map with Text keys and cardinality options
 -- Maintainer: Toshio Ito <debug.ito@gmail.com>
 --
 -- This module defines 'PMap', a map with 'Text' keys and cardinality
--- options. 
+-- options.
 --
 -- @since 1.0.0.0
 module Data.Greskell.PMap
-  ( -- * PMap
-    PMap,
-    -- ** Single lookup
-    lookup,
-    lookupM,
-    lookupAs,
-    lookupAs',
-    lookupAsM,
-    -- ** List lookup
-    lookupList,
-    lookupListAs,
-    lookupListAs',
-    -- ** Others
-    pMapInsert,
-    pMapDelete,
-    pMapLookup,
-    pMapToList,
-    pMapFromList,
-    -- * Cardinality
-    Single,
-    Multi,
-    -- * PMapKey
-    PMapKey(..),
-    -- * Errors
-    PMapLookupException(..),
-    pMapDecribeError,
-    pMapToThrow,
-    pMapToFail
-  ) where
+    ( -- * PMap
+      PMap
+      -- ** Single lookup
+    , lookup
+    , lookupM
+    , lookupAs
+    , lookupAs'
+    , lookupAsM
+      -- ** List lookup
+    , lookupList
+    , lookupListAs
+    , lookupListAs'
+      -- ** Others
+    , pMapInsert
+    , pMapDelete
+    , pMapLookup
+    , pMapToList
+    , pMapFromList
+      -- * Cardinality
+    , Single
+    , Multi
+      -- * PMapKey
+    , PMapKey (..)
+      -- * Errors
+    , PMapLookupException (..)
+    , pMapDecribeError
+    , pMapToThrow
+    , pMapToFail
+    ) where
 
-import Prelude hiding (lookup)
+import           Prelude                    hiding (lookup)
 
-import Control.Exception (Exception)
-import Control.Monad.Catch (MonadThrow(..), MonadCatch(..))
-import Control.Monad.Fail (MonadFail)
-import Data.Aeson.Types (Parser)
-import qualified Data.Foldable as F
-import Data.Functor.Identity (Identity)
-import Data.Greskell.AsIterator (AsIterator(..))
-import Data.Greskell.GMap (GMapEntry)
-import Data.Greskell.GraphSON (GValue, GraphSONTyped(..), FromGraphSON(..), parseEither)
-import qualified Data.HashMap.Strict as HM
-import Data.Kind (Type)
-import Data.List.NonEmpty (NonEmpty((:|)))
-import Data.Maybe (listToMaybe)
-import Data.Monoid (Monoid(..))
-import Data.Semigroup (Semigroup((<>)))
-import qualified Data.Semigroup as S
-import Data.Traversable (Traversable(traverse))
-import Data.Text (Text, unpack)
+import           Control.Exception          (Exception)
+import           Control.Monad.Catch        (MonadCatch (..), MonadThrow (..))
+import           Control.Monad.Fail         (MonadFail)
+import           Data.Aeson.Types           (Parser)
+import qualified Data.Foldable              as F
+import           Data.Functor.Identity      (Identity)
+import           Data.Greskell.AsIterator   (AsIterator (..))
+import           Data.Greskell.GMap         (GMapEntry)
+import           Data.Greskell.GraphSON     (FromGraphSON (..), GValue, GraphSONTyped (..),
+                                             parseEither)
+import qualified Data.HashMap.Strict        as HM
+import           Data.Kind                  (Type)
+import           Data.List.NonEmpty         (NonEmpty ((:|)))
+import           Data.Maybe                 (listToMaybe)
+import           Data.Monoid                (Monoid (..))
+import           Data.Semigroup             (Semigroup ((<>)))
+import qualified Data.Semigroup             as S
+import           Data.Text                  (Text, unpack)
+import           Data.Traversable           (Traversable (traverse))
 
-import Data.Greskell.NonEmptyLike (NonEmptyLike)
+import           Data.Greskell.NonEmptyLike (NonEmptyLike)
 import qualified Data.Greskell.NonEmptyLike as NEL
 
 -- | A property map, which has text keys and @v@ values. @c@ specifies
@@ -71,8 +75,9 @@ import qualified Data.Greskell.NonEmptyLike as NEL
 -- class.
 --
 -- @since 1.0.0.0
-newtype PMap c v = PMap (HM.HashMap Text (c v))
-                 deriving (Show,Eq,Functor,Foldable,Traversable)
+newtype PMap c v
+  = PMap (HM.HashMap Text (c v))
+  deriving (Eq, Foldable, Functor, Show, Traversable)
 
 instance GraphSONTyped (PMap c v) where
   gsonTypeFor _ = "g:Map"
@@ -149,7 +154,7 @@ lookupAs' :: (PMapKey k, NonEmptyLike c, PMapValue k ~ (Maybe a), FromGraphSON a
 lookupAs' k pm = either fromError Right $ lookupAs k pm
   where
     fromError (PMapNoSuchKey _) = Right Nothing
-    fromError e = Left e
+    fromError e                 = Left e
 
 -- | 'MonadThrow' version of 'lookupAs'.
 lookupAsM :: (PMapKey k, NonEmptyLike c, PMapValue k ~ a, FromGraphSON a, MonadThrow m)
@@ -166,7 +171,7 @@ lookupListAs :: (PMapKey k, NonEmptyLike c, PMapValue k ~ a, FromGraphSON a)
              => k -> PMap c GValue -> Either PMapLookupException (NonEmpty a)
 lookupListAs k pm =
   case lookupList k pm of
-    [] -> Left $ PMapNoSuchKey kt
+    []         -> Left $ PMapNoSuchKey kt
     (x : rest) -> either (Left . PMapParseError kt) Right $ traverse parseEither (x :| rest)
   where
     kt = keyText k
@@ -182,7 +187,7 @@ lookupListAs' :: (PMapKey k, NonEmptyLike c, PMapValue k ~ (Maybe a), FromGraphS
 lookupListAs' k pm = either fromError (Right . F.toList) $ lookupListAs k pm
   where
     fromError (PMapNoSuchKey _) = Right []
-    fromError e = Left e
+    fromError e                 = Left e
 
 -- | The single cardinality for 'PMap'. 'pMapInsert' method replaces
 -- the old value. '<>' on 'PMap' prefers the items from the left
@@ -197,8 +202,9 @@ type Single = S.First
 -- the order of the items for each key.
 --
 -- @since 1.0.0.0
-newtype Multi a = Multi (NonEmpty a)
-              deriving (Show,Eq,Ord,Functor,Semigroup,Foldable,Traversable,NonEmptyLike,FromGraphSON)
+newtype Multi a
+  = Multi (NonEmpty a)
+  deriving (Eq, Foldable, FromGraphSON, Functor, NonEmptyLike, Ord, Semigroup, Show, Traversable)
 
 -- | A typed key for 'PMap'.
 --
@@ -218,30 +224,30 @@ instance PMapKey Text where
 -- | An 'Exception' raised when looking up values from 'PMap'.
 --
 -- @since 1.0.0.0
-data PMapLookupException =
-    PMapNoSuchKey Text
+data PMapLookupException
+  = PMapNoSuchKey Text
   -- ^ The 'PMap' doesn't have the given key.
   | PMapParseError Text String
   -- ^ Failed to parse the value into the type that the 'PMapKey'
   -- indicates. The 'Text' is the key, and the 'String' is the error
   -- message.
-  deriving (Show,Eq,Ord)
+  deriving (Eq, Ord, Show)
 
 instance Exception PMapLookupException
 
 -- | Make a human-readable description on 'PMapLookupException'.
 pMapDecribeError :: PMapLookupException -> String
-pMapDecribeError (PMapNoSuchKey k) = "Property '" ++ unpack k ++ "' does not exist."
+pMapDecribeError (PMapNoSuchKey k)     = "Property '" ++ unpack k ++ "' does not exist."
 pMapDecribeError (PMapParseError k pe) = "Parse error of property '" ++ unpack k ++ "': " ++ pe
 
 -- | Convert the lookup result into a 'MonadThrow'. It throws
 -- 'PMapLookupException'.
 pMapToThrow :: MonadThrow m => Either PMapLookupException a -> m a
-pMapToThrow (Left e) = throwM e
+pMapToThrow (Left e)  = throwM e
 pMapToThrow (Right a) = return a
 
 -- | Convert the lookup result into a 'MonadFail'. It fails with the
 -- description returned by 'pMapDecribeError'.
 pMapToFail :: MonadFail m => Either PMapLookupException a -> m a
-pMapToFail (Left e) = fail $ pMapDecribeError e
+pMapToFail (Left e)  = fail $ pMapDecribeError e
 pMapToFail (Right a) = return a

@@ -3,36 +3,39 @@
 -- Description: Encoder\/decoder of Request\/Response
 -- Maintainer: Toshio Ito <debug.ito@gmail.com>
 --
--- 
+--
 module Network.Greskell.WebSocket.Codec
-       ( -- * Codec
-         Codec(..),
-         -- * Request encoder
-         encodeBinaryWith,
-         messageHeader,
-         -- * Request decoder
-         decodeBinary
-       ) where
+    ( -- * Codec
+      Codec (..)
+      -- * Request encoder
+    , encodeBinaryWith
+    , messageHeader
+      -- * Request decoder
+    , decodeBinary
+    ) where
 
-import Control.Monad (when)
-import qualified Data.ByteString.Lazy as BSL
-import Data.Monoid ((<>))
-import Data.Text (Text)
-import Data.Text.Encoding (encodeUtf8, decodeUtf8')
+import           Control.Monad                       (when)
+import qualified Data.ByteString.Lazy                as BSL
+import           Data.Monoid                         ((<>))
+import           Data.Text                           (Text)
+import           Data.Text.Encoding                  (decodeUtf8', encodeUtf8)
 
-import Network.Greskell.WebSocket.Request (RequestMessage)
-import Network.Greskell.WebSocket.Response (ResponseMessage)
+import           Network.Greskell.WebSocket.Request  (RequestMessage)
+import           Network.Greskell.WebSocket.Response (ResponseMessage)
 
 -- | Encoder of 'RequestMessage' and decoder of 'ResponseMessage',
 -- associated with a MIME type.
 --
 -- Type @s@ is the body of Response.
-data Codec s =
-  Codec
-  { mimeType :: Text, -- ^ MIME type sent to the server
-    encodeWith :: RequestMessage -> BSL.ByteString, -- ^ Request encoder
-    decodeWith :: BSL.ByteString -> Either String (ResponseMessage s) -- ^ Response decoder
-  }
+data Codec s
+  = Codec
+      { mimeType   :: Text
+        -- ^ MIME type sent to the server
+      , encodeWith :: RequestMessage -> BSL.ByteString
+        -- ^ Request encoder
+      , decodeWith :: BSL.ByteString -> Either String (ResponseMessage s)
+        -- ^ Response decoder
+      }
 
 instance Functor Codec where
   fmap f c = c { decodeWith = (fmap . fmap . fmap) f $ decodeWith c }
@@ -57,7 +60,7 @@ decodeBinary :: BSL.ByteString
              -> Either String (Text, BSL.ByteString) -- ^ (mimeType, payload)
 decodeBinary raw_msg = do
   case BSL.uncons raw_msg of
-   Nothing -> Left "Length of MIME type is missing in the header."
+   Nothing               -> Left "Length of MIME type is missing in the header."
    Just (mime_len, rest) -> decodeMimeAndPayload mime_len rest
   where
     decodeMimeAndPayload mime_lenw msg = do

@@ -1,16 +1,19 @@
-module Data.Greskell.BinderSpec (main,spec) where
+module Data.Greskell.BinderSpec
+    ( main
+    , spec
+    ) where
 
-import Control.Applicative ((<$>), (<*>))
-import Control.Monad (forM_)
-import Data.Aeson (toJSON)
-import qualified Data.Aeson.KeyMap as KM
-import qualified Data.Aeson.Key as Key
-import Data.Text (unpack)
-import Test.Hspec
+import           Control.Applicative    ((<$>), (<*>))
+import           Control.Monad          (forM_)
+import           Data.Aeson             (toJSON)
+import qualified Data.Aeson.Key         as Key
+import qualified Data.Aeson.KeyMap      as KM
+import           Data.Text              (unpack)
+import           Test.Hspec
 
-import Data.Greskell.AsLabel (AsLabel)
-import Data.Greskell.Greskell (toGremlin, unsafeGreskell, Greskell)
-import Data.Greskell.Binder (Binder, newBind, runBinder, newAsLabel)
+import           Data.Greskell.AsLabel  (AsLabel)
+import           Data.Greskell.Binder   (Binder, newAsLabel, newBind, runBinder)
+import           Data.Greskell.Greskell (Greskell, toGremlin, unsafeGreskell)
 
 main :: IO ()
 main = hspec spec

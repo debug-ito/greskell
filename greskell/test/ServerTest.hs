@@ -1,69 +1,58 @@
-{-# LANGUAGE OverloadedStrings, TypeFamilies #-}
-module Main (main,spec) where
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeFamilies      #-}
+module Main
+    ( main
+    , spec
+    ) where
 
-import Control.Category ((<<<), (>>>))
-import qualified Data.Aeson as Aeson
-import Data.Either (isRight)
-import Data.Foldable (toList)
-import Data.HashMap.Strict (HashMap)
-import qualified Data.HashMap.Strict as HM
-import Data.List (sort)
-import Data.Monoid (mempty, (<>))
-import Data.Scientific (Scientific)
-import Data.Text (unpack, Text)
-import Data.Traversable (traverse)
-import qualified Data.Vector as V
+import           Control.Category                  ((<<<), (>>>))
+import qualified Data.Aeson                        as Aeson
+import           Data.Either                       (isRight)
+import           Data.Foldable                     (toList)
+import           Data.HashMap.Strict               (HashMap)
+import qualified Data.HashMap.Strict               as HM
+import           Data.List                         (sort)
+import           Data.Monoid                       (mempty, (<>))
+import           Data.Scientific                   (Scientific)
+import           Data.Text                         (Text, unpack)
+import           Data.Traversable                  (traverse)
+import qualified Data.Vector                       as V
 import qualified Network.Greskell.WebSocket.Client as WS
-import Test.Hspec
+import           Test.Hspec
 
-import Data.Greskell.AsLabel (AsLabel(..), lookupAsM)
-import qualified Data.Greskell.AsLabel as As
-import Data.Greskell.AsIterator
-  ( AsIterator(IteratorItem)
-  )
-import Data.Greskell.Binder (newBind, runBinder)
-import Data.Greskell.Extra (gWhenEmptyInput)
-import Data.Greskell.GMap (GMapEntry, unGMapEntry)
-import Data.Greskell.Gremlin
-  ( oIncr, oDecr, cCompare, Order,
-    Predicate(..), pLt, pAnd, pGte, pNot, pEq, pTest, P
-  )
-import Data.Greskell.Greskell
-  ( toGremlin, Greskell, toGreskell, ToGreskell(..),
-    true, false, list, value, single, number, gvalueInt,
-    unsafeMethodCall, unsafeGreskell
-  )
-import Data.Greskell.Graph
-  ( AVertex(..), AEdge(..), AProperty(..), AVertexProperty(..),
-    Key, Keys(..), (-:), singletonKeys,
-    T, tId, tLabel, tKey, tValue, cList, (=:),
-    ElementID(..),
-    Path(..), makePathEntry
-  )
-import Data.Greskell.GraphSON
-  ( FromGraphSON, nonTypedGValue, GValue,
-    parseEither
-  )
-import Data.Greskell.GTraversal
-  ( Walk, GTraversal, SideEffect,
-    source, sV', sE', gV', sAddV', gAddE', gTo,
-    ($.), gOrder, gBy1, gBy, gByL,
-    Transform, unsafeWalk, unsafeGTraversal,
-    gProperties, gProperty, gPropertyV, liftWalk, gValues,
-    gAs, gSelect1, gSelectN, gSelectBy1, gSelectByN,
-    gFilter, gOut', gOutV, gOutV', gInV, gInV', gId, gLabel, gProject,
-    gValueMap,
-    gProject, gByL,
-    gRepeat, gTimes, gEmitHead, gUntilTail, gLoops, gIsP, gIsP',
-    gHasLabel, gHas2, gAddV, gIterate,
-    gPath, gPathBy,
-    gWhereP1, gChoose3, gIdentity, gWhereP2,
-    gMatch, mPattern
-  )
-import Data.Greskell.Logic (Logic(..))
-import Data.Greskell.PMap (lookupAsM, lookupListAs, pMapToThrow)
+import           Data.Greskell.AsIterator          (AsIterator (IteratorItem))
+import           Data.Greskell.AsLabel             (AsLabel (..), lookupAsM)
+import qualified Data.Greskell.AsLabel             as As
+import           Data.Greskell.Binder              (newBind, runBinder)
+import           Data.Greskell.Extra               (gWhenEmptyInput)
+import           Data.Greskell.GMap                (GMapEntry, unGMapEntry)
+import           Data.Greskell.Graph               (AEdge (..), AProperty (..), AVertex (..),
+                                                    AVertexProperty (..), ElementID (..), Key,
+                                                    Keys (..), Path (..), T, cList, makePathEntry,
+                                                    singletonKeys, tId, tKey, tLabel, tValue, (-:),
+                                                    (=:))
+import           Data.Greskell.GraphSON            (FromGraphSON, GValue, nonTypedGValue,
+                                                    parseEither)
+import           Data.Greskell.Gremlin             (Order, P, Predicate (..), cCompare, oDecr,
+                                                    oIncr, pAnd, pEq, pGte, pLt, pNot, pTest)
+import           Data.Greskell.Greskell            (Greskell, ToGreskell (..), false, gvalueInt,
+                                                    list, number, single, toGremlin, toGreskell,
+                                                    true, unsafeGreskell, unsafeMethodCall, value)
+import           Data.Greskell.GTraversal          (GTraversal, SideEffect, Transform, Walk, gAddE',
+                                                    gAddV, gAs, gBy, gBy1, gByL, gChoose3,
+                                                    gEmitHead, gFilter, gHas2, gHasLabel, gId,
+                                                    gIdentity, gInV, gInV', gIsP, gIsP', gIterate,
+                                                    gLabel, gLoops, gMatch, gOrder, gOut', gOutV,
+                                                    gOutV', gPath, gPathBy, gProject, gProperties,
+                                                    gProperty, gPropertyV, gRepeat, gSelect1,
+                                                    gSelectBy1, gSelectByN, gSelectN, gTimes, gTo,
+                                                    gUntilTail, gV', gValueMap, gValues, gWhereP1,
+                                                    gWhereP2, liftWalk, mPattern, sAddV', sE', sV',
+                                                    source, unsafeGTraversal, unsafeWalk, ($.))
+import           Data.Greskell.Logic               (Logic (..))
+import           Data.Greskell.PMap                (lookupAsM, lookupListAs, pMapToThrow)
 
-import ServerTest.Common (withEnv, withClient)
+import           ServerTest.Common                 (withClient, withEnv)
 
 main :: IO ()
 main = hspec spec
@@ -205,7 +194,7 @@ spec_T = describe "T enum" $ do
     prefixedTraversal :: Walk Transform AVertex a -> GTraversal Transform () a
     prefixedTraversal mapper = unsafeGTraversal (prelude <> body)
       where
-        prelude = 
+        prelude =
           ( "graph = org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph.open(); "
             <> "g = graph.traversal(); "
             <> "graph.addVertex(id, 10, label, \"VLABEL\"); "

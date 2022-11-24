@@ -5,18 +5,16 @@
 --
 -- __Internal module. End-users should not use this.__
 module Network.Greskell.WebSocket.Request.Aeson
-       ( genericToJSON, genericToEncoding, genericParseJSON,
-         opt,
-         toObject
-       ) where
+    ( genericToJSON
+    , genericToEncoding
+    , genericParseJSON
+    , opt
+    , toObject
+    ) where
 
-import Data.Aeson
-  ( genericToJSON, genericToEncoding, genericParseJSON,
-    ToJSON(..), Object, Value(Object)
-  )
-import Data.Aeson.Types 
-  ( defaultOptions, omitNothingFields, Options
-  )
+import           Data.Aeson       (Object, ToJSON (..), Value (Object), genericParseJSON,
+                                   genericToEncoding, genericToJSON)
+import           Data.Aeson.Types (Options, defaultOptions, omitNothingFields)
 
 opt :: Options
 opt = defaultOptions { omitNothingFields = True }
@@ -25,4 +23,4 @@ toObject :: (ToJSON a) => a -> Object
 toObject = expectObject . toJSON
   where
     expectObject (Object o) = o
-    expectObject _ = error "Expect Object, but got something else"
+    expectObject _          = error "Expect Object, but got something else"

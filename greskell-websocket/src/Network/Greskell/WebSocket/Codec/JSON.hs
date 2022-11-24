@@ -4,18 +4,18 @@
 -- Description: application\/json codec
 -- Maintainer: Toshio Ito <debug.ito@gmail.com>
 --
--- 
+--
 module Network.Greskell.WebSocket.Codec.JSON
-       ( jsonCodec
-       ) where
+    ( jsonCodec
+    ) where
 
-import Data.Aeson (ToJSON, FromJSON)
-import qualified Data.Aeson as A
-import Data.Aeson.Types (parseEither)
+import           Data.Aeson                       (FromJSON, ToJSON)
+import qualified Data.Aeson                       as A
+import           Data.Aeson.Types                 (parseEither)
 
-import Data.Greskell.GraphSON (FromGraphSON(..))
+import           Data.Greskell.GraphSON           (FromGraphSON (..))
 
-import Network.Greskell.WebSocket.Codec (Codec(..))
+import           Network.Greskell.WebSocket.Codec (Codec (..))
 
 -- | Simple \"application\/json\" codec.
 --

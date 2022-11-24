@@ -5,13 +5,13 @@
 --
 -- @since 1.0.0.0
 module Data.Greskell.NonEmptyLike
-  ( NonEmptyLike(..)
-  ) where
+    ( NonEmptyLike (..)
+    ) where
 
-import qualified Data.Foldable as F
-import Data.List.NonEmpty (NonEmpty(..))
-import Data.Semigroup (Semigroup, (<>))
-import qualified Data.Semigroup as S
+import qualified Data.Foldable      as F
+import           Data.List.NonEmpty (NonEmpty (..))
+import           Data.Semigroup     (Semigroup, (<>))
+import qualified Data.Semigroup     as S
 
 -- | Non-empty containers. Its cardinality is one or more.
 --
@@ -29,7 +29,7 @@ instance NonEmptyLike NonEmpty where
   singleton a = a :| []
   append = (<>)
   toNonEmpty = id
-  
+
 -- | 'append' is '<>' from 'Semigroup'.
 instance NonEmptyLike S.First where
   singleton = S.First

@@ -1,13 +1,16 @@
-module Data.Greskell.LogicSpec (main,spec) where
+module Data.Greskell.LogicSpec
+    ( main
+    , spec
+    ) where
 
-import Control.Applicative ((<$>), (<*>))
-import Control.Monad (forM_)
-import Data.Foldable (toList)
-import Data.Monoid ((<>))
-import Data.Traversable (traverse)
-import Test.Hspec
+import           Control.Applicative ((<$>), (<*>))
+import           Control.Monad       (forM_)
+import           Data.Foldable       (toList)
+import           Data.Monoid         ((<>))
+import           Data.Traversable    (traverse)
+import           Test.Hspec
 
-import Data.Greskell.Logic (Logic(..), runBool)
+import           Data.Greskell.Logic (Logic (..), runBool)
 
 main :: IO ()
 main = hspec spec

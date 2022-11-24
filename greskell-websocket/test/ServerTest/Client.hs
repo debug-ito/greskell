@@ -1,39 +1,38 @@
 {-# LANGUAGE OverloadedStrings #-}
-module ServerTest.Client (main,spec) where
+module ServerTest.Client
+    ( main
+    , spec
+    ) where
 
-import Control.Concurrent (threadDelay)
-import Control.Concurrent.Async (withAsync, mapConcurrently)
-import Control.Exception.Safe (bracket)
-import Control.Monad (forM_)
-import Data.Aeson (Value(Number))
-import qualified Data.Aeson.KeyMap as KM
-import Data.HashMap.Strict (HashMap)
-import Data.Maybe (isNothing, isJust, fromJust)
-import Data.Text (Text)
-import qualified Data.Vector as V
-import qualified Network.WebSockets as WS
-import Test.Hspec
+import           Control.Concurrent                    (threadDelay)
+import           Control.Concurrent.Async              (mapConcurrently, withAsync)
+import           Control.Exception.Safe                (bracket)
+import           Control.Monad                         (forM_)
+import           Data.Aeson                            (Value (Number))
+import qualified Data.Aeson.KeyMap                     as KM
+import           Data.HashMap.Strict                   (HashMap)
+import           Data.Maybe                            (fromJust, isJust, isNothing)
+import           Data.Text                             (Text)
+import qualified Data.Vector                           as V
+import qualified Network.WebSockets                    as WS
+import           Test.Hspec
 
-import Data.Greskell.Greskell (Greskell)
-import qualified Data.Greskell.Greskell as G
-import Data.Greskell.GMap (GMap, GMapEntry, unGMapEntry)
+import           Data.Greskell.GMap                    (GMap, GMapEntry, unGMapEntry)
+import           Data.Greskell.Greskell                (Greskell)
+import qualified Data.Greskell.Greskell                as G
 
-import Network.Greskell.WebSocket.Client
-  ( Host, Port, Client, Options,
-    connectWith, close, submit,
-    defOptions, batchSize, connectionSettings, responseTimeout,
-    nextResult, slurpResults,
-    SubmitException(ResponseError, ParseError)
-  )
-import Network.Greskell.WebSocket.Connection
-  (RequestException(ResponseTimeout))
-import Network.Greskell.WebSocket.Request (RequestMessage(requestId))
-import qualified Network.Greskell.WebSocket.Response as Res
+import           Network.Greskell.WebSocket.Client     (Client, Host, Options, Port,
+                                                        SubmitException (ParseError, ResponseError),
+                                                        batchSize, close, connectWith,
+                                                        connectionSettings, defOptions, nextResult,
+                                                        responseTimeout, slurpResults, submit)
+import           Network.Greskell.WebSocket.Connection (RequestException (ResponseTimeout))
+import           Network.Greskell.WebSocket.Request    (RequestMessage (requestId))
+import qualified Network.Greskell.WebSocket.Response   as Res
 
-import TestUtil.Env (withEnvForExtServer, withEnvForIntServer)
-import TestUtil.MockServer
-  ( wsServer, receiveRequest, simpleRawResponse, waitForServer
-  )
+import           TestUtil.Env                          (withEnvForExtServer, withEnvForIntServer)
+import           TestUtil.MockServer                   (receiveRequest, simpleRawResponse,
+                                                        waitForServer, wsServer)
 
 main :: IO ()
 main = hspec spec
@@ -71,7 +70,7 @@ client_basic_spec = do
   specify "eval [Int]" $ withClient $ \client -> do
     let g = G.list $ map fromInteger [1..20] :: Greskell [Int]
     rh <- submit client g Nothing
-    forM_  [1..20] $ \n -> 
+    forM_  [1..20] $ \n ->
       nextResult rh `shouldReturn` Just n
     nextResult rh `shouldReturn` Nothing
     nextResult rh `shouldReturn` Nothing
@@ -103,7 +102,7 @@ client_basic_spec = do
     let g :: Greskell Int
         g = G.unsafeGreskell "\"some string\""
         expEx (ParseError _ _) = True
-        expEx _ = False
+        expEx _                = False
     rh <- submit client g Nothing
     nextResult rh `shouldThrow` expEx
     nextResult rh `shouldThrow` expEx
@@ -122,11 +121,11 @@ client_basic_spec = do
     let g :: Greskell Int
         g = G.unsafeGreskell "throw new Exception(\"BOOM\")"
         expEx (ResponseError res) = (Res.code $ Res.status res) == Res.ScriptEvaluationError
-        expEx _ = False
+        expEx _                   = False
     rh <- submit client g Nothing
     nextResult rh `shouldThrow` expEx
     nextResult rh `shouldThrow` expEx
-    
+
 
 bad_server_spec :: SpecWith Port
 bad_server_spec = do
@@ -135,7 +134,7 @@ bad_server_spec = do
           req <- receiveRequest wsconn
           WS.sendBinaryData wsconn $ simpleRawResponse (requestId req) 500 "null"
         expEx (ResponseError res) = (Res.code $ Res.status res) == Res.ServerError
-        expEx _ = False
+        expEx _                   = False
     withAsync server $ \_ -> do
       waitForServer
       forClient "localhost" port $ \client -> do
@@ -155,7 +154,7 @@ bad_server_spec = do
                { responseTimeout = 1
                }
         expEx ResponseTimeout = True
-        expEx _ = False
+        expEx _               = False
     withAsync server $ \_ -> do
       waitForServer
       forClient' opt "localhost" port $ \client -> do
@@ -164,4 +163,4 @@ bad_server_spec = do
         nextResult rh `shouldReturn` Just 99
         nextResult rh `shouldThrow` expEx
         nextResult rh `shouldThrow` expEx
-        
+

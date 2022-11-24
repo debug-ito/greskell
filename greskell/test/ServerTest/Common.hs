@@ -1,18 +1,18 @@
 -- |
 -- Module: ServerTest.Common
--- Description: 
+-- Description:
 -- Maintainer: Toshio Ito <debug.ito@gmail.com>
 --
--- 
+--
 module ServerTest.Common
-       ( withEnv,
-         withClient
-       ) where
+    ( withEnv
+    , withClient
+    ) where
 
-import Control.Exception.Safe (bracket)
+import           Control.Exception.Safe            (bracket)
 import qualified Network.Greskell.WebSocket.Client as WS
-import System.Environment (lookupEnv)
-import Test.Hspec
+import           System.Environment                (lookupEnv)
+import           Test.Hspec
 
 requireEnv :: String -> IO String
 requireEnv env_key = maybe bail return =<< lookupEnv env_key

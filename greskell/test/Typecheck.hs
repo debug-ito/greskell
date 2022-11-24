@@ -1,14 +1,15 @@
 {-# OPTIONS_GHC -fdefer-type-errors -Wno-deferred-type-errors #-}
-module Main (main,spec) where
+module Main
+    ( main
+    , spec
+    ) where
 
-import Data.Proxy (Proxy(..))
-import Test.Hspec
-import Test.ShouldNotTypecheck (shouldNotTypecheck)
+import           Data.Proxy               (Proxy (..))
+import           Test.Hspec
+import           Test.ShouldNotTypecheck  (shouldNotTypecheck)
 
-import Data.Greskell.GTraversal
-  ( Walk, WalkType, Filter, Transform, SideEffect, Split,
-    showSplit, showWalkType, showLift
-  )
+import           Data.Greskell.GTraversal (Filter, SideEffect, Split, Transform, Walk, WalkType,
+                                           showLift, showSplit, showWalkType)
 
 main :: IO ()
 main = hspec spec
@@ -44,7 +45,7 @@ spec = do
     specify (label pS pF) $ shouldNotTypecheck (showLift pS pF)
     specify (label pS pT) $ shouldNotTypecheck (showLift pS pT)
     specify (label pS pS) $ shouldTypecheck (showLift pS pS)
-  
+
 
 label :: (WalkType a, WalkType b) => Proxy a -> Proxy b -> String
 label a b = showWalkType a ++ " -> " ++ showWalkType b

@@ -1,39 +1,40 @@
-{-# LANGUAGE DuplicateRecordFields, DeriveGeneric #-}
+{-# LANGUAGE DeriveGeneric         #-}
+{-# LANGUAGE DuplicateRecordFields #-}
 -- |
 -- Module: Network.Greskell.WebSocket.Request
 -- Description: Request to Gremlin Server
 -- Maintainer: Toshio Ito <debug.ito@gmail.com>
 --
--- 
+--
 module Network.Greskell.WebSocket.Request
-       ( -- * RequestMessage
-         RequestMessage(..),
-         Operation(..),
-         toRequestMessage,
-         makeRequestMessage
-       ) where
+    ( -- * RequestMessage
+      RequestMessage (..)
+    , Operation (..)
+    , toRequestMessage
+    , makeRequestMessage
+    ) where
 
-import Control.Applicative ((<$>), (<*>))
-import Data.Aeson (Object, ToJSON(..), FromJSON(..))
-import Data.Text (Text)
-import Data.UUID (UUID)
-import Data.UUID.V4 (nextRandom)
-import GHC.Generics (Generic)
+import           Control.Applicative                       ((<$>), (<*>))
+import           Data.Aeson                                (FromJSON (..), Object, ToJSON (..))
+import           Data.Text                                 (Text)
+import           Data.UUID                                 (UUID)
+import           Data.UUID.V4                              (nextRandom)
+import           GHC.Generics                              (Generic)
 
-import qualified Network.Greskell.WebSocket.Request.Aeson as GAeson
-import Network.Greskell.WebSocket.Request.Common (Operation(..))
+import qualified Network.Greskell.WebSocket.Request.Aeson  as GAeson
+import           Network.Greskell.WebSocket.Request.Common (Operation (..))
 
 
 -- | RequestMessage to a Gremlin Server. See
 -- <http://tinkerpop.apache.org/docs/current/dev/provider/>.
-data RequestMessage =
-  RequestMessage
-  { requestId :: !UUID,
-    op :: !Text,
-    processor :: !Text,
-    args :: !Object
-  }
-  deriving (Show,Eq,Generic)
+data RequestMessage
+  = RequestMessage
+      { requestId :: !UUID
+      , op        :: !Text
+      , processor :: !Text
+      , args      :: !Object
+      }
+  deriving (Eq, Generic, Show)
 
 instance ToJSON RequestMessage where
   toJSON = GAeson.genericToJSON GAeson.opt

@@ -1,28 +1,27 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Main (main,spec) where
+module Main
+    ( main
+    , spec
+    ) where
 
-import qualified Data.Vector as V
+import qualified Data.Vector                       as V
 import qualified Network.Greskell.WebSocket.Client as WS
-import System.IO (hPutStrLn, stderr)
-import Test.Hspec
+import           System.IO                         (hPutStrLn, stderr)
+import           Test.Hspec
 
-import Control.Category ((<<<))
-import Control.Monad (void)
-import Data.Text (Text)
-import Data.Greskell.Binder (newBind, runBinder)
-import Data.Greskell.Graph
-  ( AVertex(..), Key, AEdge, Property(propertyKey, propertyValue),
-    AVertexProperty(..)
-  )
-import Data.Greskell.GraphSON (parseEither)
-import Data.Greskell.GTraversal
-  ( Walk, GTraversal, SideEffect,
-    source, sV', sE', sAddV', gProperty, gId, gValues, gHasId, gHasLabel, gHas2,
-    ($.), liftWalk,
-    gAddE', gTo, gV', gProperties
-  )
+import           Control.Category                  ((<<<))
+import           Control.Monad                     (void)
+import           Data.Greskell.Binder              (newBind, runBinder)
+import           Data.Greskell.Graph               (AEdge, AVertex (..), AVertexProperty (..), Key,
+                                                    Property (propertyKey, propertyValue))
+import           Data.Greskell.GraphSON            (parseEither)
+import           Data.Greskell.GTraversal          (GTraversal, SideEffect, Walk, gAddE', gHas2,
+                                                    gHasId, gHasLabel, gId, gProperties, gProperty,
+                                                    gTo, gV', gValues, liftWalk, sAddV', sE', sV',
+                                                    source, ($.))
+import           Data.Text                         (Text)
 
-import ServerTest.Common (withEnv, withClient)
+import           ServerTest.Common                 (withClient, withEnv)
 
 main :: IO ()
 main = hspec spec
@@ -100,7 +99,7 @@ spec_generic_element_ID = do
           return $ gValues [ename_key] $. (sE' [eid] $ source "g")
     got_vals <- fmap V.toList $ WS.slurpResults =<< WS.submit client q (Just qbind)
     got_vals `shouldBe` ["e_test"]
-    
+
 spec_vertex_with_props :: SpecWith (String, Int)
 spec_vertex_with_props = do
   let prop_key :: Key AVertex Int

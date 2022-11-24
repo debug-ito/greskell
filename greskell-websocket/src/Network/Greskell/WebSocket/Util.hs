@@ -5,11 +5,11 @@
 --
 -- __Internal module__.
 module Network.Greskell.WebSocket.Util
-       ( slurp,
-         drain
-       ) where
+    ( slurp
+    , drain
+    ) where
 
-import Data.Monoid ((<>))
+import           Data.Monoid ((<>))
 import qualified Data.Vector as V
 
 slurp :: Monad m => m (Maybe a) -> m (V.Vector a)
@@ -18,7 +18,7 @@ slurp act = go mempty
     go got = do
       mres <- act
       case mres of
-       Nothing -> return got
+       Nothing  -> return got
        Just res -> go $! (V.snoc got res)
 
 drain :: Monad m => m (Maybe a) -> m ()
@@ -28,4 +28,4 @@ drain act = go
       mres <- act
       case mres of
        Nothing -> return ()
-       Just _ -> go
+       Just _  -> go

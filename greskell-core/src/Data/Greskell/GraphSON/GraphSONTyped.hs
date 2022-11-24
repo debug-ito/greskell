@@ -1,29 +1,29 @@
 {-# LANGUAGE OverloadedStrings #-}
 -- |
 -- Module: Data.Greskell.GraphSON.GraphSONTyped
--- Description: 
+-- Description:
 -- Maintainer: Toshio Ito <debug.ito@gmail.com>
 --
 -- __Internal module.__ Just to resolve cyclic dependency between
 -- GraphSON and GMap.
 module Data.Greskell.GraphSON.GraphSONTyped
-       ( GraphSONTyped(..)
-       ) where
+    ( GraphSONTyped (..)
+    ) where
 
-import Data.Text (Text)
-import Data.Vector (Vector)
-import qualified Data.HashMap.Lazy as L (HashMap)
+import qualified Data.HashMap.Lazy   as L (HashMap)
 import qualified Data.HashMap.Strict as S (HashMap)
-import Data.HashSet (HashSet)
-import Data.Int (Int8, Int16, Int32, Int64)
-import qualified Data.IntMap.Lazy as L (IntMap)
-import qualified Data.IntMap.Strict as S (IntMap)
-import Data.IntSet (IntSet)
-import qualified Data.Map.Lazy as L (Map)
-import qualified Data.Map.Strict as S (Map)
-import Data.Scientific (Scientific)
-import Data.Sequence (Seq)
-import Data.Set (Set)
+import           Data.HashSet        (HashSet)
+import           Data.Int            (Int16, Int32, Int64, Int8)
+import qualified Data.IntMap.Lazy    as L (IntMap)
+import qualified Data.IntMap.Strict  as S (IntMap)
+import           Data.IntSet         (IntSet)
+import qualified Data.Map.Lazy       as L (Map)
+import qualified Data.Map.Strict     as S (Map)
+import           Data.Scientific     (Scientific)
+import           Data.Sequence       (Seq)
+import           Data.Set            (Set)
+import           Data.Text           (Text)
+import           Data.Vector         (Vector)
 
 
 -- | Types that have an intrinsic type ID for 'gsonType' field.
@@ -91,13 +91,13 @@ instance GraphSONTyped (L.IntMap v) where
   gsonTypeFor _= "g:Map"
 
 -- -- Implementation of Lazy and Strict types are the same.
--- 
+--
 -- instance GraphSONTyped (S.HashMap k v) where
 --   gsonTypeFor _ = "g:Map"
--- 
+--
 -- instance GraphSONTyped (S.Map k v) where
 --   gsonTypeFor _= "g:Map"
--- 
+--
 -- instance GraphSONTyped (S.IntMap v) where
 --   gsonTypeFor _= "g:Map"
 
