@@ -78,9 +78,9 @@ jobs:
       FREEZE: ${{ matrix.plan.freeze }}
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
       
-    - uses: haskell/actions/setup@v1
+    - uses: haskell/actions/setup@v2
       id: cabal-setup-haskell
       with:
         ghc-version: ${{ matrix.plan.ghc }}
@@ -94,7 +94,7 @@ jobs:
         if [ "x" == "x$FREEZE" ]; then cabal v2-freeze; else cp freezes/$FREEZE cabal.project.freeze; fi
         cat cabal.project.freeze
 
-    - uses: actions/cache@v2
+    - uses: actions/cache@v3
       with:
         path: ${{ steps.cabal-setup-haskell.outputs.cabal-store }}
         key: ${{ runner.os }}-cabal-${{ hashFiles('cabal.project.freeze') }}
