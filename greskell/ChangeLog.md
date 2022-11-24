@@ -1,13 +1,15 @@
 # Revision history for greskell
 
-## 2.0.1.0  -- ?
+## 2.0.1.0  -- 2022-11-24
 
-* Confirm test with ghc-9.2.1.
-* Remove doctests. This was because it's become more and more difficult to run doctests in a cabal package.
+* Confirm test with ghc-9.2.5, vector-0.13.0.0 and aeson-2.1.0.0.
+* Remove doctests. This is because it's so difficult to maintain doctests with recent GHCs and cabals.
+  * doctests have been moved to `examples` function defined in some modules.
   * @ners helped a lot in https://github.com/debug-ito/greskell/pull/12
 * Add the following functions ( https://github.com/debug-ito/greskell/pull/13 )
   * `gElementMap` (`GTraversal` module)
   * `toGremlinKeys` (`Graph` module)
+* Use stylish-haskell to format codes.
 
 ## 2.0.0.0  -- 2021-12-28
 

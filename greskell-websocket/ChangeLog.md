@@ -1,8 +1,11 @@
 # Revision history for greskell-websocket
 
-## 1.0.0.1  -- ?
+## 1.0.0.1  -- 2022-11-24
 
-* Confirm test with ghc-9.2.1.
+* Confirm test with ghc-9.2.5, vector-0.13.0.0 and aeson-2.1.0.0.
+* Remove doctests. This is because it's so difficult to maintain doctests with recent GHCs and cabals.
+  * doctests have been moved to `examples` function defined in some modules.
+
 
 ## 1.0.0.0  -- 2021-12-28
 
