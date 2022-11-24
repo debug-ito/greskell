@@ -1,4 +1,6 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving, DeriveTraversable, OverloadedStrings #-}
+{-# LANGUAGE DeriveTraversable          #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE OverloadedStrings          #-}
 -- |
 -- Module: Data.Greskell.Graph.PropertyMap
 -- Description: [Deprecated] PropertyMap class and types
@@ -6,47 +8,48 @@
 --
 -- 'PropertyMap' was used in greskell prior than 1.0.0.0, but is now
 -- deprecated. Use "Data.Greskell.PMap" instead.
-module Data.Greskell.Graph.PropertyMap {-# DEPRECATED "Use PMap instead" #-}
-  ( -- ** PropertyMap
-    PropertyMap(..),
-    PropertyMapSingle,
-    PropertyMapList,
-    lookupOneValue,
-    lookupListValues,
-    parseOneValue,
-    parseListValues,
-    parseNonEmptyValues,
-    fromProperties,
-    -- * Internal use
-    FromGraphSONWithKey,
-    -- * Re-exports
-    AProperty(..),
-    AVertexProperty(..)
-  ) where
+module Data.Greskell.Graph.PropertyMap
+    ( -- ** PropertyMap
+      PropertyMap (..)
+    , PropertyMapSingle
+    , PropertyMapList
+    , lookupOneValue
+    , lookupListValues
+    , parseOneValue
+    , parseListValues
+    , parseNonEmptyValues
+    , fromProperties
+      -- * Internal use
+    , FromGraphSONWithKey
+      -- * Re-exports
+    , AProperty (..)
+    , AVertexProperty (..)
+    ) where
 
-import Control.Applicative (empty, (<|>))
-import Data.Aeson (FromJSON(..))
-import Data.Aeson.Types (Parser)
-import qualified Data.Aeson.KeyMap as KM
-import qualified Data.Aeson.Key as Key
-import Data.Foldable (Foldable(..), foldlM)
-import Data.Greskell.GraphSON
-  ( FromGraphSON(..), GValue, GraphSONTyped(..), (.:),
-    parseJSONViaGValue
-  )
-import Data.Greskell.GraphSON.GValue (gValueBody, gValueType, GValueBody(..))
-import qualified Data.HashMap.Strict as HM
-import Data.List.NonEmpty (NonEmpty(..))
-import qualified Data.List.NonEmpty as NL
-import Data.Maybe (listToMaybe)
-import Data.Monoid (Monoid(..))
-import Data.Semigroup (Semigroup((<>)))
-import qualified Data.Semigroup as Semigroup
-import Data.Text (Text, unpack)
-import Data.Traversable (Traversable(..))
-import Data.Vector (Vector)
+import           Control.Applicative           (empty, (<|>))
+import           Data.Aeson                    (FromJSON (..))
+import qualified Data.Aeson.Key                as Key
+import qualified Data.Aeson.KeyMap             as KM
+import           Data.Aeson.Types              (Parser)
+import           Data.Foldable                 (Foldable (..), foldlM)
+import           Data.Greskell.GraphSON        (FromGraphSON (..), GValue, GraphSONTyped (..),
+                                                parseJSONViaGValue, (.:))
+import           Data.Greskell.GraphSON.GValue (GValueBody (..), gValueBody, gValueType)
+import qualified Data.HashMap.Strict           as HM
+import           Data.List.NonEmpty            (NonEmpty (..))
+import qualified Data.List.NonEmpty            as NL
+import           Data.Maybe                    (listToMaybe)
+import           Data.Monoid                   (Monoid (..))
+import           Data.Semigroup                (Semigroup ((<>)))
+import qualified Data.Semigroup                as Semigroup
+import           Data.Text                     (Text, unpack)
+import           Data.Traversable              (Traversable (..))
+import           Data.Vector                   (Vector)
 
-import Data.Greskell.Graph (Property(..), AProperty(..), AVertexProperty(..))
+import           Data.Greskell.Graph           (AProperty (..), AVertexProperty (..), Property (..))
+
+
+{-# DEPRECATED PropertyMap "PropertyMap and its instances are deprecated. Use PMap instead." #-}
 
 -- | Common basic operations supported by maps of properties.
 class PropertyMap m where
@@ -74,7 +77,7 @@ notExistErrorMsg :: Text -> String
 notExistErrorMsg k = "Property '" ++ unpack k ++ "' does not exist."
 
 -- | Lookup a property 'GValue' by the given key, and parse it.
--- 
+--
 -- In version 0.1.1.0 and before, this function took an argument @m p (GraphSON Value)@.
 -- This has changed, because property types for 'AVertex' etc have changed.
 parseOneValue :: (PropertyMap m, Property p, FromGraphSON v) => Text -> m p GValue -> Parser v
@@ -84,7 +87,7 @@ parseOneValue k pm = maybe (fail err_msg) parseGraphSON $ lookupOneValue k pm
 
 -- | Lookup a list of property values from a 'PropertyMap' by the
 -- given key, and parse them.
--- 
+--
 -- In version 0.1.1.0 and before, this function took an argument @m p (GraphSON Value)@.
 -- This has changed, because property types for 'AVertex' etc have changed.
 parseListValues :: (PropertyMap m, Property p, FromGraphSON v) => Text -> m p GValue -> Parser [v]
@@ -98,7 +101,7 @@ parseListValues k pm = mapM parseGraphSON $ lookupListValues k pm
 parseNonEmptyValues :: (PropertyMap m, Property p, FromGraphSON v) => Text -> m p GValue -> Parser (NonEmpty v)
 parseNonEmptyValues k pm = toNonEmpty =<< parseListValues k pm
   where
-    toNonEmpty [] = fail $ notExistErrorMsg k
+    toNonEmpty []         = fail $ notExistErrorMsg k
     toNonEmpty (x : rest) = return (x :| rest)
 
 -- | Create a 'PropertyMap' from list of 'Property's.
@@ -110,8 +113,9 @@ fromProperties = foldr putProperty mempty
 -- | Generic implementation of 'PropertyMap'. @t@ is the type of
 -- cardinality, @p@ is the type of 'Property' class and @v@ is the
 -- type of the property value.
-newtype PropertyMapGeneric t p v = PropertyMapGeneric (HM.HashMap Text (t (p v)))
-                                 deriving (Show,Eq)
+newtype PropertyMapGeneric t p v
+  = PropertyMapGeneric (HM.HashMap Text (t (p v)))
+  deriving (Eq, Show)
 
 instance Semigroup (t (p v)) => Semigroup (PropertyMapGeneric t p v) where
   (PropertyMapGeneric a) <> (PropertyMapGeneric b) = PropertyMapGeneric $ HM.unionWith (<>) a b
@@ -148,7 +152,7 @@ parsePropertiesGeneric :: (Property p, PropertyMap m, Monoid (m p v), GraphSONTy
                        -> Parser (m p v)
 parsePropertiesGeneric normalizeCardinality gv = case gValueBody gv of
   GObject obj -> foldlM folder mempty $ KM.toList obj
-  _ -> empty
+  _           -> empty
   where
     folder pm (k, value) = fmap (foldr putProperty pm) $ traverse (parseProperty k) =<< normalizeCardinality value
     parseProperty k value = parseTypedGValue value <|> parseGraphSONWithKey (Key.toText k) value
@@ -166,7 +170,7 @@ parseTypedGValue  gv = do
 expectAesonArray :: GValue -> Parser (Vector GValue)
 expectAesonArray gv = case gValueBody gv of
   GArray a -> return a
-  _ -> empty
+  _        -> empty
 
 -- | A 'PropertyMap' that has a single value per key.
 --
@@ -175,8 +179,9 @@ expectAesonArray gv = case gValueBody gv of
 -- '<>' returns the union of the two given property maps. If the two
 -- property maps share some same keys, the value from the left map
 -- wins.
-newtype PropertyMapSingle p v = PropertyMapSingle (PropertyMapGeneric Semigroup.First p v)
-                              deriving (Show,Eq,Semigroup,Monoid,Functor,Foldable,Traversable)
+newtype PropertyMapSingle p v
+  = PropertyMapSingle (PropertyMapGeneric Semigroup.First p v)
+  deriving (Eq, Foldable, Functor, Monoid, Semigroup, Show, Traversable)
 
 instance PropertyMap PropertyMapSingle where
   lookupOne k (PropertyMapSingle (PropertyMapGeneric hm)) = fmap Semigroup.getFirst $ HM.lookup k hm
@@ -205,8 +210,9 @@ instance (Property p, GraphSONTyped (p v), FromGraphSON (p v), FromGraphSONWithK
 -- '<>' returns the union of the two given property maps. If the two
 -- property maps share some same keys, those property lists are
 -- concatenated.
-newtype PropertyMapList p v = PropertyMapList (PropertyMapGeneric NonEmpty p v)
-                            deriving (Show,Eq,Semigroup,Monoid,Functor,Foldable,Traversable)
+newtype PropertyMapList p v
+  = PropertyMapList (PropertyMapGeneric NonEmpty p v)
+  deriving (Eq, Foldable, Functor, Monoid, Semigroup, Show, Traversable)
 
 instance PropertyMap PropertyMapList where
   lookupList k (PropertyMapList (PropertyMapGeneric hm)) = maybe [] NL.toList $ HM.lookup k hm
