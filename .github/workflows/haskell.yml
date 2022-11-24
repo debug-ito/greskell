@@ -65,6 +65,9 @@ jobs:
         plan:
           - ghc: latest
             allow-fail: true
+          - ghc: '9.2'
+          - ghc: '9.2.5'
+            freeze: '20221123-ghc-9.2.5.freeze'
           - ghc: '9.0'
           - ghc: '9.0.1'
             freeze: '20211202-ghc-9.0.1.freeze'
