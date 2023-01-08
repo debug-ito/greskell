@@ -179,13 +179,13 @@ instance Comparator (Order a) where
 instance GraphSONTyped (Order a) where
   gsonTypeFor _ = "g:Order"
 
--- | @decr@ order.
-oDecr :: Greskell (Order a)
-oDecr = unsafeGreskellLazy "Order.decr"
+-- | @desc@ order.
+oDesc :: Greskell (Order a)
+oDecr = unsafeGreskellLazy "Order.desc"
 
--- | @incr@ order.
-oIncr :: Greskell (Order a)
-oIncr = unsafeGreskellLazy "Order.incr"
+-- | @asc@ order.
+oAsc :: Greskell (Order a)
+oAsc = unsafeGreskellLazy "Order.asc"
 
 -- | @shuffle@ order.
 oShuffle :: Greskell (Order a)
