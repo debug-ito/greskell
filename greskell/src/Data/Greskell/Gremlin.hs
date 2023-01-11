@@ -32,6 +32,8 @@ module Data.Greskell.Gremlin
     , ComparatorA (..)
       -- ** Order enum
     , Order
+    , oDesc
+    , oAsc
     , oDecr
     , oIncr
     , oShuffle
@@ -180,12 +182,28 @@ instance GraphSONTyped (Order a) where
   gsonTypeFor _ = "g:Order"
 
 -- | @desc@ order.
+--
+-- @since 2.0.2.0
 oDesc :: Greskell (Order a)
-oDecr = unsafeGreskellLazy "Order.desc"
+oDesc = unsafeGreskellLazy "Order.desc"
 
 -- | @asc@ order.
+--
+-- @since 2.0.2.0
 oAsc :: Greskell (Order a)
 oAsc = unsafeGreskellLazy "Order.asc"
+
+-- | @decr@ order.
+--
+-- Note that @decr@ was removed in TinkerPop 3.5.0. Use 'oDesc' instead.
+oDecr :: Greskell (Order a)
+oDecr = unsafeGreskellLazy "Order.decr"
+
+-- | @incr@ order.
+--
+-- Note that @incr@ was removed in TinkerPop 3.5.0. Use 'oAsc' instead.
+oIncr :: Greskell (Order a)
+oIncr = unsafeGreskellLazy "Order.incr"
 
 -- | @shuffle@ order.
 oShuffle :: Greskell (Order a)
@@ -199,5 +217,8 @@ examples =
   , (toGremlin (pEq $ string "hoge" :: Greskell (P Text)), "P.eq(\"hoge\")")
   , (toGremlin (pInside 10 20 :: Greskell (P Int)), "P.inside(10,20)")
   , (toGremlin (pWithin ["foo", "bar", "hoge"] :: Greskell (P Text)), "P.within(\"foo\",\"bar\",\"hoge\")")
+  , (toGremlin oDesc, "Order.desc")
+  , (toGremlin oAsc, "Order.asc")
   , (toGremlin oDecr, "Order.decr")
+  , (toGremlin oIncr, "Order.incr")
   ]
