@@ -1,5 +1,9 @@
 # Revision history for greskell
 
+## 2.0.2.0  -- 2023-01-11
+
+* Add `oDesc` and `oAsc` functions (`Gremlin` module) ( https://github.com/debug-ito/greskell/pull/14 )
+
 ## 2.0.1.0  -- 2022-11-24
 
 * Confirm test with ghc-9.2.5, vector-0.13.0.0 and aeson-2.1.0.0.
