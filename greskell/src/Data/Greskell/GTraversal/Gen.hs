@@ -13,65 +13,48 @@ module Data.Greskell.GTraversal.Gen
     , gIterate
     -- ** Filter steps
     , gIdentity
---     , gFilter
---     , gCyclicPath
---     , gCyclicPath'
---     , gSimplePath
---     , gSimplePath'
---       -- ** Is step
---     , gIs
---     , gIs'
---     , gIsP
---     , gIsP'
---       -- ** Has steps
---     , gHas1
---     , gHas1'
---     , gHas2
---     , gHas2'
---     , gHas2P
---     , gHas2P'
---     , gHasLabel
---     , gHasLabel'
---     , gHasLabelP
---     , gHasLabelP'
---     , gHasId
---     , gHasId'
---     , gHasIdP
---     , gHasIdP'
---     , gHasKey
---     , gHasKey'
---     , gHasKeyP
---     , gHasKeyP'
---     , gHasValue
---     , gHasValue'
---     , gHasValueP
---     , gHasValueP'
---       -- ** Logic steps
---     , gAnd
---     , gOr
---     , gNot
---       -- ** Where step
---     , gWhereP1
---     , gWhereP1'
---     , gWhereP2
---     , gWhereP2'
---       -- ** Sorting steps
---     , gOrder
---       -- ** Paging steps
---     , gRange
---     , gLimit
---     , gTail
---     , gSkip
---       -- ** Repeat step
---     , gRepeat
---     , gTimes
---     , gUntilHead
---     , gUntilTail
---     , gEmitHead
---     , gEmitTail
---     , gEmitHeadT
---     , gEmitTailT
---     , gLoops
+    , gFilter
+    , gCyclicPath
+    , gSimplePath
+    -- ** Is step
+    , gIs
+    , gIsP
+    -- ** Has steps
+    , gHas1
+    , gHas2
+    , gHas2P
+    , gHasLabel
+    , gHasLabelP
+    , gHasId
+    , gHasIdP
+    , gHasKey
+    , gHasKeyP
+    , gHasValue
+    , gHasValueP
+    -- ** Logic steps
+    , gAnd
+    , gOr
+    , gNot
+    -- ** Where step
+    , gWhereP1
+    , gWhereP2
+    -- ** Sorting steps
+    , gOrder
+    -- ** Paging steps
+    , gRange
+    , gLimit
+    , gTail
+    , gSkip
+    -- ** Repeat step
+    , gRepeat
+    , gTimes
+    , gUntilHead
+    , gUntilTail
+    , gEmitHead
+    , gEmitTail
+    , gEmitHeadT
+    , gEmitTailT
+    , gLoops
 --     , RepeatUntil (..)
 --     , RepeatEmit (..)
 --     , RepeatPos (..)
@@ -146,11 +129,18 @@ module Data.Greskell.GTraversal.Gen
 --     , gPropertyV
     ) where
 
+import           Data.Text                (Text)
+
 import           Data.Greskell.Graph      (AEdge, AVertex, Edge, ElementID, Vertex)
 import           Data.Greskell.Greskell   (Greskell)
-import           Data.Greskell.GTraversal (GTraversal, GraphTraversalSource, Lift, SideEffect,
-                                           ToGTraversal (..), Transform, WalkType, gIdentity,
-                                           gIterate)
+import           Data.Greskell.GTraversal (ByComparator, GTraversal, GraphTraversalSource, Lift,
+                                           RepeatLabel, SideEffect, ToGTraversal (..), Transform,
+                                           WalkType, gAnd, gCyclicPath, gEmitHead, gEmitHeadT,
+                                           gEmitTail, gEmitTailT, gFilter, gHas1, gHas2, gHas2P,
+                                           gHasId, gHasIdP, gHasKey, gHasKeyP, gHasLabel,
+                                           gHasLabelP, gHasValue, gHasValueP, gIdentity, gIs, gIsP,
+                                           gIterate, gNot, gOr, gRepeat, gSimplePath, gTimes,
+                                           gUntilHead, gUntilTail, gWhereP1, gWhereP2)
 import qualified Data.Greskell.GTraversal as G
 
 sV :: (Vertex v, WalkType c, Lift Transform c) => [Greskell (ElementID v)] -> Greskell GraphTraversalSource -> GTraversal c () v
@@ -171,3 +161,20 @@ sAddV label src = liftWalk $ G.sAddV label src
 sAddV' :: (WalkType c, Lift SideEffect c) => Greskell Text -> Greskell GraphTraversalSource -> GTraversal c () AVertex
 sAddV' = sAddV
 
+gOrder :: (WalkType c, Lift Transform c) => [ByComparator s] -> Walk c s s
+gOrder b = liftWalk $ G.gOrder b
+
+gRange :: (WalkType c, Lift Transform c) => Greskell Int -> Greskell Int -> Walk c s s
+gRange a b = liftWalk $ G.gRange a b
+
+gLimit :: (WalkType c, Lift Transform c) => Greskell Int -> Walk c s s
+gLimit a = liftWalk $ G.gLimit a
+
+gTail :: (WalkType c, Lift Transform c) => Greskell Int -> Walk c s s
+gTail a = liftWalk $ G.gTail a
+
+gSkip :: (WalkType c, Lift Transform c) => Greskell Int -> Walk c s s
+gSkip a = liftWalk $ G.gSkip a
+
+gLoops :: (WalkType c, Lift Transform c) => Maybe RepeatLabel -> Walk c s Int
+gLoops a = liftWalk $ G.gLoops a
