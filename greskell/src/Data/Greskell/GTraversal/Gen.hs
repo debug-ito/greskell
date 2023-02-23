@@ -5,13 +5,14 @@ module Data.Greskell.GTraversal.Gen
     ( -- * GraphTraversalSource
       sV
     , sV'
---     , sE
---     , sE'
---     , sAddV
---     , sAddV'
---       -- ** Filter steps
---     , gIdentity
---     , gIdentity'
+    , sE
+    , sE'
+    , sAddV
+    , sAddV'
+    -- * GTraversal
+    , gIterate
+    -- ** Filter steps
+    , gIdentity
 --     , gFilter
 --     , gCyclicPath
 --     , gCyclicPath'
@@ -145,10 +146,11 @@ module Data.Greskell.GTraversal.Gen
 --     , gPropertyV
     ) where
 
-import           Data.Greskell.Graph      (AVertex, ElementID, Vertex)
+import           Data.Greskell.Graph      (AEdge, AVertex, Edge, ElementID, Vertex)
 import           Data.Greskell.Greskell   (Greskell)
-import           Data.Greskell.GTraversal (GTraversal, GraphTraversalSource, Lift,
-                                           ToGTraversal (..), Transform, WalkType)
+import           Data.Greskell.GTraversal (GTraversal, GraphTraversalSource, Lift, SideEffect,
+                                           ToGTraversal (..), Transform, WalkType, gIdentity,
+                                           gIterate)
 import qualified Data.Greskell.GTraversal as G
 
 sV :: (Vertex v, WalkType c, Lift Transform c) => [Greskell (ElementID v)] -> Greskell GraphTraversalSource -> GTraversal c () v
@@ -156,4 +158,16 @@ sV ids src = liftWalk $ G.sV ids src
 
 sV' :: (WalkType c, Lift Transform c) => [Greskell (ElementID AVertex)] -> Greskell GraphTraversalSource -> GTraversal c () AVertex
 sV' = sV
+
+sE :: (Edge e, WalkType c, Lift Transform c) => [Greskell (ElementID e)] -> Greskell GraphTraversalSource -> GTraversal c () e
+sE ids src = liftWalk $ G.sE ids src
+
+sE' :: (WalkType c, Lift Transform c) => [Greskell (ElementID AEdge)] -> Greskell GraphTraversalSource -> GTraversal c () AEdge
+sE' = sE
+
+sAddV :: (Vertex v, WalkType c, Lift SideEffect c) => Greskell Text -> Greskell GraphTraversalSource -> GTraversal c () v
+sAddV label src = liftWalk $ G.sAddV label src
+
+sAddV' :: (WalkType c, Lift SideEffect c) => Greskell Text -> Greskell GraphTraversalSource -> GTraversal c () AVertex
+sAddV' = sAddV
 
