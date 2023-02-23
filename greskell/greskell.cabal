@@ -33,6 +33,7 @@ library
                         Data.Greskell.Graph,
                         Data.Greskell.Graph.PropertyMap,
                         Data.Greskell.GTraversal,
+                        Data.Greskell.GTraversal.Gen,
                         Data.Greskell.AsLabel,
                         Data.Greskell.Extra,
                         Data.Greskell.PMap,
