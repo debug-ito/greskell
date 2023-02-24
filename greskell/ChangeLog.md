@@ -1,5 +1,9 @@
 # Revision history for greskell
 
+## 2.0.3.0  -- 2023-02-24
+
+* Add `GTraversal.Gen` module (see https://github.com/debug-ito/greskell/issues/15 )
+
 ## 2.0.2.0  -- 2023-01-11
 
 * Add `oDesc` and `oAsc` functions (`Gremlin` module) ( https://github.com/debug-ito/greskell/pull/14 )
