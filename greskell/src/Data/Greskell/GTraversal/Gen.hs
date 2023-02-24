@@ -1,7 +1,11 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE TypeFamilies     #-}
--- | This module has Gremlin traversals defined in 'Data.Greskell.GTraversal' generalized on the
--- walk type.
+-- | __This module is experimental. It may have breaking changes in future.__
+--
+-- This module has Gremlin traversals defined in 'Data.Greskell.GTraversal' generalized on the
+-- walk type. It may save you from calling 'liftWalk' manually.
+--
+-- @since 2.0.3.0
 module Data.Greskell.GTraversal.Gen
     ( -- * Types
       -- ** GraphTraversal and others

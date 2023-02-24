@@ -14,6 +14,7 @@
 --   class of non-empty containers.
 -- - "Data.Greskell.Logic": Logic type, which is a general-purpose logic tree data structure.
 -- - "Data.Greskell.Graph.PropertyMap": deprecated PropertyMap class.
+-- - "Data.Greskell.GTraversal.Gen": an experimental module that has generalized versions of Gremlin traversals defined in "Data.Greskell.GTraversal".
 module Data.Greskell
     ( module Data.Greskell.Greskell
     , module Data.Greskell.Binder
