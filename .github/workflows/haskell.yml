@@ -114,9 +114,9 @@ jobs:
       run: cabal v2-test --jobs=1 all
 
     - name: Save the build plan
-      run: mv dist-newstyle/cache/plan.json plan-${{ matrix.plan.ghc }}.json
+      run: mv dist-newstyle/cache/plan.json plan-${{ matrix-os }}-${{ matrix.plan.ghc }}.json
     - name: Upload the build plan
       uses: actions/upload-artifact@v4
       with:
         name: plans
-        path: plan-${{ matrix.plan.ghc }}.json
+        path: plan-${{ matrix.os }}-${{ matrix.plan.ghc }}.json
