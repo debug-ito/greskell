@@ -116,5 +116,5 @@ jobs:
     - name: Upload the build plan
       uses: actions/upload-artifact@v4
       with:
-        name: plans-${{ matrix.os }}-${{ matrix.plan.ghc }}.json
+        name: plans-${{ matrix.os }}-${{ matrix.plan.ghc }}
         path: dist-newstyle/cache/plan.json
