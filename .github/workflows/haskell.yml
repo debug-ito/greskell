@@ -3,61 +3,6 @@ name: Haskell CI
 on: [push, pull_request]
 
 jobs:
-##   stack:
-##     strategy:
-##       fail-fast: false
-##       matrix:
-##         os: [ubuntu-latest, macOS-latest]
-##         plan:
-##           - ghc: '8.10.3'
-##             resolver: 'lts-17.2'
-##           - ghc: '8.8.3'
-##             resolver: 'lts-16.11'
-##           - ghc: '8.6.5'
-##             resolver: 'lts-14.27'
-##           - ghc: '8.4.4'
-##             resolver: 'lts-12.26'
-##         include:
-##           - os: macOS-latest
-##             flags: '--flag greskell:-hint-test'
-##             ## hint-test tends to fail with old GHCs on macOS
-##             
-##     runs-on: ${{ matrix.os }}
-##     continue-on-error: ${{ matrix.plan.allow-fail == true }}
-##     env:
-##       STACK: stack --no-terminal --system-ghc --resolver ${{ matrix.plan.resolver }}
-##       FLAGS: ${{ matrix.flags }}
-## 
-##     steps:
-##     - uses: actions/checkout@v2
-##       
-##     - uses: haskell/actions/setup@v1
-##       id: cabal-setup-haskell
-##       with:
-##         ghc-version: ${{ matrix.plan.ghc }}
-##         enable-stack: true
-## 
-##     - uses: actions/cache@v2
-##       ## Looks like caching in macOS causes weird failures in the steps later.
-##       if: runner.os != 'macOS'
-##       with:
-##         path: ~/.stack
-##         key: ${{ runner.os }}-stack-${{ hashFiles('stack.yaml') }}-${{ matrix.plan.resolver }}
-##     
-##     - name: Configure
-##       run: |
-##         set -ex
-##         rm -f stack.yaml.lock
-##         $STACK clean
-## 
-##     - name: Install dependencies
-##       run: $STACK test --bench --only-dependencies $FLAGS
-##     - name: Build
-##       run: $STACK build --bench --haddock --no-haddock-deps $FLAGS
-##     - name: Test
-##       run: $STACK -j 1 test --bench --no-run-benchmarks --haddock --no-haddock-deps $FLAGS
-
-
   cabal:
     strategy:
       matrix:
