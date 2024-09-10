@@ -3,7 +3,7 @@ name: Haskell CI
 on: [push, pull_request]
 
 jobs:
-  cabal:
+  build:
     strategy:
       matrix:
         os: [ubuntu-latest, macOS-latest]
@@ -58,8 +58,51 @@ jobs:
     - name: Test
       run: cabal v2-test --jobs=1 all
 
-    - name: Upload the build plan
-      uses: actions/upload-artifact@v4
+    - name: Prepare artifacts
+      run: |
+        mkdir output-artifacts
+        cp dist-newstyle/cache/plan.json output-artifacts/
+        cp cabal.project.freeze output-artifacts/
+    - uses: actions/upload-artifact@v4
+      if: ${{ matrix.os == 'ubuntu-latest' }}
       with:
-        name: plans-${{ matrix.os }}-${{ matrix.plan.ghc }}
-        path: dist-newstyle/cache/plan.json
+        name: plans-${{ matrix.plan.ghc }}
+        path: output-artifacts
+
+  bounds:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+    - uses: actions/checkout@v3
+    - name: Fetch cabal-plan-bounds
+      run: |
+        curl -L https://github.com/nomeata/cabal-plan-bounds/releases/latest/download/cabal-plan-bounds.linux.gz | gunzip > /usr/local/bin/cabal-plan-bounds
+        chmod +x /usr/local/bin/cabal-plan-bounds
+    - name: Make directories for work
+      run: mkdir -p input-artifacts output-artifacts/plans output-artifacts/freezes output-artifacts/cabals
+    - uses: actions/download-artifact@v4
+      with:
+        path: input-artifacts/
+    - name: Aggregate build plans
+      run: |
+        for d in input-artifacts/*; do
+          echo $d
+          plan_id=${d#input-artifacts/plans-}
+          echo $plan_id
+          mv $d/plan.json output-artifacts/plans/${plan_id}.json
+          mv $d/cabal.project.freeze output-artifacts/freezes/${plan_id}.freeze
+        done
+
+    - name: Modify cabals
+      run: |
+        for p in greskell-core greskell greskell-websocket; do
+          echo modify $p.cabal
+          cabal-plan-bounds -c $p/$p.cabal output-artifacts/plans/*.json
+          git diff $p/$p.cabal
+          cp $p/$p.cabal output-artifacts/cabals/
+        done
+
+    - uses: actions/upload-artifact@v4
+      with:
+        name: aggregated-plans
+        path: output-artifacts
