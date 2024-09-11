@@ -12,7 +12,7 @@ description:            Haskell binding for [Gremlin graph query language](http:
                         It re-exports [greskell-core](http://hackage.haskell.org/package/greskell-core) package,
                         and adds some useful functions to it.
 category:               Data
-cabal-version:          >= 1.10
+cabal-version:          >= 2.0
 build-type:             Simple
 extra-source-files:     README.md, ChangeLog.md,
                         test/graphson/*.json
@@ -40,16 +40,16 @@ library
                         Data.Greskell.NonEmptyLike,
                         Data.Greskell.Logic
   -- other-modules:        
-  build-depends:        base >=4.9.0.0 && <4.17,
-                        greskell-core >=0.1.3.0 && <1.1,
-                        text >=1.2.2.1 && <1.3,
-                        transformers >=0.5.2 && <0.6,
-                        aeson >=2.0.2.0 && <2.2,
-                        unordered-containers >=0.2.7.1 && <0.3,
-                        semigroups >=0.18.2 && <0.21,
-                        vector >=0.12.0.1 && <0.14,
-                        exceptions >=0.8.3 && <0.11,
-                        hashable >=1.2.7.0 && <1.5
+  build-depends:        base,
+                        greskell-core,
+                        text,
+                        transformers,
+                        aeson,
+                        unordered-containers,
+                        semigroups,
+                        vector,
+                        exceptions,
+                        hashable
 
 test-suite spec
   type:                 exitcode-stdio-1.0
@@ -71,8 +71,8 @@ test-suite spec
   build-tool-depends:   hspec-discover:hspec-discover
   build-depends:        base, text, aeson, unordered-containers,
                         greskell, greskell-core,
-                        hspec >=2.2.3,
-                        bytestring >=0.10.8.1 && <0.12
+                        hspec,
+                        bytestring
 
 test-suite typecheck-test-suite
   type:                 exitcode-stdio-1.0
@@ -82,7 +82,7 @@ test-suite typecheck-test-suite
   main-is:              Typecheck.hs
   build-depends:        base, hspec,
                         greskell,
-                        should-not-typecheck >=2.1.0 && <2.2
+                        should-not-typecheck
 
 flag server-test
   description: Do tests with Gremlin Server.
@@ -101,9 +101,9 @@ test-suite server-test-suite
     -- Explicitly remove dependency. See https://github.com/haskell/cabal/issues/1725
     build-depends:        base, aeson, hspec, text, unordered-containers, vector,
                           greskell, greskell-core,
-                          scientific >=0.3.4.9 && <0.4,
-                          greskell-websocket >=0.1.0.0 && <1.1,
-                          safe-exceptions >=0.1.6 && <0.2
+                          scientific,
+                          greskell-websocket,
+                          safe-exceptions
   else
     buildable: False
 
@@ -126,9 +126,9 @@ test-suite server-behavior-test-suite
   if flag(server-behavior-test)
     build-depends:        base, aeson, hspec, text, unordered-containers, vector,
                           greskell, greskell-core,
-                          scientific >=0.3.4.9 && <0.4,
-                          greskell-websocket >=0.1.0.0 && <1.1,
-                          safe-exceptions >=0.1.6 && <0.2
+                          scientific,
+                          greskell-websocket,
+                          safe-exceptions
   else
     buildable: False
 
