@@ -26,7 +26,7 @@ jobs:
       FREEZE: ${{ matrix.plan.freeze }}
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       
     - uses: haskell/actions/setup@v2
       id: cabal-setup-haskell
@@ -42,7 +42,7 @@ jobs:
         if [ "x" == "x$FREEZE" ]; then cabal v2-freeze; else cp freezes/$FREEZE cabal.project.freeze; fi
         cat cabal.project.freeze
 
-    - uses: actions/cache@v3
+    - uses: actions/cache@v4
       with:
         path: ${{ steps.cabal-setup-haskell.outputs.cabal-store }}
         key: ${{ runner.os }}-cabal-${{ hashFiles('cabal.project.freeze') }}
@@ -73,7 +73,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Fetch cabal-plan-bounds
       run: |
         curl -L https://github.com/nomeata/cabal-plan-bounds/releases/latest/download/cabal-plan-bounds.linux.gz | gunzip > /usr/local/bin/cabal-plan-bounds
