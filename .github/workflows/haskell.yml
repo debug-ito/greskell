@@ -14,15 +14,15 @@ jobs:
           - ghc: '9.8.1'
           - ghc: '9.6.1'
           - ghc: '9.4.1'
-          - ghc: '9.2'
           - ghc: '9.2.5'
             freeze: '20221124-ghc-9.2.5.freeze'
-          - ghc: '9.0'
+          - ghc: '9.2.1'
           - ghc: '9.0.1'
             freeze: '20211202-ghc-9.0.1.freeze'
-          - ghc: '8.10'
           - ghc: '8.10.7'
             freeze: '20211228-ghc-8.10.7.freeze'
+          - ghc: '8.10.1'
+          - ghc: '8.8.1'
 
     runs-on: ${{ matrix.os }}
     continue-on-error: ${{ matrix.plan.allow-fail == true }}
