@@ -1,5 +1,10 @@
 # Revision history for greskell
 
+## 2.0.3.1  -- 2024-09-12
+
+* Update dependency version bounds with cabal-plan-bounds.
+  This adds support for new packages, while drops support for old ones.
+
 ## 2.0.3.0  -- 2023-02-24
 
 * Add `GTraversal.Gen` module (see https://github.com/debug-ito/greskell/issues/15 )

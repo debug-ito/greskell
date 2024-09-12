@@ -1,5 +1,10 @@
 # Revision history for greskell-websocket
 
+## 1.0.0.2  -- 2024-09-12
+
+* Update dependency version bounds with cabal-plan-bounds.
+  This adds support for new packages, while drops support for old ones.
+
 ## 1.0.0.1  -- 2022-11-24
 
 * Confirm test with ghc-9.2.5, vector-0.13.0.0 and aeson-2.1.0.0.
