@@ -11,7 +11,7 @@ description:            Haskell client for [Gremlin Server](http://tinkerpop.apa
                         This package is based on [greskell-core](http://hackage.haskell.org/package/greskell-core),
                         and best used with [greskell](http://hackage.haskell.org/package/greskell) package.
 category:               Network
-cabal-version:          >= 2.0
+cabal-version:          2.0
 build-type:             Simple
 extra-source-files:     README.md, ChangeLog.md,
                         test/samples/*.json

@@ -12,7 +12,7 @@ description:            Haskell binding for [Gremlin graph query language](http:
                         It re-exports [greskell-core](http://hackage.haskell.org/package/greskell-core) package,
                         and adds some useful functions to it.
 category:               Data
-cabal-version:          >= 2.0
+cabal-version:          2.0
 build-type:             Simple
 extra-source-files:     README.md, ChangeLog.md,
                         test/graphson/*.json

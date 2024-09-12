@@ -10,7 +10,7 @@ description:            Haskell binding for [Gremlin graph query language](http:
                         .
                         This package contains only core data types and tools used commonly by other related packages.
 category:               Data
-cabal-version:          >= 2.0
+cabal-version:          2.0
 build-type:             Simple
 extra-source-files:     README.md, ChangeLog.md
 homepage:               https://github.com/debug-ito/greskell/
