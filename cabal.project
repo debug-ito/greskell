@@ -3,3 +3,5 @@ packages: greskell-core,
           greskell,
           greskell-websocket,
           test-readme
+
+allow-newer: all
