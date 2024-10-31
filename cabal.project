@@ -4,4 +4,5 @@ packages: greskell-core,
           greskell-websocket,
           test-readme
 
-
+allow-newer: all
+constraints: containers >=0.7
