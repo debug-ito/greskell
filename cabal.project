@@ -4,4 +4,4 @@ packages: greskell-core,
           greskell-websocket,
           test-readme
 
-allow-newer: all
+-- allow-newer: all
