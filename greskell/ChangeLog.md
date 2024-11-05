@@ -1,5 +1,9 @@
 # Revision history for greskell
 
+## 2.0.3.2  -- 2024-11-05
+
+* Bump dependency version bounds.
+
 ## 2.0.3.1  -- 2024-09-12
 
 * Update dependency version bounds with cabal-plan-bounds.
