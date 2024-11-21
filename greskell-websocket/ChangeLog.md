@@ -1,5 +1,9 @@
 # Revision history for greskell-websocket
 
+## 1.0.0.3  -- 2024-11-21
+
+* Confirm test with `hashtable-1.4`.
+
 ## 1.0.0.2  -- 2024-09-12
 
 * Update dependency version bounds with cabal-plan-bounds.
