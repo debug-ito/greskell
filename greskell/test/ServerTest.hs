@@ -23,7 +23,7 @@ import           Test.Hspec
 import           Data.Greskell.AsIterator          (AsIterator (IteratorItem))
 import           Data.Greskell.AsLabel             (AsLabel (..), lookupAsM)
 import qualified Data.Greskell.AsLabel             as As
-import           Data.Greskell.Binder              (newBind, runBinder)
+import           Data.Greskell.Binder              (Binder, newBind, runBinder)
 import           Data.Greskell.Extra               (gWhenEmptyInput)
 import           Data.Greskell.GMap                (GMapEntry, unGMapEntry)
 import           Data.Greskell.Graph               (AEdge (..), AProperty (..), AVertex (..),
@@ -60,6 +60,7 @@ main = hspec spec
 spec :: Spec
 spec = withEnv $ do
   spec_basics
+  spec_binder
   spec_comparator
   spec_predicate
   spec_T
@@ -155,6 +156,21 @@ checkOne :: (AsIterator a, b ~ IteratorItem a, FromGraphSON b, Eq b, Show b)
          => Greskell a -> b -> SpecWith (String, Int)
 checkOne input expected = checkRaw input [expected]
 
+checkBinder :: (AsIterator a, b ~ IteratorItem a, FromGraphSON b, Eq b, Show b)
+            => [b] -> Binder (Greskell a) -> SpecWith (String, Int)
+checkBinder expected binder = specify label $ withClient $ \client -> do
+  got <- WS.slurpResults =<< WS.submit client script (Just binding)
+  got `shouldBe` V.fromList expected
+  where
+    (script, binding) = runBinder binder
+    label = (unpack $ toGremlin script) ++ " with " ++ show binding
+
+spec_binder :: SpecWith (String, Int)
+spec_binder = describe "server and Binder" $ do
+  checkBinder [100 :: Int] $ newBind (100 :: Int)
+  checkBinder [110 :: Int] $ do
+    b <- newBind (100 :: Int)
+    return $ b + (10 :: Greskell Int)
 
 spec_comparator :: SpecWith (String,Int)
 spec_comparator = do
