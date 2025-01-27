@@ -278,11 +278,10 @@ runMuxLoop wsconn req_pool settings qreq qres readConnState rx_thread = loop
               else do
                 conn_state <- readConnState
                 if conn_state == ConnOpen then empty else return EvActiveClose
-          waitResponseTimeout timers = 
+          waitResponseTimeout timers =
             if null timers
-              then empty
-            else
-              timeoutToEvent <$> waitAnySTM timers
+            then empty
+            else timeoutToEvent <$> waitAnySTM timers
     handleReq req = do
       insert_ok <- tryInsertToReqPool req_pool rid makeNewEntry
       if insert_ok
