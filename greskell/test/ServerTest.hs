@@ -33,8 +33,8 @@ import           Data.Greskell.Graph               (AEdge (..), AProperty (..), 
                                                     (=:))
 import           Data.Greskell.GraphSON            (FromGraphSON, GValue, nonTypedGValue,
                                                     parseEither)
-import           Data.Greskell.Gremlin             (Order, P, Predicate (..), cCompare, oDecr,
-                                                    oIncr, pAnd, pEq, pGte, pLt, pNot, pTest)
+import           Data.Greskell.Gremlin             (Order, P, Predicate (..), cCompare, oAsc, oDesc,
+                                                    pAnd, pEq, pGte, pLt, pNot, pTest)
 import           Data.Greskell.Greskell            (Greskell, ToGreskell (..), false, gvalueInt,
                                                     list, number, single, toGremlin, toGreskell,
                                                     true, unsafeGreskell, unsafeMethodCall, value)
@@ -158,16 +158,16 @@ checkOne input expected = checkRaw input [expected]
 
 spec_comparator :: SpecWith (String,Int)
 spec_comparator = do
-  let oIncr' :: Greskell (Order Int)
-      oIncr' = oIncr
-      oDecr' :: Greskell (Order Int)
-      oDecr' = oDecr
-  checkOne (cCompare oIncr' 20 20) 0
-  checkOne (cCompare oIncr' 10 20) (-1)
-  checkOne (cCompare oIncr' 20 10) 1
-  checkOne (cCompare oDecr' 20 20) 0
-  checkOne (cCompare oDecr' 10 20) 1
-  checkOne (cCompare oDecr' 20 10) (-1)
+  let oAsc' :: Greskell (Order Int)
+      oAsc' = oAsc
+      oDesc' :: Greskell (Order Int)
+      oDesc' = oDesc
+  checkOne (cCompare oAsc' 20 20) 0
+  checkOne (cCompare oAsc' 10 20) (-1)
+  checkOne (cCompare oAsc' 20 10) 1
+  checkOne (cCompare oDesc' 20 20) 0
+  checkOne (cCompare oDesc' 10 20) 1
+  checkOne (cCompare oDesc' 20 10) (-1)
 
 spec_predicate :: SpecWith (String,Int)
 spec_predicate = do
