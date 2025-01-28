@@ -89,7 +89,7 @@ plusTen x = do
 ```haskell Binder
 main = hspec $ specify "Binder" $ do
   let (script, binding) = runBinder $ plusTen 50
-  toGremlin script `shouldBe` "(__v0)+(10)"
+  toGremlin script `shouldBe` "(((__v0)))+(10)"
   binding `shouldBe` KM.fromList [("__v0", A.Number 50)]
 ```
 
@@ -489,7 +489,7 @@ specWrite =
     let p1 = Person "josh" 32 (Just "marko")
         (script1, binding1) = runBinder $ addPerson p1
     toGremlin script1 `shouldBe`
-      "g.addV(\"person\").property(\"name\",__v0).property(\"age\",__v1).property(\"company\",__v2).identity()"
+      "g.addV(\"person\").property(\"name\",((__v0))).property(\"age\",((__v1))).property(\"company\",((__v2))).identity()"
     binding1 `shouldBe`
       KM.fromList [ ("__v0", A.String "josh"),
                     ("__v1", A.Number 32),
@@ -505,7 +505,7 @@ Note also that we should use `<=?>` (not `<=:>`) to write an optional field `per
     let p2 = Person "peter" 35 Nothing
         (script2, binding2) = runBinder $ addPerson p2
     toGremlin script2 `shouldBe`
-      "g.addV(\"person\").property(\"name\",__v0).property(\"age\",__v1).identity()"
+      "g.addV(\"person\").property(\"name\",((__v0))).property(\"age\",((__v1))).identity()"
     binding2 `shouldBe`
       KM.fromList [ ("__v0", A.String "peter"),
                     ("__v1", A.Number 35)

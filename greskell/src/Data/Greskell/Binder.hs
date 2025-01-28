@@ -88,7 +88,11 @@ type PlaceHolderIndex = Int
 -- Unsafely create a placeholder variable of arbitrary type with the
 -- given index.
 unsafePlaceHolder :: PlaceHolderIndex -> Greskell a
-unsafePlaceHolder = unsafeGreskellLazy . toPlaceHolderVariable
+unsafePlaceHolder = unsafeGreskellLazy . wrapWithParens  . toPlaceHolderVariable
+  where
+    wrapWithParens v = "((" <> v <> "))"
+    -- This is necessary to ensure the v is always treated as a varible name (NOT a type name) in Groovy script.
+    -- See https://github.com/debug-ito/greskell/issues/18
 
 -- | __This function is only for internal use.__
 --

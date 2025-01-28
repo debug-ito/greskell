@@ -125,21 +125,21 @@ examples = for_writePropertyKeyValues ++ for_writeKeyValues ++ for_operators ++ 
     for_writePropertyKeyValues =
       let binder = (writePropertyKeyValues [("age", (21 :: Int))] :: Binder (Walk SideEffect AVertex AVertex))
           (walk, binding) = runBinder binder
-      in [ (unpack $ toGremlin walk, "__.property(\"age\",__v0).identity()")
+      in [ (unpack $ toGremlin walk, "__.property(\"age\",((__v0))).identity()")
          , (show $ sortBy (comparing fst) $ KeyMap.toList binding, "[(\"__v0\",Number 21.0)]")
          ]
     for_writeKeyValues =
       let keyAge = ("age" :: Key AVertex Int)
           keyName = ("name" :: Key AVertex Text)
           (walk, binding) = runBinder $ writeKeyValues <$> sequence [keyAge <=:> 21, keyName <=:> "Josh"]
-      in [ (unpack $ toGremlin walk, "__.property(\"age\",__v0).property(\"name\",__v1).identity()")
+      in [ (unpack $ toGremlin walk, "__.property(\"age\",((__v0))).property(\"name\",((__v1))).identity()")
          , (show $ sortBy (comparing fst) $ KeyMap.toList binding, "[(\"__v0\",Number 21.0),(\"__v1\",String \"Josh\")]")
          ]
     for_operators =
       let keyNName = ("nickname" :: Key AVertex (Maybe Text))
           keyCompany = ("company" :: Key AVertex (Maybe Text))
           (walk, binding) = runBinder $ writeKeyValues <$> sequence [keyNName <=?> Nothing, keyCompany <=?> Just "foobar.com"]
-      in [ (unpack $ toGremlin walk, "__.property(\"company\",__v0).identity()")
+      in [ (unpack $ toGremlin walk, "__.property(\"company\",((__v0))).identity()")
          , (show $ sortBy (comparing fst) $ KeyMap.toList binding, "[(\"__v0\",String \"foobar.com\")]")
          ]
     for_gWhenEmptyInput =

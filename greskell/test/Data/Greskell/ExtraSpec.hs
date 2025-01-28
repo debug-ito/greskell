@@ -35,15 +35,15 @@ spec = do
       let input :: [(Text, Int)]
           input = [("age", 24)]
       (runBoundWalk $ writePropertyKeyValues input)
-        `shouldBe` ( "__.property(\"age\",__v0).identity()",
+        `shouldBe` ( "__.property(\"age\",((__v0))).identity()",
                      KM.fromList [("__v0", Number 24)]
                    )
     specify "multiple props" $ do
       let input :: [(Text, Value)]
           input = [("age", Number 24), ("name", String "Toshio"), ("foo", String "bar")]
       (runBoundWalk $ writePropertyKeyValues input)
-        `shouldBe` ( "__.property(\"age\",__v0).property(\"name\",__v1)"
-                     <> ".property(\"foo\",__v2).identity()",
+        `shouldBe` ( "__.property(\"age\",((__v0))).property(\"name\",((__v1)))"
+                     <> ".property(\"foo\",((__v2))).identity()",
                      KM.fromList [ ("__v0", Number 24),
                                    ("__v1", String "Toshio"),
                                    ("__v2", String "bar")
