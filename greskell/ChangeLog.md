@@ -1,5 +1,12 @@
 # Revision history for greskell
 
+## 2.0.3.3  -- ???
+
+* Binder: now `newBind` produces an expression like `((__v0))`, that is, a variable name wrapped with double parens.
+  (see https://github.com/debug-ito/greskell/issues/18 )
+  While this is basically backward-compatible, it can break a user code if it depends on the internal of the `Greskell` retruned by `newBind`.
+  
+
 ## 2.0.3.2  -- 2024-11-05
 
 * Bump dependency version bounds.
