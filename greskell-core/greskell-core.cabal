@@ -30,7 +30,7 @@ library
                         Data.Greskell.AsIterator
   other-modules:        Data.Greskell.GraphSON.GraphSONTyped,
                         Data.Greskell.GraphSON.Core
-  build-depends:        base ^>=4.13.0 || ^>=4.14.0 || ^>=4.15.0 || ^>=4.16.0 || ^>=4.17.0 || ^>=4.18.0 || ^>=4.19.0 || ^>=4.20.0,
+  build-depends:        base,
                         aeson ^>=2.0.2 || ^>=2.1.0 || ^>=2.2.3,
                         unordered-containers ^>=0.2.15,
                         hashable ^>=1.4.0 || ^>=1.5.0,
@@ -56,7 +56,7 @@ test-suite spec
                         Data.Greskell.Test.QuickCheck,
                         ExamplesSpec
   build-tool-depends:   hspec-discover:hspec-discover
-  build-depends:        base ^>=4.13.0 || ^>=4.14.0 || ^>=4.15.0 || ^>=4.16.0 || ^>=4.17.0 || ^>=4.18.0 || ^>=4.19.0 || ^>=4.20.0,
+  build-depends:        base,
                         text ^>=1.2.3 || ^>=2.0.2 || ^>=2.1,
                         aeson ^>=2.0.2 || ^>=2.1.0 || ^>=2.2.3,
                         unordered-containers ^>=0.2.15,
