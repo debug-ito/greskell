@@ -43,6 +43,7 @@ jobs:
       id: cabal-setup-haskell
       with:
         ghc-version: ${{ matrix.plan.ghc }}
+        ## We need to avoid cabal-install-3.14 until the issue is resolved https://github.com/haskell/cabal/issues/10704
         cabal-version: '3.12'
 
     - name: Configure and freeze

@@ -40,7 +40,7 @@ library
                         Data.Greskell.NonEmptyLike,
                         Data.Greskell.Logic
   -- other-modules:        
-  build-depends:        base,
+  build-depends:        base ^>=4.13.0 || ^>=4.14.0 || ^>=4.15.0 || ^>=4.16.0 || ^>=4.17.0 || ^>=4.18.0 || ^>=4.19.0 || ^>=4.20.0 || ^>=4.21.0,
                         greskell-core ^>=1.0.0,
                         text ^>=1.2.3 || ^>=2.0.2 || ^>=2.1,
                         transformers ^>=0.5.6 || ^>=0.6.1,
@@ -69,7 +69,7 @@ test-suite spec
                         Data.Greskell.LogicSpec,
                         ExamplesSpec
   build-tool-depends:   hspec-discover:hspec-discover
-  build-depends:        base,
+  build-depends:        base ^>=4.13.0 || ^>=4.14.0 || ^>=4.15.0 || ^>=4.16.0 || ^>=4.17.0 || ^>=4.18.0 || ^>=4.19.0 || ^>=4.20.0 || ^>=4.21.0,
                         text ^>=1.2.3 || ^>=2.0.2 || ^>=2.1,
                         aeson ^>=2.0.2 || ^>=2.1.0 || ^>=2.2.3,
                         unordered-containers ^>=0.2.15,
@@ -84,7 +84,7 @@ test-suite typecheck-test-suite
   hs-source-dirs:       test
   ghc-options:          -Wall -fno-warn-unused-imports "-with-rtsopts=-M512m"
   main-is:              Typecheck.hs
-  build-depends:        base,
+  build-depends:        base ^>=4.13.0 || ^>=4.14.0 || ^>=4.15.0 || ^>=4.16.0 || ^>=4.17.0 || ^>=4.18.0 || ^>=4.19.0 || ^>=4.20.0 || ^>=4.21.0,
                         hspec ^>=2.9.1 || ^>=2.10.6 || ^>=2.11.9,
                         greskell,
                         should-not-typecheck ^>=2.1.0
@@ -104,7 +104,7 @@ test-suite server-test-suite
   other-modules:        ServerTest.Common
   if flag(server-test)
     -- Explicitly remove dependency. See https://github.com/haskell/cabal/issues/1725
-    build-depends:        base,
+    build-depends:        base ^>=4.13.0 || ^>=4.14.0 || ^>=4.15.0 || ^>=4.16.0 || ^>=4.17.0 || ^>=4.18.0 || ^>=4.19.0 || ^>=4.20.0 || ^>=4.21.0,
                           aeson ^>=2.0.2 || ^>=2.1.0 || ^>=2.2.3,
                           hspec ^>=2.9.1 || ^>=2.10.6 || ^>=2.11.9,
                           text ^>=1.2.3 || ^>=2.0.2 || ^>=2.1,
@@ -135,7 +135,7 @@ test-suite server-behavior-test-suite
   other-extensions:     OverloadedStrings
   other-modules:        ServerTest.Common
   if flag(server-behavior-test)
-    build-depends:        base,
+    build-depends:        base ^>=4.13.0 || ^>=4.14.0 || ^>=4.15.0 || ^>=4.16.0 || ^>=4.17.0 || ^>=4.18.0 || ^>=4.19.0 || ^>=4.20.0 || ^>=4.21.0,
                           aeson ^>=2.0.2 || ^>=2.1.0 || ^>=2.2.3,
                           hspec ^>=2.9.1 || ^>=2.10.6 || ^>=2.11.9,
                           text ^>=1.2.3 || ^>=2.0.2 || ^>=2.1,
