@@ -1,5 +1,9 @@
 # Revision history for greskell-core
 
+## 1.0.0.6  -- 2025-06-18
+
+* Fix build-depends.
+
 ## 1.0.0.5  -- 2025-06-18
 
 * Support QuickCheck-2.16
