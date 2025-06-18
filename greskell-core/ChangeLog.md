@@ -1,5 +1,9 @@
 # Revision history for greskell-core
 
+## 1.0.0.5  -- 2025-06-18
+
+* Support QuickCheck-2.16
+
 ## 1.0.0.4  -- 2025-01-30
 
 * Support ghc-9.12 (base-4.21).
