@@ -1,5 +1,5 @@
 name:                   greskell-core
-version:                1.0.0.5
+version:                1.0.0.6
 author:                 Toshio Ito <debug.ito@gmail.com>
 maintainer:             Toshio Ito <debug.ito@gmail.com>
 license:                BSD3
@@ -64,7 +64,7 @@ test-suite spec
                         bytestring ^>=0.10.9 || ^>=0.11.3 || ^>=0.12.0,
                         greskell-core,
                         hspec ^>=2.9.1 || ^>=2.10.6 || ^>=2.11.9,
-                        QuickCheck ^>=2.14.2 || ^>=2.16.0
+                        QuickCheck
 
 source-repository head
   type:                 git
