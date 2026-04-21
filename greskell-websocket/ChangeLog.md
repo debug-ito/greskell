@@ -1,5 +1,9 @@
 # Revision history for greskell-websocket
 
+## 1.0.0.5  -- 2026-04-21
+
+- Bump dependency version bounds.
+
 ## 1.0.0.4  -- 2025-01-30
 
 * Fix the bug where greskell-websocket didn't work at all with `async-2.2.5`. (see https://github.com/debug-ito/greskell/pull/17 )

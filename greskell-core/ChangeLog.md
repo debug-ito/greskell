@@ -1,5 +1,9 @@
 # Revision history for greskell-core
 
+## 1.0.0.7  -- 2026-04-21
+
+- Bump dependency version bounds.
+
 ## 1.0.0.6  -- 2025-06-18
 
 * Fix build-depends.

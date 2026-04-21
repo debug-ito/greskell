@@ -1,5 +1,9 @@
 # Revision history for greskell
 
+## 2.0.3.4  -- 2026-04-21
+
+- Bump dependency version bounds.
+
 ## 2.0.3.3  -- 2025-01-30
 
 * Binder: now `newBind` produces an expression like `((__v0))`, that is, a variable name wrapped with double parens.
