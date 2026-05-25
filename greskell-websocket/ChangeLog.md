@@ -1,5 +1,9 @@
 # Revision history for greskell-websocket
 
+## 1.0.0.6  -- 2026-05-25
+
+- Support aeson-2.3.
+
 ## 1.0.0.5  -- 2026-04-21
 
 - Bump dependency version bounds.

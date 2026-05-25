@@ -1,5 +1,9 @@
 # Revision history for greskell-core
 
+## 1.0.0.8  -- 2026-05-25
+
+- Support aeson-2.3.
+
 ## 1.0.0.7  -- 2026-04-21
 
 - Bump dependency version bounds.

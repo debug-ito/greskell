@@ -1,5 +1,9 @@
 # Revision history for greskell
 
+## 2.0.3.5  -- 2026-05-25
+
+- Support aeson-2.3.
+
 ## 2.0.3.4  -- 2026-04-21
 
 - Bump dependency version bounds.
