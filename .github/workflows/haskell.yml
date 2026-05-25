@@ -12,6 +12,7 @@ jobs:
           - ghc: latest
             allow-fail: true
           - ghc: '9.14.1'
+            freeze: '20260525-ghc-9.14.1.freeze'
           - ghc: '9.12.1'
             freeze: '20260421-ghc-9.12.1.freeze'
           - ghc: '9.10.1'
